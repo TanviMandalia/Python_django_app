@@ -1,0 +1,43 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #ffffff;
+    color: #2C2C2C;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #2C2C2C 0%, #4a4a4a 100%);
+    min-height: 90vh;
+    padding: 60px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.service-card {
+    border: 2px solid #f0f0f0;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.service-card:hover {
+    border-color: #F5C518;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(245,197,24,0.3);
+}
+
+.navbar-nav .nav-link {
+    color: #E0E0E0 !important;
+    font-weight: 500;
+    margin: 0 5px;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #F5C518 !important;
+}

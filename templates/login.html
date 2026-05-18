@@ -1,0 +1,161 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Dr. Dhvani Patalia</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2C2C2C 50%, #1a1a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            width: 900px;
+            max-width: 95%;
+            display: flex;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+        }
+        /* LEFT PANEL */
+        .left-panel {
+            background: linear-gradient(135deg, #2C2C2C, #1a1a1a);
+            padding: 50px 40px;
+            width: 45%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .left-panel img { width: 160px; border-radius: 12px; margin-bottom: 25px; }
+        .left-panel h2 { color: #F5C518; font-size: 1.5em; font-weight: 700; margin-bottom: 10px; }
+        .left-panel p { color: #aaa; font-size: 0.9em; line-height: 1.7; margin-bottom: 30px; }
+        .features { text-align: left; width: 100%; }
+        .feature-item { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+        .feature-item i { color: #F5C518; font-size: 1.1em; width: 20px; }
+        .feature-item span { color: #E0E0E0; font-size: 0.9em; }
+
+        /* RIGHT PANEL */
+        .right-panel { padding: 50px 40px; width: 55%; }
+        .right-panel h2 { font-size: 1.8em; font-weight: 800; color: #2C2C2C; margin-bottom: 5px; }
+        .right-panel p { color: #777; margin-bottom: 30px; font-size: 0.95em; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 600; color: #2C2C2C; margin-bottom: 8px; font-size: 0.9em; }
+        .input-box { position: relative; }
+        .input-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #aaa; }
+        .input-box input {
+            width: 100%;
+            padding: 13px 13px 13px 42px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 0.95em;
+            transition: all 0.3s;
+            outline: none;
+        }
+        .input-box input:focus { border-color: #F5C518; box-shadow: 0 0 0 3px rgba(245,197,24,0.15); }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #F5C518;
+            color: #2C2C2C;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.05em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 5px;
+        }
+        .btn-login:hover { background: #e6b800; transform: translateY(-1px); box-shadow: 0 5px 15px rgba(245,197,24,0.4); }
+        .divider { text-align: center; color: #aaa; margin: 20px 0; font-size: 0.9em; position: relative; }
+        .divider::before, .divider::after { content: ''; position: absolute; top: 50%; width: 42%; height: 1px; background: #eee; }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+        .register-link { text-align: center; margin-top: 20px; color: #777; font-size: 0.9em; }
+        .register-link a { color: #F5C518; font-weight: 700; text-decoration: none; }
+        .register-link a:hover { text-decoration: underline; }
+        .back-home { text-align: center; margin-top: 15px; }
+        .back-home a { color: #aaa; font-size: 0.85em; text-decoration: none; }
+        .back-home a:hover { color: #2C2C2C; }
+        .alert-error {
+            background: #fff3cd;
+            border: 1px solid #F5C518;
+            color: #856404;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        .alert-error i { margin-right: 8px; }
+    </style>
+</head>
+<body>
+<div class="login-container">
+
+    <!-- LEFT -->
+    <div class="left-panel">
+        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+        <h2>Welcome Back!</h2>
+        <p>Login to manage your appointments and connect with Dr. Dhvani Patalia</p>
+        <div class="features">
+            <div class="feature-item"><i class="fas fa-calendar-check"></i><span>Book & manage appointments</span></div>
+            <div class="feature-item"><i class="fas fa-comments"></i><span>Chat with your therapist</span></div>
+            <div class="feature-item"><i class="fas fa-history"></i><span>View session history</span></div>
+            <div class="feature-item"><i class="fas fa-credit-card"></i><span>Pay online securely</span></div>
+        </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right-panel">
+        <h2>Sign In</h2>
+        <p>Enter your credentials to access your account</p>
+
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert-error"><i class="fas fa-exclamation-triangle"></i>{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST" action="/login">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Username</label>
+                <div class="input-box">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="username" placeholder="Enter your username" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-box">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" placeholder="Enter your password" required>
+                </div>
+            </div>
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt"></i> Login to Account
+            </button>
+        </form>
+
+        <div class="divider">or</div>
+
+        <div class="register-link">
+            Don't have an account? <a href="/register">Create Account</a>
+        </div>
+        <div class="back-home">
+            <a href="/"><i class="fas fa-arrow-left"></i> Back to Home</a>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
