@@ -1,0 +1,178 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Dr. Dhvani Patalia</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2C2C2C 50%, #1a1a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+        }
+        .register-container {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            width: 950px;
+            max-width: 95%;
+            display: flex;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+        }
+        .left-panel {
+            background: linear-gradient(135deg, #2C2C2C, #1a1a1a);
+            padding: 50px 35px;
+            width: 38%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .left-panel img { width: 140px; border-radius: 12px; margin-bottom: 20px; }
+        .left-panel h2 { color: #F5C518; font-size: 1.4em; font-weight: 700; margin-bottom: 10px; }
+        .left-panel p { color: #aaa; font-size: 0.88em; line-height: 1.7; margin-bottom: 25px; }
+        .steps { text-align: left; width: 100%; }
+        .step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+        .step-num { background: #F5C518; color: #2C2C2C; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: font-size: 0.85em; font-weight: 700; flex-shrink: 0; justify-content: center; font-size: 0.85em; }
+        .step span { color: #E0E0E0; font-size: 0.88em; line-height: 1.5; }
+        .right-panel { padding: 45px 40px; width: 62%; }
+        .right-panel h2 { font-size: 1.7em; font-weight: 800; color: #2C2C2C; margin-bottom: 5px; }
+        .right-panel p { color: #777; margin-bottom: 25px; font-size: 0.92em; }
+        .form-row { display: flex; gap: 15px; }
+        .form-row .form-group { flex: 1; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-weight: 600; color: #2C2C2C; margin-bottom: 7px; font-size: 0.88em; }
+        .input-box { position: relative; }
+        .input-box i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #aaa; font-size: 0.9em; }
+        .input-box input {
+            width: 100%;
+            padding: 12px 12px 12px 38px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 0.92em;
+            transition: all 0.3s;
+            outline: none;
+        }
+        .input-box input:focus { border-color: #F5C518; box-shadow: 0 0 0 3px rgba(245,197,24,0.15); }
+        .btn-register {
+            width: 100%;
+            padding: 13px;
+            background: #F5C518;
+            color: #2C2C2C;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 5px;
+        }
+        .btn-register:hover { background: #e6b800; transform: translateY(-1px); box-shadow: 0 5px 15px rgba(245,197,24,0.4); }
+        .login-link { text-align: center; margin-top: 18px; color: #777; font-size: 0.88em; }
+        .login-link a { color: #F5C518; font-weight: 700; text-decoration: none; }
+        .back-home { text-align: center; margin-top: 10px; }
+        .back-home a { color: #aaa; font-size: 0.83em; text-decoration: none; }
+        .alert-error { background: #fff3cd; border: 1px solid #F5C518; color: #856404; padding: 10px 15px; border-radius: 8px; margin-bottom: 18px; font-size: 0.88em; }
+        .alert-success { background: #d4edda; border: 1px solid #28a745; color: #155724; padding: 10px 15px; border-radius: 8px; margin-bottom: 18px; font-size: 0.88em; }
+    </style>
+</head>
+<body>
+<div class="register-container">
+
+    <!-- LEFT -->
+    <div class="left-panel">
+        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+        <h2>Join Us Today!</h2>
+        <p>Create your account and start your journey to better health</p>
+        <div class="steps">
+            <div class="step"><div class="step-num">1</div><span>Create your free account</span></div>
+            <div class="step"><div class="step-num">2</div><span>Book your first appointment</span></div>
+            <div class="step"><div class="step-num">3</div><span>Start your recovery journey</span></div>
+        </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right-panel">
+        <h2>Create Account</h2>
+        <p>Fill in your details to register as a patient</p>
+
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert-{% if 'success' in message.tags %}success{% else %}error{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST" action="/register">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label>First Name</label>
+                    <div class="input-box">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="first_name" placeholder="First name" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <div class="input-box">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="last_name" placeholder="Last name" required>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <div class="input-box">
+                    <i class="fas fa-at"></i>
+                    <input type="text" name="username" placeholder="Choose a username" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <div class="input-box">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="email" placeholder="your@email.com" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-box">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" placeholder="Min 8 characters" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <div class="input-box">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="confirm_password" placeholder="Repeat password" required>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn-register">
+                <i class="fas fa-user-plus"></i> Create My Account
+            </button>
+        </form>
+
+        <div class="login-link">
+            Already have an account? <a href="/login">Sign In</a>
+        </div>
+        <div class="back-home">
+            <a href="/"><i class="fas fa-arrow-left"></i> Back to Home</a>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
