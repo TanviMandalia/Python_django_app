@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+
 
 class Appointment(models.Model):
     STATUS_CHOICES = [
@@ -49,3 +51,132 @@ class Message(models.Model):
 
     class Meta:
         ordering = ['created_at']
+
+
+class StaffProfile(models.Model):
+    ROLE_CHOICES = [
+        ('physiotherapist', 'Physiotherapist'),
+        ('receptionist', 'Receptionist'),
+        ('assistant', 'Assistant/Helper'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_profile')
+    role = models.CharField(max_length=30, choices=ROLE_CHOICES)
+    phone = models.CharField(max_length=15, blank=True)
+    address = models.TextField(blank=True)
+    salary = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    joining_date = models.DateField(default=timezone.now)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.role}"
+
+
+class Attendance(models.Model):
+    staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances')
+    date = models.DateField(default=timezone.now)
+    clock_in = models.TimeField(null=True, blank=True)
+    clock_out = models.TimeField(null=True, blank=True)
+    lunch_start = models.TimeField(null=True, blank=True)
+    lunch_end = models.TimeField(null=True, blank=True)
+    total_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.staff.username} - {self.date}"
+
+    class Meta:
+        unique_together = ['staff', 'date']
+        ordering = ['-date']
+
+
+class LeaveApplication(models.Model):
+    LEAVE_TYPES = [
+        ('sick', 'Sick Leave'),
+        ('casual', 'Casual Leave'),
+        ('emergency', 'Emergency Leave'),
+        ('other', 'Other'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='leaves')
+    leave_type = models.CharField(max_length=20, choices=LEAVE_TYPES)
+    from_date = models.DateField()
+    to_date = models.DateField()
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_note = models.TextField(blank=True)
+    applied_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.staff.username} - {self.leave_type} - {self.status}"
+
+    class Meta:
+        ordering = ['-applied_on']
+
+
+class SalaryRecord(models.Model):
+    staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='salary_records')
+    month = models.CharField(max_length=20)
+    year = models.IntegerField()
+    basic_salary = models.DecimalField(max_digits=10, decimal_places=2)
+    bonus = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    deduction = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    net_salary = models.DecimalField(max_digits=10, decimal_places=2)
+    paid_on = models.DateField(null=True, blank=True)
+    is_paid = models.BooleanField(default=False)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.staff.username} - {self.month} {self.year}"
+
+    class Meta:
+        ordering = ['-year', '-month']
+
+
+class SessionNote(models.Model):
+    staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='session_notes')
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_notes')
+    appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=True)
+    date = models.DateField(default=timezone.now)
+    diagnosis = models.TextField()
+    treatment = models.TextField()
+    next_session = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.patient.username} - {self.date}"
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class DailyTask(models.Model):
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+    ]
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
+    assigned_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_tasks')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    due_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.assigned_to.username}"
+
+    class Meta:
+        ordering = ['-created_at']
