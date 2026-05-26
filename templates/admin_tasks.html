@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Tasks - Staff</title>
+    <title>Manage Tasks - Admin</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -33,26 +33,16 @@
         .nav-item i { width: 18px; text-align: center; }
         .logout-btn { margin: 15px; display: flex; align-items: center; gap: 10px; padding: 11px 18px; background: rgba(220,53,69,0.15); color: #ff6b6b; border-radius: 10px; text-decoration: none; font-size: 0.86em; }
         .main-content { margin-left: 260px; flex: 1; }
-        .topbar { background: white; padding: 16px 28px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        .topbar { background: white; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 50; }
         .topbar h1 { font-size: 1.2em; color: #2C2C2C; font-weight: 700; }
+        .btn-add { background: #F5C518; color: #2C2C2C; padding: 9px 20px; border-radius: 20px; font-weight: 700; text-decoration: none; font-size: 0.88em; }
         .dashboard-body { padding: 25px; }
         .alert-success { background: #d4edda; border: 1px solid #28a745; color: #155724; padding: 12px 18px; border-radius: 10px; margin-bottom: 18px; font-size: 0.9em; }
-
-        .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 15px; margin-bottom: 22px; }
-        .stat-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 14px; }
-        .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2em; }
-        .yellow { background: rgba(245,197,24,0.15); color: #F5C518; }
-        .blue { background: rgba(0,123,255,0.15); color: #007bff; }
-        .green { background: rgba(40,167,69,0.15); color: #28a745; }
-        .stat-info h3 { font-size: 1.6em; font-weight: 800; color: #2C2C2C; }
-        .stat-info p { color: #888; font-size: 0.8em; }
-
-        .tasks-grid { display: flex; flex-direction: column; gap: 12px; }
-        .task-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 15px; border-left: 4px solid #eee; transition: all 0.3s; }
+        .tasks-list { display: flex; flex-direction: column; gap: 12px; }
+        .task-card { background: white; border-radius: 14px; padding: 20px 24px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 18px; border-left: 4px solid #eee; transition: all 0.3s; }
         .task-card.high { border-left-color: #dc3545; }
         .task-card.medium { border-left-color: #F5C518; }
         .task-card.low { border-left-color: #28a745; }
-        .task-card:hover { transform: translateX(4px); }
         .priority-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
         .dot-high { background: #dc3545; }
         .dot-medium { background: #F5C518; }
@@ -60,19 +50,16 @@
         .task-info { flex: 1; }
         .task-info h3 { font-size: 0.95em; font-weight: 700; color: #2C2C2C; margin-bottom: 4px; }
         .task-info p { font-size: 0.82em; color: #888; }
-        .task-meta { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+        .task-meta { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 6px; }
         .task-meta span { font-size: 0.78em; color: #aaa; display: flex; align-items: center; gap: 4px; }
         .task-meta i { color: #F5C518; }
         .badge { padding: 4px 12px; border-radius: 15px; font-size: 0.75em; font-weight: 700; }
         .badge-pending { background: #fff3cd; color: #856404; }
         .badge-in_progress { background: #cce5ff; color: #004085; }
         .badge-completed { background: #d4edda; color: #155724; }
-        .action-btns { display: flex; gap: 6px; flex-direction: column; }
-        .btn-start { background: #cce5ff; color: #004085; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.78em; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.3s; }
-        .btn-start:hover { background: #007bff; color: white; }
-        .btn-done { background: #d4edda; color: #155724; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.78em; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.3s; }
-        .btn-done:hover { background: #28a745; color: white; }
-        .empty-state { text-align: center; padding: 50px; background: white; border-radius: 18px; color: #aaa; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
+        .staff-chip { display: flex; align-items: center; gap: 8px; }
+        .mini-avatar { width: 32px; height: 32px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #2C2C2C; font-size: 0.78em; flex-shrink: 0; }
+        .empty-state { text-align: center; padding: 60px; background: white; border-radius: 18px; color: #aaa; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
         .empty-state i { font-size: 3em; color: #F5C518; margin-bottom: 15px; }
     </style>
 </head>
@@ -80,53 +67,46 @@
 <aside class="sidebar">
     <div class="sidebar-logo">
         <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
-        <p>👨‍⚕️ STAFF PANEL</p>
+        <p>⚙️ ADMIN PANEL</p>
     </div>
     <div class="sidebar-user">
-        <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
-        <div class="user-info"><h4>{{ user.get_full_name|default:user.username }}</h4><span>🟢 Staff</span></div>
+        <div class="user-avatar">AD</div>
+        <div class="user-info"><h4>{{ user.username }}</h4><span>🔴 Super Admin</span></div>
     </div>
     <nav>
-        <div class="nav-section">Main</div>
-        <a href="/staff-dashboard" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-        <div class="nav-section">Attendance</div>
-        <a href="/staff-attendance" class="nav-item"><i class="fas fa-clock"></i> My Attendance</a>
-        <div class="nav-section">Leave</div>
-        <a href="/staff-leave" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
-        <div class="nav-section">Work</div>
-        <a href="/staff-tasks" class="nav-item active"><i class="fas fa-tasks"></i> My Tasks</a>
-        <a href="/staff-session-notes" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-        <div class="nav-section">Payroll</div>
-        <a href="/staff-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
+        <div class="nav-section">Overview</div>
+        <a href="/admin-dashboard" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <div class="nav-section">Management</div>
+        <a href="/admin-patients" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+        <a href="/admin-staff" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+        <a href="/admin-appointments" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
+        <a href="/admin-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+        <div class="nav-section">Staff Tools</div>
+        <a href="/admin-leaves" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
+        <a href="/admin-attendance" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+        <a href="/admin-tasks" class="nav-item active"><i class="fas fa-tasks"></i> Tasks</a>
+        <a href="/admin-session-notes" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
+        <div class="nav-section">Communication</div>
+        <a href="/admin-chat" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+        <div class="nav-section">System</div>
+        <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
     </nav>
     <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
 </aside>
 
 <div class="main-content">
-    <div class="topbar"><h1>✅ My Tasks</h1></div>
+    <div class="topbar">
+        <h1>✅ Manage Tasks</h1>
+        <a href="/add-task" class="btn-add">+ Assign Task</a>
+    </div>
     <div class="dashboard-body">
 
         {% if messages %}{% for message in messages %}
         <div class="alert-success">{{ message }}</div>
         {% endfor %}{% endif %}
 
-        <div class="stat-row">
-            <div class="stat-card">
-                <div class="stat-icon yellow"><i class="fas fa-clock"></i></div>
-                <div class="stat-info"><h3>{{ pending }}</h3><p>Pending Tasks</p></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon blue"><i class="fas fa-spinner"></i></div>
-                <div class="stat-info"><h3>{{ in_progress }}</h3><p>In Progress</p></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
-                <div class="stat-info"><h3>{{ completed }}</h3><p>Completed</p></div>
-            </div>
-        </div>
-
         {% if tasks %}
-        <div class="tasks-grid">
+        <div class="tasks-list">
             {% for task in tasks %}
             <div class="task-card {{ task.priority }}">
                 <div class="priority-dot dot-{{ task.priority }}"></div>
@@ -134,20 +114,18 @@
                     <h3>{{ task.title }}</h3>
                     {% if task.description %}<p>{{ task.description }}</p>{% endif %}
                     <div class="task-meta">
-                        <span><i class="fas fa-flag"></i> {{ task.get_priority_display }} Priority</span>
+                        <span><i class="fas fa-flag"></i> {{ task.get_priority_display }}</span>
                         {% if task.due_date %}<span><i class="fas fa-calendar"></i> Due: {{ task.due_date|date:"d M Y" }}</span>{% endif %}
-                        <span><i class="fas fa-user"></i> By: {{ task.assigned_by.get_full_name|default:task.assigned_by.username }}</span>
+                        <span><i class="fas fa-clock"></i> Created: {{ task.created_at|date:"d M Y" }}</span>
+                        {% if task.completed_at %}<span><i class="fas fa-check"></i> Done: {{ task.completed_at|date:"d M Y" }}</span>{% endif %}
                     </div>
                 </div>
-                <div>
-                    <span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
-                    <div class="action-btns" style="margin-top:8px;">
-                        {% if task.status == 'pending' %}
-                        <a href="/update-task/{{ task.id }}/in_progress" class="btn-start">▶ Start</a>
-                        {% elif task.status == 'in_progress' %}
-                        <a href="/update-task/{{ task.id }}/completed" class="btn-done">✅ Done</a>
-                        {% endif %}
+                <div style="text-align:right;">
+                    <div class="staff-chip" style="justify-content:flex-end; margin-bottom:8px;">
+                        <div class="mini-avatar">{{ task.assigned_to.first_name|first|upper }}{{ task.assigned_to.last_name|first|upper }}</div>
+                        <span style="font-size:0.82em; color:#555; font-weight:600;">{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</span>
                     </div>
+                    <span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
                 </div>
             </div>
             {% endfor %}
@@ -155,7 +133,8 @@
         {% else %}
         <div class="empty-state">
             <i class="fas fa-tasks"></i>
-            <p>No tasks assigned yet.<br>Check back later!</p>
+            <p>No tasks assigned yet.<br>Click "Assign Task" to get started!</p>
+            <a href="/add-task" style="background:#F5C518; color:#2C2C2C; padding:10px 22px; border-radius:20px; font-weight:700; text-decoration:none; display:inline-block; margin-top:15px;">+ Assign First Task</a>
         </div>
         {% endif %}
     </div>

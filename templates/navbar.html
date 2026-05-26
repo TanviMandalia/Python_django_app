@@ -1,0 +1,197 @@
+{% load static %}
+<nav class="main-navbar">
+    <div class="nav-container">
+        <!-- LOGO -->
+        <a href="/" class="nav-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia">
+            <div class="logo-text">
+                <span class="logo-name">Dr. Dhvani Patalia</span>
+                <span class="logo-sub">Physio-Rehab</span>
+            </div>
+        </a>
+
+        <!-- HAMBURGER -->
+        <button class="hamburger" onclick="toggleNav()">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- LINKS -->
+        <ul class="nav-links" id="navLinks">
+            <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
+            <li><a href="/about" class="{% if request.path == '/about' %}active{% endif %}">About</a></li>
+            <li><a href="/services" class="{% if request.path == '/services' %}active{% endif %}">Services</a></li>
+            <li><a href="/blog" class="{% if request.path == '/blog' %}active{% endif %}">Blog</a></li>
+            <li><a href="/contact" class="{% if request.path == '/contact' %}active{% endif %}">Contact</a></li>
+        </ul>
+
+        <!-- AUTH BUTTONS -->
+        <div class="nav-auth">
+            {% if user.is_authenticated %}
+                {% if user.is_superuser %}
+                <a href="/admin-dashboard" class="btn-dashboard">⚙️ Admin Panel</a>
+                {% elif user.is_staff %}
+                <a href="/staff-dashboard" class="btn-dashboard">👨‍⚕️ Staff Panel</a>
+                {% else %}
+                <a href="/client-dashboard" class="btn-dashboard">👤 My Dashboard</a>
+                {% endif %}
+                <a href="/logout" class="btn-logout">Logout</a>
+            {% else %}
+                <a href="/login" class="btn-login">Login</a>
+                <a href="/register" class="btn-register">Register</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<style>
+.main-navbar {
+    background: #1a1a1a;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+}
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+    gap: 20px;
+}
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+.nav-logo img {
+    height: 48px;
+    width: auto;
+    border-radius: 8px;
+    border: 2px solid #F5C518;
+}
+.logo-text {
+    display: flex;
+    flex-direction: column;
+}
+.logo-name {
+    color: #F5C518;
+    font-size: 0.95em;
+    font-weight: 800;
+    line-height: 1.2;
+    font-family: 'Segoe UI', sans-serif;
+}
+.logo-sub {
+    color: #aaa;
+    font-size: 0.72em;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.nav-links {
+    display: flex;
+    list-style: none;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+}
+.nav-links a {
+    color: #ccc;
+    text-decoration: none;
+    font-size: 0.9em;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 8px;
+    transition: all 0.3s;
+    font-family: 'Segoe UI', sans-serif;
+}
+.nav-links a:hover,
+.nav-links a.active {
+    color: #F5C518;
+    background: rgba(245,197,24,0.1);
+}
+.nav-auth {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.btn-login {
+    color: #E0E0E0;
+    text-decoration: none;
+    font-size: 0.88em;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    transition: all 0.3s;
+}
+.btn-login:hover { border-color: #F5C518; color: #F5C518; }
+.btn-register {
+    background: #F5C518;
+    color: #2C2C2C;
+    text-decoration: none;
+    font-size: 0.88em;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+.btn-register:hover { background: #e6b800; transform: translateY(-1px); }
+.btn-dashboard {
+    background: #F5C518;
+    color: #2C2C2C;
+    text-decoration: none;
+    font-size: 0.85em;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+.btn-dashboard:hover { background: #e6b800; }
+.btn-logout {
+    color: #ff6b6b;
+    text-decoration: none;
+    font-size: 0.85em;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(220,53,69,0.3);
+    transition: all 0.3s;
+}
+.btn-logout:hover { background: rgba(220,53,69,0.15); }
+.hamburger {
+    display: none;
+    background: none;
+    border: none;
+    color: #F5C518;
+    font-size: 1.4em;
+    cursor: pointer;
+}
+@media (max-width: 768px) {
+    .hamburger { display: block; }
+    .nav-links {
+        display: none;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        right: 0;
+        background: #1a1a1a;
+        flex-direction: column;
+        padding: 15px;
+        gap: 5px;
+        border-top: 1px solid #333;
+    }
+    .nav-links.open { display: flex; }
+    .logo-text { display: none; }
+}
+</style>
+
+<script>
+function toggleNav() {
+    document.getElementById('navLinks').classList.toggle('open');
+}
+</script>

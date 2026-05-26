@@ -1,0 +1,195 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Services - Dr. Dhvani Patalia Physio Rehab</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #fff; }
+        .page-hero { background: linear-gradient(135deg, #1a1a1a, #2C2C2C); padding: 70px 25px; text-align: center; }
+        .page-hero h1 { color: white; font-size: 2.5em; font-weight: 800; margin-bottom: 10px; }
+        .page-hero h1 span { color: #F5C518; }
+        .page-hero p { color: #aaa; }
+        .breadcrumb { display: flex; justify-content: center; gap: 8px; margin-top: 15px; font-size: 0.85em; }
+        .breadcrumb a { color: #F5C518; text-decoration: none; }
+        .breadcrumb span { color: #666; }
+        section { padding: 70px 25px; }
+        .container { max-width: 1150px; margin: 0 auto; }
+        .section-title { text-align: center; margin-bottom: 50px; }
+        .section-title h2 { font-size: 2.2em; font-weight: 800; color: #2C2C2C; }
+        .section-title h2 span { color: #F5C518; }
+        .section-title p { color: #666; margin-top: 10px; }
+        .services-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 25px; }
+        .service-card { background: white; border: 2px solid #eee; border-radius: 18px; padding: 35px 25px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .service-card:hover { border-color: #F5C518; transform: translateY(-5px); box-shadow: 0 12px 30px rgba(245,197,24,0.2); }
+        .service-icon { width: 70px; height: 70px; background: linear-gradient(135deg, #F5C518, #e6b800); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .service-icon i { font-size: 1.8em; color: #2C2C2C; }
+        .service-card h3 { font-size: 1.1em; font-weight: 700; color: #2C2C2C; margin-bottom: 12px; }
+        .service-card p { color: #777; font-size: 0.88em; line-height: 1.7; margin-bottom: 15px; }
+        .service-features { list-style: none; margin-bottom: 20px; }
+        .service-features li { display: flex; align-items: center; gap: 8px; font-size: 0.83em; color: #555; margin-bottom: 6px; }
+        .service-features li i { color: #F5C518; font-size: 0.8em; }
+        .book-btn { display: inline-block; background: #F5C518; color: #2C2C2C; padding: 9px 20px; border-radius: 20px; font-size: 0.85em; font-weight: 700; text-decoration: none; transition: all 0.3s; }
+        .book-btn:hover { background: #e6b800; }
+        .process-section { background: #f9f9f9; }
+        .process-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
+        .process-item { text-align: center; padding: 20px; }
+        .process-num { width: 55px; height: 55px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; font-weight: 900; color: #2C2C2C; margin: 0 auto 15px; }
+        .process-item h4 { color: #2C2C2C; font-weight: 700; margin-bottom: 8px; }
+        .process-item p { color: #888; font-size: 0.85em; line-height: 1.6; }
+        .cta-box { background: linear-gradient(135deg, #2C2C2C, #1a1a1a); border-radius: 20px; padding: 50px; text-align: center; }
+        .cta-box h2 { color: white; font-size: 2em; font-weight: 800; margin-bottom: 10px; }
+        .cta-box h2 span { color: #F5C518; }
+        .cta-box p { color: #aaa; margin-bottom: 25px; }
+        .btn-gold { background: #F5C518; color: #2C2C2C; padding: 14px 35px; border-radius: 30px; font-size: 1em; font-weight: 700; text-decoration: none; display: inline-block; transition: all 0.3s; }
+        .btn-gold:hover { background: #e6b800; transform: translateY(-2px); }
+        @media (max-width: 768px) {
+            .services-grid, .process-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+{% include 'navbar.html' %}
+
+<div class="page-hero">
+    <h1>Our <span>Services</span></h1>
+    <p>Comprehensive physiotherapy treatments tailored for your recovery</p>
+    <div class="breadcrumb">
+        <a href="/">Home</a><span>›</span>
+        <span style="color:white;">Services</span>
+    </div>
+</div>
+
+<section>
+    <div class="container">
+        <div class="section-title">
+            <h2>What We <span>Offer</span></h2>
+            <p>Expert physiotherapy services for all conditions</p>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-icon"><i class="fas fa-bone"></i></div>
+                <h3>Orthopedic Therapy</h3>
+                <p>Comprehensive treatment for bones, joints, muscles and ligament injuries using modern techniques.</p>
+                <ul class="service-features">
+                    <li><i class="fas fa-check"></i> Joint pain & arthritis</li>
+                    <li><i class="fas fa-check"></i> Post-surgery rehabilitation</li>
+                    <li><i class="fas fa-check"></i> Back & neck pain</li>
+                    <li><i class="fas fa-check"></i> Fracture recovery</li>
+                </ul>
+                <a href="/book" class="book-btn">📅 Book Now</a>
+            </div>
+            <div class="service-card">
+                <div class="service-icon"><i class="fas fa-brain"></i></div>
+                <h3>Neurological Rehab</h3>
+                <p>Specialized recovery programs for stroke, paralysis, and various nerve conditions.</p>
+                <ul class="service-features">
+                    <li><i class="fas fa-check"></i> Stroke rehabilitation</li>
+                    <li><i class="fas fa-check"></i> Paralysis treatment</li>
+                    <li><i class="fas fa-check"></i> Parkinson's disease</li>
+                    <li><i class="fas fa-check"></i> Balance disorders</li>
+                </ul>
+                <a href="/book" class="book-btn">📅 Book Now</a>
+            </div>
+            <div class="service-card">
+                <div class="service-icon"><i class="fas fa-heartbeat"></i></div>
+                <h3>Sports Rehabilitation</h3>
+                <p>Get back in the game faster with expert sports injury treatment and performance enhancement.</p>
+                <ul class="service-features">
+                    <li><i class="fas fa-check"></i> Sports injuries</li>
+                    <li><i class="fas fa-check"></i> Ligament tears & sprains</li>
+                    <li><i class="fas fa-check"></i> Performance training</li>
+                    <li><i class="fas fa-check"></i> Injury prevention</li>
+                </ul>
+                <a href="/book" class="book-btn">📅 Book Now</a>
+            </div>
+            <div class="service-card">
+                <div class="service-icon"><i class="fas fa-baby"></i></div>
+                <h3>Pediatric Therapy</h3>
+                <p>Gentle and effective physiotherapy care designed specifically for children.</p>
+                <ul class="service-features">
+                    <li><i class="fas fa-check"></i> Developmental delays</li>
+                    <li><i class="fas fa-check"></i> Cerebral palsy</li>
+                    <li><i class="fas fa-check"></i> Postural correction</li>
+                    <li><i class="fas fa-check"></i> Childhood injuries</li>
+                </ul>
+                <a href="/book" class="book-btn">📅 Book Now</a>
+            </div>
+            <div class="service-card">
+                <div class="service-icon"><i class="fas fa-female"></i></div>
+                <h3>Women's Health</h3>
+                <p>Specialized physiotherapy for women's unique health needs at every stage of life.</p>
+                <ul class="service-features">
+                    <li><i class="fas fa-check"></i> Pre & post natal care</li>
+                    <li><i class="fas fa-check"></i> Pelvic floor therapy</li>
+                    <li><i class="fas fa-check"></i> Diastasis recti</li>
+                    <li><i class="fas fa-check"></i> Osteoporosis</li>
+                </ul>
+                <a href="/book" class="book-btn">📅 Book Now</a>
+            </div>
+            <div class="service-card">
+                <div class="service-icon"><i class="fas fa-home"></i></div>
+                <h3>Home Visits</h3>
+                <p>Professional physiotherapy treatment delivered at your doorstep for maximum convenience.</p>
+                <ul class="service-features">
+                    <li><i class="fas fa-check"></i> Elderly patients</li>
+                    <li><i class="fas fa-check"></i> Post-surgery care</li>
+                    <li><i class="fas fa-check"></i> Rajkot city coverage</li>
+                    <li><i class="fas fa-check"></i> Flexible timing</li>
+                </ul>
+                <a href="/book" class="book-btn">📅 Book Now</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- PROCESS -->
+<section class="process-section">
+    <div class="container">
+        <div class="section-title">
+            <h2>How It <span>Works</span></h2>
+            <p>Simple 4-step process to start your recovery</p>
+        </div>
+        <div class="process-grid">
+            <div class="process-item">
+                <div class="process-num">1</div>
+                <h4>Book Appointment</h4>
+                <p>Register online and book your preferred time slot easily</p>
+            </div>
+            <div class="process-item">
+                <div class="process-num">2</div>
+                <h4>Initial Assessment</h4>
+                <p>Dr. Dhvani will assess your condition and create a treatment plan</p>
+            </div>
+            <div class="process-item">
+                <div class="process-num">3</div>
+                <h4>Treatment Sessions</h4>
+                <p>Attend regular sessions following your personalized plan</p>
+            </div>
+            <div class="process-item">
+                <div class="process-num">4</div>
+                <h4>Full Recovery</h4>
+                <p>Achieve your recovery goals and return to normal activities</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section>
+    <div class="container">
+        <div class="cta-box">
+            <h2>Ready to Start Your <span>Recovery?</span></h2>
+            <p>Book your first appointment today and take the first step towards a pain-free life</p>
+            <a href="/book" class="btn-gold">📅 Book Appointment Now</a>
+        </div>
+    </div>
+</section>
+
+{% include 'footer.html' %}
+</body>
+</html>

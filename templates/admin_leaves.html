@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Leave Requests - Admin</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; display: flex; min-height: 100vh; }
+.sidebar {
+    width: 260px;
+    background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
+    min-height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 100;
+    overflow-y: auto;    /* ← THIS enables scroll */
+    scrollbar-width: thin;
+    scrollbar-color: #F5C518 #2C2C2C;
+}
+        .sidebar-logo { padding: 22px 20px; border-bottom: 1px solid rgba(245,197,24,0.2); text-align: center; }
+        .sidebar-logo img { width: 130px; border-radius: 10px; }
+        .sidebar-logo p { color: #F5C518; font-size: 0.75em; margin-top: 8px; font-weight: 600; }
+        .sidebar-user { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 42px; height: 42px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2C2C2C; }
+        .user-info h4 { color: white; font-size: 0.88em; }
+        .user-info span { color: #F5C518; font-size: 0.72em; }
+        .nav-section { padding: 12px 22px 5px; color: #555; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 22px; color: #bbb; text-decoration: none; font-size: 0.9em; transition: all 0.3s; border-left: 3px solid transparent; }
+        .nav-item:hover, .nav-item.active { background: rgba(245,197,24,0.1); color: #F5C518; border-left-color: #F5C518; }
+        .nav-item i { width: 18px; text-align: center; }
+        .logout-btn { margin: 15px; display: flex; align-items: center; gap: 10px; padding: 11px 18px; background: rgba(220,53,69,0.15); color: #ff6b6b; border-radius: 10px; text-decoration: none; font-size: 0.86em; }
+        .main-content { margin-left: 260px; flex: 1; }
+        .topbar { background: white; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 50; }
+        .topbar h1 { font-size: 1.2em; color: #2C2C2C; font-weight: 700; }
+        .pending-badge { background: #fff3cd; color: #856404; padding: 6px 15px; border-radius: 20px; font-size: 0.82em; font-weight: 700; }
+        .dashboard-body { padding: 25px; }
+        .alert-success { background: #d4edda; border: 1px solid #28a745; color: #155724; padding: 12px 18px; border-radius: 10px; margin-bottom: 18px; font-size: 0.9em; }
+
+        /* STAT ROW */
+        .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 15px; margin-bottom: 22px; }
+        .stat-card { background: white; border-radius: 14px; padding: 18px 20px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 14px; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2em; }
+        .yellow { background: rgba(245,197,24,0.15); color: #F5C518; }
+        .green { background: rgba(40,167,69,0.15); color: #28a745; }
+        .red { background: rgba(220,53,69,0.15); color: #dc3545; }
+        .stat-info h3 { font-size: 1.5em; font-weight: 800; color: #2C2C2C; }
+        .stat-info p { color: #888; font-size: 0.8em; }
+
+        /* LEAVE CARDS */
+        .leaves-list { display: flex; flex-direction: column; gap: 14px; }
+        .leave-card { background: white; border-radius: 14px; padding: 20px 24px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 18px; border-left: 4px solid #eee; }
+        .leave-card.pending { border-left-color: #F5C518; }
+        .leave-card.approved { border-left-color: #28a745; }
+        .leave-card.rejected { border-left-color: #dc3545; }
+        .staff-avatar { width: 46px; height: 46px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2C2C2C; font-size: 1em; flex-shrink: 0; }
+        .leave-info { flex: 1; }
+        .leave-info h3 { font-size: 0.95em; font-weight: 700; color: #2C2C2C; margin-bottom: 4px; }
+        .leave-meta { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 6px; }
+        .leave-meta span { font-size: 0.8em; color: #888; display: flex; align-items: center; gap: 4px; }
+        .leave-meta i { color: #F5C518; }
+        .leave-reason { font-size: 0.82em; color: #666; margin-top: 6px; font-style: italic; background: #f9f9f9; padding: 8px 12px; border-radius: 8px; }
+        .badge { padding: 4px 12px; border-radius: 15px; font-size: 0.75em; font-weight: 700; }
+        .badge-pending { background: #fff3cd; color: #856404; }
+        .badge-approved { background: #d4edda; color: #155724; }
+        .badge-rejected { background: #f8d7da; color: #721c24; }
+        .action-btns { display: flex; gap: 6px; flex-direction: column; align-items: flex-end; }
+        .btn-approve { background: #d4edda; color: #155724; border: none; padding: 7px 14px; border-radius: 8px; font-size: 0.8em; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.3s; }
+        .btn-approve:hover { background: #28a745; color: white; }
+        .btn-reject { background: #f8d7da; color: #721c24; border: none; padding: 7px 14px; border-radius: 8px; font-size: 0.8em; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.3s; }
+        .btn-reject:hover { background: #dc3545; color: white; }
+        .empty-state { text-align: center; padding: 60px; background: white; border-radius: 18px; color: #aaa; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
+        .empty-state i { font-size: 3em; color: #F5C518; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+        <p>⚙️ ADMIN PANEL</p>
+    </div>
+    <div class="sidebar-user">
+        <div class="user-avatar">AD</div>
+        <div class="user-info"><h4>{{ user.username }}</h4><span>🔴 Super Admin</span></div>
+    </div>
+    <nav>
+        <div class="nav-section">Overview</div>
+        <a href="/admin-dashboard" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <div class="nav-section">Management</div>
+        <a href="/admin-patients" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+        <a href="/admin-staff" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+        <a href="/admin-appointments" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
+        <a href="/admin-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+        <div class="nav-section">Staff Tools</div>
+        <a href="/admin-leaves" class="nav-item active"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
+        <a href="/admin-attendance" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+        <a href="/admin-tasks" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+        <a href="/admin-session-notes" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
+        <div class="nav-section">Communication</div>
+        <a href="/admin-chat" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+        <div class="nav-section">System</div>
+        <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+    </nav>
+    <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</aside>
+
+<div class="main-content">
+    <div class="topbar">
+        <h1>📅 Leave Requests</h1>
+        {% if pending > 0 %}
+        <span class="pending-badge">⏳ {{ pending }} Pending</span>
+        {% endif %}
+    </div>
+    <div class="dashboard-body">
+
+        {% if messages %}{% for message in messages %}
+        <div class="alert-success">{{ message }}</div>
+        {% endfor %}{% endif %}
+
+        <div class="stat-row">
+            <div class="stat-card">
+                <div class="stat-icon yellow"><i class="fas fa-clock"></i></div>
+                <div class="stat-info"><h3>{{ pending }}</h3><p>Pending</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-check"></i></div>
+                <div class="stat-info"><h3>{{ leaves|length }}</h3><p>Total Requests</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red"><i class="fas fa-times"></i></div>
+                <div class="stat-info">
+                    <h3>{{ leaves|length|add:"-"|add:pending }}</h3>
+                    <p>Processed</p>
+                </div>
+            </div>
+        </div>
+
+        {% if leaves %}
+        <div class="leaves-list">
+            {% for leave in leaves %}
+            <div class="leave-card {{ leave.status }}">
+                <div class="staff-avatar">
+                    {{ leave.staff.first_name|first|upper }}{{ leave.staff.last_name|first|upper }}
+                </div>
+                <div class="leave-info">
+                    <h3>{{ leave.staff.get_full_name|default:leave.staff.username }}</h3>
+                    <div class="leave-meta">
+                        <span><i class="fas fa-tag"></i> {{ leave.get_leave_type_display }}</span>
+                        <span><i class="fas fa-calendar"></i> {{ leave.from_date|date:"d M Y" }} → {{ leave.to_date|date:"d M Y" }}</span>
+                        <span><i class="fas fa-clock"></i> Applied: {{ leave.applied_on|date:"d M Y" }}</span>
+                    </div>
+                    <div class="leave-reason">💬 {{ leave.reason }}</div>
+                </div>
+                <div class="action-btns">
+                    <span class="badge badge-{{ leave.status }}">
+                        {% if leave.status == 'pending' %}⏳ Pending
+                        {% elif leave.status == 'approved' %}✅ Approved
+                        {% else %}❌ Rejected{% endif %}
+                    </span>
+                    {% if leave.status == 'pending' %}
+                    <a href="/update-leave/{{ leave.id }}/approved" class="btn-approve">✅ Approve</a>
+                    <a href="/update-leave/{{ leave.id }}/rejected" class="btn-reject">❌ Reject</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-calendar-check"></i>
+            <p>No leave requests yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>
