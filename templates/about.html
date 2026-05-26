@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - Dr. Dhvani Patalia Physio Rehab</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #fff; }
+        .page-hero { background: linear-gradient(135deg, #1a1a1a, #2C2C2C); padding: 70px 25px; text-align: center; }
+        .page-hero h1 { color: white; font-size: 2.5em; font-weight: 800; margin-bottom: 10px; }
+        .page-hero h1 span { color: #F5C518; }
+        .page-hero p { color: #aaa; font-size: 1em; }
+        .breadcrumb { display: flex; justify-content: center; gap: 8px; margin-top: 15px; font-size: 0.85em; }
+        .breadcrumb a { color: #F5C518; text-decoration: none; }
+        .breadcrumb span { color: #666; }
+        section { padding: 70px 25px; }
+        .container { max-width: 1150px; margin: 0 auto; }
+        .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+        .about-img { position: relative; }
+        .about-img-box { background: linear-gradient(135deg, #F5C518, #e6b800); border-radius: 20px; padding: 30px; text-align: center; }
+        .about-img-box img { width: 100%; max-width: 300px; border-radius: 15px; border: 4px solid white; }
+        .exp-badge { position: absolute; bottom: -10px; right: 20px; background: #2C2C2C; color: #F5C518; padding: 15px 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .exp-badge h3 { font-size: 2em; font-weight: 900; line-height: 1; }
+        .exp-badge p { font-size: 0.75em; color: #E0E0E0; margin-top: 3px; }
+        .about-content h2 { font-size: 2em; font-weight: 800; color: #2C2C2C; margin-bottom: 15px; }
+        .about-content h2 span { color: #F5C518; }
+        .about-content p { color: #666; line-height: 1.8; margin-bottom: 15px; font-size: 0.95em; }
+        .about-features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+        .feature-item { display: flex; align-items: center; gap: 10px; font-size: 0.88em; color: #444; }
+        .feature-item i { color: #F5C518; font-size: 1em; }
+        .section-title { text-align: center; margin-bottom: 50px; }
+        .section-title h2 { font-size: 2.2em; font-weight: 800; color: #2C2C2C; }
+        .section-title h2 span { color: #F5C518; }
+        .section-title p { color: #666; margin-top: 10px; }
+        .values-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
+        .value-card { background: white; border: 2px solid #eee; border-radius: 15px; padding: 25px; text-align: center; transition: all 0.3s; }
+        .value-card:hover { border-color: #F5C518; transform: translateY(-5px); }
+        .value-icon { width: 60px; height: 60px; background: rgba(245,197,24,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; }
+        .value-icon i { font-size: 1.5em; color: #F5C518; }
+        .value-card h3 { font-size: 0.95em; font-weight: 700; color: #2C2C2C; margin-bottom: 8px; }
+        .value-card p { color: #888; font-size: 0.83em; line-height: 1.6; }
+        .bg-gray { background: #f9f9f9; }
+        .qual-list { display: flex; flex-direction: column; gap: 15px; }
+        .qual-item { display: flex; gap: 15px; align-items: flex-start; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .qual-icon { width: 45px; height: 45px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .qual-icon i { color: #2C2C2C; font-size: 1.1em; }
+        .qual-info h4 { color: #2C2C2C; font-weight: 700; margin-bottom: 4px; }
+        .qual-info p { color: #888; font-size: 0.85em; }
+        @media (max-width: 768px) {
+            .about-grid, .values-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+{% include 'navbar.html' %}
+
+<!-- PAGE HERO -->
+<div class="page-hero">
+    <h1>About <span>Us</span></h1>
+    <p>Learn more about Dr. Dhvani Patalia and our physiotherapy clinic</p>
+    <div class="breadcrumb">
+        <a href="/">Home</a>
+        <span>›</span>
+        <span style="color:white;">About Us</span>
+    </div>
+</div>
+
+<!-- ABOUT DOCTOR -->
+<section>
+    <div class="container">
+        <div class="about-grid">
+            <div class="about-img">
+                <div class="about-img-box">
+                    <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia">
+                    <h3 style="color:#2C2C2C; margin-top:15px; font-size:1.2em;">Dr. Dhvani Patalia</h3>
+                    <p style="color:#2C2C2C; font-size:0.85em;">MPT (Musculoskeletal & Sports)</p>
+                </div>
+                <div class="exp-badge">
+                    <h3>5+</h3>
+                    <p>Years Exp.</p>
+                </div>
+            </div>
+            <div class="about-content">
+                <h2>Expert <span>Physiotherapist</span><br>in Rajkot</h2>
+                <p>Dr. Dhvani Patalia is a highly qualified physiotherapist with over 5 years of experience in treating musculoskeletal, neurological, and sports-related conditions.</p>
+                <p>She completed her MPT in Musculoskeletal & Sports Physiotherapy and has helped hundreds of patients recover from pain, injuries, and disabilities through evidence-based treatments.</p>
+                <p>Her approach combines modern physiotherapy techniques with personalized care plans to ensure the fastest and most effective recovery for each patient.</p>
+                <div class="about-features">
+                    <div class="feature-item"><i class="fas fa-check-circle"></i> MPT Qualified</div>
+                    <div class="feature-item"><i class="fas fa-check-circle"></i> 500+ Patients Treated</div>
+                    <div class="feature-item"><i class="fas fa-check-circle"></i> Modern Equipment</div>
+                    <div class="feature-item"><i class="fas fa-check-circle"></i> Home Visit Available</div>
+                    <div class="feature-item"><i class="fas fa-check-circle"></i> Online Consultation</div>
+                    <div class="feature-item"><i class="fas fa-check-circle"></i> Affordable Pricing</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- VALUES -->
+<section class="bg-gray">
+    <div class="container">
+        <div class="section-title">
+            <h2>Our <span>Values</span></h2>
+            <p>What drives us to provide the best care</p>
+        </div>
+        <div class="values-grid">
+            <div class="value-card">
+                <div class="value-icon"><i class="fas fa-heart"></i></div>
+                <h3>Patient First</h3>
+                <p>Every decision we make is centered around our patient's wellbeing and comfort.</p>
+            </div>
+            <div class="value-card">
+                <div class="value-icon"><i class="fas fa-microscope"></i></div>
+                <h3>Evidence Based</h3>
+                <p>We use only proven, research-backed physiotherapy techniques and treatments.</p>
+            </div>
+            <div class="value-card">
+                <div class="value-icon"><i class="fas fa-hands-helping"></i></div>
+                <h3>Compassionate</h3>
+                <p>We treat every patient with empathy, kindness and genuine concern.</p>
+            </div>
+            <div class="value-card">
+                <div class="value-icon"><i class="fas fa-star"></i></div>
+                <h3>Excellence</h3>
+                <p>We strive for excellence in every treatment session and patient interaction.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- QUALIFICATIONS -->
+<section>
+    <div class="container">
+        <div class="section-title">
+            <h2>Qualifications & <span>Achievements</span></h2>
+            <p>Academic and professional credentials</p>
+        </div>
+        <div class="qual-list">
+            <div class="qual-item">
+                <div class="qual-icon"><i class="fas fa-graduation-cap"></i></div>
+                <div class="qual-info">
+                    <h4>MPT — Musculoskeletal & Sports Physiotherapy</h4>
+                    <p>Post Graduate Degree in Physiotherapy with specialization in sports and musculoskeletal conditions</p>
+                </div>
+            </div>
+            <div class="qual-item">
+                <div class="qual-icon"><i class="fas fa-graduation-cap"></i></div>
+                <div class="qual-info">
+                    <h4>BPT — Bachelor of Physiotherapy</h4>
+                    <p>Undergraduate degree in physiotherapy with comprehensive clinical training</p>
+                </div>
+            </div>
+            <div class="qual-item">
+                <div class="qual-icon"><i class="fas fa-certificate"></i></div>
+                <div class="qual-info">
+                    <h4>Certified in Dry Needling & Manual Therapy</h4>
+                    <p>Advanced certification in specialized physiotherapy techniques</p>
+                </div>
+            </div>
+            <div class="qual-item">
+                <div class="qual-icon"><i class="fas fa-award"></i></div>
+                <div class="qual-info">
+                    <h4>500+ Successful Patient Recoveries</h4>
+                    <p>Proven track record of helping patients recover from complex conditions</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% include 'footer.html' %}
+</body>
+</html>

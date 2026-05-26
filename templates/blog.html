@@ -1,0 +1,175 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog - Dr. Dhvani Patalia Physio Rehab</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #fff; }
+        .page-hero { background: linear-gradient(135deg, #1a1a1a, #2C2C2C); padding: 70px 25px; text-align: center; }
+        .page-hero h1 { color: white; font-size: 2.5em; font-weight: 800; margin-bottom: 10px; }
+        .page-hero h1 span { color: #F5C518; }
+        .page-hero p { color: #aaa; }
+        .breadcrumb { display: flex; justify-content: center; gap: 8px; margin-top: 15px; font-size: 0.85em; }
+        .breadcrumb a { color: #F5C518; text-decoration: none; }
+        .breadcrumb span { color: #666; }
+        section { padding: 70px 25px; }
+        .container { max-width: 1150px; margin: 0 auto; }
+        .section-title { text-align: center; margin-bottom: 50px; }
+        .section-title h2 { font-size: 2.2em; font-weight: 800; color: #2C2C2C; }
+        .section-title h2 span { color: #F5C518; }
+        .blog-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 25px; }
+        .blog-card { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.07); transition: all 0.3s; }
+        .blog-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+        .blog-img { background: linear-gradient(135deg, #2C2C2C, #1a1a1a); height: 180px; display: flex; align-items: center; justify-content: center; font-size: 3em; position: relative; }
+        .blog-cat { position: absolute; top: 15px; left: 15px; background: #F5C518; color: #2C2C2C; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; }
+        .blog-body { padding: 22px; }
+        .blog-meta { display: flex; gap: 15px; margin-bottom: 12px; }
+        .blog-meta span { font-size: 0.78em; color: #aaa; display: flex; align-items: center; gap: 5px; }
+        .blog-meta i { color: #F5C518; }
+        .blog-body h3 { font-size: 1em; font-weight: 700; color: #2C2C2C; margin-bottom: 10px; line-height: 1.5; }
+        .blog-body p { color: #777; font-size: 0.85em; line-height: 1.7; margin-bottom: 15px; }
+        .read-more { color: #F5C518; font-size: 0.85em; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 5px; }
+        .read-more:hover { gap: 10px; }
+        .tips-section { background: #f9f9f9; }
+        .tips-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 20px; }
+        .tip-card { background: white; border-radius: 14px; padding: 22px; box-shadow: 0 3px 12px rgba(0,0,0,0.05); display: flex; gap: 15px; align-items: flex-start; }
+        .tip-icon { width: 48px; height: 48px; background: rgba(245,197,24,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .tip-icon i { color: #F5C518; font-size: 1.2em; }
+        .tip-content h4 { color: #2C2C2C; font-weight: 700; margin-bottom: 6px; font-size: 0.95em; }
+        .tip-content p { color: #777; font-size: 0.85em; line-height: 1.6; }
+        @media (max-width: 768px) {
+            .blog-grid, .tips-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+{% include 'navbar.html' %}
+
+<div class="page-hero">
+    <h1>Our <span>Blog</span></h1>
+    <p>Health tips, recovery guides and physiotherapy insights</p>
+    <div class="breadcrumb">
+        <a href="/">Home</a><span>›</span>
+        <span style="color:white;">Blog</span>
+    </div>
+</div>
+
+<section>
+    <div class="container">
+        <div class="section-title">
+            <h2>Latest <span>Articles</span></h2>
+            <p>Expert health tips and physiotherapy guides from Dr. Dhvani Patalia</p>
+        </div>
+        <div class="blog-grid">
+            <div class="blog-card">
+                <div class="blog-img">🦴<span class="blog-cat">Orthopedic</span></div>
+                <div class="blog-body">
+                    <div class="blog-meta">
+                        <span><i class="fas fa-calendar"></i> 15 May 2024</span>
+                        <span><i class="fas fa-clock"></i> 5 min read</span>
+                    </div>
+                    <h3>5 Exercises to Relieve Back Pain at Home</h3>
+                    <p>Simple and effective exercises you can do at home to reduce back pain and strengthen your core muscles...</p>
+                    <a href="#" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="blog-card">
+                <div class="blog-img">🏃<span class="blog-cat">Sports</span></div>
+                <div class="blog-body">
+                    <div class="blog-meta">
+                        <span><i class="fas fa-calendar"></i> 10 May 2024</span>
+                        <span><i class="fas fa-clock"></i> 4 min read</span>
+                    </div>
+                    <h3>How to Prevent Sports Injuries During Training</h3>
+                    <p>Essential tips every athlete should know to prevent common sports injuries and train safely...</p>
+                    <a href="#" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="blog-card">
+                <div class="blog-img">🧠<span class="blog-cat">Neuro</span></div>
+                <div class="blog-body">
+                    <div class="blog-meta">
+                        <span><i class="fas fa-calendar"></i> 5 May 2024</span>
+                        <span><i class="fas fa-clock"></i> 6 min read</span>
+                    </div>
+                    <h3>Stroke Recovery: What to Expect in Physiotherapy</h3>
+                    <p>A comprehensive guide for stroke survivors and their families on the physiotherapy recovery journey...</p>
+                    <a href="#" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="blog-card">
+                <div class="blog-img">👶<span class="blog-cat">Pediatric</span></div>
+                <div class="blog-body">
+                    <div class="blog-meta">
+                        <span><i class="fas fa-calendar"></i> 1 May 2024</span>
+                        <span><i class="fas fa-clock"></i> 4 min read</span>
+                    </div>
+                    <h3>Signs Your Child May Need Physiotherapy</h3>
+                    <p>Early signs parents should watch for that indicate their child may benefit from physiotherapy...</p>
+                    <a href="#" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="blog-card">
+                <div class="blog-img">👩<span class="blog-cat">Women</span></div>
+                <div class="blog-body">
+                    <div class="blog-meta">
+                        <span><i class="fas fa-calendar"></i> 25 Apr 2024</span>
+                        <span><i class="fas fa-clock"></i> 5 min read</span>
+                    </div>
+                    <h3>Physiotherapy During Pregnancy: Benefits & Safety</h3>
+                    <p>How physiotherapy can help during pregnancy to reduce pain and prepare for a healthy delivery...</p>
+                    <a href="#" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="blog-card">
+                <div class="blog-img">💪<span class="blog-cat">General</span></div>
+                <div class="blog-body">
+                    <div class="blog-meta">
+                        <span><i class="fas fa-calendar"></i> 20 Apr 2024</span>
+                        <span><i class="fas fa-clock"></i> 3 min read</span>
+                    </div>
+                    <h3>Importance of Posture Correction in Daily Life</h3>
+                    <p>Why good posture matters and simple tips to improve your posture at work and home...</p>
+                    <a href="#" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- HEALTH TIPS -->
+<section class="tips-section">
+    <div class="container">
+        <div class="section-title">
+            <h2>Quick Health <span>Tips</span></h2>
+            <p>Simple tips from Dr. Dhvani for a healthier life</p>
+        </div>
+        <div class="tips-grid">
+            <div class="tip-card">
+                <div class="tip-icon"><i class="fas fa-walking"></i></div>
+                <div class="tip-content"><h4>Walk 30 Minutes Daily</h4><p>Regular walking strengthens joints, improves circulation and keeps your musculoskeletal system healthy.</p></div>
+            </div>
+            <div class="tip-card">
+                <div class="tip-icon"><i class="fas fa-tint"></i></div>
+                <div class="tip-content"><h4>Stay Hydrated</h4><p>Drinking 8 glasses of water daily helps muscles recover faster and keeps joints lubricated.</p></div>
+            </div>
+            <div class="tip-card">
+                <div class="tip-icon"><i class="fas fa-bed"></i></div>
+                <div class="tip-content"><h4>Sleep on Right Mattress</h4><p>A medium-firm mattress supports your spine properly and prevents back pain during sleep.</p></div>
+            </div>
+            <div class="tip-card">
+                <div class="tip-icon"><i class="fas fa-chair"></i></div>
+                <div class="tip-content"><h4>Ergonomic Workspace</h4><p>Set up your desk at the right height to prevent neck and shoulder pain from prolonged sitting.</p></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% include 'footer.html' %}
+</body>
+</html>

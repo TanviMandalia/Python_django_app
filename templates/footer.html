@@ -1,0 +1,109 @@
+{% load static %}
+<footer class="main-footer">
+    <div class="footer-top">
+        <div class="footer-container">
+
+            <!-- BRAND -->
+            <div class="footer-brand">
+                <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+                <h3>Dr. Dhvani Patalia</h3>
+                <p>Physio-Rehab</p>
+                <p class="footer-desc">Expert physiotherapy and rehabilitation services in Rajkot, Gujarat. Your recovery is our priority.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-whatsapp"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+
+            <!-- QUICK LINKS -->
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="/"><i class="fas fa-chevron-right"></i> Home</a></li>
+                    <li><a href="/about"><i class="fas fa-chevron-right"></i> About Us</a></li>
+                    <li><a href="/services"><i class="fas fa-chevron-right"></i> Services</a></li>
+                    <li><a href="/blog"><i class="fas fa-chevron-right"></i> Blog</a></li>
+                    <li><a href="/contact"><i class="fas fa-chevron-right"></i> Contact</a></li>
+                </ul>
+            </div>
+
+            <!-- SERVICES -->
+            <div class="footer-col">
+                <h4>Our Services</h4>
+                <ul>
+                    <li><a href="/services"><i class="fas fa-chevron-right"></i> Orthopedic Therapy</a></li>
+                    <li><a href="/services"><i class="fas fa-chevron-right"></i> Neurological Rehab</a></li>
+                    <li><a href="/services"><i class="fas fa-chevron-right"></i> Sports Rehabilitation</a></li>
+                    <li><a href="/services"><i class="fas fa-chevron-right"></i> Pediatric Therapy</a></li>
+                    <li><a href="/services"><i class="fas fa-chevron-right"></i> Women's Health</a></li>
+                    <li><a href="/services"><i class="fas fa-chevron-right"></i> Home Visits</a></li>
+                </ul>
+            </div>
+
+            <!-- CONTACT -->
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <div class="contact-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Rajkot, Gujarat, India</span>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-phone"></i>
+                    <span>+91 XXXXX XXXXX</span>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <span>dhvani@physioreab.com</span>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-clock"></i>
+                    <span>Mon–Sat: 9AM – 6PM</span>
+                </div>
+                <a href="/book" class="footer-book-btn">📅 Book Appointment</a>
+            </div>
+
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <div class="footer-container" style="flex-direction:row; justify-content:space-between; align-items:center; padding:15px 25px;">
+            <p>© 2024 Dr. Dhvani Patalia — Physio Rehab. All rights reserved.</p>
+            <div style="display:flex; gap:20px;">
+                <a href="/login">Staff Login</a>
+                <a href="/register">Patient Register</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<style>
+.main-footer { background: #1a1a1a; color: #E0E0E0; margin-top: 60px; }
+.footer-top { padding: 50px 25px; }
+.footer-container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr; gap: 40px; }
+.footer-brand img { height: 60px; border-radius: 10px; border: 2px solid #F5C518; margin-bottom: 12px; }
+.footer-brand h3 { color: #F5C518; font-size: 1.1em; font-weight: 700; margin-bottom: 3px; }
+.footer-brand p { color: #aaa; font-size: 0.8em; }
+.footer-desc { color: #888; font-size: 0.82em; line-height: 1.7; margin-top: 10px; margin-bottom: 15px; }
+.social-links { display: flex; gap: 10px; margin-top: 15px; }
+.social-links a { width: 36px; height: 36px; background: rgba(245,197,24,0.1); border: 1px solid rgba(245,197,24,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #F5C518; font-size: 0.9em; text-decoration: none; transition: all 0.3s; }
+.social-links a:hover { background: #F5C518; color: #2C2C2C; }
+.footer-col h4 { color: #F5C518; font-size: 0.95em; font-weight: 700; margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid rgba(245,197,24,0.2); }
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col ul li { margin-bottom: 10px; }
+.footer-col ul li a { color: #888; text-decoration: none; font-size: 0.85em; transition: all 0.3s; display: flex; align-items: center; gap: 8px; }
+.footer-col ul li a i { color: #F5C518; font-size: 0.7em; }
+.footer-col ul li a:hover { color: #F5C518; padding-left: 5px; }
+.contact-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.contact-item i { color: #F5C518; margin-top: 3px; font-size: 0.88em; width: 14px; }
+.contact-item span { color: #888; font-size: 0.85em; line-height: 1.5; }
+.footer-book-btn { display: inline-block; background: #F5C518; color: #2C2C2C; padding: 10px 20px; border-radius: 25px; font-weight: 700; text-decoration: none; font-size: 0.85em; margin-top: 12px; transition: all 0.3s; }
+.footer-book-btn:hover { background: #e6b800; transform: translateY(-2px); }
+.footer-bottom { background: #111; border-top: 1px solid #333; }
+.footer-bottom p { color: #555; font-size: 0.82em; }
+.footer-bottom a { color: #666; text-decoration: none; font-size: 0.82em; transition: color 0.3s; }
+.footer-bottom a:hover { color: #F5C518; }
+@media (max-width: 768px) {
+    .footer-container { grid-template-columns: 1fr; }
+}
+</style>

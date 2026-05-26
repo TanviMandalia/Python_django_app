@@ -638,3 +638,23 @@ def add_session_note(request):
         'user': request.user,
         'patients': patients,
     })
+    
+# ─── PUBLIC PAGE VIEWS ───────────────────────────────────────
+
+def about(request):
+    return render(request, 'about.html')
+
+
+def services(request):
+    return render(request, 'services.html')
+
+
+def contact(request):
+    if request.method == 'POST':
+        messages.success(request, '✅ Message sent! We will contact you soon.')
+        return redirect('/contact')
+    return render(request, 'contact.html')
+
+
+def blog(request):
+    return render(request, 'blog.html')
