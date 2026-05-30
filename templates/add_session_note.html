@@ -8,18 +8,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; display: flex; min-height: 100vh; }
-.sidebar {
-    width: 260px;
-    background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
-    min-height: 100vh;
-    position: fixed;
-    left: 0;
-    top: 0;
-    z-index: 100;
-    overflow-y: auto;    /* ← THIS enables scroll */
-    scrollbar-width: thin;
-    scrollbar-color: #F5C518 #2C2C2C;
-}
+        .sidebar{width: 260px; height:100vh; position: fixed; left: 0; top: 0; background: linear-gradient(180deg, #1a1a1a, #2C2C2C); overflow-y: auto; scrollbar-width: none;}
         .sidebar-logo { padding: 22px 20px; border-bottom: 1px solid rgba(245,197,24,0.2); text-align: center; }
         .sidebar-logo img { width: 130px; border-radius: 10px; }
         .sidebar-logo p { color: #F5C518; font-size: 0.75em; margin-top: 8px; font-weight: 600; }
@@ -62,24 +51,30 @@
 <aside class="sidebar">
     <div class="sidebar-logo">
         <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
-        <p>👨‍⚕️ STAFF PANEL</p>
+        <p>⚙️ ADMIN PANEL</p>
     </div>
     <div class="sidebar-user">
-        <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
-        <div class="user-info"><h4>{{ user.get_full_name|default:user.username }}</h4><span>🟢 Staff</span></div>
+        <div class="user-avatar">AD</div>
+        <div class="user-info"><h4>{{ user.username }}</h4><span>🔴 Super Admin</span></div>
     </div>
     <nav>
-        <div class="nav-section">Main</div>
-        <a href="/staff-dashboard" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-        <div class="nav-section">Attendance</div>
-        <a href="/staff-attendance" class="nav-item"><i class="fas fa-clock"></i> My Attendance</a>
-        <div class="nav-section">Leave</div>
-        <a href="/staff-leave" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
-        <div class="nav-section">Work</div>
-        <a href="/staff-tasks" class="nav-item"><i class="fas fa-tasks"></i> My Tasks</a>
-        <a href="/staff-session-notes" class="nav-item active"><i class="fas fa-notes-medical"></i> Session Notes</a>
-        <div class="nav-section">Payroll</div>
-        <a href="/staff-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
+        <div class="nav-section">Overview</div>
+        <a href="/admin-dashboard" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <div class="nav-section">Management</div>
+        <a href="/admin-patients" class="nav-item active"><i class="fas fa-users"></i> Manage Patients</a>
+        <a href="/admin-staff" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+        <a href="/admin-appointments" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
+        <a href="/admin-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+        <div class="nav-section">Staff Tools</div>
+        <a href="/admin-leaves" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
+        <a href="/admin-attendance" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+        <a href="/admin-tasks" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+        <a href="/admin-session-notes" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
+        <div class="nav-section">Communication</div>
+        <a href="/admin-chat" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+        <div class="nav-section">System</div>
+        <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+        <a href="/" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
     </nav>
     <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
 </aside>
