@@ -4,10 +4,25 @@
     box-sizing: border-box;
 }
 
-body {
-    font-family: 'Segoe UI', sans-serif;
-    background-color: #ffffff;
-    color: #2C2C2C;
+.sidebar-nav {
+    flex: 1;
+    overflow-y: scroll  ;
+    /* overflow-x: hidden; */
+    padding-bottom: 10px;
+}
+
+/* Optional nicer scrollbar */
+.sidebar-nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(245,197,24,0.4);
+    border-radius: 10px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .hero-section {
@@ -23,13 +38,13 @@ body {
     border: 2px solid #f0f0f0;
     border-radius: 15px;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
 .service-card:hover {
     border-color: #F5C518;
     transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(245,197,24,0.3);
+    box-shadow: 0 8px 25px rgba(245, 197, 24, 0.3);
 }
 
 .navbar-nav .nav-link {
