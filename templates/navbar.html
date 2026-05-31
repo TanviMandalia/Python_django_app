@@ -1,14 +1,16 @@
 {% load static %}
 <nav class="main-navbar">
     <div class="nav-container">
+        <!-- LOGO -->
         <a href="/" class="nav-logo">
-            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia">
             <div class="logo-text">
                 <span class="logo-name">Dr. Dhvani Patalia</span>
                 <span class="logo-sub">Physio-Rehab</span>
             </div>
         </a>
 
+        <!-- DESKTOP NAV LINKS -->
         <ul class="nav-links" id="navLinks">
             <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
             <li><a href="/about" class="{% if request.path == '/about' %}active{% endif %}">About</a></li>
@@ -17,22 +19,13 @@
             <li><a href="/contact" class="{% if request.path == '/contact' %}active{% endif %}">Contact</a></li>
         </ul>
 
-        <div class="nav-auth">
-            {% if user.is_authenticated %}
-                {% if user.is_superuser %}
-                <a href="/admin-dashboard" class="btn-dashboard">⚙️ Admin Panel</a>
-                {% elif user.is_staff %}
-                <a href="/staff-dashboard" class="btn-dashboard">👨‍⚕️ Staff Panel</a>
-                {% else %}
-                <a href="/client-dashboard" class="btn-dashboard">👤 Dashboard</a>
-                {% endif %}
-                <a href="/logout" class="btn-logout">Logout</a>
-            {% else %}
-                <a href="/login" class="btn-login">Login</a>
-                <a href="/register" class="btn-register">Register</a>
-            {% endif %}
+        <!-- AUTH BUTTONS -->
+        <div class="nav-auth" id="navAuth">
+            <a href="/book" class="btn-book-nav">📅 Book Now</a>
+            <a href="/login" class="btn-login">Login</a>
         </div>
 
+        <!-- HAMBURGER -->
         <button class="hamburger" onclick="toggleNav()" id="hamburgerBtn">
             <i class="fas fa-bars"></i>
         </button>
@@ -45,19 +38,8 @@
         <a href="/services">💆 Services</a>
         <a href="/blog">📝 Blog</a>
         <a href="/contact">📞 Contact</a>
-        {% if user.is_authenticated %}
-            {% if user.is_superuser %}
-            <a href="/admin-dashboard">⚙️ Admin Panel</a>
-            {% elif user.is_staff %}
-            <a href="/staff-dashboard">👨‍⚕️ Staff Panel</a>
-            {% else %}
-            <a href="/client-dashboard">👤 My Dashboard</a>
-            {% endif %}
-            <a href="/logout" style="color:#ff6b6b;">🚪 Logout</a>
-        {% else %}
-            <a href="/login">🔐 Login</a>
-            <a href="/register">📝 Register</a>
-        {% endif %}
+        <a href="/book" style="color:#F5C518; font-weight:700;">📅 Book Appointment</a>
+        <a href="/login">🔐 Login</a>
     </div>
 </nav>
 
@@ -68,17 +50,17 @@
     position: sticky;
     top: 0;
     z-index: 999;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.5);
     font-family: 'Segoe UI', sans-serif;
 }
 .nav-container {
     max-width: 1300px;
     margin: 0 auto;
-    padding: 0 25px;
+    padding: 0 30px;
     display: flex;
     align-items: center;
-    height: 68px;
-    gap: 15px;
+    height: 70px;
+    gap: 20px;
 }
 .nav-logo {
     display: flex;
@@ -86,10 +68,9 @@
     gap: 12px;
     text-decoration: none;
     flex-shrink: 0;
-    margin-right: auto;
 }
 .nav-logo img {
-    height: 50px;
+    height: 52px;
     width: auto;
     border-radius: 8px;
     border: 2px solid #F5C518;
@@ -98,20 +79,19 @@
 .logo-text { display: flex; flex-direction: column; }
 .logo-name { color: #F5C518; font-size: 0.95em; font-weight: 800; line-height: 1.2; }
 .logo-sub { color: #888; font-size: 0.7em; letter-spacing: 1px; text-transform: uppercase; }
-
-/* NAV LINKS */
 .nav-links {
     display: flex;
     list-style: none;
     gap: 3px;
+    margin-left: auto;
     align-items: center;
 }
 .nav-links a {
     color: #ccc;
     text-decoration: none;
-    font-size: 0.88em;
+    font-size: 0.9em;
     font-weight: 500;
-    padding: 8px 13px;
+    padding: 8px 14px;
     border-radius: 8px;
     transition: all 0.3s;
     white-space: nowrap;
@@ -120,64 +100,36 @@
     color: #F5C518;
     background: rgba(245,197,24,0.1);
 }
-
-/* AUTH BUTTONS */
 .nav-auth {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
 }
+.btn-book-nav {
+    background: #F5C518;
+    color: #2C2C2C;
+    text-decoration: none;
+    font-size: 0.85em;
+    font-weight: 700;
+    padding: 9px 18px;
+    border-radius: 25px;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+.btn-book-nav:hover { background: #e6b800; transform: translateY(-1px); }
 .btn-login {
     color: #E0E0E0;
     text-decoration: none;
     font-size: 0.85em;
     font-weight: 600;
-    padding: 8px 14px;
+    padding: 8px 16px;
     border-radius: 8px;
     border: 1px solid #444;
     transition: all 0.3s;
     white-space: nowrap;
 }
 .btn-login:hover { border-color: #F5C518; color: #F5C518; }
-.btn-register {
-    background: #F5C518;
-    color: #2C2C2C;
-    text-decoration: none;
-    font-size: 0.85em;
-    font-weight: 700;
-    padding: 8px 16px;
-    border-radius: 8px;
-    transition: all 0.3s;
-    white-space: nowrap;
-}
-.btn-register:hover { background: #e6b800; }
-.btn-dashboard {
-    background: #F5C518;
-    color: #2C2C2C;
-    text-decoration: none;
-    font-size: 0.82em;
-    font-weight: 700;
-    padding: 8px 14px;
-    border-radius: 8px;
-    transition: all 0.3s;
-    white-space: nowrap;
-}
-.btn-dashboard:hover { background: #e6b800; }
-.btn-logout {
-    color: #ff6b6b;
-    text-decoration: none;
-    font-size: 0.82em;
-    font-weight: 600;
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(220,53,69,0.3);
-    transition: all 0.3s;
-    white-space: nowrap;
-}
-.btn-logout:hover { background: rgba(220,53,69,0.15); }
-
-/* HAMBURGER - only on mobile */
 .hamburger {
     display: none;
     background: none;
@@ -188,47 +140,37 @@
     padding: 8px;
     flex-shrink: 0;
 }
-
-/* MOBILE MENU */
 .mobile-menu {
     display: none;
     flex-direction: column;
     background: #111;
     border-top: 1px solid #333;
-    padding: 10px 0;
 }
 .mobile-menu.open { display: flex; }
 .mobile-menu a {
     color: #ccc;
     text-decoration: none;
-    padding: 12px 25px;
-    font-size: 0.9em;
+    padding: 14px 25px;
+    font-size: 0.92em;
     border-bottom: 1px solid #222;
     transition: all 0.3s;
 }
 .mobile-menu a:hover { color: #F5C518; background: rgba(245,197,24,0.05); }
-
-/* RESPONSIVE */
-@media (max-width: 900px) {
+@media (max-width: 950px) {
     .nav-links { display: none; }
-    .hamburger { display: block; }
     .nav-auth { display: none; }
-}
-@media (min-width: 901px) {
-    .mobile-menu { display: none !important; }
+    .hamburger { display: block; }
 }
 </style>
 
 <script>
 function toggleNav() {
-    const menu = document.getElementById('mobileMenu');
-    menu.classList.toggle('open');
+    document.getElementById('mobileMenu').classList.toggle('open');
 }
-// Close menu when clicking outside
 document.addEventListener('click', function(e) {
     const menu = document.getElementById('mobileMenu');
     const btn = document.getElementById('hamburgerBtn');
-    if (!menu.contains(e.target) && !btn.contains(e.target)) {
+    if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
         menu.classList.remove('open');
     }
 });
