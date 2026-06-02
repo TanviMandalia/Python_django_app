@@ -1,14 +1,23 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dr. Dhvani Patalia - Physio Rehab | Jamnagar</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #fff; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #fff;
+        }
 
         /* HERO */
         .hero {
@@ -20,6 +29,7 @@
             text-align: center;
             overflow: hidden;
         }
+
         .hero-bg {
             position: absolute;
             inset: 0;
@@ -30,15 +40,17 @@
             filter: brightness(0.3);
             z-index: 0;
         }
+
         .hero-content {
             position: relative;
             z-index: 1;
             padding: 40px 20px;
             max-width: 900px;
         }
+
         .hero-badge {
             display: inline-block;
-            background: rgba(245,197,24,0.2);
+            background: rgba(245, 197, 24, 0.2);
             border: 1px solid #F5C518;
             color: #F5C518;
             padding: 6px 18px;
@@ -48,14 +60,71 @@
             margin-bottom: 20px;
             letter-spacing: 1px;
         }
-        .hero h1 { font-size: 3.5em; font-weight: 900; color: white; line-height: 1.15; margin-bottom: 20px; }
-        .hero h1 span { color: #F5C518; }
-        .hero p { font-size: 1.15em; color: #E0E0E0; margin-bottom: 35px; line-height: 1.7; }
-        .hero-btns { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
-        .btn-gold { background: #F5C518; color: #2C2C2C; padding: 15px 35px; border-radius: 30px; font-size: 1em; font-weight: 700; text-decoration: none; display: inline-block; transition: all 0.3s; box-shadow: 0 4px 20px rgba(245,197,24,0.4); }
-        .btn-gold:hover { background: #e6b800; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(245,197,24,0.5); }
-        .btn-outline { background: transparent; color: white; padding: 15px 35px; border: 2px solid rgba(255,255,255,0.7); border-radius: 30px; font-size: 1em; font-weight: 600; text-decoration: none; display: inline-block; transition: all 0.3s; }
-        .btn-outline:hover { background: white; color: #2C2C2C; border-color: white; }
+
+        .hero h1 {
+            font-size: 3.5em;
+            font-weight: 900;
+            color: white;
+            line-height: 1.15;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 span {
+            color: #F5C518;
+        }
+
+        .hero p {
+            font-size: 1.15em;
+            color: #E0E0E0;
+            margin-bottom: 35px;
+            line-height: 1.7;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-gold {
+            background: #F5C518;
+            color: #2C2C2C;
+            padding: 15px 35px;
+            border-radius: 30px;
+            font-size: 1em;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(245, 197, 24, 0.4);
+        }
+
+        .btn-gold:hover {
+            background: #e6b800;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 197, 24, 0.5);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: white;
+            padding: 15px 35px;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            border-radius: 30px;
+            font-size: 1em;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+
+        .btn-outline:hover {
+            background: white;
+            color: #2C2C2C;
+            border-color: white;
+        }
+
         .hero-scroll {
             position: absolute;
             bottom: 25px;
@@ -66,304 +135,641 @@
             animation: bounce 2s infinite;
             z-index: 1;
         }
-        @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(10px);} }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+
+            50% {
+                transform: translateX(-50%) translateY(10px);
+            }
+        }
 
         /* STATS */
-        .stats-bar { background: #F5C518; padding: 28px 20px; }
-        .stats-bar .container { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; }
-        .stat-item { text-align: center; }
-        .stat-item h3 { font-size: 2.3em; font-weight: 900; color: #2C2C2C; line-height: 1; }
-        .stat-item p { color: #2C2C2C; font-weight: 600; font-size: 0.88em; margin-top: 4px; }
+        .stats-bar {
+            background: #F5C518;
+            padding: 28px 20px;
+        }
+
+        .stats-bar .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 2.3em;
+            font-weight: 900;
+            color: #2C2C2C;
+            line-height: 1;
+        }
+
+        .stat-item p {
+            color: #2C2C2C;
+            font-weight: 600;
+            font-size: 0.88em;
+            margin-top: 4px;
+        }
 
         /* SECTIONS */
-        section { padding: 70px 25px; }
-        .container { max-width: 1150px; margin: 0 auto; }
-        .section-title { text-align: center; margin-bottom: 50px; }
-        .section-title h2 { font-size: 2.3em; font-weight: 800; color: #2C2C2C; }
-        .section-title h2 span { color: #F5C518; }
-        .section-title p { color: #666; margin-top: 10px; font-size: 1em; }
+        section {
+            padding: 70px 25px;
+        }
+
+        .container {
+            max-width: 1150px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-title h2 {
+            font-size: 2.3em;
+            font-weight: 800;
+            color: #2C2C2C;
+        }
+
+        .section-title h2 span {
+            color: #F5C518;
+        }
+
+        .section-title p {
+            color: #666;
+            margin-top: 10px;
+            font-size: 1em;
+        }
 
         /* SERVICES */
-        .services-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 22px; }
-        .service-card { background: white; border: 2px solid #eee; border-radius: 18px; padding: 30px 22px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.06); transition: all 0.3s; }
-        .service-card:hover { border-color: #F5C518; transform: translateY(-8px); box-shadow: 0 15px 35px rgba(245,197,24,0.2); }
-        .service-icon { width: 70px; height: 70px; background: linear-gradient(135deg, #F5C518, #e6b800); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
-        .service-icon i { font-size: 1.8em; color: #2C2C2C; }
-        .service-card h3 { font-size: 1em; font-weight: 700; color: #2C2C2C; margin-bottom: 10px; }
-        .service-card p { color: #777; font-size: 0.86em; line-height: 1.6; }
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+        }
+
+        .service-card {
+            background: white;
+            border: 2px solid #eee;
+            border-radius: 18px;
+            padding: 30px 22px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s;
+        }
+
+        .service-card:hover {
+            border-color: #F5C518;
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(245, 197, 24, 0.2);
+        }
+
+        .service-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #F5C518, #e6b800);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px;
+        }
+
+        .service-icon i {
+            font-size: 1.8em;
+            color: #2C2C2C;
+        }
+
+        .service-card h3 {
+            font-size: 1em;
+            font-weight: 700;
+            color: #2C2C2C;
+            margin-bottom: 10px;
+        }
+
+        .service-card p {
+            color: #777;
+            font-size: 0.86em;
+            line-height: 1.6;
+        }
 
         /* CLINIC GALLERY */
-        .gallery-section { background: #f9f9f9; }
-        .gallery-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 15px; }
-        .gallery-img { border-radius: 12px; overflow: hidden; height: 220px; }
-        .gallery-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
-        .gallery-img:hover img { transform: scale(1.05); }
+        .gallery-section {
+            background: #f9f9f9;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .gallery-img {
+            border-radius: 12px;
+            overflow: hidden;
+            height: 220px;
+        }
+
+        .gallery-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s;
+        }
+
+        .gallery-img:hover img {
+            transform: scale(1.05);
+        }
 
         /* WHY US */
-        .why-section { background: #2C2C2C; }
-        .why-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 25px; }
-        .why-item { text-align: center; padding: 20px; }
-        .why-icon { width: 75px; height: 75px; background: rgba(245,197,24,0.1); border: 2px solid rgba(245,197,24,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
-        .why-icon i { font-size: 1.8em; color: #F5C518; }
-        .why-item h4 { color: white; font-weight: 700; margin-bottom: 8px; font-size: 1em; }
-        .why-item p { color: #aaa; font-size: 0.86em; line-height: 1.6; }
+        .why-section {
+            background: #2C2C2C;
+        }
+
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+
+        .why-item {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .why-icon {
+            width: 75px;
+            height: 75px;
+            background: rgba(245, 197, 24, 0.1);
+            border: 2px solid rgba(245, 197, 24, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px;
+        }
+
+        .why-icon i {
+            font-size: 1.8em;
+            color: #F5C518;
+        }
+
+        .why-item h4 {
+            color: white;
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .why-item p {
+            color: #aaa;
+            font-size: 0.86em;
+            line-height: 1.6;
+        }
 
         /* BEFORE AFTER */
-        .results-section { background: white; }
-        .results-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
-        .result-card { border-radius: 15px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
-        .result-card img { width: 100%; height: 280px; object-fit: cover; }
-        .result-card-info { background: #2C2C2C; padding: 15px; text-align: center; }
-        .result-card-info p { color: #F5C518; font-weight: 700; font-size: 0.88em; }
+        .results-section {
+            background: white;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .result-card {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-card img {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+        }
+
+        .result-card-info {
+            background: #2C2C2C;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .result-card-info p {
+            color: #F5C518;
+            font-weight: 700;
+            font-size: 0.88em;
+        }
 
         /* TESTIMONIALS */
-        .testimonials { background: #f9f9f9; }
-        .testi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 22px; }
-        .testi-card { background: white; border-left: 4px solid #F5C518; border-radius: 12px; padding: 25px; box-shadow: 0 3px 15px rgba(0,0,0,0.05); }
-        .stars { color: #F5C518; margin-bottom: 12px; font-size: 1.1em; }
-        .testi-card p { color: #555; font-style: italic; line-height: 1.7; margin-bottom: 15px; font-size: 0.9em; }
-        .testi-card h5 { color: #2C2C2C; font-weight: 700; font-size: 0.88em; }
+        .testimonials {
+            background: #f9f9f9;
+        }
+
+        .testi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 22px;
+        }
+
+        .testi-card {
+            background: white;
+            border-left: 4px solid #F5C518;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .stars {
+            color: #F5C518;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+
+        .testi-card p {
+            color: #555;
+            font-style: italic;
+            line-height: 1.7;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .testi-card h5 {
+            color: #2C2C2C;
+            font-weight: 700;
+            font-size: 0.88em;
+        }
 
         /* CTA */
-        .cta-section { background: linear-gradient(135deg, #F5C518, #e6b800); text-align: center; padding: 70px 25px; }
-        .cta-section h2 { font-size: 2.3em; font-weight: 800; color: #2C2C2C; margin-bottom: 12px; }
-        .cta-section p { font-size: 1.1em; color: #2C2C2C; margin-bottom: 30px; opacity: 0.8; }
-        .btn-dark { background: #2C2C2C; color: white; padding: 15px 40px; border-radius: 30px; font-size: 1.05em; font-weight: 700; text-decoration: none; display: inline-block; transition: all 0.3s; margin: 5px; }
-        .btn-dark:hover { background: #1a1a1a; transform: translateY(-2px); }
-        .btn-dark-outline { background: transparent; color: #2C2C2C; padding: 15px 35px; border-radius: 30px; font-size: 1em; font-weight: 700; text-decoration: none; display: inline-block; transition: all 0.3s; border: 2px solid #2C2C2C; margin: 5px; }
-        .btn-dark-outline:hover { background: #2C2C2C; color: white; }
+        .cta-section {
+            background: linear-gradient(135deg, #F5C518, #e6b800);
+            text-align: center;
+            padding: 70px 25px;
+        }
+
+        .cta-section h2 {
+            font-size: 2.3em;
+            font-weight: 800;
+            color: #2C2C2C;
+            margin-bottom: 12px;
+        }
+
+        .cta-section p {
+            font-size: 1.1em;
+            color: #2C2C2C;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
+        .btn-dark {
+            background: #2C2C2C;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.05em;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn-dark:hover {
+            background: #1a1a1a;
+            transform: translateY(-2px);
+        }
+
+        .btn-dark-outline {
+            background: transparent;
+            color: #2C2C2C;
+            padding: 15px 35px;
+            border-radius: 30px;
+            font-size: 1em;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            border: 2px solid #2C2C2C;
+            margin: 5px;
+        }
+
+        .btn-dark-outline:hover {
+            background: #2C2C2C;
+            color: white;
+        }
 
         @media (max-width: 768px) {
-            .hero h1 { font-size: 2.2em; }
-            .services-grid, .why-grid, .testi-grid, .gallery-grid, .results-grid { grid-template-columns: 1fr; }
+            .hero h1 {
+                font-size: 2.2em;
+            }
+
+            .services-grid,
+            .why-grid,
+            .testi-grid,
+            .gallery-grid,
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
 
-{% include 'navbar.html' %}
+    {% include 'navbar.html' %}
 
-<!-- HERO WITH CLINIC IMAGE BACKGROUND -->
-<section class="hero">
-    <div class="hero-bg"></div>
-    <div class="hero-content">
-        <div class="hero-badge">🏆 Trusted Physiotherapy Clinic — Jamnagar</div>
-        <h1>Your Recovery<br>Starts <span>Here</span></h1>
-        <p>Expert Physiotherapy & Rehabilitation by Dr. Dhvani Patalia<br>
-        Personalized Care · Advanced Techniques · Proven Results</p>
-        <div class="hero-btns">
-            <a href="/book" class="btn-gold">📅 Book Appointment</a>
-            <a href="/services" class="btn-outline">Explore Services</a>
+    <!-- HERO WITH CLINIC IMAGE BACKGROUND -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <div class="hero-badge">🏆 Trusted Physiotherapy Clinic — Jamnagar</div>
+            <h1>Your Recovery<br>Starts <span>Here</span></h1>
+            <p>Expert Physiotherapy & Rehabilitation by Dr. Dhvani Patalia<br>
+                Personalized Care · Advanced Techniques · Proven Results</p>
+            <div class="hero-btns">
+                <a href="/book" class="btn-gold">📅 Book Appointment</a>
+                <a href="/services" class="btn-outline">Explore Services</a>
+            </div>
         </div>
-    </div>
-    <div class="hero-scroll"><i class="fas fa-chevron-down"></i></div>
-</section>
+        <div class="hero-scroll"><i class="fas fa-chevron-down"></i></div>
+    </section>
 
-<!-- STATS -->
-<div class="stats-bar">
-    <div class="container">
-        <div class="stat-item"><h3>500+</h3><p>Happy Patients</p></div>
-        <div class="stat-item"><h3>5+</h3><p>Years Experience</p></div>
-        <div class="stat-item"><h3>20+</h3><p>Services Offered</p></div>
-        <div class="stat-item"><h3>100%</h3><p>Personalized Care</p></div>
-    </div>
-</div>
-
-<!-- SERVICES -->
-<section>
-    <div class="container">
-        <div class="section-title">
-            <h2>Our <span>Services</span></h2>
-            <p>Comprehensive physiotherapy treatments tailored for your recovery</p>
-        </div>
-        <div class="services-grid">
-            <div class="service-card">
-                <div class="service-icon"><i class="fas fa-bone"></i></div>
-                <h3>Pain Management</h3>
-                <p>Neck, back, shoulder, knee, joint & muscle pain treatment with advanced techniques.</p>
+    <!-- STATS -->
+    <div class="stats-bar">
+        <div class="container">
+            <div class="stat-item">
+                <h3>500+</h3>
+                <p>Happy Patients</p>
             </div>
-            <div class="service-card">
-                <div class="service-icon"><i class="fas fa-snowflake"></i></div>
-                <h3>Frozen Shoulder & Spine</h3>
-                <p>Frozen shoulder, cervical & lumbar spondylosis, sciatica rehabilitation.</p>
+            <div class="stat-item">
+                <h3>5+</h3>
+                <p>Years Experience</p>
             </div>
-            <div class="service-card">
-                <div class="service-icon"><i class="fas fa-heartbeat"></i></div>
-                <h3>Sports Rehabilitation</h3>
-                <p>ACL, meniscus, fracture, ligament injury & post-surgery rehab.</p>
+            <div class="stat-item">
+                <h3>20+</h3>
+                <p>Services Offered</p>
             </div>
-            <div class="service-card">
-                <div class="service-icon"><i class="fas fa-brain"></i></div>
-                <h3>Neurological Physiotherapy</h3>
-                <p>Stroke rehabilitation, paralysis, Parkinson's & balance training.</p>
-            </div>
-            <div class="service-card">
-                <div class="service-icon"><i class="fas fa-female"></i></div>
-                <h3>Women's Health</h3>
-                <p>Pregnancy physiotherapy, postpartum recovery & pelvic floor exercises.</p>
-            </div>
-            <div class="service-card">
-                <div class="service-icon"><i class="fas fa-syringe"></i></div>
-                <h3>Advanced Treatments</h3>
-                <p>Dry needling, cupping, kinesiology taping, IFT, TENS, ultrasound & manual therapy.</p>
-            </div>
-            <div class="service-card">
-                <div class="service-icon"><i class="fas fa-running"></i></div>
-                <h3>Mobility & Fitness</h3>
-                <p>Strengthening, flexibility, posture correction & functional rehabilitation.</p>
-            </div>
-            <div class="service-card">
-                <div class="service-icon"><i class="fas fa-baby"></i></div>
-                <h3>Pediatric Therapy</h3>
-                <p>Specialized physiotherapy care for children of all ages.</p>
-            </div>
-            <div class="service-card">
-                <div class="service-icon"><i class="fas fa-home"></i></div>
-                <h3>Home Visit Services</h3>
-                <p>Professional physiotherapy at your doorstep. Elderly & post-surgery home care.</p>
-            </div>
-        </div>
-        <div style="text-align:center; margin-top:40px;">
-            <a href="/services" class="btn-gold">View All Services →</a>
-        </div>
-    </div>
-</section>
-
-<!-- CLINIC GALLERY -->
-<section class="gallery-section">
-    <div class="container">
-        <div class="section-title">
-            <h2>Our <span>Clinic</span></h2>
-            <p>Modern facilities designed for your comfort and recovery</p>
-        </div>
-        <div class="gallery-grid">
-            <div class="gallery-img">
-                <img src="{% static 'images/clinic_image_outdoor.webp' %}" alt="Clinic Exterior">
-            </div>
-            <div class="gallery-img">
-                <img src="{% static 'images/clinic_image.webp' %}" alt="Clinic Interior">
-            </div>
-            <div class="gallery-img">
-                <img src="{% static 'images/clinic_image1.webp' %}" alt="Treatment Room">
+            <div class="stat-item">
+                <h3>100%</h3>
+                <p>Personalized Care</p>
             </div>
         </div>
     </div>
-</section>
 
-<!-- WHY US -->
-<section class="why-section">
-    <div class="container">
-        <div class="section-title">
-            <h2 style="color:white;">Why Choose <span>Us?</span></h2>
-            <p style="color:#aaa;">Evidence-based care with personalized treatment for every patient</p>
+    <!-- SERVICES -->
+    <section>
+        <div class="container">
+            <div class="section-title">
+                <h2>Our <span>Services</span></h2>
+                <p>Comprehensive physiotherapy treatments tailored for your recovery</p>
+            </div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-bone"></i></div>
+                    <h3>Pain Management</h3>
+                    <p>Neck, back, shoulder, knee, joint & muscle pain treatment with advanced techniques.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-snowflake"></i></div>
+                    <h3>Frozen Shoulder & Spine</h3>
+                    <p>Frozen shoulder, cervical & lumbar spondylosis, sciatica rehabilitation.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-heartbeat"></i></div>
+                    <h3>Sports Rehabilitation</h3>
+                    <p>ACL, meniscus, fracture, ligament injury & post-surgery rehab.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-brain"></i></div>
+                    <h3>Neurological Physiotherapy</h3>
+                    <p>Stroke rehabilitation, paralysis, Parkinson's & balance training.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-female"></i></div>
+                    <h3>Women's Health</h3>
+                    <p>Pregnancy physiotherapy, postpartum recovery & pelvic floor exercises.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-syringe"></i></div>
+                    <h3>Advanced Treatments</h3>
+                    <p>Dry needling, cupping, kinesiology taping, IFT, TENS, ultrasound & manual therapy.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-running"></i></div>
+                    <h3>Mobility & Fitness</h3>
+                    <p>Strengthening, flexibility, posture correction & functional rehabilitation.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-baby"></i></div>
+                    <h3>Pediatric Therapy</h3>
+                    <p>Specialized physiotherapy care for children of all ages.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-home"></i></div>
+                    <h3>Home Visit Services</h3>
+                    <p>Professional physiotherapy at your doorstep. Elderly & post-surgery home care.</p>
+                </div>
+            </div>
+            <div style="text-align:center; margin-top:40px;">
+                <a href="/services" class="btn-gold">View All Services →</a>
+            </div>
         </div>
-        <div class="why-grid">
-            <div class="why-item">
-                <div class="why-icon"><i class="fas fa-user-md"></i></div>
-                <h4>Expert Doctor</h4>
-                <p>BPT, COMT, CDT, CCT, CIASTM, FNMT, CC qualified physiotherapist</p>
-            </div>
-            <div class="why-item">
-                <div class="why-icon"><i class="fas fa-clipboard-list"></i></div>
-                <h4>Personalized Plans</h4>
-                <p>Customized treatment plans focusing on root cause, not just symptoms</p>
-            </div>
-            <div class="why-item">
-                <div class="why-icon"><i class="fas fa-microscope"></i></div>
-                <h4>Advanced Techniques</h4>
-                <p>Dry needling, cupping, kinesiology taping, manual therapy & more</p>
-            </div>
-            <div class="why-item">
-                <div class="why-icon"><i class="fas fa-comments"></i></div>
-                <h4>One-to-One Attention</h4>
-                <p>Dedicated personal care and patient education for long-term recovery</p>
-            </div>
-            <div class="why-item">
-                <div class="why-icon"><i class="fas fa-home"></i></div>
-                <h4>Home Visits Available</h4>
-                <p>Professional physiotherapy at your doorstep for maximum convenience</p>
-            </div>
-            <div class="why-item">
-                <div class="why-icon"><i class="fas fa-whatsapp"></i></div>
-                <h4>WhatsApp Support</h4>
-                <p>Easy appointment booking & quick support via WhatsApp</p>
-            </div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<!-- BEFORE & AFTER RESULTS -->
-<section class="results-section">
-    <div class="container">
-        <div class="section-title">
-            <h2>Real Patient <span>Results</span></h2>
-            <p>Before & after results from our happy patients</p>
-        </div>
-        <div class="results-grid">
-            <div class="result-card">
-                <img src="{% static 'images/paitent-1.webp' %}" alt="Patient Result 1">
-                <div class="result-card-info"><p>✅ Arm Movement Restored</p></div>
+    <!-- CLINIC GALLERY -->
+    <section class="gallery-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Our <span>Clinic</span></h2>
+                <p>Modern facilities designed for your comfort and recovery</p>
             </div>
-            <div class="result-card">
-                <img src="{% static 'images/paitent-2.webp' %}" alt="Patient Result 2">
-                <div class="result-card-info"><p>✅ Shoulder Mobility Improved</p></div>
-            </div>
-            <div class="result-card">
-                <img src="{% static 'images/paitent-3.webp' %}" alt="Patient Result 3">
-                <div class="result-card-info"><p>✅ Smile Restored — Facial Rehab</p></div>
-            </div>
-            <div class="result-card">
-                <img src="{% static 'images/paitent-4.webp' %}" alt="Patient Result 4">
-                <div class="result-card-info"><p>✅ Back Flexibility Regained</p></div>
-            </div>
-            <div class="result-card">
-                <img src="{% static 'images/paitent-5.webp' %}" alt="Patient Result 5">
-                <div class="result-card-info"><p>✅ Posture Correction Achieved</p></div>
-            </div>
-            <div class="result-card">
-                <img src="{% static 'images/paitent-6.jpg' %}" alt="Patient Result 6">
-                <div class="result-card-info"><p>✅ Leg Alignment Corrected</p></div>
+            <div class="gallery-grid">
+                <div class="gallery-img">
+                    <img src="{% static 'images/clinic_image_outdoor.webp' %}" alt="Clinic Exterior">
+                </div>
+                <div class="gallery-img">
+                    <img src="{% static 'images/clinic_image.webp' %}" alt="Clinic Interior">
+                </div>
+                <div class="gallery-img">
+                    <img src="{% static 'images/clinic_image1.webp' %}" alt="Treatment Room">
+                </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- TESTIMONIALS -->
-<section class="testimonials">
-    <div class="container">
-        <div class="section-title">
-            <h2>What Patients <span>Say</span></h2>
-            <p>Real stories from our happy patients</p>
+    <!-- WHY US -->
+    <section class="why-section">
+        <div class="container">
+            <div class="section-title">
+                <h2 style="color:white;">Why Choose <span>Us?</span></h2>
+                <p style="color:#aaa;">Evidence-based care with personalized treatment for every patient</p>
+            </div>
+            <div class="why-grid">
+                <div class="why-item">
+                    <div class="why-icon"><i class="fas fa-user-md"></i></div>
+                    <h4>Expert Doctor</h4>
+                    <p>BPT, COMT, CDT, CCT, CIASTM, FNMT, CC qualified physiotherapist</p>
+                </div>
+                <div class="why-item">
+                    <div class="why-icon"><i class="fas fa-clipboard-list"></i></div>
+                    <h4>Personalized Plans</h4>
+                    <p>Customized treatment plans focusing on root cause, not just symptoms</p>
+                </div>
+                <div class="why-item">
+                    <div class="why-icon"><i class="fas fa-microscope"></i></div>
+                    <h4>Advanced Techniques</h4>
+                    <p>Dry needling, cupping, kinesiology taping, manual therapy & more</p>
+                </div>
+                <div class="why-item">
+                    <div class="why-icon"><i class="fas fa-comments"></i></div>
+                    <h4>One-to-One Attention</h4>
+                    <p>Dedicated personal care and patient education for long-term recovery</p>
+                </div>
+                <div class="why-item">
+                    <div class="why-icon"><i class="fas fa-home"></i></div>
+                    <h4>Home Visits Available</h4>
+                    <p>Professional physiotherapy at your doorstep for maximum convenience</p>
+                </div>
+                <div class="why-item">
+                    <div class="why-icon"><i class="fas fa-whatsapp"></i></div>
+                    <h4>WhatsApp Support</h4>
+                    <p>Easy appointment booking & quick support via WhatsApp</p>
+                </div>
+            </div>
         </div>
-        <div class="testi-grid">
-            <div class="testi-card">
-                <div class="stars">★★★★★</div>
-                <p>"Dr. Dhvani is amazing! My back pain is completely gone after just 2 weeks of treatment. Highly recommended!"</p>
-                <h5>— Priya Shah, Jamnagar</h5>
+    </section>
+
+    <!-- BEFORE & AFTER RESULTS -->
+    <section class="results-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Real Patient <span>Results</span></h2>
+                <p>Before & after results from our happy patients</p>
             </div>
-            <div class="testi-card">
-                <div class="stars">★★★★★</div>
-                <p>"Best physiotherapist in the region. Very professional, uses advanced techniques and truly cares about recovery."</p>
-                <h5>— Rahul Mehta, Jamnagar</h5>
-            </div>
-            <div class="testi-card">
-                <div class="stars">★★★★★</div>
-                <p>"My mother recovered from stroke with Dr. Dhvani's neurological rehabilitation program. Truly grateful!"</p>
-                <h5>— Kavita Patel, Jamnagar</h5>
+            <div class="results-grid">
+                <div class="result-card">
+                    <img src="{% static 'images/paitent-1.webp' %}" alt="Patient Result 1">
+                    <div class="result-card-info">
+                        <p>✅ Arm Movement Restored</p>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <img src="{% static 'images/paitent-2.webp' %}" alt="Patient Result 2">
+                    <div class="result-card-info">
+                        <p>✅ Shoulder Mobility Improved</p>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <img src="{% static 'images/paitent-3.webp' %}" alt="Patient Result 3">
+                    <div class="result-card-info">
+                        <p>✅ Smile Restored — Facial Rehab</p>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <img src="{% static 'images/paitent-4.webp' %}" alt="Patient Result 4">
+                    <div class="result-card-info">
+                        <p>✅ Back Flexibility Regained</p>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <img src="{% static 'images/paitent-5.webp' %}" alt="Patient Result 5">
+                    <div class="result-card-info">
+                        <p>✅ Posture Correction Achieved</p>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <img src="{% static 'images/paitent-6.jpg' %}" alt="Patient Result 6">
+                    <div class="result-card-info">
+                        <p>✅ Leg Alignment Corrected</p>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- CTA -->
-<section class="cta-section">
-    <h2>Ready to Start Your Recovery?</h2>
-    <p>Book your appointment today and take the first step towards a pain-free life</p>
-    <a href="/book" class="btn-dark">📅 Book Appointment Now</a>
-    <a href="https://wa.me/919409510501" class="btn-dark-outline" target="_blank">💬 WhatsApp Us</a>
-</section>
+    <!-- TESTIMONIALS -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-title">
+                <h2>What Patients <span>Say</span></h2>
+                <p>Real stories from our happy patients</p>
+            </div>
+            <div class="testi-grid">
+                <div class="testi-card">
+                    <div class="stars">★★★★★</div>
+                    <p>I had severe knee lock and was <b>unable to bend or walk properly</b>. After taking phisiotherapy
+                        at <b>PHISHIOREHAB CLINIC</b>, I got excellent results. within a few session my knee movement
+                        improved and pain reduced completely. Thankyou <b>Dr. Dhvani Patalia</b> for the effective
+                        tretment.</p>
+                    <h5>— Hemal Parekh</h5>
+                </div>
+                <div class="testi-card">
+                    <div class="stars">★★★★★</div>
+                    <p>I got <b>Back Pain</b> due to weight lifting and the pain was very intense. After taking tretment
+                        at <b>PHISHIOREHAB CLINIC</b>, I felt major relif from the first session and within 5 days my
+                        pain was completely gone. Excellent phisiotherapy tretment.</p>
+                    <h5>— Sejal Patel</h5>
+                </div>
+                <div class="testi-card">
+                    <div class="stars">★★★★★</div>
+                    <p>I was suffering from <b>serve heel pain</b> for almost <b>6 Months</b>and walking in the morning
+                        was very painful, I visited Dr. Dhvani Patalia Phisio rehab Clinic, Jamanagar and within a few
+                        session i felt clear improvement. The tretment was explained properly and exercises really
+                        helped. highly recommanded.</p>
+                    <h5>— Tina Jogiya</h5>
+                </div>
+                <div class="testi-card">
+                    <div class="stars">★★★★★</div>
+                    <p>Best phisiotherapy clinic in Jamanagarfor <b>cervical spondylosis and neck pain</b>, I got
+                        excellent results after phisiotherapy at Dr. Dhvani Patalia Phisio Rehab Clinic. Very
+                        proffessional and effective tretment.</p>
+                    <h5>— Chandresh Upadhyay</h5>
+                </div>
+                <div class="testi-card">
+                    <div class="stars">★★★★★</div>
+                    <p>Best phisiotherapy clinic in Jamanagarfor <b>cervical spondylosis and neck pain</b>, I got
+                        excellent results after phisiotherapy at Dr. Dhvani Patalia Phisio Rehab Clinic. Very
+                        proffessional and effective tretment.</p>
+                    <h5>— Chandresh Upadhyay</h5>
+                </div>
+                <div class="testi-card">
+                    <div class="stars">★★★★★</div>
+                    <p>I was having <b>Balancing issue and frequent dizzines</b>. After phisiotherapy at Phisio Rehab
+                        Clinic, my balance has improved a loat and I feel more confident while walking Dr. Dhvani
+                        Patalia is attentive.</p>
+                    <h5>— Asha Shah</h5>
+                </div>
+                <div class="testi-card">
+                    <div class="stars">★★★★★</div>
+                    <p>I was diagnosed with <b>Bell's Palsy</b> and had <b>Facial Weekness</b> on one side. I came to Dr. Dhvani Patalia PHISHIOREHAB CLINIC for phisiotherapy. The Doctor explained everything clearly and started proper facial muscle exercises and electrotherapy. Within a few weeks, My facial Movemens started improving and my confident came back. Very satisfied with the tretment and care</p>
+                    <h5>— Anisa Aambaliya</h5>
+                </div>
+            </div>
+        </div>
+    </section>
 
-{% include 'footer.html' %}
+    <!-- CTA -->
+    <section class="cta-section">
+        <h2>Ready to Start Your Recovery?</h2>
+        <p>Book your appointment today and take the first step towards a pain-free life</p>
+        <a href="/book" class="btn-dark">📅 Book Appointment Now</a>
+        <a href="https://wa.me/919409510501" class="btn-dark-outline" target="_blank">💬 WhatsApp Us</a>
+    </section>
+
+    {% include 'footer.html' %}
 
 </body>
+
 </html>
