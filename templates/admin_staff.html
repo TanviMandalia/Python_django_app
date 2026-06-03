@@ -1,111 +1,337 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Manage Staff - Admin</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; display: flex; min-height: 100vh; }
-.sidebar{width: 260px; height:100vh; position: fixed; left: 0; top: 0; background: linear-gradient(180deg, #1a1a1a, #2C2C2C); overflow-y: auto; scrollbar-width: none;}
-        .sidebar-logo { padding: 22px 20px; border-bottom: 1px solid rgba(245,197,24,0.2); text-align: center; }
-        .sidebar-logo img { width: 130px; border-radius: 10px; }
-        .sidebar-logo p { color: #F5C518; font-size: 0.75em; margin-top: 8px; font-weight: 600; }
-        .sidebar-user { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; }
-        .user-avatar { width: 42px; height: 42px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2C2C2C; }
-        .user-info h4 { color: white; font-size: 0.88em; }
-        .user-info span { color: #F5C518; font-size: 0.72em; }
-        .nav-section { padding: 12px 22px 5px; color: #555; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 22px; color: #bbb; text-decoration: none; font-size: 0.9em; transition: all 0.3s; border-left: 3px solid transparent; }
-        .nav-item:hover, .nav-item.active { background: rgba(245,197,24,0.1); color: #F5C518; border-left-color: #F5C518; }
-        .nav-item i { width: 18px; text-align: center; }
-        .logout-btn { margin: 15px; display: flex; align-items: center; gap: 10px; padding: 11px 18px; background: rgba(220,53,69,0.15); color: #ff6b6b; border-radius: 10px; text-decoration: none; font-size: 0.86em; }
-        .main-content { margin-left: 260px; flex: 1; }
-        .topbar { background: white; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 50; }
-        .topbar h1 { font-size: 1.2em; color: #2C2C2C; font-weight: 700; }
-        .btn-add { background: #F5C518; color: #2C2C2C; padding: 9px 20px; border-radius: 20px; font-weight: 700; text-decoration: none; font-size: 0.88em; }
-        .dashboard-body { padding: 25px; }
-        .staff-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
-        .staff-card { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 3px 15px rgba(0,0,0,0.06); text-align: center; transition: transform 0.3s; border-top: 4px solid #F5C518; }
-        .staff-card:hover { transform: translateY(-4px); }
-        .staff-avatar { width: 65px; height: 65px; background: linear-gradient(135deg, #F5C518, #e6b800); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2C2C2C; font-size: 1.4em; margin: 0 auto 15px; }
-        .staff-card h3 { font-size: 1em; font-weight: 700; color: #2C2C2C; margin-bottom: 5px; }
-        .staff-card .role { font-size: 0.82em; color: #F5C518; font-weight: 600; margin-bottom: 12px; }
-        .staff-details { text-align: left; margin-top: 12px; }
-        .detail-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.82em; color: #666; }
-        .detail-item:last-child { border-bottom: none; }
-        .detail-item i { color: #F5C518; width: 14px; }
-        .badge-active { background: #d4edda; color: #155724; padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 700; }
-        .empty-state { text-align: center; padding: 60px; background: white; border-radius: 18px; color: #aaa; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
-        .empty-state i { font-size: 3em; color: #F5C518; margin-bottom: 15px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .sidebar-logo {
+            padding: 22px 20px;
+            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+            text-align: center;
+        }
+
+        .sidebar-logo img {
+            width: 130px;
+            border-radius: 10px;
+        }
+
+        .sidebar-logo p {
+            color: #F5C518;
+            font-size: 0.75em;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .sidebar-user {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            background: #F5C518;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #2C2C2C;
+        }
+
+        .user-info h4 {
+            color: white;
+            font-size: 0.88em;
+        }
+
+        .user-info span {
+            color: #F5C518;
+            font-size: 0.72em;
+        }
+
+        .nav-section {
+            padding: 12px 22px 5px;
+            color: #555;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 22px;
+            color: #bbb;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(245, 197, 24, 0.1);
+            color: #F5C518;
+            border-left-color: #F5C518;
+        }
+
+        .nav-item i {
+            width: 18px;
+            text-align: center;
+        }
+
+        .logout-btn {
+            margin: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 18px;
+            background: rgba(220, 53, 69, 0.15);
+            color: #ff6b6b;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 0.86em;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+        }
+
+        .topbar {
+            background: white;
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .topbar h1 {
+            font-size: 1.2em;
+            color: #2C2C2C;
+            font-weight: 700;
+        }
+
+        .btn-add {
+            background: #F5C518;
+            color: #2C2C2C;
+            padding: 9px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 0.88em;
+        }
+
+        .dashboard-body {
+            padding: 25px;
+        }
+
+        .staff-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .staff-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+            text-align: center;
+            transition: transform 0.3s;
+            border-top: 4px solid #F5C518;
+        }
+
+        .staff-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .staff-avatar {
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, #F5C518, #e6b800);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #2C2C2C;
+            font-size: 1.4em;
+            margin: 0 auto 15px;
+        }
+
+        .staff-card h3 {
+            font-size: 1em;
+            font-weight: 700;
+            color: #2C2C2C;
+            margin-bottom: 5px;
+        }
+
+        .staff-card .role {
+            font-size: 0.82em;
+            color: #F5C518;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .staff-details {
+            text-align: left;
+            margin-top: 12px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 0.82em;
+            color: #666;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-item i {
+            color: #F5C518;
+            width: 14px;
+        }
+
+        .badge-active {
+            background: #d4edda;
+            color: #155724;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 18px;
+            color: #aaa;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .empty-state i {
+            font-size: 3em;
+            color: #F5C518;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
-<body>
-<aside class="sidebar">
-    <div class="sidebar-logo">
-        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
-        <p>⚙️ ADMIN PANEL</p>
-    </div>
-    <div class="sidebar-user">
-        <div class="user-avatar">AD</div>
-        <div class="user-info"><h4>{{ user.username }}</h4><span>🔴 Super Admin</span></div>
-    </div>
-    <nav>
-        <div class="nav-section">Overview</div>
-        <a href="/admin-dashboard" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        <div class="nav-section">Management</div>
-        <a href="/admin-patients" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
-        <a href="/admin-staff" class="nav-item active"><i class="fas fa-user-md"></i> Manage Staff</a>
-        <a href="/admin-appointments" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
-        <a href="/admin-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
-        <div class="nav-section">Staff Tools</div>
-        <a href="/admin-leaves" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
-        <a href="/admin-attendance" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
-        <a href="/admin-tasks" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
-        <a href="/admin-session-notes" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-        <div class="nav-section">Communication</div>
-        <a href="/admin-chat" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
-        <div class="nav-section">System</div>
-        <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
-    </nav>
-    <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-</aside>
 
-<div class="main-content">
-    <div class="topbar">
-        <h1>👨‍⚕️ Manage Staff</h1>
-        <a href="/add-staff" class="btn-add">+ Add Staff</a>
-    </div>
-    <div class="dashboard-body">
-        {% if staff_list %}
-        <div class="staff-grid">
-            {% for staff in staff_list %}
-            <div class="staff-card">
-                <div class="staff-avatar">
-                    {{ staff.user.first_name|first|upper }}{{ staff.user.last_name|first|upper }}
-                </div>
-                <h3>{{ staff.user.get_full_name|default:staff.user.username }}</h3>
-                <div class="role">{{ staff.get_role_display }}</div>
-                <span class="badge-active">✅ Active</span>
-                <div class="staff-details">
-                    <div class="detail-item"><i class="fas fa-user"></i> @{{ staff.user.username }}</div>
-                    <div class="detail-item"><i class="fas fa-envelope"></i> {{ staff.user.email|default:"—" }}</div>
-                    <div class="detail-item"><i class="fas fa-phone"></i> {{ staff.phone|default:"—" }}</div>
-                    <div class="detail-item"><i class="fas fa-rupee-sign"></i> ₹{{ staff.salary }}/month</div>
-                    <div class="detail-item"><i class="fas fa-calendar"></i> Joined: {{ staff.joining_date|date:"d M Y" }}</div>
-                </div>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+            <p>⚙️ ADMIN PANEL</p>
+        </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">AD</div>
+            <div class="user-info">
+                <h4>{{ user.username }}</h4><span>🔴 Super Admin</span>
             </div>
-            {% endfor %}
         </div>
-        {% else %}
-        <div class="empty-state">
-            <i class="fas fa-user-md"></i>
-            <p>No staff members added yet.<br>Click "Add Staff" to get started!</p>
-            <a href="/add-staff" style="background:#F5C518; color:#2C2C2C; padding:10px 22px; border-radius:20px; font-weight:700; text-decoration:none; display:inline-block; margin-top:15px;">+ Add First Staff</a>
+        <nav>
+            <div class="nav-section">Overview</div>
+            <a href="/admin-dashboard" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <div class="nav-section">Management</div>
+            <a href="/admin-patients" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+            <a href="/admin-staff" class="nav-item active"><i class="fas fa-user-md"></i> Manage Staff</a>
+            <a href="/admin-appointments" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
+            <a href="/admin-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+            <div class="nav-section">Staff Tools</div>
+            <a href="/admin-leaves" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
+            <a href="/admin-attendance" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+            <a href="/admin-tasks" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+            <a href="/admin-session-notes" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
+            <div class="nav-section">Communication</div>
+            <a href="/admin-chat" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+            <div class="nav-section">System</div>
+            <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+        </nav>
+        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <h1>👨‍⚕️ Manage Staff</h1>
+            <a href="/add-staff" class="btn-add">+ Add Staff</a>
         </div>
-        {% endif %}
+        <div class="dashboard-body">
+            {% if staff_list %}
+            <div class="staff-grid">
+                {% for staff in staff_list %}
+                <div class="staff-card">
+                    <div class="staff-avatar">
+                        {{ staff.user.first_name|first|upper }}{{ staff.user.last_name|first|upper }}
+                    </div>
+                    <h3>{{ staff.user.get_full_name|default:staff.user.username }}</h3>
+                    <div class="role">{{ staff.get_role_display }}</div>
+                    <span class="badge-active">✅ Active</span>
+                    <div class="staff-details">
+                        <div class="detail-item"><i class="fas fa-user"></i> @{{ staff.user.username }}</div>
+                        <div class="detail-item"><i class="fas fa-envelope"></i> {{ staff.user.email|default:"—" }}
+                        </div>
+                        <div class="detail-item"><i class="fas fa-phone"></i> {{ staff.phone|default:"—" }}</div>
+                        <div class="detail-item"><i class="fas fa-rupee-sign"></i> ₹{{ staff.salary }}/month</div>
+                        <div class="detail-item"><i class="fas fa-calendar"></i> Joined: {{ staff.joining_date|date:"d M
+                            Y" }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-user-md"></i>
+                <p>No staff members added yet.<br>Click "Add Staff" to get started!</p>
+                <a href="/add-staff"
+                    style="background:#F5C518; color:#2C2C2C; padding:10px 22px; border-radius:20px; font-weight:700; text-decoration:none; display:inline-block; margin-top:15px;">+
+                    Add First Staff</a>
+            </div>
+            {% endif %}
+        </div>
     </div>
-</div>
 </body>
+
 </html>
