@@ -1,137 +1,357 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Assign Task - Admin</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; display: flex; min-height: 100vh; }
-.sidebar{width: 260px; height:100vh; position: fixed; left: 0; top: 0; background: linear-gradient(180deg, #1a1a1a, #2C2C2C); overflow-y: auto; scrollbar-width: none;}
-        .sidebar-logo { padding: 22px 20px; border-bottom: 1px solid rgba(245,197,24,0.2); text-align: center; }
-        .sidebar-logo img { width: 130px; border-radius: 10px; }
-        .sidebar-logo p { color: #F5C518; font-size: 0.75em; margin-top: 8px; font-weight: 600; }
-        .sidebar-user { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; }
-        .user-avatar { width: 42px; height: 42px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2C2C2C; }
-        .user-info h4 { color: white; font-size: 0.88em; }
-        .user-info span { color: #F5C518; font-size: 0.72em; }
-        .nav-section { padding: 12px 22px 5px; color: #555; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 22px; color: #bbb; text-decoration: none; font-size: 0.9em; transition: all 0.3s; border-left: 3px solid transparent; }
-        .nav-item:hover, .nav-item.active { background: rgba(245,197,24,0.1); color: #F5C518; border-left-color: #F5C518; }
-        .nav-item i { width: 18px; text-align: center; }
-        .logout-btn { margin: 15px; display: flex; align-items: center; gap: 10px; padding: 11px 18px; background: rgba(220,53,69,0.15); color: #ff6b6b; border-radius: 10px; text-decoration: none; font-size: 0.86em; }
-        .main-content { margin-left: 260px; flex: 1; }
-        .topbar { background: white; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
-        .topbar h1 { font-size: 1.2em; color: #2C2C2C; font-weight: 700; }
-        .back-btn { color: #F5C518; text-decoration: none; font-size: 0.88em; font-weight: 600; }
-        .dashboard-body { padding: 25px; max-width: 700px; }
-        .form-card { background: white; border-radius: 18px; padding: 35px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); }
-        .form-card h2 { font-size: 1.2em; font-weight: 700; color: #2C2C2C; margin-bottom: 5px; }
-        .form-card p { color: #888; font-size: 0.88em; margin-bottom: 25px; }
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; font-weight: 700; color: #2C2C2C; margin-bottom: 8px; font-size: 0.88em; }
-        .form-group label span { color: #dc3545; }
-        .input-box { position: relative; }
-        .input-box i { position: absolute; left: 13px; top: 13px; color: #aaa; font-size: 0.9em; }
-        .input-box input, .input-box select, .input-box textarea { width: 100%; padding: 12px 12px 12px 38px; border: 2px solid #eee; border-radius: 10px; font-size: 0.9em; outline: none; transition: all 0.3s; font-family: 'Segoe UI', sans-serif; }
-        .input-box textarea { height: 90px; resize: none; }
-        .input-box input:focus, .input-box select:focus, .input-box textarea:focus { border-color: #F5C518; box-shadow: 0 0 0 3px rgba(245,197,24,0.1); }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .btn-submit { width: 100%; padding: 14px; background: #F5C518; color: #2C2C2C; border: none; border-radius: 12px; font-size: 1em; font-weight: 700; cursor: pointer; transition: all 0.3s; margin-top: 5px; }
-        .btn-submit:hover { background: #e6b800; transform: translateY(-1px); }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .sidebar-logo {
+            padding: 22px 20px;
+            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+            text-align: center;
+        }
+
+        .sidebar-logo img {
+            width: 130px;
+            border-radius: 10px;
+        }
+
+        .sidebar-logo p {
+            color: #F5C518;
+            font-size: 0.75em;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .sidebar-user {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            background: #F5C518;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #2C2C2C;
+        }
+
+        .user-info h4 {
+            color: white;
+            font-size: 0.88em;
+        }
+
+        .user-info span {
+            color: #F5C518;
+            font-size: 0.72em;
+        }
+
+        .nav-section {
+            padding: 12px 22px 5px;
+            color: #555;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 22px;
+            color: #bbb;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(245, 197, 24, 0.1);
+            color: #F5C518;
+            border-left-color: #F5C518;
+        }
+
+        .nav-item i {
+            width: 18px;
+            text-align: center;
+        }
+
+        .logout-btn {
+            margin: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 18px;
+            background: rgba(220, 53, 69, 0.15);
+            color: #ff6b6b;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 0.86em;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+        }
+
+        .topbar {
+            background: white;
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .topbar h1 {
+            font-size: 1.2em;
+            color: #2C2C2C;
+            font-weight: 700;
+        }
+
+        .back-btn {
+            color: #F5C518;
+            text-decoration: none;
+            font-size: 0.88em;
+            font-weight: 600;
+        }
+
+        .dashboard-body {
+            padding: 25px;
+            max-width: 700px;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 18px;
+            padding: 35px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-card h2 {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #2C2C2C;
+            margin-bottom: 5px;
+        }
+
+        .form-card p {
+            color: #888;
+            font-size: 0.88em;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 700;
+            color: #2C2C2C;
+            margin-bottom: 8px;
+            font-size: 0.88em;
+        }
+
+        .form-group label span {
+            color: #dc3545;
+        }
+
+        .input-box {
+            position: relative;
+        }
+
+        .input-box i {
+            position: absolute;
+            left: 13px;
+            top: 13px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        .input-box input,
+        .input-box select,
+        .input-box textarea {
+            width: 100%;
+            padding: 12px 12px 12px 38px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 0.9em;
+            outline: none;
+            transition: all 0.3s;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .input-box textarea {
+            height: 90px;
+            resize: none;
+        }
+
+        .input-box input:focus,
+        .input-box select:focus,
+        .input-box textarea:focus {
+            border-color: #F5C518;
+            box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: #F5C518;
+            color: #2C2C2C;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 5px;
+        }
+
+        .btn-submit:hover {
+            background: #e6b800;
+            transform: translateY(-1px);
+        }
     </style>
 </head>
-<body>
-<aside class="sidebar">
-    <div class="sidebar-logo">
-        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
-        <p>⚙️ ADMIN PANEL</p>
-    </div>
-    <div class="sidebar-user">
-        <div class="user-avatar">AD</div>
-        <div class="user-info"><h4>{{ user.username }}</h4><span>🔴 Super Admin</span></div>
-    </div>
-    <nav>
-        <div class="nav-section">Overview</div>
-        <a href="/admin-dashboard" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        <div class="nav-section">Management</div>
-        <a href="/admin-patients" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
-        <a href="/admin-staff" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
-        <a href="/admin-appointments" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
-        <div class="nav-section">Staff Tools</div>
-        <a href="/admin-leaves" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
-        <a href="/admin-attendance" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
-        <a href="/admin-tasks" class="nav-item active"><i class="fas fa-tasks"></i> Tasks</a>
-        <div class="nav-section">System</div>
-        <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
-    </nav>
-    <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-</aside>
 
-<div class="main-content">
-    <div class="topbar">
-        <h1>➕ Assign New Task</h1>
-        <a href="/admin-tasks" class="back-btn">← Back to Tasks</a>
-    </div>
-    <div class="dashboard-body">
-        <div class="form-card">
-            <h2>📋 New Task Assignment</h2>
-            <p>Assign a task to a staff member with priority and deadline</p>
-            <form method="POST" action="/add-task">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label>Assign To <span>*</span></label>
-                    <div class="input-box">
-                        <i class="fas fa-user-md"></i>
-                        <select name="staff_id" required>
-                            <option value="">-- Select Staff Member --</option>
-                            {% for staff in staff_list %}
-                            <option value="{{ staff.user.id }}">{{ staff.user.get_full_name|default:staff.user.username }} — {{ staff.get_role_display }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Task Title <span>*</span></label>
-                    <div class="input-box">
-                        <i class="fas fa-tasks"></i>
-                        <input type="text" name="title" placeholder="e.g. Prepare patient report" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Description</label>
-                    <div class="input-box">
-                        <i class="fas fa-comment"></i>
-                        <textarea name="description" placeholder="Additional task details..."></textarea>
-                    </div>
-                </div>
-                <div class="form-row">
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+            <p>⚙️ ADMIN PANEL</p>
+        </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">AD</div>
+            <div class="user-info">
+                <h4>{{ user.username }}</h4><span>🔴 Super Admin</span>
+            </div>
+        </div>
+        <nav>
+            <div class="nav-section">Overview</div>
+            <a href="/admin-dashboard" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <div class="nav-section">Management</div>
+            <a href="/admin-patients" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+            <a href="/admin-staff" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+            <a href="/admin-appointments" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
+            <div class="nav-section">Staff Tools</div>
+            <a href="/admin-leaves" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
+            <a href="/admin-attendance" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+            <a href="/admin-tasks" class="nav-item active"><i class="fas fa-tasks"></i> Tasks</a>
+            <div class="nav-section">System</div>
+            <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+        </nav>
+        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <h1>➕ Assign New Task</h1>
+            <a href="/admin-tasks" class="back-btn">← Back to Tasks</a>
+        </div>
+        <div class="dashboard-body">
+            <div class="form-card">
+                <h2>📋 New Task Assignment</h2>
+                <p>Assign a task to a staff member with priority and deadline</p>
+                <form method="POST" action="/add-task">
+                    {% csrf_token %}
                     <div class="form-group">
-                        <label>Priority <span>*</span></label>
+                        <label>Assign To <span>*</span></label>
                         <div class="input-box">
-                            <i class="fas fa-flag"></i>
-                            <select name="priority" required>
-                                <option value="low">🟢 Low</option>
-                                <option value="medium" selected>🟡 Medium</option>
-                                <option value="high">🔴 High</option>
+                            <i class="fas fa-user-md"></i>
+                            <select name="staff_id" required>
+                                <option value="">-- Select Staff Member --</option>
+                                {% for staff in staff_list %}
+                                <option value="{{ staff.user.id }}">{{
+                                    staff.user.get_full_name|default:staff.user.username }} — {{ staff.get_role_display
+                                    }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Due Date</label>
+                        <label>Task Title <span>*</span></label>
                         <div class="input-box">
-                            <i class="fas fa-calendar"></i>
-                            <input type="date" name="due_date">
+                            <i class="fas fa-tasks"></i>
+                            <input type="text" name="title" placeholder="e.g. Prepare patient report" required>
                         </div>
                     </div>
-                </div>
-                <button type="submit" class="btn-submit">
-                    <i class="fas fa-paper-plane"></i> Assign Task
-                </button>
-            </form>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <div class="input-box">
+                            <i class="fas fa-comment"></i>
+                            <textarea name="description" placeholder="Additional task details..."></textarea>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Priority <span>*</span></label>
+                            <div class="input-box">
+                                <i class="fas fa-flag"></i>
+                                <select name="priority" required>
+                                    <option value="low">🟢 Low</option>
+                                    <option value="medium" selected>🟡 Medium</option>
+                                    <option value="high">🔴 High</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Due Date</label>
+                            <div class="input-box">
+                                <i class="fas fa-calendar"></i>
+                                <input type="date" name="due_date">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-paper-plane"></i> Assign Task
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 </body>
+
 </html>

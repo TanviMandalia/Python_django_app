@@ -1,230 +1,543 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book Appointment - Physio Rehab</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; display: flex; min-height: 100vh; }
-        .sidebar { width: 260px; background: linear-gradient(180deg, #1a1a1a, #2C2C2C); min-height: 100vh; position: fixed; left: 0; top: 0; z-index: 100; }
-        .sidebar-logo { padding: 22px 20px; border-bottom: 1px solid rgba(245,197,24,0.2); text-align: center; }
-        .sidebar-logo img { width: 130px; border-radius: 10px; }
-        .sidebar-user { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; }
-        .user-avatar { width: 42px; height: 42px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2C2C2C; }
-        .user-info h4 { color: white; font-size: 0.88em; }
-        .user-info span { color: #F5C518; font-size: 0.72em; }
-        .nav-section { padding: 12px 22px 5px; color: #555; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 22px; color: #bbb; text-decoration: none; font-size: 0.9em; transition: all 0.3s; border-left: 3px solid transparent; }
-        .nav-item:hover, .nav-item.active { background: rgba(245,197,24,0.1); color: #F5C518; border-left-color: #F5C518; }
-        .nav-item i { width: 18px; text-align: center; }
-        .logout-btn { margin: 15px; display: flex; align-items: center; gap: 10px; padding: 11px 18px; background: rgba(220,53,69,0.15); color: #ff6b6b; border-radius: 10px; text-decoration: none; font-size: 0.86em; }
-        .logout-btn:hover { background: rgba(220,53,69,0.3); }
-        .main-content { margin-left: 260px; flex: 1; padding: 0; }
-        .topbar { background: white; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
-        .topbar h1 { font-size: 1.2em; color: #2C2C2C; font-weight: 700; }
-        .dashboard-body { padding: 30px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            padding: 22px 20px;
+            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+            text-align: center;
+        }
+
+        .sidebar-logo img {
+            width: 130px;
+            border-radius: 10px;
+        }
+
+        .sidebar-user {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            background: #F5C518;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #2C2C2C;
+        }
+
+        .user-info h4 {
+            color: white;
+            font-size: 0.88em;
+        }
+
+        .user-info span {
+            color: #F5C518;
+            font-size: 0.72em;
+        }
+
+        .nav-section {
+            padding: 12px 22px 5px;
+            color: #555;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 22px;
+            color: #bbb;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(245, 197, 24, 0.1);
+            color: #F5C518;
+            border-left-color: #F5C518;
+        }
+
+        .nav-item i {
+            width: 18px;
+            text-align: center;
+        }
+
+        .logout-btn {
+            margin: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 18px;
+            background: rgba(220, 53, 69, 0.15);
+            color: #ff6b6b;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 0.86em;
+        }
+
+        .logout-btn:hover {
+            background: rgba(220, 53, 69, 0.3);
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 0;
+        }
+
+        .topbar {
+            background: white;
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .topbar h1 {
+            font-size: 1.2em;
+            color: #2C2C2C;
+            font-weight: 700;
+        }
+
+        .dashboard-body {
+            padding: 30px;
+        }
 
         /* BOOKING FORM */
-        .booking-container { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; max-width: 1000px; }
-        .form-card { background: white; border-radius: 18px; padding: 35px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); }
-        .form-card h2 { font-size: 1.4em; font-weight: 800; color: #2C2C2C; margin-bottom: 5px; }
-        .form-card p { color: #888; font-size: 0.9em; margin-bottom: 25px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-weight: 700; color: #2C2C2C; margin-bottom: 8px; font-size: 0.88em; }
-        .form-group label span { color: #dc3545; }
-        .input-box { position: relative; }
-        .input-box i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #aaa; }
-        .input-box input, .input-box select, .input-box textarea {
-            width: 100%; padding: 13px 13px 13px 40px;
-            border: 2px solid #eee; border-radius: 12px;
-            font-size: 0.92em; transition: all 0.3s; outline: none;
+        .booking-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            max-width: 1000px;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 18px;
+            padding: 35px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-card h2 {
+            font-size: 1.4em;
+            font-weight: 800;
+            color: #2C2C2C;
+            margin-bottom: 5px;
+        }
+
+        .form-card p {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 700;
+            color: #2C2C2C;
+            margin-bottom: 8px;
+            font-size: 0.88em;
+        }
+
+        .form-group label span {
+            color: #dc3545;
+        }
+
+        .input-box {
+            position: relative;
+        }
+
+        .input-box i {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+        }
+
+        .input-box input,
+        .input-box select,
+        .input-box textarea {
+            width: 100%;
+            padding: 13px 13px 13px 40px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: 0.92em;
+            transition: all 0.3s;
+            outline: none;
             font-family: 'Segoe UI', sans-serif;
         }
-        .input-box textarea { padding: 13px 13px 13px 40px; height: 100px; resize: none; }
-        .input-box input:focus, .input-box select:focus, .input-box textarea:focus {
-            border-color: #F5C518; box-shadow: 0 0 0 3px rgba(245,197,24,0.15);
+
+        .input-box textarea {
+            padding: 13px 13px 13px 40px;
+            height: 100px;
+            resize: none;
         }
+
+        .input-box input:focus,
+        .input-box select:focus,
+        .input-box textarea:focus {
+            border-color: #F5C518;
+            box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.15);
+        }
+
         .btn-submit {
-            width: 100%; padding: 15px; background: #F5C518; color: #2C2C2C;
-            border: none; border-radius: 12px; font-size: 1.05em; font-weight: 800;
-            cursor: pointer; transition: all 0.3s; margin-top: 5px;
+            width: 100%;
+            padding: 15px;
+            background: #F5C518;
+            color: #2C2C2C;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05em;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 5px;
         }
-        .btn-submit:hover { background: #e6b800; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245,197,24,0.4); }
+
+        .btn-submit:hover {
+            background: #e6b800;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(245, 197, 24, 0.4);
+        }
 
         /* INFO CARD */
-        .info-card { display: flex; flex-direction: column; gap: 18px; }
-        .info-box { background: white; border-radius: 15px; padding: 22px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); }
-        .info-box h3 { font-size: 1em; font-weight: 700; color: #2C2C2C; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-        .info-box h3 i { color: #F5C518; }
-        .service-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; margin-bottom: 8px; background: #f9f9f9; cursor: pointer; transition: all 0.3s; }
-        .service-item:hover { background: rgba(245,197,24,0.1); }
-        .service-item i { color: #F5C518; width: 20px; text-align: center; }
-        .service-item span { font-size: 0.87em; color: #2C2C2C; font-weight: 500; }
-        .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .time-slot { padding: 10px; background: #f9f9f9; border-radius: 8px; text-align: center; font-size: 0.82em; color: #555; font-weight: 600; }
-        .time-slot.available { border: 1px solid #d4edda; color: #155724; background: #d4edda; }
-        .tip-box { background: linear-gradient(135deg, #2C2C2C, #1a1a1a); border-radius: 15px; padding: 22px; }
-        .tip-box h3 { color: #F5C518; font-size: 0.95em; font-weight: 700; margin-bottom: 12px; }
-        .tip-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
-        .tip-item i { color: #F5C518; margin-top: 2px; font-size: 0.85em; }
-        .tip-item span { color: #E0E0E0; font-size: 0.82em; line-height: 1.5; }
+        .info-card {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
 
-        .alert-success { background: #d4edda; border: 1px solid #28a745; color: #155724; padding: 12px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9em; }
-        .alert-error { background: #fff3cd; border: 1px solid #F5C518; color: #856404; padding: 12px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9em; }
+        .info-box {
+            background: white;
+            border-radius: 15px;
+            padding: 22px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .info-box h3 {
+            font-size: 1em;
+            font-weight: 700;
+            color: #2C2C2C;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-box h3 i {
+            color: #F5C518;
+        }
+
+        .service-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .service-item:hover {
+            background: rgba(245, 197, 24, 0.1);
+        }
+
+        .service-item i {
+            color: #F5C518;
+            width: 20px;
+            text-align: center;
+        }
+
+        .service-item span {
+            font-size: 0.87em;
+            color: #2C2C2C;
+            font-weight: 500;
+        }
+
+        .time-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .time-slot {
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.82em;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .time-slot.available {
+            border: 1px solid #d4edda;
+            color: #155724;
+            background: #d4edda;
+        }
+
+        .tip-box {
+            background: linear-gradient(135deg, #2C2C2C, #1a1a1a);
+            border-radius: 15px;
+            padding: 22px;
+        }
+
+        .tip-box h3 {
+            color: #F5C518;
+            font-size: 0.95em;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .tip-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .tip-item i {
+            color: #F5C518;
+            margin-top: 2px;
+            font-size: 0.85em;
+        }
+
+        .tip-item span {
+            color: #E0E0E0;
+            font-size: 0.82em;
+            line-height: 1.5;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        .alert-error {
+            background: #fff3cd;
+            border: 1px solid #F5C518;
+            color: #856404;
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
     </style>
 </head>
+
 <body>
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-    <div class="sidebar-logo">
-        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
-    </div>
-    <div class="sidebar-user">
-        <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
-        <div class="user-info">
-            <h4>{{ user.get_full_name|default:user.username }}</h4>
-            <span>🟢 Patient</span>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
         </div>
-    </div>
-    <nav>
-        <div class="nav-section">Main Menu</div>
-        <a href="/client-dashboard" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-        <a href="/book" class="nav-item active"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
-        <a href="/my-appointments" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
-        <div class="nav-section">Communication</div>
-        <a href="#" class="nav-item"><i class="fas fa-comments"></i> Chat with Doctor</a>
-        <div class="nav-section">Account</div>
-        <a href="#" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
-        <a href="#" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
-    </nav>
-    <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-</aside>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <span>🟢 Patient</span>
+            </div>
+        </div>
+        <nav>
+            <div class="nav-section">Main Menu</div>
+            <a href="/client-dashboard" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/book" class="nav-item active"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
+            <a href="/my-appointments" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
+            <div class="nav-section">Communication</div>
+            <a href="#" class="nav-item"><i class="fas fa-comments"></i> Chat with Doctor</a>
+            <div class="nav-section">Account</div>
+            <a href="#" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
+            <a href="#" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
+        </nav>
+        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
 
-<!-- MAIN -->
-<div class="main-content">
-    <div class="topbar">
-        <h1>📅 Book an Appointment</h1>
-        <a href="/client-dashboard" style="color:#F5C518; text-decoration:none; font-size:0.9em;">← Back to Dashboard</a>
-    </div>
-    <div class="dashboard-body">
+    <!-- MAIN -->
+    <div class="main-content">
+        <div class="topbar">
+            <h1>📅 Book an Appointment</h1>
+            <a href="/client-dashboard" style="color:#F5C518; text-decoration:none; font-size:0.9em;">← Back to
+                Dashboard</a>
+        </div>
+        <div class="dashboard-body">
 
-        {% if messages %}
+            {% if messages %}
             {% for message in messages %}
             <div class="alert-{% if 'success' in message.tags %}success{% else %}error{% endif %}">
                 {{ message }}
             </div>
             {% endfor %}
-        {% endif %}
+            {% endif %}
 
-        <div class="booking-container">
+            <div class="booking-container">
 
-            <!-- FORM -->
-            <div class="form-card">
-                <h2>📋 Appointment Details</h2>
-                <p>Fill in your details to book a session with Dr. Dhvani Patalia</p>
+                <!-- FORM -->
+                <div class="form-card">
+                    <h2>📋 Appointment Details</h2>
+                    <p>Fill in your details to book a session with Dr. Dhvani Patalia</p>
 
-                <form method="POST" action="/book">
-                    {% csrf_token %}
+                    <form method="POST" action="/book">
+                        {% csrf_token %}
 
-                    <div class="form-group">
-                        <label>Select Service <span>*</span></label>
-                        <div class="input-box">
-                            <i class="fas fa-stethoscope"></i>
-                            <select name="service" required>
-                                <option value="">-- Choose a Service --</option>
-                                <option value="orthopedic">🦴 Orthopedic Therapy</option>
-                                <option value="neurological">🧠 Neurological Rehab</option>
-                                <option value="sports">⚽ Sports Rehabilitation</option>
-                                <option value="pediatric">👶 Pediatric Therapy</option>
-                                <option value="womens">👩 Women's Health</option>
-                                <option value="home_visit">🏠 Home Visit</option>
-                            </select>
+                        <div class="form-group">
+                            <label>Select Service <span>*</span></label>
+                            <div class="input-box">
+                                <i class="fas fa-stethoscope"></i>
+                                <select name="service" required>
+                                    <option value="">-- Choose a Service --</option>
+                                    <option value="orthopedic">🦴 Orthopedic Therapy</option>
+                                    <option value="neurological">🧠 Neurological Rehab</option>
+                                    <option value="sports">⚽ Sports Rehabilitation</option>
+                                    <option value="pediatric">👶 Pediatric Therapy</option>
+                                    <option value="womens">👩 Women's Health</option>
+                                    <option value="home_visit">🏠 Home Visit</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label>Preferred Date <span>*</span></label>
-                        <div class="input-box">
-                            <i class="fas fa-calendar"></i>
-                            <input type="date" name="date" required min="{{ today }}">
+                        <div class="form-group">
+                            <label>Preferred Date <span>*</span></label>
+                            <div class="input-box">
+                                <i class="fas fa-calendar"></i>
+                                <input type="date" name="date" required min="{{ today }}">
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label>Preferred Time <span>*</span></label>
-                        <div class="input-box">
-                            <i class="fas fa-clock"></i>
-                            <select name="time" required>
-                                <option value="">-- Choose a Time Slot --</option>
-                                <option value="09:00">🌅 9:00 AM</option>
-                                <option value="10:00">☀️ 10:00 AM</option>
-                                <option value="11:00">☀️ 11:00 AM</option>
-                                <option value="12:00">🌞 12:00 PM</option>
-                                <option value="14:00">🌤️ 2:00 PM</option>
-                                <option value="15:00">🌤️ 3:00 PM</option>
-                                <option value="16:00">🌇 4:00 PM</option>
-                                <option value="17:00">🌆 5:00 PM</option>
-                            </select>
+                        <div class="form-group">
+                            <label>Preferred Time <span>*</span></label>
+                            <div class="input-box">
+                                <i class="fas fa-clock"></i>
+                                <select name="time" required>
+                                    <option value="">-- Choose a Time Slot --</option>
+                                    <option value="09:00">🌅 9:00 AM</option>
+                                    <option value="10:00">☀️ 10:00 AM</option>
+                                    <option value="11:00">☀️ 11:00 AM</option>
+                                    <option value="12:00">🌞 12:00 PM</option>
+                                    <option value="14:00">🌤️ 2:00 PM</option>
+                                    <option value="15:00">🌤️ 3:00 PM</option>
+                                    <option value="16:00">🌇 4:00 PM</option>
+                                    <option value="17:00">🌆 5:00 PM</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label>Additional Notes</label>
-                        <div class="input-box">
-                            <i class="fas fa-comment" style="top:20px;"></i>
-                            <textarea name="notes" placeholder="Describe your symptoms or any special requirements..."></textarea>
+                        <div class="form-group">
+                            <label>Additional Notes</label>
+                            <div class="input-box">
+                                <i class="fas fa-comment" style="top:20px;"></i>
+                                <textarea name="notes"
+                                    placeholder="Describe your symptoms or any special requirements..."></textarea>
+                            </div>
                         </div>
-                    </div>
 
-                    <button type="submit" class="btn-submit">
-                        <i class="fas fa-calendar-check"></i> Confirm Booking
-                    </button>
-                </form>
-            </div>
-
-            <!-- INFO PANEL -->
-            <div class="info-card">
-
-                <div class="info-box">
-                    <h3><i class="fas fa-list"></i> Available Services</h3>
-                    <div class="service-item"><i class="fas fa-bone"></i><span>Orthopedic Therapy</span></div>
-                    <div class="service-item"><i class="fas fa-brain"></i><span>Neurological Rehab</span></div>
-                    <div class="service-item"><i class="fas fa-heartbeat"></i><span>Sports Rehabilitation</span></div>
-                    <div class="service-item"><i class="fas fa-baby"></i><span>Pediatric Therapy</span></div>
-                    <div class="service-item"><i class="fas fa-female"></i><span>Women's Health</span></div>
-                    <div class="service-item"><i class="fas fa-home"></i><span>Home Visit</span></div>
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-calendar-check"></i> Confirm Booking
+                        </button>
+                    </form>
                 </div>
 
-                <div class="info-box">
-                    <h3><i class="fas fa-clock"></i> Available Time Slots</h3>
-                    <div class="time-grid">
-                        <div class="time-slot available">9:00 AM ✅</div>
-                        <div class="time-slot available">10:00 AM ✅</div>
-                        <div class="time-slot available">11:00 AM ✅</div>
-                        <div class="time-slot available">12:00 PM ✅</div>
-                        <div class="time-slot available">2:00 PM ✅</div>
-                        <div class="time-slot available">3:00 PM ✅</div>
-                        <div class="time-slot available">4:00 PM ✅</div>
-                        <div class="time-slot available">5:00 PM ✅</div>
+                <!-- INFO PANEL -->
+                <div class="info-card">
+
+                    <div class="info-box">
+                        <h3><i class="fas fa-list"></i> Available Services</h3>
+                        <div class="service-item"><i class="fas fa-bone"></i><span>Orthopedic Therapy</span></div>
+                        <div class="service-item"><i class="fas fa-brain"></i><span>Neurological Rehab</span></div>
+                        <div class="service-item"><i class="fas fa-heartbeat"></i><span>Sports Rehabilitation</span>
+                        </div>
+                        <div class="service-item"><i class="fas fa-baby"></i><span>Pediatric Therapy</span></div>
+                        <div class="service-item"><i class="fas fa-female"></i><span>Women's Health</span></div>
+                        <div class="service-item"><i class="fas fa-home"></i><span>Home Visit</span></div>
                     </div>
-                </div>
 
-                <div class="tip-box">
-                    <h3><i class="fas fa-lightbulb"></i> Before Your Appointment</h3>
-                    <div class="tip-item"><i class="fas fa-check"></i><span>Arrive 10 minutes early for your first visit</span></div>
-                    <div class="tip-item"><i class="fas fa-check"></i><span>Wear comfortable, loose-fitting clothing</span></div>
-                    <div class="tip-item"><i class="fas fa-check"></i><span>Bring any previous medical reports</span></div>
-                    <div class="tip-item"><i class="fas fa-check"></i><span>Stay hydrated before your session</span></div>
-                </div>
+                    <div class="info-box">
+                        <h3><i class="fas fa-clock"></i> Available Time Slots</h3>
+                        <div class="time-grid">
+                            <div class="time-slot available">9:00 AM ✅</div>
+                            <div class="time-slot available">10:00 AM ✅</div>
+                            <div class="time-slot available">11:00 AM ✅</div>
+                            <div class="time-slot available">12:00 PM ✅</div>
+                            <div class="time-slot available">2:00 PM ✅</div>
+                            <div class="time-slot available">3:00 PM ✅</div>
+                            <div class="time-slot available">4:00 PM ✅</div>
+                            <div class="time-slot available">5:00 PM ✅</div>
+                        </div>
+                    </div>
 
+                    <div class="tip-box">
+                        <h3><i class="fas fa-lightbulb"></i> Before Your Appointment</h3>
+                        <div class="tip-item"><i class="fas fa-check"></i><span>Arrive 10 minutes early for your first
+                                visit</span></div>
+                        <div class="tip-item"><i class="fas fa-check"></i><span>Wear comfortable, loose-fitting
+                                clothing</span></div>
+                        <div class="tip-item"><i class="fas fa-check"></i><span>Bring any previous medical
+                                reports</span></div>
+                        <div class="tip-item"><i class="fas fa-check"></i><span>Stay hydrated before your session</span>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
-</div>
 
 </body>
+
 </html>

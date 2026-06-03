@@ -1,134 +1,371 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>My Appointments - Physio Rehab</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; display: flex; min-height: 100vh; }
-       .sidebar{width: 260px; height:100vh; position: fixed; left: 0; top: 0; background: linear-gradient(180deg, #1a1a1a, #2C2C2C); overflow-y: auto; scrollbar-width: none;}
-        .sidebar-logo { padding: 22px 20px; border-bottom: 1px solid rgba(245,197,24,0.2); text-align: center; }
-        .sidebar-logo img { width: 130px; border-radius: 10px; }
-        .sidebar-logo p { color: #F5C518; font-size: 0.75em; margin-top: 8px; font-weight: 600; }
-        .user-avatar { width: 42px; height: 42px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2C2C2C; }
-        .user-info h4 { color: white; font-size: 0.88em; }
-        .user-info span { color: #F5C518; font-size: 0.72em; }
-        .nav-section { padding: 12px 22px 5px; color: #555; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 22px; color: #bbb; text-decoration: none; font-size: 0.9em; transition: all 0.3s; border-left: 3px solid transparent; }
-        .nav-item:hover, .nav-item.active { background: rgba(245,197,24,0.1); color: #F5C518; border-left-color: #F5C518; }
-        .nav-item i { width: 18px; text-align: center; }
-        .logout-btn { margin: 15px; display: flex; align-items: center; gap: 10px; padding: 11px 18px; background: rgba(220,53,69,0.15); color: #ff6b6b; border-radius: 10px; text-decoration: none; font-size: 0.86em; }
-        .main-content { margin-left: 260px; flex: 1; }
-        .topbar { background: white; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
-        .topbar h1 { font-size: 1.2em; color: #2C2C2C; font-weight: 700; }
-        .dashboard-body { padding: 30px; }
-        .btn-book { background: #F5C518; color: #2C2C2C; padding: 10px 22px; border-radius: 25px; font-weight: 700; text-decoration: none; font-size: 0.9em; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .sidebar-logo {
+            padding: 22px 20px;
+            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+            text-align: center;
+        }
+
+        .sidebar-logo img {
+            width: 130px;
+            border-radius: 10px;
+        }
+
+        .sidebar-logo p {
+            color: #F5C518;
+            font-size: 0.75em;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            background: #F5C518;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #2C2C2C;
+        }
+
+        .user-info h4 {
+            color: white;
+            font-size: 0.88em;
+        }
+
+        .user-info span {
+            color: #F5C518;
+            font-size: 0.72em;
+        }
+
+        .nav-section {
+            padding: 12px 22px 5px;
+            color: #555;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 22px;
+            color: #bbb;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(245, 197, 24, 0.1);
+            color: #F5C518;
+            border-left-color: #F5C518;
+        }
+
+        .nav-item i {
+            width: 18px;
+            text-align: center;
+        }
+
+        .logout-btn {
+            margin: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 18px;
+            background: rgba(220, 53, 69, 0.15);
+            color: #ff6b6b;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 0.86em;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+        }
+
+        .topbar {
+            background: white;
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .topbar h1 {
+            font-size: 1.2em;
+            color: #2C2C2C;
+            font-weight: 700;
+        }
+
+        .dashboard-body {
+            padding: 30px;
+        }
+
+        .btn-book {
+            background: #F5C518;
+            color: #2C2C2C;
+            padding: 10px 22px;
+            border-radius: 25px;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
 
         /* APPOINTMENT CARDS */
-        .appt-grid { display: grid; gap: 15px; }
-        .appt-card { background: white; border-radius: 15px; padding: 22px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 20px; transition: transform 0.3s; }
-        .appt-card:hover { transform: translateY(-3px); }
-        .appt-date-box { background: linear-gradient(135deg, #F5C518, #e6b800); color: #2C2C2C; border-radius: 12px; padding: 15px; text-align: center; min-width: 70px; }
-        .appt-date-box .day { font-size: 1.8em; font-weight: 900; line-height: 1; }
-        .appt-date-box .month { font-size: 0.75em; font-weight: 700; text-transform: uppercase; }
-        .appt-details { flex: 1; }
-        .appt-details h3 { font-size: 1em; font-weight: 700; color: #2C2C2C; margin-bottom: 5px; }
-        .appt-meta { display: flex; gap: 15px; margin-top: 8px; flex-wrap: wrap; }
-        .appt-meta span { font-size: 0.8em; color: #888; display: flex; align-items: center; gap: 5px; }
-        .appt-meta i { color: #F5C518; }
-        .badge { padding: 5px 14px; border-radius: 20px; font-size: 0.78em; font-weight: 700; }
-        .badge-pending { background: #fff3cd; color: #856404; }
-        .badge-confirmed { background: #d4edda; color: #155724; }
-        .badge-completed { background: #e2e3e5; color: #383d41; }
-        .badge-cancelled { background: #f8d7da; color: #721c24; }
-        .empty-state { text-align: center; padding: 60px 20px; background: white; border-radius: 18px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
-        .empty-state i { font-size: 4em; color: #F5C518; margin-bottom: 15px; }
-        .empty-state h3 { color: #2C2C2C; margin-bottom: 8px; }
-        .empty-state p { color: #888; margin-bottom: 20px; }
-        .alert-success { background: #d4edda; border: 1px solid #28a745; color: #155724; padding: 12px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9em; }
+        .appt-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .appt-card {
+            background: white;
+            border-radius: 15px;
+            padding: 22px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.3s;
+        }
+
+        .appt-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .appt-date-box {
+            background: linear-gradient(135deg, #F5C518, #e6b800);
+            color: #2C2C2C;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            min-width: 70px;
+        }
+
+        .appt-date-box .day {
+            font-size: 1.8em;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .appt-date-box .month {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .appt-details {
+            flex: 1;
+        }
+
+        .appt-details h3 {
+            font-size: 1em;
+            font-weight: 700;
+            color: #2C2C2C;
+            margin-bottom: 5px;
+        }
+
+        .appt-meta {
+            display: flex;
+            gap: 15px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .appt-meta span {
+            font-size: 0.8em;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .appt-meta i {
+            color: #F5C518;
+        }
+
+        .badge {
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.78em;
+            font-weight: 700;
+        }
+
+        .badge-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-completed {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .badge-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .empty-state i {
+            font-size: 4em;
+            color: #F5C518;
+            margin-bottom: 15px;
+        }
+
+        .empty-state h3 {
+            color: #2C2C2C;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
     </style>
 </head>
+
 <body>
 
-<aside class="sidebar">
-    <div class="sidebar-logo">
-        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
-    </div>
-    <div class="sidebar-user">
-        <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
-        <div class="user-info">
-            <h4>{{ user.get_full_name|default:user.username }}</h4>
-            <span>🟢 Patient</span>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
         </div>
-    </div>
-    <nav>
-        <div class="nav-section">Main Menu</div>
-        <a href="/client-dashboard" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-        <a href="/book" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
-        <a href="/my-appointments" class="nav-item active"><i class="fas fa-calendar-check"></i> My Appointments</a>
-        <div class="nav-section">Communication</div>
-        <a href="#" class="nav-item"><i class="fas fa-comments"></i> Chat with Doctor</a>
-        <div class="nav-section">Account</div>
-        <a href="#" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
-        <a href="#" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
-    </nav>
-    <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-</aside>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <span>🟢 Patient</span>
+            </div>
+        </div>
+        <nav>
+            <div class="nav-section">Main Menu</div>
+            <a href="/client-dashboard" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/book" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
+            <a href="/my-appointments" class="nav-item active"><i class="fas fa-calendar-check"></i> My Appointments</a>
+            <div class="nav-section">Communication</div>
+            <a href="#" class="nav-item"><i class="fas fa-comments"></i> Chat with Doctor</a>
+            <div class="nav-section">Account</div>
+            <a href="#" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
+            <a href="#" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
+        </nav>
+        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
 
-<div class="main-content">
-    <div class="topbar">
-        <h1>📋 My Appointments</h1>
-        <a href="/book" class="btn-book">+ Book New</a>
-    </div>
-    <div class="dashboard-body">
+    <div class="main-content">
+        <div class="topbar">
+            <h1>📋 My Appointments</h1>
+            <a href="/book" class="btn-book">+ Book New</a>
+        </div>
+        <div class="dashboard-body">
 
-        {% if messages %}
+            {% if messages %}
             {% for message in messages %}
             <div class="alert-success">{{ message }}</div>
             {% endfor %}
-        {% endif %}
+            {% endif %}
 
-        {% if appointments %}
-        <div class="appt-grid">
-            {% for appt in appointments %}
-            <div class="appt-card">
-                <div class="appt-date-box">
-                    <div class="day">{{ appt.date|date:"d" }}</div>
-                    <div class="month">{{ appt.date|date:"M" }}</div>
-                </div>
-                <div class="appt-details">
-                    <h3>{{ appt.get_service_display }}</h3>
-                    <div class="appt-meta">
-                        <span><i class="fas fa-clock"></i> {{ appt.time }}</span>
-                        <span><i class="fas fa-calendar"></i> {{ appt.date|date:"l, d F Y" }}</span>
-                        {% if appt.notes %}
-                        <span><i class="fas fa-comment"></i> {{ appt.notes|truncatechars:40 }}</span>
-                        {% endif %}
+            {% if appointments %}
+            <div class="appt-grid">
+                {% for appt in appointments %}
+                <div class="appt-card">
+                    <div class="appt-date-box">
+                        <div class="day">{{ appt.date|date:"d" }}</div>
+                        <div class="month">{{ appt.date|date:"M" }}</div>
                     </div>
+                    <div class="appt-details">
+                        <h3>{{ appt.get_service_display }}</h3>
+                        <div class="appt-meta">
+                            <span><i class="fas fa-clock"></i> {{ appt.time }}</span>
+                            <span><i class="fas fa-calendar"></i> {{ appt.date|date:"l, d F Y" }}</span>
+                            {% if appt.notes %}
+                            <span><i class="fas fa-comment"></i> {{ appt.notes|truncatechars:40 }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="badge badge-{{ appt.status }}">
+                        {% if appt.status == 'pending' %}⏳ Pending
+                        {% elif appt.status == 'confirmed' %}✅ Confirmed
+                        {% elif appt.status == 'completed' %}🏁 Completed
+                        {% else %}❌ Cancelled{% endif %}
+                    </span>
                 </div>
-                <span class="badge badge-{{ appt.status }}">
-                    {% if appt.status == 'pending' %}⏳ Pending
-                    {% elif appt.status == 'confirmed' %}✅ Confirmed
-                    {% elif appt.status == 'completed' %}🏁 Completed
-                    {% else %}❌ Cancelled{% endif %}
-                </span>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
 
-        {% else %}
-        <div class="empty-state">
-            <i class="fas fa-calendar-times"></i>
-            <h3>No Appointments Yet</h3>
-            <p>You haven't booked any appointments yet.<br>Book your first session with Dr. Dhvani Patalia!</p>
-            <a href="/book" class="btn-book">📅 Book First Appointment</a>
-        </div>
-        {% endif %}
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <h3>No Appointments Yet</h3>
+                <p>You haven't booked any appointments yet.<br>Book your first session with Dr. Dhvani Patalia!</p>
+                <a href="/book" class="btn-book">📅 Book First Appointment</a>
+            </div>
+            {% endif %}
 
+        </div>
     </div>
-</div>
 
 </body>
+
 </html>

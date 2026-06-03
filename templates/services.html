@@ -1,20 +1,31 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Services - Dr. Dhvani Patalia Physio Rehab</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #fff; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #fff;
+        }
+
         .page-hero {
             position: relative;
             padding: 100px 25px;
             text-align: center;
             overflow: hidden;
         }
+
         .page-hero-bg {
             position: absolute;
             inset: 0;
@@ -23,309 +34,573 @@
             background-position: center;
             filter: brightness(0.25);
         }
-        .page-hero-content { position: relative; z-index: 1; }
-        .page-hero h1 { color: white; font-size: 2.8em; font-weight: 800; margin-bottom: 10px; }
-        .page-hero h1 span { color: #F5C518; }
-        .page-hero p { color: #aaa; }
-        .breadcrumb { display: flex; justify-content: center; gap: 8px; margin-top: 15px; font-size: 0.88em; }
-        .breadcrumb a { color: #F5C518; text-decoration: none; }
-        .breadcrumb span { color: #888; }
-        section { padding: 60px 25px; }
-        .container { max-width: 1150px; margin: 0 auto; }
-        .section-title { margin-bottom: 35px; }
-        .section-title h2 { font-size: 1.8em; font-weight: 800; color: #2C2C2C; margin-bottom: 5px; display: flex; align-items: center; gap: 12px; }
-        .section-title h2 span { color: #F5C518; }
-        .section-title p { color: #888; font-size: 0.9em; margin-left: 42px; }
-        .section-icon { width: 40px; height: 40px; background: #F5C518; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .section-icon i { color: #2C2C2C; font-size: 1.1em; }
-        .bg-gray { background: #f9f9f9; }
-        .bg-dark { background: #2C2C2C; }
+
+        .page-hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-hero h1 {
+            color: white;
+            font-size: 2.8em;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .page-hero h1 span {
+            color: #F5C518;
+        }
+
+        .page-hero p {
+            color: #aaa;
+        }
+
+        .breadcrumb {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+            font-size: 0.88em;
+        }
+
+        .breadcrumb a {
+            color: #F5C518;
+            text-decoration: none;
+        }
+
+        .breadcrumb span {
+            color: #888;
+        }
+
+        section {
+            padding: 60px 25px;
+        }
+
+        .container {
+            max-width: 1150px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            margin-bottom: 35px;
+        }
+
+        .section-title h2 {
+            font-size: 1.8em;
+            font-weight: 800;
+            color: #2C2C2C;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title h2 span {
+            color: #F5C518;
+        }
+
+        .section-title p {
+            color: #888;
+            font-size: 0.9em;
+            margin-left: 42px;
+        }
+
+        .section-icon {
+            width: 40px;
+            height: 40px;
+            background: #F5C518;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .section-icon i {
+            color: #2C2C2C;
+            font-size: 1.1em;
+        }
+
+        .bg-gray {
+            background: #f9f9f9;
+        }
+
+        .bg-dark {
+            background: #2C2C2C;
+        }
 
         /* SERVICE TAGS GRID */
-        .tags-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
-        .service-tag { background: white; border: 1.5px solid #eee; border-radius: 25px; padding: 8px 16px; font-size: 0.84em; color: #444; display: flex; align-items: center; gap: 7px; transition: all 0.3s; cursor: default; }
-        .service-tag:hover { border-color: #F5C518; color: #2C2C2C; background: rgba(245,197,24,0.08); transform: translateY(-2px); }
-        .service-tag i { color: #F5C518; font-size: 0.85em; }
-        .bg-gray .service-tag { background: white; }
-        .bg-dark .service-tag { background: rgba(255,255,255,0.05); border-color: rgba(245,197,24,0.3); color: #E0E0E0; }
-        .bg-dark .section-title h2 { color: white; }
-        .bg-dark .section-title p { color: #aaa; }
+        .tags-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .service-tag {
+            background: white;
+            border: 1.5px solid #eee;
+            border-radius: 25px;
+            padding: 8px 16px;
+            font-size: 0.84em;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            transition: all 0.3s;
+            cursor: default;
+        }
+
+        .service-tag:hover {
+            border-color: #F5C518;
+            color: #2C2C2C;
+            background: rgba(245, 197, 24, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .service-tag i {
+            color: #F5C518;
+            font-size: 0.85em;
+        }
+
+        .bg-gray .service-tag {
+            background: white;
+        }
+
+        .bg-dark .service-tag {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(245, 197, 24, 0.3);
+            color: #E0E0E0;
+        }
+
+        .bg-dark .section-title h2 {
+            color: white;
+        }
+
+        .bg-dark .section-title p {
+            color: #aaa;
+        }
 
         /* CARDS STYLE FOR MAIN CATEGORIES */
-        .category-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 20px; margin-top: 15px; }
-        .category-card { background: white; border-radius: 14px; padding: 22px; border-left: 4px solid #F5C518; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
-        .bg-gray .category-card { background: white; }
-        .category-card h4 { color: #2C2C2C; font-weight: 700; margin-bottom: 5px; font-size: 0.95em; display: flex; align-items: center; gap: 8px; }
-        .category-card h4 i { color: #F5C518; }
-        .category-card p { color: #888; font-size: 0.83em; line-height: 1.6; }
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 14px;
+            padding: 22px;
+            border-left: 4px solid #F5C518;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .bg-gray .category-card {
+            background: white;
+        }
+
+        .category-card h4 {
+            color: #2C2C2C;
+            font-weight: 700;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .category-card h4 i {
+            color: #F5C518;
+        }
+
+        .category-card p {
+            color: #888;
+            font-size: 0.83em;
+            line-height: 1.6;
+        }
 
         /* PROCESS */
-        .process-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
-        .process-item { text-align: center; padding: 20px; }
-        .process-num { width: 55px; height: 55px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4em; font-weight: 900; color: #2C2C2C; margin: 0 auto 15px; }
-        .process-item h4 { color: #2C2C2C; font-weight: 700; margin-bottom: 8px; font-size: 0.95em; }
-        .process-item p { color: #888; font-size: 0.84em; line-height: 1.6; }
+        .process-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .process-item {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .process-num {
+            width: 55px;
+            height: 55px;
+            background: #F5C518;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4em;
+            font-weight: 900;
+            color: #2C2C2C;
+            margin: 0 auto 15px;
+        }
+
+        .process-item h4 {
+            color: #2C2C2C;
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .process-item p {
+            color: #888;
+            font-size: 0.84em;
+            line-height: 1.6;
+        }
 
         /* CTA */
-        .cta-box { background: linear-gradient(135deg, #2C2C2C, #1a1a1a); border-radius: 20px; padding: 50px; text-align: center; }
-        .cta-box h2 { color: white; font-size: 2em; font-weight: 800; margin-bottom: 10px; }
-        .cta-box h2 span { color: #F5C518; }
-        .cta-box p { color: #aaa; margin-bottom: 25px; }
-        .btn-gold { background: #F5C518; color: #2C2C2C; padding: 14px 35px; border-radius: 30px; font-size: 1em; font-weight: 700; text-decoration: none; display: inline-block; transition: all 0.3s; margin: 5px; }
-        .btn-gold:hover { background: #e6b800; transform: translateY(-2px); }
-        .btn-wa { background: #25D366; color: white; padding: 14px 35px; border-radius: 30px; font-size: 1em; font-weight: 700; text-decoration: none; display: inline-block; transition: all 0.3s; margin: 5px; }
-        .btn-wa:hover { background: #1db954; transform: translateY(-2px); }
-        .divider { border: none; border-top: 1px solid #eee; margin: 0; }
+        .cta-box {
+            background: linear-gradient(135deg, #2C2C2C, #1a1a1a);
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+        }
+
+        .cta-box h2 {
+            color: white;
+            font-size: 2em;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .cta-box h2 span {
+            color: #F5C518;
+        }
+
+        .cta-box p {
+            color: #aaa;
+            margin-bottom: 25px;
+        }
+
+        .btn-gold {
+            background: #F5C518;
+            color: #2C2C2C;
+            padding: 14px 35px;
+            border-radius: 30px;
+            font-size: 1em;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn-gold:hover {
+            background: #e6b800;
+            transform: translateY(-2px);
+        }
+
+        .btn-wa {
+            background: #25D366;
+            color: white;
+            padding: 14px 35px;
+            border-radius: 30px;
+            font-size: 1em;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn-wa:hover {
+            background: #1db954;
+            transform: translateY(-2px);
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 0;
+        }
 
         @media (max-width: 768px) {
-            .category-grid, .process-grid { grid-template-columns: 1fr; }
-            .page-hero h1 { font-size: 2em; }
+
+            .category-grid,
+            .process-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-hero h1 {
+                font-size: 2em;
+            }
         }
     </style>
 </head>
+
 <body>
 
-{% include 'navbar.html' %}
+    {% include 'navbar.html' %}
 
-<!-- PAGE HERO WITH CLINIC IMAGE -->
-<div class="page-hero">
-    <div class="page-hero-bg"></div>
-    <div class="page-hero-content">
-        <h1>Our <span>Services</span></h1>
-        <p>Comprehensive physiotherapy treatments tailored for your recovery</p>
-        <div class="breadcrumb">
-            <a href="/">Home</a><span>›</span>
-            <span style="color:white;">Services</span>
+    <!-- PAGE HERO WITH CLINIC IMAGE -->
+    <div class="page-hero">
+        <div class="page-hero-bg"></div>
+        <div class="page-hero-content">
+            <h1>Our <span>Services</span></h1>
+            <p>Comprehensive physiotherapy treatments tailored for your recovery</p>
+            <div class="breadcrumb">
+                <a href="/">Home</a><span>›</span>
+                <span style="color:white;">Services</span>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- 1. PAIN MANAGEMENT -->
-<section>
-    <div class="container">
-        <div class="section-title">
-            <h2>
-                <div class="section-icon"><i class="fas fa-band-aid"></i></div>
-                Pain <span>Management</span>
-            </h2>
-            <p>Effective treatment for all types of pain conditions</p>
+    <!-- 1. PAIN MANAGEMENT -->
+    <section>
+        <div class="container">
+            <div class="section-title">
+                <h2>
+                    <div class="section-icon"><i class="fas fa-band-aid"></i></div>
+                    Pain <span>Management</span>
+                </h2>
+                <p>Effective treatment for all types of pain conditions</p>
+            </div>
+            <div class="tags-grid">
+                <div class="service-tag"><i class="fas fa-check"></i> Neck Pain Treatment</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Back Pain Treatment</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Lower Back Pain / Slip Disc</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Sciatica Treatment</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Shoulder Pain Treatment</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Knee Pain Treatment</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Joint Pain Physiotherapy</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Muscle Pain & Spasm Relief</div>
+            </div>
         </div>
-        <div class="tags-grid">
-            <div class="service-tag"><i class="fas fa-check"></i> Neck Pain Treatment</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Back Pain Treatment</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Lower Back Pain / Slip Disc</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Sciatica Treatment</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Shoulder Pain Treatment</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Knee Pain Treatment</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Joint Pain Physiotherapy</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Muscle Pain & Spasm Relief</div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<hr class="divider">
+    <hr class="divider">
 
-<!-- 2. FROZEN SHOULDER -->
-<section class="bg-gray">
-    <div class="container">
-        <div class="section-title">
-            <h2>
-                <div class="section-icon"><i class="fas fa-snowflake"></i></div>
-                Frozen Shoulder & <span>Shoulder Rehab</span>
-            </h2>
-            <p>Specialized shoulder rehabilitation program</p>
+    <!-- 2. FROZEN SHOULDER -->
+    <section class="bg-gray">
+        <div class="container">
+            <div class="section-title">
+                <h2>
+                    <div class="section-icon"><i class="fas fa-snowflake"></i></div>
+                    Frozen Shoulder & <span>Shoulder Rehab</span>
+                </h2>
+                <p>Specialized shoulder rehabilitation program</p>
+            </div>
+            <div class="tags-grid">
+                <div class="service-tag"><i class="fas fa-check"></i> Frozen Shoulder Physiotherapy</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Shoulder Stiffness Treatment</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Rotator Cuff Rehabilitation</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Post Shoulder Injury Rehab</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Hydrodilatation Rehabilitation</div>
+            </div>
         </div>
-        <div class="tags-grid">
-            <div class="service-tag"><i class="fas fa-check"></i> Frozen Shoulder Physiotherapy</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Shoulder Stiffness Treatment</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Rotator Cuff Rehabilitation</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Post Shoulder Injury Rehab</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Hydrodilatation Rehabilitation</div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<hr class="divider">
+    <hr class="divider">
 
-<!-- 3. SPINE & NERVE -->
-<section>
-    <div class="container">
-        <div class="section-title">
-            <h2>
-                <div class="section-icon"><i class="fas fa-spine"></i></div>
-                Spine & <span>Nerve Conditions</span>
-            </h2>
-            <p>Expert treatment for spine disorders and neurological conditions</p>
+    <!-- 3. SPINE & NERVE -->
+    <section>
+        <div class="container">
+            <div class="section-title">
+                <h2>
+                    <div class="section-icon"><i class="fas fa-spine"></i></div>
+                    Spine & <span>Nerve Conditions</span>
+                </h2>
+                <p>Expert treatment for spine disorders and neurological conditions</p>
+            </div>
+            <div class="tags-grid">
+                <div class="service-tag"><i class="fas fa-check"></i> Cervical Spondylosis Treatment</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Lumbar Spondylosis Treatment</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Sciatica Rehabilitation</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Nerve Compression Therapy</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Posture Correction Therapy</div>
+            </div>
         </div>
-        <div class="tags-grid">
-            <div class="service-tag"><i class="fas fa-check"></i> Cervical Spondylosis Treatment</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Lumbar Spondylosis Treatment</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Sciatica Rehabilitation</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Nerve Compression Therapy</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Posture Correction Therapy</div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<hr class="divider">
+    <hr class="divider">
 
-<!-- 4. SPORTS -->
-<section class="bg-gray">
-    <div class="container">
-        <div class="section-title">
-            <h2>
-                <div class="section-icon"><i class="fas fa-running"></i></div>
-                Sports & Orthopaedic <span>Rehabilitation</span>
-            </h2>
-            <p>Get back to your sport faster with expert rehabilitation</p>
+    <!-- 4. SPORTS -->
+    <section class="bg-gray">
+        <div class="container">
+            <div class="section-title">
+                <h2>
+                    <div class="section-icon"><i class="fas fa-running"></i></div>
+                    Sports & Orthopaedic <span>Rehabilitation</span>
+                </h2>
+                <p>Get back to your sport faster with expert rehabilitation</p>
+            </div>
+            <div class="tags-grid">
+                <div class="service-tag"><i class="fas fa-check"></i> Sports Injury Rehabilitation</div>
+                <div class="service-tag"><i class="fas fa-check"></i> ACL Rehabilitation</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Meniscus Injury Rehab</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Fracture Rehabilitation</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Ligament Injury Treatment</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Post-Surgery Physiotherapy</div>
+            </div>
         </div>
-        <div class="tags-grid">
-            <div class="service-tag"><i class="fas fa-check"></i> Sports Injury Rehabilitation</div>
-            <div class="service-tag"><i class="fas fa-check"></i> ACL Rehabilitation</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Meniscus Injury Rehab</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Fracture Rehabilitation</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Ligament Injury Treatment</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Post-Surgery Physiotherapy</div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<hr class="divider">
+    <hr class="divider">
 
-<!-- 5. NEUROLOGICAL -->
-<section>
-    <div class="container">
-        <div class="section-title">
-            <h2>
-                <div class="section-icon"><i class="fas fa-brain"></i></div>
-                Neurological <span>Physiotherapy</span>
-            </h2>
-            <p>Specialized rehabilitation for neurological conditions</p>
+    <!-- 5. NEUROLOGICAL -->
+    <section>
+        <div class="container">
+            <div class="section-title">
+                <h2>
+                    <div class="section-icon"><i class="fas fa-brain"></i></div>
+                    Neurological <span>Physiotherapy</span>
+                </h2>
+                <p>Specialized rehabilitation for neurological conditions</p>
+            </div>
+            <div class="tags-grid">
+                <div class="service-tag"><i class="fas fa-check"></i> Stroke Rehabilitation</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Paralysis Physiotherapy</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Parkinson's Rehabilitation</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Balance & Gait Training</div>
+            </div>
         </div>
-        <div class="tags-grid">
-            <div class="service-tag"><i class="fas fa-check"></i> Stroke Rehabilitation</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Paralysis Physiotherapy</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Parkinson's Rehabilitation</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Balance & Gait Training</div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<hr class="divider">
+    <hr class="divider">
 
-<!-- 6. WOMEN'S HEALTH -->
-<section class="bg-gray">
-    <div class="container">
-        <div class="section-title">
-            <h2>
-                <div class="section-icon"><i class="fas fa-female"></i></div>
-                Women's Health <span>Physiotherapy</span>
-            </h2>
-            <p>Specialized care for women at every stage of life</p>
+    <!-- 6. WOMEN'S HEALTH -->
+    <section class="bg-gray">
+        <div class="container">
+            <div class="section-title">
+                <h2>
+                    <div class="section-icon"><i class="fas fa-female"></i></div>
+                    Women's Health <span>Physiotherapy</span>
+                </h2>
+                <p>Specialized care for women at every stage of life</p>
+            </div>
+            <div class="tags-grid">
+                <div class="service-tag"><i class="fas fa-check"></i> Pregnancy Physiotherapy</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Postpartum Recovery</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Pelvic Floor Exercises</div>
+            </div>
         </div>
-        <div class="tags-grid">
-            <div class="service-tag"><i class="fas fa-check"></i> Pregnancy Physiotherapy</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Postpartum Recovery</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Pelvic Floor Exercises</div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<hr class="divider">
+    <hr class="divider">
 
-<!-- 7. ADVANCED TREATMENTS -->
-<section style="background:#2C2C2C;">
-    <div class="container">
-        <div class="section-title">
-            <h2 style="color:white;">
-                <div class="section-icon"><i class="fas fa-syringe"></i></div>
-                Advanced <span>Physiotherapy Treatments</span>
-            </h2>
-            <p style="color:#aaa; margin-left:42px;">Cutting-edge techniques for faster and better recovery</p>
+    <!-- 7. ADVANCED TREATMENTS -->
+    <section style="background:#2C2C2C;">
+        <div class="container">
+            <div class="section-title">
+                <h2 style="color:white;">
+                    <div class="section-icon"><i class="fas fa-syringe"></i></div>
+                    Advanced <span>Physiotherapy Treatments</span>
+                </h2>
+                <p style="color:#aaa; margin-left:42px;">Cutting-edge techniques for faster and better recovery</p>
+            </div>
+            <div class="tags-grid">
+                <div class="service-tag"><i class="fas fa-check"></i> Dry Needling</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Cupping Therapy</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Kinesiology Taping</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Electrotherapy</div>
+                <div class="service-tag"><i class="fas fa-check"></i> IFT / TENS Therapy</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Ultrasound Therapy</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Manual Therapy</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Myofascial Release</div>
+            </div>
         </div>
-        <div class="tags-grid">
-            <div class="service-tag"><i class="fas fa-check"></i> Dry Needling</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Cupping Therapy</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Kinesiology Taping</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Electrotherapy</div>
-            <div class="service-tag"><i class="fas fa-check"></i> IFT / TENS Therapy</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Ultrasound Therapy</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Manual Therapy</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Myofascial Release</div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<hr class="divider">
+    <hr class="divider">
 
-<!-- 8. MOBILITY & FITNESS -->
-<section>
-    <div class="container">
-        <div class="section-title">
-            <h2>
-                <div class="section-icon"><i class="fas fa-dumbbell"></i></div>
-                Mobility & <span>Fitness</span>
-            </h2>
-            <p>Improve your strength, flexibility and functional movement</p>
+    <!-- 8. MOBILITY & FITNESS -->
+    <section>
+        <div class="container">
+            <div class="section-title">
+                <h2>
+                    <div class="section-icon"><i class="fas fa-dumbbell"></i></div>
+                    Mobility & <span>Fitness</span>
+                </h2>
+                <p>Improve your strength, flexibility and functional movement</p>
+            </div>
+            <div class="tags-grid">
+                <div class="service-tag"><i class="fas fa-check"></i> Strengthening Exercises</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Flexibility Training</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Posture Correction</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Ergonomic Advice</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Functional Rehabilitation</div>
+            </div>
         </div>
-        <div class="tags-grid">
-            <div class="service-tag"><i class="fas fa-check"></i> Strengthening Exercises</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Flexibility Training</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Posture Correction</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Ergonomic Advice</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Functional Rehabilitation</div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<hr class="divider">
+    <hr class="divider">
 
-<!-- 9. HOME CARE -->
-<section class="bg-gray">
-    <div class="container">
-        <div class="section-title">
-            <h2>
-                <div class="section-icon"><i class="fas fa-home"></i></div>
-                Home Care <span>Services</span>
-            </h2>
-            <p>Professional physiotherapy at your doorstep</p>
+    <!-- 9. HOME CARE -->
+    <section class="bg-gray">
+        <div class="container">
+            <div class="section-title">
+                <h2>
+                    <div class="section-icon"><i class="fas fa-home"></i></div>
+                    Home Care <span>Services</span>
+                </h2>
+                <p>Professional physiotherapy at your doorstep</p>
+            </div>
+            <div class="tags-grid">
+                <div class="service-tag"><i class="fas fa-check"></i> Home Visit Physiotherapy</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Elderly Physiotherapy at Home</div>
+                <div class="service-tag"><i class="fas fa-check"></i> Post-Surgery Home Rehab</div>
+            </div>
         </div>
-        <div class="tags-grid">
-            <div class="service-tag"><i class="fas fa-check"></i> Home Visit Physiotherapy</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Elderly Physiotherapy at Home</div>
-            <div class="service-tag"><i class="fas fa-check"></i> Post-Surgery Home Rehab</div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<!-- PROCESS -->
-<section>
-    <div class="container">
-        <div style="text-align:center; margin-bottom:40px;">
-            <h2 style="font-size:2em; font-weight:800; color:#2C2C2C;">How It <span style="color:#F5C518;">Works</span></h2>
-            <p style="color:#888; margin-top:8px;">Simple 4-step process to start your recovery</p>
+    <!-- PROCESS -->
+    <section>
+        <div class="container">
+            <div style="text-align:center; margin-bottom:40px;">
+                <h2 style="font-size:2em; font-weight:800; color:#2C2C2C;">How It <span
+                        style="color:#F5C518;">Works</span></h2>
+                <p style="color:#888; margin-top:8px;">Simple 4-step process to start your recovery</p>
+            </div>
+            <div class="process-grid">
+                <div class="process-item">
+                    <div class="process-num">1</div>
+                    <h4>Book Appointment</h4>
+                    <p>Register online or WhatsApp us to book your preferred time slot</p>
+                </div>
+                <div class="process-item">
+                    <div class="process-num">2</div>
+                    <h4>Initial Assessment</h4>
+                    <p>Dr. Dhvani assesses your condition and creates a personalized treatment plan</p>
+                </div>
+                <div class="process-item">
+                    <div class="process-num">3</div>
+                    <h4>Treatment Sessions</h4>
+                    <p>Attend sessions following your customized plan with one-to-one attention</p>
+                </div>
+                <div class="process-item">
+                    <div class="process-num">4</div>
+                    <h4>Full Recovery</h4>
+                    <p>Achieve your goals and get guidance for long-term prevention</p>
+                </div>
+            </div>
         </div>
-        <div class="process-grid">
-            <div class="process-item"><div class="process-num">1</div><h4>Book Appointment</h4><p>Register online or WhatsApp us to book your preferred time slot</p></div>
-            <div class="process-item"><div class="process-num">2</div><h4>Initial Assessment</h4><p>Dr. Dhvani assesses your condition and creates a personalized treatment plan</p></div>
-            <div class="process-item"><div class="process-num">3</div><h4>Treatment Sessions</h4><p>Attend sessions following your customized plan with one-to-one attention</p></div>
-            <div class="process-item"><div class="process-num">4</div><h4>Full Recovery</h4><p>Achieve your goals and get guidance for long-term prevention</p></div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<!-- CTA -->
-<section>
-    <div class="container">
-        <div class="cta-box">
-            <h2>Ready to Start Your <span>Recovery?</span></h2>
-            <p>Book your first appointment today or WhatsApp us for quick support</p>
-            <a href="/book" class="btn-gold">📅 Book Appointment</a>
-            <a href="https://wa.me/919409510501" class="btn-wa" target="_blank">💬 WhatsApp: +91 94095 10501</a>
+    <!-- CTA -->
+    <section>
+        <div class="container">
+            <div class="cta-box">
+                <h2>Ready to Start Your <span>Recovery?</span></h2>
+                <p>Book your first appointment today or WhatsApp us for quick support</p>
+                <a href="/book" class="btn-gold">📅 Book Appointment</a>
+                <a href="https://wa.me/919409510501" class="btn-wa" target="_blank">💬 WhatsApp: +91 94095 10501</a>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
 
-{% include 'footer.html' %}
+    {% include 'footer.html' %}
 </body>
+
 </html>
