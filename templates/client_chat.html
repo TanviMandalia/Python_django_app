@@ -1,4 +1,5 @@
 {% load static %}
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -211,8 +212,8 @@
         }
 
         .msg-bubble {
-            max-width: 60%;
-            padding: 12px 16px;
+            max-width: 64%;
+            padding: 6px 10px;
             border-radius: 18px;
             font-size: 0.9em;
             line-height: 1.5;
@@ -305,6 +306,27 @@
             color: #2C2C2C;
             margin-bottom: 8px;
         }
+
+        .msg-time {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .msg-status {
+            margin-left: 6px;
+            font-weight: bold;
+        }
+
+        .delete-msg {
+            display: none;
+            margin-left: 8px;
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .msg-bubble:hover .delete-msg {
+            display: inline-block;
+        }
     </style>
 </head>
 
@@ -338,10 +360,24 @@
     <div class="main-content">
         <!-- TOPBAR -->
         <div class="topbar">
-            <div class="doctor-avatar">DR</div>
-            <div class="doctor-info">
-                <h3>Dr. Dhvani Patalia</h3>
-                <span><span class="online-dot"></span>Online — Physio Rehab</span>
+            <div class="chat-header">
+                <div class="doctor-avatar">
+                    DR
+                </div>
+
+                <div class="doctor-info">
+                    <h3>Dr. Dhvani Patalia</h3>
+
+                    {% if admin_online %}
+                    <span class="online-status">
+                        🟢 Online
+                    </span>
+                    {% else %}
+                    <span class="offline-status">
+                        Last seen {{ admin_last_seen|timesince }} ago
+                    </span>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -357,10 +393,28 @@
                 </div>
                 <div>
                     <div class="msg-bubble {% if msg.sender == user %}sent{% else %}received{% endif %}">
-                        {{ msg.content }}
+                        {{msg.content}}
+                        {% if msg.sender == user %}
+                        <a href="{% url 'delete_message' msg.id %}" class="delete-msg"
+                            onclick="return confirm('Delete this message?')">
+                            🗑
+                        </a>
+                        {% endif %}
                     </div>
                     <div class="msg-time {% if msg.sender != user %}left{% endif %}">
-                        {{ msg.created_at|date:"d M, h:i A" }}
+                        {{ msg.created_at|smart_date }}
+
+                        {% if msg.sender == user %}
+                        <span class="msg-status">
+                            {% if msg.status == 'sent' %}
+                            ✓
+                            {% elif msg.status == 'delivered' %}
+                            ✓✓
+                            {% elif msg.status == 'read' %}
+                            ✓✓ Seen
+                            {% endif %}
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -391,6 +445,22 @@
         // Auto scroll to bottom
         const chatArea = document.getElementById('chatArea');
         chatArea.scrollTop = chatArea.scrollHeight;
+
+        const input =
+            document.querySelector('input[name="content"]');
+
+        setInterval(function () {
+
+            if (document.activeElement !== input) {
+                location.reload();
+            }
+
+        }, 5000);
+
+        setInterval(function () {
+            location.reload();
+        }, 5000);
+
     </script>
 </body>
 

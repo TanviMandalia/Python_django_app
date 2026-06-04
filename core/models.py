@@ -1,15 +1,24 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
+from django.db import models
+from django.contrib.auth.models import User
+
+
+# DASHBOARD APPOINTMENT
 
 class Appointment(models.Model):
+
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('confirmed', 'Confirmed'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ]
+
     SERVICE_CHOICES = [
         ('orthopedic', 'Orthopedic Therapy'),
         ('neurological', 'Neurological Rehab'),
@@ -18,39 +27,64 @@ class Appointment(models.Model):
         ('womens', "Women's Health"),
         ('home_visit', 'Home Visit'),
     ]
+
     TIME_CHOICES = [
-        ('09:00', '9:00 AM'), ('10:00', '10:00 AM'),
-        ('11:00', '11:00 AM'), ('12:00', '12:00 PM'),
-        ('14:00', '2:00 PM'), ('15:00', '3:00 PM'),
-        ('16:00', '4:00 PM'), ('17:00', '5:00 PM'),
+        ('09:00', '9:00 AM'),
+        ('10:00', '10:00 AM'),
+        ('11:00', '11:00 AM'),
+        ('12:00', '12:00 PM'),
+        ('14:00', '2:00 PM'),
+        ('15:00', '3:00 PM'),
+        ('16:00', '4:00 PM'),
+        ('17:00', '5:00 PM'),
     ]
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='appointments')
-    service = models.CharField(max_length=50, choices=SERVICE_CHOICES)
+
+    # Registered user (optional)
+    patient = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='appointments',
+        null=True,
+        blank=True
+    )
+
+    # Public booking fields
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    phone = models.CharField(max_length=15)
+
+    service = models.CharField(
+        max_length=50,
+        choices=SERVICE_CHOICES
+    )
+
     date = models.DateField()
-    time = models.CharField(max_length=10, choices=TIME_CHOICES)
-    notes = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    created_at = models.DateTimeField(auto_now_add=True)
+
+    time = models.CharField(
+        max_length=10,
+        choices=TIME_CHOICES
+    )
+
+    notes = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
     def __str__(self):
-        return f"{self.patient.username} - {self.service} - {self.date}"
+        return f"{self.name} - {self.service} - {self.date}"
 
     class Meta:
         ordering = ['-created_at']
-
-
-class Message(models.Model):
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
-    content = models.TextField()
-    is_read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.sender.username} → {self.receiver.username}: {self.content[:30]}"
-
-    class Meta:
-        ordering = ['created_at']
 
 
 class StaffProfile(models.Model):
@@ -180,3 +214,69 @@ class DailyTask(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+class Message(models.Model):
+
+    STATUS_SENT = "sent"
+    STATUS_DELIVERED = "delivered"
+    STATUS_READ = "read"
+
+    STATUS_CHOICES = [
+        (STATUS_SENT, "Sent"),
+        (STATUS_DELIVERED, "Delivered"),
+        (STATUS_READ, "Read"),
+    ]
+
+    sender = models.ForeignKey(
+        User,
+        related_name='sent_messages',
+        on_delete=models.CASCADE
+    )
+
+    receiver = models.ForeignKey(
+        User,
+        related_name='received_messages',
+        on_delete=models.CASCADE
+    )
+
+    content = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    is_read = models.BooleanField(default=False)
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_SENT
+    )
+
+    def __str__(self):
+        return f"{self.sender.username} -> {self.receiver.username}"
+
+class UserActivity(models.Model):
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="activity"
+    )
+
+    last_seen = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.user.username
+    
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    last_seen = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.user.username
+    
+
+@receiver(post_save, sender=User)
+def create_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+

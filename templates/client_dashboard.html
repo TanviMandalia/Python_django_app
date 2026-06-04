@@ -48,6 +48,14 @@
             font-weight: 600;
         }
 
+        .sidebar-user {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
         .user-avatar {
             width: 45px;
             height: 45px;
@@ -552,6 +560,37 @@
             margin-bottom: 20px;
             font-size: 0.9em;
         }
+
+        /* NOTIFICATION BELL */
+        .notification-bell {
+            position: relative;
+            display: inline-block;
+            font-size: 22px;
+            color: #333;
+        }
+
+        .notification-count {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+
+            min-width: 18px;
+            height: 18px;
+
+            background: #ff3b30;
+            color: white;
+
+            border-radius: 50%;
+
+            font-size: 10px;
+            font-weight: 600;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 2px;
+        }
     </style>
 </head>
 
@@ -572,12 +611,12 @@
         <nav>
             <div class="nav-section">Main Menu</div>
             <a href="/client-dashboard" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/book" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
+            <a href="/book" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointments</a>
             <a href="/my-appointments" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
             <a href="/my-appointments" class="nav-item"><i class="fas fa-history"></i> Session History</a>
             <div class="nav-section">Communication</div>
             <a href="/chat" class="nav-item"><i class="fas fa-comments"></i> Chat with Doctor</a>
-            <a href="#" class="nav-item"><i class="fas fa-bell"></i> Notifications</a>
+            <a href="/chat" class="nav-item"><i class="fas fa-bell"></i> Notifications</a>
             <div class="nav-section">Account</div>
             <a href="#" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
             <a href="#" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
@@ -592,7 +631,16 @@
         <div class="topbar">
             <h1>👋 Welcome back, {{ user.first_name|default:user.username }}!</h1>
             <div class="topbar-right">
-                <button class="notif-btn"><i class="fas fa-bell"></i><span class="notif-dot"></span></button>
+                <!-- <button class="notif-btn"><i class="fas fa-bell"></i><span class="notif-dot"></span></button> -->
+                <a href="{% url 'client_chat' %}" class="notification-bell">
+                    <i class="fas fa-bell"></i>
+
+                    {% if new_messages > 0 %}
+                    <span class="notification-count">
+                        {{ new_messages }}
+                    </span>
+                    {% endif %}
+                </a>
                 <div class="topbar-user">
                     <i class="fas fa-user-circle" style="color:#F5C518;"></i>
                     <span>{{ user.username }}</span>
