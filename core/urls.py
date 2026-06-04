@@ -8,6 +8,7 @@ urlpatterns = [
     path('services', views.services, name='services'),
     path('contact', views.contact, name='contact'),
     path('blog', views.blog, name='blog'),
+    # path('appointment-request',views.public_book_appointment,name='public_book_appointment'),
 
     # Auth
     path('login', views.login_view, name='login'),
@@ -27,6 +28,9 @@ urlpatterns = [
     path('admin-patients', views.admin_patients, name='admin_patients'),
     path('admin-chat', views.admin_chat, name='admin_chat'),
     path('admin-chat/<int:patient_id>', views.admin_chat_detail, name='admin_chat_detail'),
+
+    # delete message
+   path('delete-message/<int:message_id>/', views.delete_message, name='delete_message'),
 
     # Staff Management
     path('admin-staff', views.admin_staff, name='admin_staff'),

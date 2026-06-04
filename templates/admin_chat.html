@@ -237,6 +237,30 @@
             color: #F5C518;
             margin-bottom: 15px;
         }
+
+        /* SEARCH */
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            background: #1f2430;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .search-input:focus {
+            border-color: #f1c40f;
+            box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.15);
+            background: #252b38;
+        }
     </style>
 </head>
 
@@ -254,15 +278,28 @@
         </div>
         <nav>
             <div class="nav-section">Overview</div>
-            <a href="/admin-dashboard" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="/admin-dashboard" class="nav-item active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
             <div class="nav-section">Management</div>
             <a href="/admin-patients" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+            <a href="/admin-staff" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
             <a href="/admin-appointments" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
-            <a href="#" class="nav-item"><i class="fas fa-rupee-sign"></i> Payments</a>
+            <a href="/admin-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+            <div class="nav-section">Staff Tools</div>
+            <a href="/admin-leaves" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
+            <a href="/admin-attendance" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+            <a href="/admin-tasks" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+            <a href="/admin-session-notes" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
             <div class="nav-section">Communication</div>
-            <a href="/admin-chat" class="nav-item active"><i class="fas fa-comments"></i> Patient Messages</a>
+            <a href="/admin-chat" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+            <div class="nav-section">Content</div>
+            <a href="#" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
+            <div class="nav-section">Reports</div>
+            <a href="#" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+            <a href="#" class="nav-item"><i class="fas fa-history"></i> Activity Logs</a>
             <div class="nav-section">System</div>
+            <a href="#" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
             <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+            <a href="/" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
         </nav>
         <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </aside>
@@ -272,10 +309,12 @@
             <h1>💬 Patient Messages</h1>
         </div>
         <div class="dashboard-body">
+            <!-- SEARCH CHAT -->
+            <input type="text" id="chatSearch" placeholder="Search Patient..." class="search-input">
             {% if patient_chats %}
             <div class="chat-list">
                 {% for chat in patient_chats %}
-                <a href="/admin-chat/{{ chat.patient.id }}" class="chat-item">
+                <a href="/admin-chat/{{ chat.patient.id }}" class="chat-item patient-item">
                     <div class="chat-avatar">
                         {{ chat.patient.first_name|first|upper }}{{ chat.patient.last_name|first|upper }}
                     </div>
@@ -285,12 +324,19 @@
                             click to start chat{% endif %}</p>
                     </div>
                     <div class="chat-meta">
+
                         {% if chat.last_msg %}
-                        <div class="chat-time">{{ chat.last_msg.created_at|date:"d M, h:i A" }}</div>
+                        <div class="chat-time">
+                            {{ chat.last_msg.created_at|date:"d M, h\:i A" }}
+                        </div>
                         {% endif %}
-                        {% if chat.unread > 0 %}
-                        <div class="unread-badge">{{ chat.unread }}</div>
+
+                        {% if chat.unread_count > 0 %}
+                        <div class="unread-badge">
+                            {{ chat.unread_count }}
+                        </div>
                         {% endif %}
+
                     </div>
                 </a>
                 {% endfor %}
@@ -303,6 +349,25 @@
             {% endif %}
         </div>
     </div>
+
+    <script>
+        document
+            .getElementById("chatSearch")
+            .addEventListener("keyup", function () {
+
+                let value = this.value.toLowerCase();
+
+                document
+                    .querySelectorAll(".patient-item")
+                    .forEach(function (item) {
+
+                        item.style.display =
+                            item.innerText.toLowerCase().includes(value)
+                                ? ""
+                                : "none";
+                    });
+            });
+    </script>
 </body>
 
 </html>

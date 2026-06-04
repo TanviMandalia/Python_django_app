@@ -7,7 +7,14 @@ from .models import Appointment
 from django.utils import timezone
 from .models import Appointment, Message,  StaffProfile, Attendance, LeaveApplication, SalaryRecord, SessionNote, DailyTask
 from django.utils.timezone import make_aware
-import datetime
+# from datetime import datetime, timezone
+from django.db.models import Q
+from .models import Message
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from datetime import timedelta
+from .models import UserActivity
+
 
 def home(request):
     return render(request, 'home.html')
@@ -78,12 +85,14 @@ def admin_dashboard(request):
     total_users = User.objects.filter(is_superuser=False).count()
     all_appointments = Appointment.objects.all()
     pending = all_appointments.filter(status='pending').count()
+    new_messages = Message.objects.filter(receiver=request.user,is_read=False).count()
     return render(request, 'admin_dashboard.html', {
         'user': request.user,
         'total_users': total_users,
         'all_appointments': all_appointments,
         'total_appointments': all_appointments.count(),
         'pending': pending,
+        'new_messages': new_messages,
     })
 
 @login_required(login_url='/login')
@@ -156,127 +165,250 @@ def admin_patients(request):
     })
 
 
-@login_required(login_url='/login')
-def client_chat(request):
-    try:
-        admin = User.objects.get(username='admin')
-    except User.DoesNotExist:
-        admin = User.objects.filter(is_superuser=True).order_by('id').last()
+from django.utils import timezone
 
-    if request.method == 'POST':
-        content = request.POST.get('content', '').strip()
-        if content and admin:
+def update_last_seen(user):
+    try:
+        # If you are using UserActivity model
+        activity, created = UserActivity.objects.get_or_create(user=user)
+        activity.last_seen = timezone.now()
+        activity.save()
+    except Exception:
+        pass
+
+def is_online(user):
+    try:
+        activity = UserActivity.objects.get(user=user)
+
+        if not activity.last_seen:
+            return False
+
+        return activity.last_seen >= timezone.now() - timedelta(minutes=2)
+
+    except:
+        return False
+
+@login_required
+def client_chat(request):
+    update_last_seen(request.user)
+
+    admin = User.objects.filter(
+        is_superuser=True
+    ).last()
+
+    if not admin:
+        return render(
+            request,
+            "client_chat.html",
+            {
+                "messages_list": [],
+                "error": "No admin account found."
+            }
+        )
+
+    if request.method == "POST":
+
+        content = request.POST.get(
+            "content",
+            ""
+        ).strip()
+
+        if content:
+
             Message.objects.create(
                 sender=request.user,
                 receiver=admin,
-                content=content
+                content=content,
+                status=Message.STATUS_SENT
             )
-        return redirect('/chat')
 
-    if admin:
-        messages_list = Message.objects.filter(
-            sender=request.user, receiver=admin
-        ) | Message.objects.filter(
-            sender=admin, receiver=request.user
-        )
-        messages_list = messages_list.order_by('created_at')
-        Message.objects.filter(
-            sender=admin,
-            receiver=request.user,
-            is_read=False
-        ).update(is_read=True)
-    else:
-        messages_list = Message.objects.none()
+        return redirect("client_chat")
 
-    return render(request, 'client_chat.html', {
-        'user': request.user,
-        'messages_list': messages_list,
-        'admin': admin,
-    })
+    messages_list = Message.objects.filter(
+        Q(sender=request.user, receiver=admin) |
+        Q(sender=admin, receiver=request.user)
+    ).order_by("created_at")
 
+    Message.objects.filter(
+        sender=admin,
+        receiver=request.user,
+        status=Message.STATUS_SENT
+    ).update(
+        status=Message.STATUS_DELIVERED
+    )
 
-@login_required(login_url='/login')
+    Message.objects.filter(
+        sender=admin,
+        receiver=request.user,
+        is_read=False
+    ).update(
+        is_read=True,
+        status=Message.STATUS_READ
+    )
+
+    admin_online = is_online(admin)
+    admin_activity = UserActivity.objects.filter(user=admin).first()
+
+    return render(
+        request,
+        "client_chat.html",
+        {
+            "messages_list": messages_list,
+            "admin": admin,
+            "admin_online": admin_online,
+            "admin_last_seen": admin_activity.last_seen if admin_activity else None,
+        }
+    )
+@login_required
 def admin_chat(request):
-    if not request.user.is_superuser:
-        return redirect('/client-dashboard')
 
-    # Only show real patients (non-superusers)
+    if not request.user.is_superuser:
+        return redirect('/')
+
     patients = User.objects.filter(is_superuser=False)
+
     patient_chats = []
 
     for patient in patients:
-        all_msgs = Message.objects.filter(
-            sender=patient, receiver=request.user
-        ) | Message.objects.filter(
-            sender=request.user, receiver=patient
-        )
-        last_msg = all_msgs.order_by('-created_at').first()
-        unread = Message.objects.filter(
+
+        last_msg = Message.objects.filter(
+            sender__in=[patient, request.user],
+            receiver__in=[patient, request.user]
+        ).order_by('-created_at').first()
+
+        unread_count = Message.objects.filter(
             sender=patient,
             receiver=request.user,
             is_read=False
         ).count()
+
         patient_chats.append({
             'patient': patient,
             'last_msg': last_msg,
-            'unread': unread,
+            'unread_count': unread_count,
         })
 
-    # Sort — patients with messages appear first
     patient_chats.sort(
-        key=lambda x: x['last_msg'].created_at if x['last_msg'] else datetime.datetime.min.replace(tzinfo=datetime.timezone.utc),
+        key=lambda x: (
+            x['last_msg'].created_at
+            if x['last_msg']
+            else timezone.now()
+        ),
         reverse=True
     )
 
-    return render(request, 'admin_chat.html', {
-        'user': request.user,
-        'patient_chats': patient_chats,
-    })
-
+    return render(
+        request,
+        'admin_chat.html',
+        {
+            'patient_chats': patient_chats
+        }
+    )
 
 @login_required(login_url='/login')
 def admin_chat_detail(request, patient_id):
+
+    update_last_seen(request.user)
+
     if not request.user.is_superuser:
         return redirect('/client-dashboard')
 
     try:
-        patient = User.objects.get(id=patient_id)
+        patient = User.objects.get(
+            id=patient_id
+        )
+
     except User.DoesNotExist:
         return redirect('/admin-chat')
 
     if request.method == 'POST':
-        content = request.POST.get('content', '').strip()
+
+        content = request.POST.get(
+            'content',
+            ''
+        ).strip()
+
         if content:
+
             Message.objects.create(
                 sender=request.user,
                 receiver=patient,
-                content=content
+                content=content,
+                status=Message.STATUS_SENT
             )
-        return redirect(f'/admin-chat/{patient_id}')
 
-    # Get ALL messages between admin and this patient
+        return redirect(
+            'admin_chat_detail',
+            patient_id=patient_id
+        )
+
     messages_list = Message.objects.filter(
-        sender=patient, receiver=request.user
-    ) | Message.objects.filter(
-        sender=request.user, receiver=patient
-    )
-    messages_list = messages_list.order_by('created_at')
+        Q(sender=patient, receiver=request.user) |
+        Q(sender=request.user, receiver=patient)
+    ).order_by('created_at')
 
-    # Mark patient messages as read
+    Message.objects.filter(
+        sender=patient,
+        receiver=request.user,
+        status=Message.STATUS_SENT
+    ).update(
+        status=Message.STATUS_DELIVERED
+    )
+
     Message.objects.filter(
         sender=patient,
         receiver=request.user,
         is_read=False
-    ).update(is_read=True)
+    ).update(
+        is_read=True,
+        status=Message.STATUS_READ
+    )
 
-    return render(request, 'admin_chat_detail.html', {
-        'user': request.user,
-        'patient': patient,
-        'messages_list': messages_list,
-    })
-    
-    
-    # ─── ADMIN STAFF VIEWS ───────────────────────────────────────
+    Message.objects.filter(
+        sender=request.user,
+        receiver=patient,
+        status=Message.STATUS_SENT
+    ).update(
+        status=Message.STATUS_DELIVERED
+    )
+
+    patient_online = is_online(patient)
+    patient_activity = UserActivity.objects.filter(user=patient).first()
+
+    return render(
+        request,
+        'admin_chat_detail.html',
+        {
+            'user': request.user,
+            'patient': patient,
+            'messages_list': messages_list,
+            'patient_online': patient_online,
+            "patient_last_seen": patient_activity.last_seen if patient_activity else None,
+        }
+    )
+
+
+@login_required
+def delete_message(request, message_id):
+
+    message = get_object_or_404(Message, id=message_id)
+
+    # Security: only sender can delete their own message
+    if message.sender != request.user:
+        return redirect('/')
+
+    # Save redirect URL before deleting
+    if request.user.is_superuser:
+        redirect_url = f'/admin-chat/{message.receiver.id}'
+    else:
+        redirect_url = '/client-chat'
+
+    # Permanently delete message
+    message.delete()
+
+    return redirect(redirect_url)
+
+
 
 @login_required(login_url='/login')
 def admin_staff(request):
