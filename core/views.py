@@ -13,7 +13,17 @@ from .models import Message
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 from .models import UserActivity
+from .models import Profile
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+import random
+from .models import PasswordResetOTP
+from django.core.mail import send_mail
+from django.contrib import messages
 
 
 def home(request):
@@ -27,7 +37,7 @@ def login_view(request):
         if user is not None:
             login(request, user)
             if user.is_superuser:
-                return redirect('/admin-dashboard')
+               return redirect('admin_dashboard')
             elif user.is_staff:
                 return redirect('/staff-dashboard')
             else:
@@ -62,6 +72,142 @@ def register_view(request):
 def logout_view(request):
     logout(request)
     return redirect('/')
+
+@login_required
+def profile_view(request):
+    profile, created = Profile.objects.get_or_create(
+        user=request.user
+    )
+
+    return render(
+        request,
+        "profile.html",
+        {"profile": profile}
+    )
+
+@login_required
+def edit_profile(request):
+
+    profile = request.user.profile
+
+    if request.method == "POST":
+
+        request.user.first_name = request.POST.get("first_name")
+        request.user.last_name = request.POST.get("last_name")
+        request.user.email = request.POST.get("email")
+
+        request.user.save()
+
+        profile.phone_number = request.POST.get("phone_number")
+        profile.gender = request.POST.get("gender")
+        profile.date_of_birth = request.POST.get("date_of_birth") or None
+
+        profile.blood_group = request.POST.get("blood_group")
+        profile.emergency_contact = request.POST.get("emergency_contact")
+        profile.medical_notes = request.POST.get("medical_notes")
+        profile.address = request.POST.get("address")
+
+        if request.FILES.get("profile_photo"):
+            profile.profile_photo = request.FILES["profile_photo"]
+
+        profile.save()
+
+        messages.success(request, "Profile updated successfully.")
+        return redirect("profile")
+
+    return render(request, "edit_profile.html", {
+        "profile": profile
+    })
+
+@login_required
+def change_password_request(request):
+    if request.method == "POST":
+        email = request.POST.get("email")
+
+        otp = str(random.randint(100000, 999999))
+
+        # send email ONLY on POST
+        send_mail(
+            "Password Change OTP",
+            f"Your OTP is: {otp}",
+            "mandaliatanvi1504@gmail.com",
+            [email],
+            fail_silently=False
+        )
+
+        request.session["otp"] = otp
+        request.session["email"] = email
+
+        return redirect("verify_otp")
+
+    return render(request, "change_password.html")
+
+
+def request_otp(request):
+    if request.method == "POST":
+        email = request.POST.get("email")
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return render(request, "request_otp.html", {"error": "Email not found"})
+
+        otp = str(random.randint(100000, 999999))
+
+        PasswordResetOTP.objects.create(user=user, otp=otp)
+
+        send_mail(
+            "Password Reset OTP",
+            f"Your OTP is {otp}. It is valid for 5 minutes.",
+            "yourgmail@gmail.com",
+            [email],
+            fail_silently=False
+        )
+
+        request.session["reset_user_id"] = user.id
+
+        return redirect("verify_otp")
+
+    return render(request, "request_otp.html")
+
+
+def verify_otp(request):
+    if request.method == "POST":
+        otp = request.POST.get("otp")
+
+        # Example check (replace with your logic)
+        if otp == request.session.get("otp_code"):
+            messages.success(request, "OTP verified successfully!")
+            return redirect("reset_password")  # or dashboard
+
+        messages.error(request, "Invalid OTP")
+
+    return render(request, "verify_otp.html")
+
+def resend_otp(request):
+    # your OTP resend logic here
+    messages.success(request, "OTP has been resent!")
+    return redirect("verify_otp")
+
+
+def reset_password(request):
+    if request.method == "POST":
+        password = request.POST.get("password")
+        user_id = request.session.get("reset_user_id")
+
+        user = User.objects.get(id=user_id)
+        user.set_password(password)
+        user.save()
+
+        return redirect("login")
+
+    return render(request, "reset_password.html")
+
+
+# PAYMENT
+
+def payments(request):
+    return render(request, "payments.html")
 
 @login_required(login_url='/login')
 def client_dashboard(request):
@@ -409,6 +555,81 @@ def delete_message(request, message_id):
     return redirect(redirect_url)
 
 
+# START TYPING
+
+# @csrf_exempt
+# def start_typing(request):
+#     if request.method == "POST":
+#         try:
+#             data = json.loads(request.body)
+#             receiver_id = data.get("receiver_id")
+#         except:
+#             receiver_id = None
+
+#         obj, _ = UserActivity.objects.get_or_create(user=request.user)
+
+#         obj.is_typing = True
+#         obj.typing_to_id = receiver_id
+#         obj.save()
+
+#         return JsonResponse({"status": "started"})
+
+#     return JsonResponse({"status": "invalid"})
+    
+
+@csrf_exempt
+def start_typing(request):
+    if request.method == "POST":
+
+        print("START TYPING:", request.user.username)
+
+        try:
+            data = json.loads(request.body)
+            receiver_id = data.get("receiver_id")
+            print("RECEIVER:", receiver_id)
+        except Exception as e:
+            print("ERROR:", e)
+            receiver_id = None
+
+        obj, _ = UserActivity.objects.get_or_create(user=request.user)
+
+        obj.is_typing = True
+        obj.typing_to_id = receiver_id
+        obj.save()
+
+        print("SAVED:", obj.user.username, obj.is_typing, obj.typing_to_id)
+
+        return JsonResponse({"status": "started"})
+
+# STOP TYPING
+
+@csrf_exempt
+def stop_typing(request):
+    if request.method == "POST":
+
+        print("STOP TYPING CALLED:", request.user.username)
+
+        obj, _ = UserActivity.objects.get_or_create(user=request.user)
+
+        obj.is_typing = False
+        obj.typing_to = None
+        obj.save()
+
+        return JsonResponse({"status": "stopped"})
+
+    return JsonResponse({"status": "invalid"})
+    
+def check_typing(request, user_id):
+
+    obj = UserActivity.objects.filter(
+        user_id=user_id,
+        is_typing=True,
+        typing_to=request.user
+    ).first()
+
+    return JsonResponse({
+        "is_typing": bool(obj)
+    })
 
 @login_required(login_url='/login')
 def admin_staff(request):

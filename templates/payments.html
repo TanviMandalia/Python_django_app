@@ -1,0 +1,360 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Payments</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* ================= RESET ================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            color: #222;
+            line-height: 1.5;
+        }
+
+        /* ================= SIDEBAR ================= */
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* logo */
+        .sidebar-logo {
+            padding: 22px 20px;
+            border-bottom: 1px solid rgba(245, 197, 24, 0.15);
+            text-align: center;
+        }
+
+        .sidebar-logo img {
+            width: 130px;
+            border-radius: 10px;
+        }
+
+        .sidebar-logo p {
+            color: #F5C518;
+            font-size: 0.75rem;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        /* user */
+        .sidebar-user {
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            background: #F5C518;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #2C2C2C;
+        }
+
+        .user-info h4 {
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .user-info span {
+            color: #F5C518;
+            font-size: 0.75rem;
+        }
+
+        /* nav */
+        .nav-section {
+            padding: 12px 22px 6px;
+            color: #777;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 22px;
+            color: #ccc;
+            text-decoration: none;
+            font-size: 0.9rem;
+            border-left: 3px solid transparent;
+            transition: 0.25s ease;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(245, 197, 24, 0.08);
+            color: #F5C518;
+            border-left-color: #F5C518;
+        }
+
+        /* logout */
+        .logout-btn {
+            margin: 15px;
+            display: flex;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(220, 53, 69, 0.15);
+            color: #ff6b6b;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: 0.25s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(220, 53, 69, 0.3);
+        }
+
+        /* ================= MAIN ================= */
+        .container {
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        /* cards */
+        .card {
+            background: #fff;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+
+        /* headings */
+        h2 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        /* ================= PAYMENT GRID ================= */
+        .payment-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+        }
+
+        .pay-card {
+            padding: 22px;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            text-align: center;
+            background: #fff;
+            transition: all 0.25s ease;
+        }
+
+        .pay-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .amount {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 12px 0;
+        }
+
+        /* ================= BUTTON ================= */
+        .btn {
+            padding: 10px 16px;
+            background: #4facfe;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-block;
+            text-decoration: none;
+            transition: 0.25s;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: #007bff;
+        }
+
+        /* ================= TABLE ================= */
+        .history {
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        table th {
+            text-align: left;
+            padding: 12px;
+            background: #fafafa;
+            font-weight: 600;
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* ================= STATUS ================= */
+        .status {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .paid {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* ================= RESPONSIVE ================= */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+
+            .container {
+                margin-left: 0;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+        </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <span>🟢 Patient</span>
+            </div>
+        </div>
+        <nav>
+            <div class="nav-section">Main Menu</div>
+            <a href="/client-dashboard" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="/book" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointments</a>
+            <a href="/my-appointments" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
+            <a href="/my-appointments" class="nav-item"><i class="fas fa-history"></i> Session History</a>
+            <div class="nav-section">Communication</div>
+            <a href="/chat" class="nav-item"><i class="fas fa-comments"></i> Chat with Doctor</a>
+            <a href="/chat" class="nav-item"><i class="fas fa-bell"></i> Notifications</a>
+            <div class="nav-section">Account</div>
+            <a href="/profile/" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
+            <a href="/payments/" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
+            <div class="nav-section">Quick Links</div>
+            <a href="/" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+        </nav>
+        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+
+    <div class="container">
+
+        <div class="card">
+            <h2>💳 Payments</h2>
+            <p>Manage your consultation payments and history</p>
+        </div>
+
+        <div class="card">
+            <h3>Choose Payment Option</h3>
+
+            <div class="payment-box">
+
+                <div class="pay-card">
+                    <h4>Basic Consultation</h4>
+                    <div class="amount">₹500</div>
+                    <p>30 min session</p>
+                    <a href="/pay/basic/" class="btn">Pay Now</a>
+                </div>
+
+                <div class="pay-card">
+                    <h4>Premium Consultation</h4>
+                    <div class="amount">₹1000</div>
+                    <p>60 min session</p>
+                    <a href="/pay/premium/" class="btn">Pay Now</a>
+                </div>
+
+                <div class="pay-card">
+                    <h4>Emergency Session</h4>
+                    <div class="amount">₹1500</div>
+                    <p>Instant support</p>
+                    <a href="/pay/emergency/" class="btn">Pay Now</a>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card history">
+            <h3>Payment History</h3>
+
+            <table>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+
+                <tr>
+                    <td>05 June 2026</td>
+                    <td>Basic Consultation</td>
+                    <td>₹500</td>
+                    <td><span class="status paid">Paid</span></td>
+                </tr>
+
+                <tr>
+                    <td>02 June 2026</td>
+                    <td>Premium Consultation</td>
+                    <td>₹1000</td>
+                    <td><span class="status pending">Pending</span></td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

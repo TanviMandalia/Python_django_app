@@ -375,6 +375,7 @@
 
             <div class="patient-info">
                 <h3>{{ patient.get_full_name|default:patient.username }}</h3>
+                <div id="typing-status"></div>
                 <span>@{{ patient.username }} — Patient</span>
                 {% if patient_online %}
                 <span class="online-status">
@@ -447,24 +448,48 @@
     </div>
 
     <script>
-        const chatArea = document.getElementById('chatArea');
-        chatArea.scrollTop = chatArea.scrollHeight;
+        let typingTimer;
+        const typingTimeout = 800;
 
-        const input =
-            document.querySelector('input[name="content"]');
+        const messageInput = document.querySelector('input[name="content"]');
 
-        setInterval(function () {
+        messageInput.addEventListener("input", function () {
 
-            if (document.activeElement !== input) {
-                location.reload();
-            }
+            fetch("/start-typing/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    receiver_id: "{{ patient.id }}"
+                })
+            });
 
-        }, 5000);
+            clearTimeout(typingTimer);
 
-        setInterval(function () {
-            location.reload();
-        }, 5000);
+            typingTimer = setTimeout(() => {
+                fetch("/stop-typing/", {
+                    method: "POST"
+                });
+            }, typingTimeout);
+        });
 
+
+        setInterval(() => {
+            fetch("/check-typing/{{ patient.id }}/")
+                .then(res => res.json())
+                .then(data => {
+
+                    const el = document.getElementById("typing-status");
+
+                    if (!el) return;
+
+                    el.innerText = data.is_typing
+                        ? "Patient is typing..."
+                        : "";
+                });
+
+        }, 1000);
     </script>
 </body>
 

@@ -268,7 +268,7 @@
             {% endfor %}
             {% endif %}
 
-            <form method="POST" action="/login">
+            <form method="POST" action="{% url 'login' %}">
                 {% csrf_token %}
                 <div class="form-group">
                     <label>Username</label>
@@ -292,10 +292,10 @@
             <div class="divider">or</div>
 
             <div class="register-link">
-                Don't have an account? <a href="/register">Create Account</a>
+                Don't have an account? <a href="{% url 'register' %}">Create Account</a>
             </div>
             <div class="back-home">
-                <a href="/"><i class="fas fa-arrow-left"></i> Back to Home</a>
+                <a href="{% url 'home' %}"><i class="fas fa-arrow-left"></i> Back to Home</a>
             </div>
         </div>
 
