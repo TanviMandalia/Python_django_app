@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>OTP Verification</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        /* PAGE BACKGROUND (same light theme as dashboard body) */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+        }
+
+        /* CENTER CARD */
+        .otp-page {
+            height: 90vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* OTP CARD */
+        .otp-card {
+            width: 380px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            border-top: 4px solid #F5C518;
+        }
+
+        /* TITLE */
+        .otp-card h2 {
+            color: #2C2C2C;
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .otp-card p {
+            font-size: 0.9em;
+            color: #777;
+            margin-bottom: 20px;
+        }
+
+        /* OTP INPUT BOXES */
+        .otp-inputs {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .otp-inputs input {
+            width: 48px;
+            height: 52px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            outline: none;
+            transition: 0.2s;
+            background: #fff;
+        }
+
+        /* FOCUS STYLE (GOLD ACCENT LIKE YOUR THEME) */
+        .otp-inputs input:focus {
+            border-color: #F5C518;
+            box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.2);
+        }
+
+        /* BUTTON */
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #F5C518;
+            border: none;
+            border-radius: 25px;
+            color: #2C2C2C;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #e6b800;
+            transform: translateY(-2px);
+        }
+
+        /* RESEND */
+        .resend {
+            margin-top: 15px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .resend a {
+            color: #F5C518;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .resend a:hover {
+            text-decoration: underline;
+        }
+
+        /* MESSAGE */
+        .msg {
+            font-size: 0.85em;
+            margin-bottom: 10px;
+        }
+
+        .msg.error {
+            color: #dc3545;
+        }
+
+        .msg.success {
+            color: #28a745;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="otp-page">
+
+        <div class="otp-card">
+
+            <h2>Verify OTP</h2>
+            <p>Enter the 6-digit code sent to your registered email/phone</p>
+
+            <div id="msg" class="msg"></div>
+
+            <form id="otp-form">
+                <div class="otp-inputs">
+                    <input type="text" maxlength="1" inputmode="numeric">
+                    <input type="text" maxlength="1" inputmode="numeric">
+                    <input type="text" maxlength="1" inputmode="numeric">
+                    <input type="text" maxlength="1" inputmode="numeric">
+                    <input type="text" maxlength="1" inputmode="numeric">
+                    <input type="text" maxlength="1" inputmode="numeric">
+                </div>
+
+                <button type="submit">Verify OTP</button>
+            </form>
+
+            <div class="resend">
+                Didn’t receive code?
+                <a href="#">Resend OTP</a>
+            </div>
+
+        </div>
+
+    </div>
+    <script>
+        const inputs = document.querySelectorAll(".otp-inputs input");
+
+        inputs.forEach((input, index) => {
+
+            input.addEventListener("input", (e) => {
+                if (!/^\d$/.test(e.target.value)) {
+                    e.target.value = "";
+                    return;
+                }
+                if (index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            });
+
+            input.addEventListener("keydown", (e) => {
+                if (e.key === "Backspace" && input.value === "" && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+
+            input.addEventListener("paste", (e) => {
+                e.preventDefault();
+
+                const data = (e.clipboardData || window.clipboardData)
+                    .getData("text")
+                    .replace(/\D/g, "")
+                    .slice(0, inputs.length);
+
+                data.split("").forEach((num, i) => {
+                    if (inputs[i]) inputs[i].value = num;
+                });
+
+                if (inputs[data.length - 1]) {
+                    inputs[data.length - 1].focus();
+                }
+            });
+
+        });
+    </script>
+</body>
+
+</html>

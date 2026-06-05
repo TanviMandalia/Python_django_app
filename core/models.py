@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
+import random
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -262,14 +262,52 @@ class UserActivity(models.Model):
         related_name="activity"
     )
 
-    last_seen = models.DateTimeField(auto_now=True)
+    last_seen = models.DateTimeField(default=timezone.now)
+
+    is_typing = models.BooleanField(default=False)
+
+    typing_to = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='typing_receivers'
+    )
 
     def __str__(self):
         return self.user.username
     
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    # Account
     last_seen = models.DateTimeField(null=True, blank=True)
+
+    # Personal Info
+    phone_number = models.CharField(max_length=15, blank=True)
+    gender = models.CharField(
+        max_length=10,
+        choices=[
+            ('Male', 'Male'),
+            ('Female', 'Female'),
+            ('Other', 'Other')
+        ],
+        blank=True
+    )
+    date_of_birth = models.DateField(null=True, blank=True)
+
+    # Medical Info
+    blood_group = models.CharField(max_length=5, blank=True)
+    emergency_contact = models.CharField(max_length=15, blank=True)
+    medical_notes = models.TextField(blank=True)
+    address = models.TextField(blank=True)
+
+    # Profile Photo
+    profile_photo = models.ImageField(
+        upload_to='profile_photos/',
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         return self.user.username
@@ -280,3 +318,11 @@ def create_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
 
+
+class PasswordResetOTP(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self):
+        return (timezone.now() - self.created_at).seconds > 300  # 5 minutes

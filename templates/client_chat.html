@@ -367,7 +367,7 @@
 
                 <div class="doctor-info">
                     <h3>Dr. Dhvani Patalia</h3>
-
+                    <div id="typing-status" style="font-style: italic; color: gray; font-size: 12px;"></div>
                     {% if admin_online %}
                     <span class="online-status">
                         🟢 Online
@@ -442,25 +442,32 @@
     </div>
 
     <script>
-        // Auto scroll to bottom
-        const chatArea = document.getElementById('chatArea');
-        chatArea.scrollTop = chatArea.scrollHeight;
+        let typingTimer;
+        const typingTimeout = 800;
 
-        const input =
-            document.querySelector('input[name="content"]');
+        const messageInput = document.querySelector('input[name="content"]');
 
-        setInterval(function () {
+        messageInput.addEventListener("input", function () {
 
-            if (document.activeElement !== input) {
-                location.reload();
-            }
+            fetch("/start-typing/", { method: "POST" });
 
-        }, 5000);
+            clearTimeout(typingTimer);
 
-        setInterval(function () {
-            location.reload();
-        }, 5000);
+            typingTimer = setTimeout(() => {
+                fetch("/stop-typing/", { method: "POST" });
+            }, typingTimeout);
+        });
 
+        setInterval(() => {
+            fetch("/check-typing/{{ admin.id }}/")
+                .then(res => res.json())
+                .then(data => {
+                    const el = document.getElementById("typing-status");
+                    if (!el) return;
+
+                    el.innerText = data.is_typing ? "Admin is typing..." : "";
+                });
+        }, 1000);
     </script>
 </body>
 
