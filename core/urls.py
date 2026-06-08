@@ -8,7 +8,7 @@ from django.contrib import admin
 
 urlpatterns = [
 
-    path("admin/", admin.site.urls),
+    # path("admin/", admin.site.urls),
 
     # Public Pages
     path("", views.home, name="home"),
@@ -25,6 +25,9 @@ urlpatterns = [
     # Profile
     path("profile/", views.profile_view, name="profile"),
     path("edit-profile/", views.edit_profile, name="edit_profile"),
+
+    # Settings 
+    path( "admin-settings/", views.admin_settings, name="admin_settings"),
 
     # Password system
     path("change-password/", views.change_password_request, name="change_password"),
@@ -49,6 +52,8 @@ urlpatterns = [
     path("admin-patients/", views.admin_patients, name="admin_patients"),
     path("admin-chat/", views.admin_chat, name="admin_chat"),
     path("admin-chat/<int:patient_id>/", views.admin_chat_detail, name="admin_chat_detail"),
+    path('blog/', views.blog_list, name='blog_list'),
+    path('blog/<slug:slug>/', views.blog_detail, name='blog_detail'),
 
     # Messages
     path("delete-message/<int:message_id>/", views.delete_message, name="delete_message"),

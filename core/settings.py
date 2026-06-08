@@ -1,4 +1,5 @@
 from pathlib import Path
+from django.contrib.messages import constants as message_constants
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -90,7 +91,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'mandaliatanvi1504@gmail.com')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')   # set via env var
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'kulp byry scfu fzdd')   # set via env var
 DEFAULT_FROM_EMAIL = f'PhysioRehab Clinic <{EMAIL_HOST_USER}>'
 
 # Fallback: use console backend when password not set (shows email in terminal)
@@ -102,7 +103,7 @@ SESSION_COOKIE_AGE = 86400          # 1 day
 SESSION_SAVE_EVERY_REQUEST = True
 
 # ─── MESSAGES ────────────────────────────────────────────────
-from django.contrib.messages import constants as message_constants
+
 MESSAGE_TAGS = {
     message_constants.DEBUG:   'secondary',
     message_constants.INFO:    'info',
