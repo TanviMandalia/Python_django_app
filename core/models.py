@@ -326,3 +326,16 @@ class PasswordResetOTP(models.Model):
 
     def is_expired(self):
         return (timezone.now() - self.created_at).seconds > 300  # 5 minutes
+
+class Notification(models.Model):
+    recipient  = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    message    = models.TextField()
+    is_read    = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+    link       = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notification → {self.recipient.username}: {self.message[:40]}"
