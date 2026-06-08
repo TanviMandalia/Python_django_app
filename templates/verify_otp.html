@@ -1,19 +1,17 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <title>OTP Verification</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP</title>
 
     <style>
-        /* PAGE BACKGROUND (same light theme as dashboard body) */
         body {
             font-family: 'Segoe UI', sans-serif;
             background: #f5f5f5;
         }
 
-        /* CENTER CARD */
         .otp-page {
             height: 90vh;
             display: flex;
@@ -22,7 +20,6 @@
             padding: 20px;
         }
 
-        /* OTP CARD */
         .otp-card {
             width: 380px;
             background: white;
@@ -33,7 +30,6 @@
             border-top: 4px solid #F5C518;
         }
 
-        /* TITLE */
         .otp-card h2 {
             color: #2C2C2C;
             font-size: 1.4em;
@@ -47,7 +43,6 @@
             margin-bottom: 20px;
         }
 
-        /* OTP INPUT BOXES */
         .otp-inputs {
             display: flex;
             justify-content: space-between;
@@ -68,13 +63,11 @@
             background: #fff;
         }
 
-        /* FOCUS STYLE (GOLD ACCENT LIKE YOUR THEME) */
         .otp-inputs input:focus {
             border-color: #F5C518;
             box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.2);
         }
 
-        /* BUTTON */
         button {
             width: 100%;
             padding: 12px;
@@ -92,7 +85,6 @@
             transform: translateY(-2px);
         }
 
-        /* RESEND */
         .resend {
             margin-top: 15px;
             font-size: 0.85em;
@@ -109,7 +101,6 @@
             text-decoration: underline;
         }
 
-        /* MESSAGE */
         .msg {
             font-size: 0.85em;
             margin-bottom: 10px;
@@ -127,76 +118,115 @@
 
 <body>
 
-    <div class="otp-page">
+<div class="otp-page">
 
-        <div class="otp-card">
+    <div class="otp-card">
 
-            <h2>Verify OTP</h2>
-            <p>Enter the 6-digit code sent to your registered email/phone</p>
+        <h2>Verify OTP</h2>
+        <p>Enter the 6-digit code sent to your registered email</p>
 
-            <div id="msg" class="msg"></div>
-
-            <form id="otp-form">
-                <div class="otp-inputs">
-                    <input type="text" maxlength="1" inputmode="numeric">
-                    <input type="text" maxlength="1" inputmode="numeric">
-                    <input type="text" maxlength="1" inputmode="numeric">
-                    <input type="text" maxlength="1" inputmode="numeric">
-                    <input type="text" maxlength="1" inputmode="numeric">
-                    <input type="text" maxlength="1" inputmode="numeric">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="msg {% if message.tags %}{{ message.tags }}{% endif %}">
+                    {{ message }}
                 </div>
+            {% endfor %}
+        {% endif %}
 
-                <button type="submit">Verify OTP</button>
-            </form>
+        <form method="POST" action="{% url 'verify_otp' %}">
+            {% csrf_token %}
 
-            <div class="resend">
-                Didn’t receive code?
-                <a href="#">Resend OTP</a>
+            <div class="otp-inputs">
+                <input type="text" maxlength="1" inputmode="numeric">
+                <input type="text" maxlength="1" inputmode="numeric">
+                <input type="text" maxlength="1" inputmode="numeric">
+                <input type="text" maxlength="1" inputmode="numeric">
+                <input type="text" maxlength="1" inputmode="numeric">
+                <input type="text" maxlength="1" inputmode="numeric">
             </div>
 
+            <!-- Hidden field sent to Django -->
+            <input type="hidden" name="otp" id="otp-hidden">
+
+            <button type="submit">
+                Verify OTP
+            </button>
+        </form>
+
+        <div class="resend">
+            Didn’t receive code?
+            <a href="{% url 'resend_otp' %}">
+                Resend OTP
+            </a>
         </div>
 
     </div>
-    <script>
-        const inputs = document.querySelectorAll(".otp-inputs input");
 
-        inputs.forEach((input, index) => {
+</div>
 
-            input.addEventListener("input", (e) => {
-                if (!/^\d$/.test(e.target.value)) {
-                    e.target.value = "";
-                    return;
-                }
-                if (index < inputs.length - 1) {
-                    inputs[index + 1].focus();
-                }
-            });
+<script>
+    const inputs = document.querySelectorAll(".otp-inputs input");
+    const otpHidden = document.getElementById("otp-hidden");
+    const form = document.querySelector("form");
 
-            input.addEventListener("keydown", (e) => {
-                if (e.key === "Backspace" && input.value === "" && index > 0) {
-                    inputs[index - 1].focus();
-                }
-            });
+    inputs.forEach((input, index) => {
 
-            input.addEventListener("paste", (e) => {
-                e.preventDefault();
+        input.addEventListener("input", (e) => {
 
-                const data = (e.clipboardData || window.clipboardData)
-                    .getData("text")
-                    .replace(/\D/g, "")
-                    .slice(0, inputs.length);
+            if (!/^\d$/.test(e.target.value)) {
+                e.target.value = "";
+                return;
+            }
 
-                data.split("").forEach((num, i) => {
-                    if (inputs[i]) inputs[i].value = num;
-                });
-
-                if (inputs[data.length - 1]) {
-                    inputs[data.length - 1].focus();
-                }
-            });
-
+            if (index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
         });
-    </script>
-</body>
 
+        input.addEventListener("keydown", (e) => {
+
+            if (
+                e.key === "Backspace" &&
+                input.value === "" &&
+                index > 0
+            ) {
+                inputs[index - 1].focus();
+            }
+        });
+
+        input.addEventListener("paste", (e) => {
+
+            e.preventDefault();
+
+            const data = (e.clipboardData || window.clipboardData)
+                .getData("text")
+                .replace(/\D/g, "")
+                .slice(0, inputs.length);
+
+            data.split("").forEach((num, i) => {
+                if (inputs[i]) {
+                    inputs[i].value = num;
+                }
+            });
+
+            if (inputs[data.length - 1]) {
+                inputs[data.length - 1].focus();
+            }
+        });
+
+    });
+
+    form.addEventListener("submit", function () {
+
+        let otp = "";
+
+        inputs.forEach(input => {
+            otp += input.value;
+        });
+
+        otpHidden.value = otp;
+    });
+</script>
+
+</body>
 </html>

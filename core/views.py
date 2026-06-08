@@ -3,6 +3,7 @@ import random
 import logging
 from datetime import datetime, timedelta
 
+from .models import Blog
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -12,11 +13,12 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.hashers import check_password
 
 from .models import (
     Appointment, Attendance, DailyTask, LeaveApplication,
     Message, Notification, PasswordResetOTP, Profile,
-    SalaryRecord, SessionNote, StaffProfile, UserActivity,
+    SalaryRecord, SessionNote, StaffProfile, UserActivity, ClinicSettings
 )
 from .email_utils import (
     send_appointment_confirmation,
@@ -74,6 +76,16 @@ def contact(request):
 
 def blog(request):
     return render(request, 'blog.html')
+
+
+def blog_list(request):
+    blogs = Blog.objects.order_by('-created_at')
+    return render(request, 'blog.html', {'blogs': blogs})
+
+
+def blog_detail(request, slug):
+    blog = get_object_or_404(Blog, slug=slug)
+    return render(request, 'blog_detail.html', {'blog': blog})
 
 
 # ─── AUTH ────────────────────────────────────────────────────
@@ -246,36 +258,72 @@ def resend_otp(request):
 
 
 def reset_password(request):
-    """Step 3 – set new password."""
-    if not request.session.get('otp_verified'):
-        messages.error(request, 'Please verify OTP first.')
-        return redirect('request_otp')
+    """
+    Step 3 - Set new password after OTP verification.
+    """
 
-    if request.method == 'POST':
-        password  = request.POST.get('password', '')
-        confirm   = request.POST.get('confirm_password', '')
-        if password != confirm:
-            messages.error(request, '❌ Passwords do not match.')
-            return render(request, 'reset_password.html')
-        if len(password) < 6:
-            messages.error(request, '❌ Password must be at least 6 characters.')
-            return render(request, 'reset_password.html')
+    if not request.session.get("otp_verified"):
+        messages.error(request, "Please verify OTP first.")
+        return redirect("request_otp")
 
-        user_id = request.session.get('reset_user_id')
-        try:
-            user = User.objects.get(id=user_id)
-            user.set_password(password)
-            user.save()
-            # Clean session
-            del request.session['reset_user_id']
-            del request.session['otp_verified']
-            messages.success(request, '✅ Password reset successfully! Please login.')
-            return redirect('login')
-        except User.DoesNotExist:
-            messages.error(request, 'User not found.')
-            return redirect('request_otp')
+    user_id = request.session.get("reset_user_id")
 
-    return render(request, 'reset_password.html')
+    if not user_id:
+        messages.error(request, "Session expired.")
+        return redirect("request_otp")
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect("request_otp")
+
+    if request.method == "POST":
+        password = request.POST.get("password", "").strip()
+        confirm_password = request.POST.get("confirm_password", "").strip()
+
+        # Empty fields
+        if not password or not confirm_password:
+            messages.error(request, "All fields are required.")
+            return redirect("reset_password")
+
+        # Password match check
+        if password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect("reset_password")
+
+        # Minimum length
+        if len(password) < 8:
+            messages.error(
+                request,
+                "Password must contain at least 8 characters."
+            )
+            return redirect("reset_password")
+
+        # Same as old password check
+        if user.check_password(password):
+            messages.error(
+                request,
+                "New password cannot be the same as your current password."
+            )
+            return redirect("reset_password")
+
+        # Save password
+        user.set_password(password)
+        user.save()
+
+        # Clear reset session
+        request.session.pop("otp_verified", None)
+        request.session.pop("reset_user_id", None)
+
+        messages.success(
+            request,
+            "Password reset successfully. Please login."
+        )
+
+        return redirect("login")
+
+    return render(request, "reset_password.html")
 
 
 @login_required
@@ -915,3 +963,46 @@ def add_session_note(request):
         return redirect('staff_session_notes')
     patients = User.objects.filter(is_superuser=False, is_staff=False)
     return render(request, 'add_session_note.html', {'patients': patients})
+
+@login_required
+def admin_settings(request):
+
+    settings_obj, created = ClinicSettings.objects.get_or_create(
+        id=1
+    )
+
+    if request.method == "POST":
+
+        settings_obj.clinic_name = request.POST.get(
+            "clinic_name"
+        )
+
+        settings_obj.phone = request.POST.get(
+            "phone"
+        )
+
+        settings_obj.email = request.POST.get(
+            "email"
+        )
+
+        settings_obj.address = request.POST.get(
+            "address"
+        )
+
+        if request.FILES.get("logo"):
+            settings_obj.logo = request.FILES["logo"]
+
+        settings_obj.save()
+
+        messages.success(
+            request,
+            "Settings updated successfully."
+        )
+
+        return redirect("admin_settings")
+
+    return render(
+        request,
+        "admin_settings.html",
+        {"settings": settings_obj}
+    )

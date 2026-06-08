@@ -138,6 +138,6 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
 EMAIL_HOST_USER = "mandaliatanvi1504@gmail.com"
-EMAIL_HOST_PASSWORD = "ahujaisrnrhoonx"
+EMAIL_HOST_PASSWORD = "kulp byry scfu fzdd"
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

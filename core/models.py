@@ -6,6 +6,7 @@ from django.dispatch import receiver
 import random
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.text import slugify
 
 
 # DASHBOARD APPOINTMENT
@@ -339,3 +340,70 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification → {self.recipient.username}: {self.message[:40]}"
+    
+
+class ClinicSettings(models.Model):
+    clinic_name = models.CharField(max_length=200)
+    tagline = models.CharField(max_length=300, blank=True)
+
+    logo = models.ImageField(
+        upload_to='clinic_logo/',
+        blank=True,
+        null=True
+    )
+
+    phone = models.CharField(max_length=20)
+    email = models.EmailField()
+
+    address = models.TextField()
+
+    appointment_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=500
+    )
+
+    followup_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=300
+    )
+
+    session_duration = models.IntegerField(default=45)
+
+    opening_time = models.TimeField()
+    closing_time = models.TimeField()
+
+    instagram = models.URLField(blank=True)
+    facebook = models.URLField(blank=True)
+    linkedin = models.URLField(blank=True)
+    whatsapp = models.CharField(max_length=20, blank=True)
+
+    enable_chat = models.BooleanField(default=True)
+    enable_payments = models.BooleanField(default=False)
+    enable_otp_reset = models.BooleanField(default=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.clinic_name
+    
+
+class Blog(models.Model):
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True, blank=True)
+    meta_description = models.TextField()
+    content = models.TextField()
+
+    image = models.ImageField(upload_to='blogs/', blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
