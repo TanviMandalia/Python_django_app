@@ -14,8 +14,8 @@ urlpatterns = [
     path("about/", views.about, name="about"),
     path("services/", views.services, name="services"),
     path("contact/", views.contact, name="contact"),
-    path('blogs/', views.blog_list, name='blog_list'),
-    path('blog/<slug:slug>/', views.blog_detail, name='blog_detail'),
+    path("blogs/", views.blog_list, name="blog_list"),
+    path('blogs/<slug:slug>/', views.blog_detail, name='blog_detail'),
     
 
     # Auth
@@ -53,7 +53,7 @@ urlpatterns = [
     path("admin-patients/", views.admin_patients, name="admin_patients"),
     path("admin-chat/", views.admin_chat, name="admin_chat"),
     path("admin-chat/<int:patient_id>/", views.admin_chat_detail, name="admin_chat_detail"),
-    path('admin-blogs/', views.admin_blog_list, name='admin_blog_list'),
+    path('admin-blog/', views.admin_blog_list, name='admin_blog_list'),
     path('admin-blog/add/', views.admin_blog_add, name='admin_blog_add'),
     path('admin-blog/edit/<int:id>/', views.admin_blog_edit, name='admin_blog_edit'),
     path('admin-blog/delete/<int:id>/', views.admin_blog_delete, name='admin_blog_delete'),
