@@ -94,19 +94,15 @@ def blog_detail(request, slug):
 # =========================
 # ADMIN BLOG LIST
 # =========================
-@login_required
 def admin_blog_list(request):
-
     blogs = Blog.objects.order_by('-created_at')
 
     return render(
         request,
         'blog_list.html',
-        {
-            'blogs': blogs,
-            'total_blogs': blogs.count()
-        }
+        {'blogs': blogs}
     )
+    
 # =========================
 # ADMIN ADD BLOG
 # =========================

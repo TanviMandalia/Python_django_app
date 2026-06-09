@@ -1,118 +1,518 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
-<head>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>{{ blog.title }}</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="description" content="{{ blog.content|truncatechars:160 }}" />
 
-    <style>
-        body {
-            background: #f8f9fa;
-            font-family: Georgia, 'Times New Roman', serif;
-            color: #1a1a1a;
-        }
+    <meta property="og:title" content="{{ blog.title }}" />
 
-        /* Hero section */
-        .hero {
-            height: 380px;
-            background: #000;
-            display: flex;
-            align-items: end;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.7;
-            position: absolute;
-        }
-
-        .hero-content {
-            position: relative;
-            color: white;
-            text-align: center;
-            padding: 30px;
-            max-width: 800px;
-        }
-
-        .hero-title {
-            font-size: 42px;
-            font-weight: bold;
-        }
-
-        .meta {
-            font-size: 14px;
-            opacity: 0.85;
-            margin-top: 10px;
-        }
-
-        /* Article container */
-        .article-container {
-            max-width: 800px;
-            margin: -60px auto 50px auto;
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        }
-
-        .article-content {
-            font-size: 18px;
-            line-height: 1.9;
-            color: #333;
-            white-space: pre-line;
-        }
-
-        /* Back button */
-        .back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255,255,255,0.9);
-            padding: 8px 14px;
-            border-radius: 20px;
-            text-decoration: none;
-            color: #000;
-            font-size: 14px;
-        }
-
-        .back-btn:hover {
-            background: white;
-        }
-    </style>
-</head>
-
-<body>
-
-<!-- HERO -->
-<div class="hero">
+    <meta property="og:description" content="{{ blog.content|truncatechars:160 }}" />
 
     {% if blog.image %}
-        <img src="{{ blog.image.url }}" alt="">
+      <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ blog.image.url }}" />
     {% endif %}
 
-    <a href="/blog/" class="back-btn">← Back</a>
+    <meta name="description" content="{{ blog.content|truncatechars:160 }}" />
 
-    <div class="hero-content">
-        <div class="hero-title">{{ blog.title }}</div>
-        <div class="meta">
-            Published on {{ blog.created_at|date:"F d, Y" }}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+
+    <style>
+      /* =========================
+                                 PAGE BASE
+                              ========================= */
+      
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f4f6f9;
+        font-family: 'Segoe UI', sans-serif;
+        color: #2c2c2c;
+      }
+      
+      /* =========================
+                                 HERO SECTION
+                              ========================= */
+      
+      .hero {
+        position: relative;
+        height: 550px;
+        overflow: hidden;
+        background: #111;
+      }
+      
+      .hero img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: brightness(45%);
+      }
+      
+      .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.75));
+      }
+      
+      .back-btn {
+        position: absolute;
+        top: 30px;
+        left: 30px;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        background: rgba(255, 255, 255, 0.95);
+        color: #222;
+        padding: 12px 18px;
+        border-radius: 50px;
+        font-weight: 600;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        transition: 0.3s;
+      }
+      
+      .back-btn:hover {
+        background: #f5c518;
+        transform: translateY(-2px);
+      }
+      
+      .hero-content {
+        position: relative;
+        z-index: 10;
+        height: 100%;
+        max-width: 1100px;
+        margin: auto;
+        padding: 0 30px 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+      
+      .badge {
+        width: max-content;
+        background: #f5c518;
+        color: #111;
+        padding: 10px 18px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 20px rgba(245, 197, 24, 0.35);
+      }
+      
+      .hero-title {
+        color: white;
+        font-size: 4rem;
+        font-weight: 800;
+        line-height: 2;
+        max-width: 900px;
+        margin: 0 0 20px;
+      }
+      
+      .featured-image-wrapper {
+        max-width: 1100px;
+        margin: -120px auto 50px;
+        padding: 15px;
+        background: white;
+        border-radius: 35px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+      }
+      
+      .featured-image {
+        width: 100%;
+        height: 550px;
+        object-fit: cover;
+      
+        border-radius: 30px;
+      
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12), 0 10px 25px rgba(0, 0, 0, 0.08);
+      
+        display: block;
+      
+        transition: 0.4s;
+      }
+      
+      .featured-image:hover {
+        transform: translateY(-4px);
+      }
+      
+      .meta {
+        display: flex;
+        gap: 25px;
+        flex-wrap: wrap;
+        color: #e5e5e5;
+        font-size: 15px;
+      }
+      
+      .meta span {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      /* =========================
+                                 ARTICLE WRAPPER
+                              ========================= */
+      
+      .article-wrapper {
+        max-width: 1200px;
+        margin: -100px auto 80px;
+        padding: 0 25px;
+        position: relative;
+        z-index: 50;
+      }
+      
+      .article-card {
+        background: white;
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08), 0 5px 20px rgba(0, 0, 0, 0.05);
+      }
+      
+      /* =========================
+                                 ARTICLE HEADER
+                              ========================= */
+      
+      .article-top {
+        padding: 45px 50px;
+        border-bottom: 1px solid #eee;
+        background: linear-gradient(135deg, rgba(245, 197, 24, 0.08), rgba(245, 197, 24, 0.02));
+      }
+      
+      .article-top h2 {
+        margin: 0 0 10px;
+        color: #111;
+        font-size: 2rem;
+        font-weight: 800;
+      }
+      
+      .article-top p {
+        margin: 0;
+        color: #777;
+        font-size: 15px;
+      }
+      
+      /* =========================
+                                 ARTICLE CONTENT
+                              ========================= */
+      
+      .article-content {
+        padding: 55px 50px;
+        font-size: 18px;
+        line-height: 2;
+        color: #444;
+        white-space: pre-line;
+      }
+      
+      .article-content h2 {
+        margin-top: 40px;
+        margin-bottom: 15px;
+        font-size: 2rem;
+        color: #111;
+      }
+      
+      .article-content h3 {
+        margin-top: 35px;
+        margin-bottom: 12px;
+        color: #111;
+      }
+      
+      .article-content p {
+        margin-bottom: 25px;
+      }
+      
+      .article-content img {
+        max-width: 100%;
+        border-radius: 18px;
+        margin: 25px 0;
+      }
+      
+      .article-content blockquote {
+        margin: 30px 0;
+        padding: 25px;
+        background: #fff9e8;
+        border-left: 5px solid #f5c518;
+        border-radius: 15px;
+        font-style: italic;
+      }
+      
+      .article-content ul,
+      .article-content ol {
+        padding-left: 25px;
+      }
+      
+      /* =========================
+                                 RELATED ARTICLES
+                              ========================= */
+      
+      .related-articles {
+        padding: 50px;
+        border-top: 1px solid #eee;
+        background: #fafafa;
+      }
+      
+      .related-articles h2 {
+        margin-bottom: 25px;
+        font-size: 2rem;
+        color: #111;
+      }
+      
+      .related-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+      
+      .related-card {
+        text-decoration: none;
+        background: white;
+        border-radius: 18px;
+        overflow: hidden;
+        transition: 0.3s;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+      }
+      
+      .related-card:hover {
+        transform: translateY(-6px);
+      }
+      
+      .related-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+      }
+      
+      .related-card h4 {
+        padding: 18px;
+        color: #222;
+        margin: 0;
+        line-height: 1.5;
+      }
+      
+      /* =========================
+                                 SHARE SECTION
+                              ========================= */
+      
+      .share-section {
+        padding: 45px 50px;
+        border-top: 1px solid #eee;
+      }
+      
+      .share-section h4 {
+        margin-bottom: 20px;
+        font-size: 1.3rem;
+      }
+      
+      .share-buttons {
+        display: flex;
+        gap: 12px;
+      }
+      
+      .share-buttons a {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f5c518;
+        color: #111;
+        text-decoration: none;
+        transition: 0.3s;
+        font-size: 18px;
+      }
+      
+      .share-buttons a:hover {
+        transform: translateY(-4px);
+      }
+      
+      /* =========================
+                                 AUTHOR SECTION
+                              ========================= */
+      
+      .author-box {
+        padding: 50px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        background: #111;
+      }
+      
+      .author-left {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+      
+      .author-avatar {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: #f5c518;
+        color: #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 22px;
+      }
+      
+      .author-info h4 {
+        margin: 0 0 6px;
+        color: white;
+      }
+      
+      .author-info p {
+        margin: 0;
+        color: #ccc;
+      }
+      
+      .more-btn {
+        text-decoration: none;
+        background: #f5c518;
+        color: #111;
+        padding: 14px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        transition: 0.3s;
+      }
+      
+      .more-btn:hover {
+        transform: translateY(-2px);
+      }
+      
+      /* =========================
+                                 MOBILE
+                              ========================= */
+      
+      @media (max-width: 768px) {
+        .hero {
+          height: 450px;
+        }
+      
+        .hero-title {
+          font-size: 2.2rem;
+        }
+      
+        .article-top,
+        .article-content,
+        .related-articles,
+        .share-section,
+        .author-box {
+          padding: 25px;
+        }
+      
+        .author-box {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      
+        .meta {
+          gap: 12px;
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <section class="hero">
+      {% comment %} {% if blog.image %}
+        <img src="{{ blog.image.url }}" alt="{{ blog.title }}" />
+      {% endif %} {% endcomment %}
+
+      {% if blog.image %}
+        <div class="featured-image-wrapper">
+          <img src="{{ blog.image.url }}" alt="{{ blog.title }}" class="featured-image" />
         </div>
+      {% endif %}
+
+      <div class="hero-overlay"></div>
+
+      <a href="{% url 'blog_list' %}" class="back-btn">
+        <i class="fas fa-arrow-left"></i>
+        Back to Blogs
+      </a>
+
+      <div class="hero-content">
+        <div class="badge">Physiotherapy Blog</div>
+
+        <h1 class="hero-title">{{ blog.title }}</h1>
+
+        <div class="meta">
+          <span>
+            <i class="fas fa-calendar"></i>
+            {{ blog.created_at|date:'F d, Y' }}
+          </span>
+
+          <span>
+            <i class="fas fa-user-md"></i>
+            Dr. Dhvani Patalia
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <div class="article-wrapper">
+      <div class="article-card">
+        <div class="article-top">
+          <h2>Article Overview</h2>
+          <p>Professional physiotherapy insights and guidance.</p>
+        </div>
+
+        <div class="article-content">{{ blog.content }}</div>
+
+        <section class="related-articles">
+          <h2>Related Articles</h2>
+
+          <div class="related-grid">
+            {% for related in related_blogs %}
+              <a href="{% url 'blog_detail' related.slug %}" class="related-card">
+                {% if related.image %}
+                  <img src="{{ related.image.url }}" />
+                {% endif %}
+
+                <h4>{{ related.title }}</h4>
+              </a>
+            {% endfor %}
+          </div>
+        </section>
+
+        <div class="share-section">
+          <h4>Share this article</h4>
+
+          <div class="share-buttons">
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+
+            <a href="#"><i class="fab fa-twitter"></i></a>
+
+            <a href="#"><i class="fab fa-linkedin-in"></i></a>
+
+            <a href="#"><i class="fas fa-link"></i></a>
+          </div>
+        </div>
+
+        <div class="author-box">
+          <div class="author-left">
+            <div class="author-avatar">DP</div>
+
+            <div class="author-info">
+              <h4>Dr. Dhvani Patalia</h4>
+              <p>Physiotherapy Specialist</p>
+            </div>
+          </div>
+
+          <a href="{% url 'blog_list' %}" class="more-btn">More Articles</a>
+        </div>
+      </div>
     </div>
-</div>
-
-<!-- ARTICLE -->
-<div class="article-container">
-
-    <div class="article-content">
-        {{ blog.content }}
-    </div>
-
-</div>
-
-</body>
+  </body>
 </html>
