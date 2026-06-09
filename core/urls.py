@@ -2,7 +2,6 @@ from django.urls import path, include
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib import admin
 
 
 
@@ -15,7 +14,9 @@ urlpatterns = [
     path("about/", views.about, name="about"),
     path("services/", views.services, name="services"),
     path("contact/", views.contact, name="contact"),
-    path("blog/", views.blog, name="blog"),
+    path('blogs/', views.blog_list, name='blog_list'),
+    path('blog/<slug:slug>/', views.blog_detail, name='blog_detail'),
+    
 
     # Auth
     path("login/", views.login_view, name="login"),
@@ -52,8 +53,10 @@ urlpatterns = [
     path("admin-patients/", views.admin_patients, name="admin_patients"),
     path("admin-chat/", views.admin_chat, name="admin_chat"),
     path("admin-chat/<int:patient_id>/", views.admin_chat_detail, name="admin_chat_detail"),
-    path('blog/', views.blog_list, name='blog_list'),
-    path('blog/<slug:slug>/', views.blog_detail, name='blog_detail'),
+    path('admin-blogs/', views.admin_blog_list, name='admin_blog_list'),
+    path('admin-blog/add/', views.admin_blog_add, name='admin_blog_add'),
+    path('admin-blog/edit/<int:id>/', views.admin_blog_edit, name='admin_blog_edit'),
+    path('admin-blog/delete/<int:id>/', views.admin_blog_delete, name='admin_blog_delete'),
 
     # Messages
     path("delete-message/<int:message_id>/", views.delete_message, name="delete_message"),

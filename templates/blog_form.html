@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Form Page</title>
+</head>
+
+<body>
+    <h2>{% if blog %}Edit Blog{% else %}Add Blog{% endif %}</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <input type="text" name="title" value="{{ blog.title|default:'' }}" placeholder="Title">
+
+        <textarea name="content">{{ blog.content|default:'' }}</textarea>
+
+        <input type="file" name="image">
+
+        <button type="submit">
+            {% if blog %}Update{% else %}Create{% endif %}
+        </button>
+    </form>
+</body>
+
+</html>

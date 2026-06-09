@@ -8,7 +8,7 @@ SECRET_KEY = 'django-insecure-_gn^1w-76*ahq4ws29st57(e57(mee1%p*^0gfoo4%k6!qws(!
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -79,7 +79,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_URL = '/login/'
+LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 
 # ─── EMAIL CONFIGURATION ─────────────────────────────────────
