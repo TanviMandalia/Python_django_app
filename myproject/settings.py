@@ -10,10 +10,7 @@ SECRET_KEY = 'django-insecure-your-secret-key-here'
 
 DEBUG = True  # ❗ set False in production
 
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-]
+ALLOWED_HOSTS = ["*"]
 
 APPEND_SLASH = True
 

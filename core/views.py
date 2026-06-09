@@ -4,6 +4,7 @@ import logging
 from datetime import datetime, timedelta
 
 from .models import Blog
+from .forms import BlogForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -74,19 +75,89 @@ def contact(request):
         return redirect('/contact/')
     return render(request, 'contact.html')
 
-def blog(request):
-    return render(request, 'blog.html')
-
-
+# =========================
+# PUBLIC BLOG LIST
+# =========================
 def blog_list(request):
     blogs = Blog.objects.order_by('-created_at')
     return render(request, 'blog.html', {'blogs': blogs})
 
 
+# =========================
+# PUBLIC BLOG DETAIL
+# =========================
 def blog_detail(request, slug):
     blog = get_object_or_404(Blog, slug=slug)
     return render(request, 'blog_detail.html', {'blog': blog})
 
+
+# =========================
+# ADMIN BLOG LIST
+# =========================
+@login_required
+def admin_blog_list(request):
+
+    blogs = Blog.objects.order_by('-created_at')
+
+    return render(
+        request,
+        'blog_list.html',
+        {
+            'blogs': blogs,
+            'total_blogs': blogs.count()
+        }
+    )
+# =========================
+# ADMIN ADD BLOG
+# =========================
+def admin_blog_add(request):
+    if request.method == "POST":
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        image = request.FILES.get('image')
+
+        Blog.objects.create(
+            title=title,
+            content=content,
+            image=image
+        )
+
+        return redirect('admin_blog_list')
+
+    return render(request, 'blog_form.html')
+
+
+# =========================
+# ADMIN EDIT BLOG
+# =========================
+def admin_blog_edit(request, id):
+    blog = get_object_or_404(Blog, id=id)
+
+    if request.method == "POST":
+        blog.title = request.POST.get('title')
+        blog.content = request.POST.get('content')
+
+        if request.FILES.get('image'):
+            blog.image = request.FILES.get('image')
+
+        blog.save()
+        return redirect('admin_blog_list')
+
+    return render(request, 'blog_form.html', {'blog': blog})
+
+
+# =========================
+# ADMIN DELETE BLOG
+# =========================
+def admin_blog_delete(request, id):
+    blog = get_object_or_404(Blog, id=id)
+
+    if request.method == "POST":
+        blog.delete()
+        return redirect('admin_blog_list')
+
+    return render(request, 'blog_delete.html', {'blog': blog})
+    
 
 # ─── AUTH ────────────────────────────────────────────────────
 

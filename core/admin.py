@@ -3,6 +3,7 @@ from .models import Blog
 
 @admin.register(Blog)
 class BlogAdmin(admin.ModelAdmin):
-    list_display = ('title', 'created_at')
-    prepopulated_fields = {"slug": ("title",)}
-    search_fields = ('title', 'meta_description')
+    list_display = ('title', 'slug', 'created_at')
+    prepopulated_fields = {"slug": ("title",)}  # 🔥 auto fill in admin
+    search_fields = ('title',)
+    
