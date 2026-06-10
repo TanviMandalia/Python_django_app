@@ -21,7 +21,7 @@
 
         <!-- AUTH BUTTONS -->
         <div class="nav-auth" id="navAuth">
-            <a href="/book" class="btn-book-nav">📅 Book Now</a>
+            <a href="{% url "book_appointment" %}" class="btn-book-nav">📅 Book Now</a>
             <a href="/login" class="btn-login">Login</a>
         </div>
 
@@ -38,7 +38,7 @@
         <a href="/services">💆 Services</a>
         <a href="/blogs">📝 Blog</a>
         <a href="/contact">📞 Contact</a>
-        <a href="/book"style="color:#F5C518; font-weight:700;">📅 Book Appointment</a>
+        <a href="{% url "book_appointment" %}"style="color:#F5C518; font-weight:700;">📅 Book Appointment</a>
         <a href="/login">🔐 Login</a>
     </div>
 </nav>

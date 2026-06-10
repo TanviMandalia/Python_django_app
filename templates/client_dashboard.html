@@ -611,7 +611,7 @@
         <nav>
             <div class="nav-section">Main Menu</div>
             <a href="/client-dashboard" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/book" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointments</a>
+            <a href="{% url "book_appointment" %}" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointments</a>
             <a href="/my-appointments" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
             <a href="/my-appointments" class="nav-item"><i class="fas fa-history"></i> Session History</a>
             <div class="nav-section">Communication</div>
@@ -659,7 +659,7 @@
                 <div>
                     <h2>Hello, <span>{{ user.first_name|default:user.username }}!</span> 👋</h2>
                     <p>Ready to continue your recovery journey? Book your next appointment today.</p>
-                    <a href="/book" class="btn-book">📅 Book Appointment</a>
+                    <a href="{% url "book_appointment" %}" class="btn-book">📅 Book Appointment</a>
                 </div>
                 <div class="welcome-icon"><i class="fas fa-heartbeat"></i></div>
             </div>
@@ -727,7 +727,7 @@
                     <div class="empty-state">
                         <i class="fas fa-calendar-times"></i>
                         <p>No upcoming appointments.<br>Book your first session!</p>
-                        <a href="/book" class="btn-book" style="margin-top:15px; font-size:0.85em;">Book Now</a>
+                        <a href="{% url "book_appointment" %}" class="btn-book" style="margin-top:15px; font-size:0.85em;">Book Now</a>
                     </div>
                     {% endif %}
                 </div>
@@ -736,7 +736,7 @@
                 <div class="card">
                     <div class="card-title"><span><i class="fas fa-bolt"></i> Quick Actions</span></div>
                     <div class="quick-actions">
-                        <a href="/book" class="action-btn gold">
+                        <a href="{% url "book_appointment" %}" class="action-btn gold">
                             <div class="icon"><i class="fas fa-calendar-plus"></i></div>
                             <span>Book Appointment</span>
                         </a>
