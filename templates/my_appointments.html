@@ -302,7 +302,7 @@
         <nav>
             <div class="nav-section">Main Menu</div>
             <a href="/client-dashboard" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="/book" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
+            <a href="{% url "book_appointment" %}" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
             <a href="/my-appointments" class="nav-item active"><i class="fas fa-calendar-check"></i> My Appointments</a>
             <div class="nav-section">Communication</div>
             <a href="#" class="nav-item"><i class="fas fa-comments"></i> Chat with Doctor</a>
@@ -316,7 +316,7 @@
     <div class="main-content">
         <div class="topbar">
             <h1>📋 My Appointments</h1>
-            <a href="/book" class="btn-book">+ Book New</a>
+            <a href="{% url "book_appointment" %}" class="btn-book">+ Book New</a>
         </div>
         <div class="dashboard-body">
 
@@ -359,7 +359,7 @@
                 <i class="fas fa-calendar-times"></i>
                 <h3>No Appointments Yet</h3>
                 <p>You haven't booked any appointments yet.<br>Book your first session with Dr. Dhvani Patalia!</p>
-                <a href="/book" class="btn-book">📅 Book First Appointment</a>
+                <a href="{% url "book_appointment" %}" class="btn-book">📅 Book First Appointment</a>
             </div>
             {% endif %}
 
