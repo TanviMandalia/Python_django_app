@@ -583,11 +583,9 @@
                             <td style="color:#aaa; font-weight:600;">{{ forloop.counter }}</td>
                             <td>
                                 <div class="patient-cell">
-                                    <div class="mini-avatar">{{ appt.patient.first_name|first|upper }}{{
-                                        appt.patient.last_name|first|upper }}</div>
+                                    <div class="mini-avatar">{{ appt.patient.first_name|first|upper }}{{ appt.patient.last_name|first|upper }}</div>
                                     <div>
-                                        <div class="patient-name">{{
-                                            appt.patient.get_full_name|default:appt.patient.username }}</div>
+                                        <div class="patient-name">{{ appt.patient.get_full_name|default:appt.patient.username }}</div>
                                         <div class="patient-email">{{ appt.patient.email }}</div>
                                     </div>
                                 </div>
