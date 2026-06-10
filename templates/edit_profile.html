@@ -1,341 +1,381 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Edit Profile Page</title>
     <style>
-        * {
-            margin: 0;
-            padding-bottom: 10px;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f5f5f5;
-        }
-
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
-            overflow-y: auto;
-            scrollbar-width: none;
-        }
-
-        .sidebar-logo {
-            padding: 22px 20px;
-            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
-            text-align: center;
-        }
-
-        .sidebar-logo img {
-            width: 130px;
-            border-radius: 10px;
-        }
-
-        .sidebar-logo p {
-            color: #F5C518;
-            font-size: 0.75em;
-            margin-top: 8px;
-            font-weight: 600;
-        }
-
-        .sidebar-user {
-            padding: 18px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .user-avatar {
-            width: 45px;
-            height: 45px;
-            background: #F5C518;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: #2C2C2C;
-            font-size: 1em;
-        }
-
-        .user-info h4 {
-            color: white;
-            font-size: 0.9em;
-            font-weight: 600;
-        }
-
-        .user-info span {
-            color: #F5C518;
-            font-size: 0.75em;
-        }
-
-        .nav-section {
-            padding: 12px 22px 5px;
-            color: #555;
-            font-size: 0.7em;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 700;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 13px;
-            padding: 12px 22px;
-            color: #ccc;
-            text-decoration: none;
-            font-size: 0.9em;
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
-
-        .nav-item:hover,
-        .nav-item.active {
-            background: rgba(245, 197, 24, 0.1);
-            color: #F5C518;
-            border-left-color: #F5C518;
-        }
-
-        .nav-item i {
-            width: 18px;
-            text-align: center;
-        }
-
-        .logout-btn {
-            margin: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 18px;
-            background: rgba(220, 53, 69, 0.15);
-            color: #ff6b6b;
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 0.86em;
-            transition: all 0.3s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(220, 53, 69, 0.3);
-        }
-
+      * {
+        margin: 0;
+        padding-bottom: 10px;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Segoe UI', sans-serif;
+        background: #f5f5f5;
+      }
+      
+      .sidebar {
+        width: 260px;
+        height: 100vh;
+        position: fixed;
+        left: 0;
+        top: 0;
+        background: linear-gradient(180deg, #1a1a1a, #2c2c2c);
+        overflow-y: auto;
+        scrollbar-width: none;
+      }
+      
+      .sidebar-logo {
+        padding: 22px 20px;
+        border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+        text-align: center;
+      }
+      
+      .sidebar-logo img {
+        width: 130px;
+        border-radius: 10px;
+      }
+      
+      .sidebar-logo p {
+        color: #f5c518;
+        font-size: 0.75em;
+        margin-top: 8px;
+        font-weight: 600;
+      }
+      
+      .sidebar-user {
+        padding: 18px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .user-avatar {
+        width: 45px;
+        height: 45px;
+        background: #f5c518;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        color: #2c2c2c;
+        font-size: 1em;
+      }
+      
+      .user-info h4 {
+        color: white;
+        font-size: 0.9em;
+        font-weight: 600;
+      }
+      
+      .user-info span {
+        color: #f5c518;
+        font-size: 0.75em;
+      }
+      
+      .nav-section {
+        padding: 12px 22px 5px;
+        color: #555;
+        font-size: 0.7em;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-weight: 700;
+      }
+      
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 12px 22px;
+        color: #ccc;
+        text-decoration: none;
+        font-size: 0.9em;
+        transition: all 0.3s;
+        border-left: 3px solid transparent;
+      }
+      
+      .nav-item:hover,
+      .nav-item.active {
+        background: rgba(245, 197, 24, 0.1);
+        color: #f5c518;
+        border-left-color: #f5c518;
+      }
+      
+      .nav-item i {
+        width: 18px;
+        text-align: center;
+      }
+      
+      .logout-btn {
+        margin: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 18px;
+        background: rgba(220, 53, 69, 0.15);
+        color: #ff6b6b;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 0.86em;
+        transition: all 0.3s;
+      }
+      
+      .logout-btn:hover {
+        background: rgba(220, 53, 69, 0.3);
+      }
+      
+      .main-content {
+        margin-left: 260px;
+        min-height: 100vh;
+        padding: 30px;
+        background: #f5f5f5;
+      }
+      
+      .page-card,
+      .otp-card {
+        background: #fff;
+        max-width: 900px;
+        margin: auto;
+        padding: 35px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+      }
+      
+      .page-card h1,
+      .otp-card h1 {
+        color: #2c2c2c;
+        margin-bottom: 25px;
+      }
+      
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 18px;
+      }
+      
+      .form-group label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #444;
+      }
+      
+      .form-group input,
+      .form-group textarea {
+        padding: 12px;
+        border: 2px solid #eee;
+        border-radius: 12px;
+        font-size: 14px;
+      }
+      
+      .form-group textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+      
+      .full {
+        width: 100%;
+      }
+      
+      .profile-photo-section {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      
+      .profile-preview {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: bold;
+        background: #e5e7eb;
+        color: #374151;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      
+      .profile-preview:hover {
+        transform: scale(1.05);
+        border-color: #4f46e5;
+      }
+      
+      .hidden-file-input {
+        display: none;
+      }
+      
+      .upload-text {
+        font-size: 14px;
+        color: #555;
+      }
+      
+      .avatar {
+        background: #f5c518;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        font-weight: bold;
+        color: #2c2c2c;
+      }
+      
+      .btn-gold {
+        background: #f5c518;
+        color: #2c2c2c;
+        padding: 14px 30px;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+      
+      .btn-gold:hover {
+        background: #e5b900;
+      }
+      
+      .email-box {
+        background: #fafafa;
+        border: 2px solid #eee;
+        padding: 15px;
+        border-radius: 12px;
+        margin: 20px 0;
+        font-weight: 600;
+      }
+      
+      @media (max-width: 768px) {
         .main-content {
-            margin-left: 260px;
-            min-height: 100vh;
-            padding: 30px;
-            background: #f5f5f5;
+          margin-left: 0;
         }
-
-        .page-card,
-        .otp-card {
-            background: #fff;
-            max-width: 900px;
-            margin: auto;
-            padding: 35px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
-        }
-
-        .page-card h1,
-        .otp-card h1 {
-            color: #2C2C2C;
-            margin-bottom: 25px;
-        }
-
+      
         .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+          grid-template-columns: 1fr;
         }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 18px;
-        }
-
-        .form-group label {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #444;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            padding: 12px;
-            border: 2px solid #eee;
-            border-radius: 12px;
-            font-size: 14px;
-        }
-
-        .form-group textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .full {
-            width: 100%;
-        }
-
-        .profile-photo-section {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .profile-preview {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 15px;
-            border: 4px solid #F5C518;
-        }
-
-        .avatar {
-            background: #F5C518;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
-            font-weight: bold;
-            color: #2C2C2C;
-        }
-
-        .btn-gold {
-            background: #F5C518;
-            color: #2C2C2C;
-            padding: 14px 30px;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 700;
-        }
-
-        .btn-gold:hover {
-            background: #e5b900;
-        }
-
-        .email-box {
-            background: #fafafa;
-            border: 2px solid #eee;
-            padding: 15px;
-            border-radius: 12px;
-            margin: 20px 0;
-            font-weight: 600;
-        }
-
-        @media(max-width:768px) {
-
-            .main-content {
-                margin-left: 0;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-        }
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="main-content">
+      <div class="page-card">
+        <h1>Edit Profile</h1>
 
-        <div class="page-card">
+        <form method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
 
-            <h1>Edit Profile</h1>
+          <div class="profile-photo-section">
+            <!-- IMAGE / AVATAR -->
+            <label for="profile_photo">
+              {% if profile.profile_photo %}
+                <img src="{{ profile.profile_photo.url }}" id="previewImage" class="profile-preview" />
+              {% else %}
+                <div id="previewImage" class="profile-preview avatar">{{ user.first_name|first|upper }}</div>
+              {% endif %}
+            </label>
 
-            <form method="POST" enctype="multipart/form-data">
+            <!-- FILE INPUT -->
+            <input type="file" name="profile_photo" id="profile_photo" class="hidden-file-input" accept="image/*" />
 
-                {% csrf_token %}
+            <div class="upload-text">Click avatar to change photo</div>
+          </div>
 
-                <div class="profile-photo-section">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" name="first_name" value="{{ user.first_name }}" />
+            </div>
 
-                    {% if profile.profile_photo %}
-                    <img src="{{ profile.profile_photo.url }}" class="profile-preview">
-                    {% else %}
-                    <div class="profile-preview avatar">
-                        {{ user.first_name|first|upper }}
-                    </div>
-                    {% endif %}
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" name="last_name" value="{{ user.last_name }}" />
+            </div>
 
-                    <input type="file" name="profile_photo">
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" name="email" value="{{ user.email }}" />
+            </div>
 
-                </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="text" name="phone_number" value="{{ profile.phone_number }}" />
+            </div>
 
-                <div class="form-grid">
+            <div class="form-group">
+              <label>Gender</label>
+              <input type="text" name="gender" value="{{ profile.gender }}" />
+            </div>
 
-                    <div class="form-group">
-                        <label>First Name</label>
-                        <input type="text" name="first_name" value="{{ user.first_name }}">
-                    </div>
+            <div class="form-group">
+              <label>Date Of Birth</label>
+              <input type="date" name="date_of_birth" value="{{ profile.date_of_birth|date:'Y-m-d' }}" />
+            </div>
 
-                    <div class="form-group">
-                        <label>Last Name</label>
-                        <input type="text" name="last_name" value="{{ user.last_name }}">
-                    </div>
+            <div class="form-group">
+              <label>Blood Group</label>
+              <input type="text" name="blood_group" value="{{ profile.blood_group }}" />
+            </div>
 
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email" value="{{ user.email }}">
-                    </div>
+            <div class="form-group">
+              <label>Emergency Contact</label>
+              <input type="text" name="emergency_contact" value="{{ profile.emergency_contact }}" />
+            </div>
+          </div>
 
-                    <div class="form-group">
-                        <label>Phone Number</label>
-                        <input type="text" name="phone_number" value="{{ profile.phone_number }}">
-                    </div>
+          <div class="form-group full">
+            <label>Medical Notes</label>
+            <textarea name="medical_notes">{{ profile.medical_notes }}</textarea>
+          </div>
 
-                    <div class="form-group">
-                        <label>Gender</label>
-                        <input type="text" name="gender" value="{{ profile.gender }}">
-                    </div>
+          <div class="form-group full">
+            <label>Address</label>
+            <textarea name="address">{{ profile.address }}</textarea>
+          </div>
 
-                    <div class="form-group">
-                        <label>Date Of Birth</label>
-                        <input type="date" name="date_of_birth" value="{{ profile.date_of_birth|date:'Y-m-d' }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Blood Group</label>
-                        <input type="text" name="blood_group" value="{{ profile.blood_group }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Emergency Contact</label>
-                        <input type="text" name="emergency_contact" value="{{ profile.emergency_contact }}">
-                    </div>
-
-                </div>
-
-                <div class="form-group full">
-                    <label>Medical Notes</label>
-                    <textarea name="medical_notes">{{ profile.medical_notes }}</textarea>
-                </div>
-
-                <div class="form-group full">
-                    <label>Address</label>
-                    <textarea name="address">{{ profile.address }}</textarea>
-                </div>
-
-                <button class="btn-gold" type="submit">
-                    Save Changes
-                </button>
-
-            </form>
-
-        </div>
-
+          <button class="btn-gold" type="submit">Save Changes</button>
+        </form>
+      </div>
     </div>
-</body>
 
+    <script>
+      const input = document.getElementById('profile_photo')
+      const preview = document.getElementById('previewImage')
+      
+      input.addEventListener('change', function () {
+        const file = this.files[0]
+      
+        if (file) {
+          const reader = new FileReader()
+      
+          reader.onload = function (e) {
+            // If it's div avatar → convert to image
+            if (preview.tagName.toLowerCase() === 'div') {
+              const img = document.createElement('img')
+              img.id = 'previewImage'
+              img.className = 'profile-preview'
+              img.src = e.target.result
+      
+              preview.replaceWith(img)
+            } else {
+              preview.src = e.target.result
+            }
+          }
+      
+          reader.readAsDataURL(file)
+        }
+      })
+    </script>
+  </body>
 </html>
