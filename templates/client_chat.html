@@ -391,6 +391,18 @@
                     {{ user.first_name|first|upper }}
                     {% else %}DR{% endif %}
                 </div>
+                <!-- <h3>Total Messages: {{ messages_list|length }}</h3>
+
+                {% for msg in messages_list %}
+                <p>
+                    {{ msg.sender.username }}
+                    →
+                    {{ msg.receiver.username }}
+                    :
+                    {{ msg.content }}
+                </p>
+                {% endfor %}
+                <hr> -->
                 <div>
                     <div class="msg-bubble {% if msg.sender == user %}sent{% else %}received{% endif %}">
                         {{msg.content}}
@@ -430,7 +442,7 @@
 
         <!-- INPUT -->
         <div class="chat-input">
-            <form method="POST" action="/chat">
+            <form method="POST" action="{% url 'client_chat' %}">
                 {% csrf_token %}
                 <div class="input-row">
                     <input type="text" name="content" placeholder="Type your message here..." autocomplete="off"
