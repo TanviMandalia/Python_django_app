@@ -5,30 +5,56 @@ and failures never crash the main flow (errors are logged).
 """
 
 import logging
+from datetime import date as date_type
 from django.core.mail import send_mail
 from django.conf import settings
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 
 logger = logging.getLogger(__name__)
 
-CLINIC_NAME  = "PhysioRehab Clinic"
-CLINIC_EMAIL = settings.EMAIL_HOST_USER
+CLINIC_NAME  = "Dr. Dhvani Patalia — PhysioRehab"
+CLINIC_EMAIL = settings.DEFAULT_FROM_EMAIL
 CLINIC_PHONE = "+91 98765 43210"
 
+SERVICE_NAMES = {
+    'orthopedic':   'Orthopedic Therapy',
+    'neurological': 'Neurological Rehab',
+    'sports':       'Sports Rehabilitation',
+    'pediatric':    'Pediatric Therapy',
+    'womens':       "Women's Health",
+    'home_visit':   'Home Visit',
+}
 
-def send_clinic_email(subject, message_text, recipient_list, html_message=None):
-    """
-    Core email sender. Wraps send_mail with error handling.
-    Returns True on success, False on failure.
-    """
+TIME_NAMES = {
+    '09:00': '9:00 AM',  '10:00': '10:00 AM',
+    '11:00': '11:00 AM', '12:00': '12:00 PM',
+    '14:00': '2:00 PM',  '15:00': '3:00 PM',
+    '16:00': '4:00 PM',  '17:00': '5:00 PM',
+}
+
+def get_service_name(appt):
+    return SERVICE_NAMES.get(appt.service, appt.service)
+
+def get_time_name(appt):
+    return TIME_NAMES.get(appt.time, appt.time)
+
+def format_date(d):
+    """Safely format a date whether it's a date object or string like '2026-06-12'."""
+    if isinstance(d, str):
+        try:
+            from datetime import datetime
+            d = datetime.strptime(d, '%Y-%m-%d').date()
+        except Exception:
+            return d  # return as-is if parsing fails
+    return d.strftime('%d %B %Y')
+
+
+def send_clinic_email(subject, message_text, recipient_list):
     try:
         send_mail(
             subject=f"[{CLINIC_NAME}] {subject}",
             message=message_text,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=recipient_list if isinstance(recipient_list, list) else [recipient_list],
-            html_message=html_message,
             fail_silently=False,
         )
         logger.info(f"Email sent to {recipient_list}: {subject}")
@@ -38,22 +64,22 @@ def send_clinic_email(subject, message_text, recipient_list, html_message=None):
         return False
 
 
-# ─── APPOINTMENT EMAILS ──────────────────────────────────────
+# ── APPOINTMENT EMAILS ───────────────────────────────────────
 
 def send_appointment_confirmation(appointment):
-    """Email sent to patient when they book an appointment."""
     subject = "Appointment Booked Successfully"
     body = f"""Dear {appointment.name},
 
 Your appointment has been booked at {CLINIC_NAME}.
 
 Details:
-  Service  : {appointment.get_service_display_name()}
-  Date     : {appointment.date.strftime('%d %B %Y')}
-  Time     : {appointment.get_time_display_name()}
+  Service  : {get_service_name(appointment)}
+  Date     : {format_date(appointment.date)}
+  Time     : {get_time_name(appointment)}
   Status   : Pending Confirmation
 
-We will confirm your appointment shortly. For any queries, call us at {CLINIC_PHONE}.
+We will confirm your appointment shortly.
+For queries, call us at {CLINIC_PHONE}.
 
 Thank you for choosing {CLINIC_NAME}!
 """
@@ -61,163 +87,137 @@ Thank you for choosing {CLINIC_NAME}!
 
 
 def send_appointment_status_update(appointment):
-    """Email sent to patient when admin updates appointment status."""
-    status_map = {
-        'confirmed': ('Appointment Confirmed ✅', 'confirmed'),
-        'completed': ('Appointment Completed 🎉', 'completed'),
-        'cancelled': ('Appointment Cancelled ❌', 'cancelled'),
+    status_titles = {
+        'confirmed': 'Appointment Confirmed ✅',
+        'completed': 'Appointment Completed 🎉',
+        'cancelled': 'Appointment Cancelled ❌',
     }
-    label, _ = status_map.get(appointment.status, ('Appointment Update', appointment.status))
-
+    label = status_titles.get(appointment.status, 'Appointment Updated')
     body = f"""Dear {appointment.name},
 
 Your appointment status has been updated.
 
 Details:
-  Service  : {appointment.get_service_display_name()}
-  Date     : {appointment.date.strftime('%d %B %Y')}
-  Time     : {appointment.get_time_display_name()}
+  Service  : {get_service_name(appointment)}
+  Date     : {format_date(appointment.date)}
+  Time     : {get_time_name(appointment)}
   Status   : {appointment.status.upper()}
 
 """
     if appointment.status == 'confirmed':
-        body += f"Please arrive 10 minutes before your scheduled time.\n"
+        body += "Please arrive 10 minutes before your scheduled time.\n"
     elif appointment.status == 'cancelled':
-        body += f"If you'd like to reschedule, please contact us at {CLINIC_PHONE}.\n"
+        body += f"To reschedule, call us at {CLINIC_PHONE}.\n"
 
-    body += f"\nFor queries, call: {CLINIC_PHONE}\n\n{CLINIC_NAME}"
+    body += f"\n{CLINIC_NAME}"
     return send_clinic_email(label, body, appointment.email)
 
 
 def send_admin_new_appointment_alert(appointment):
-    """Alert admin when a new appointment is booked."""
-    admin_email = CLINIC_EMAIL
     subject = f"New Appointment: {appointment.name} – {appointment.date}"
-    body = f"""New appointment booked on the system.
+    body = f"""New appointment booked.
 
 Patient  : {appointment.name}
 Phone    : {appointment.phone}
 Email    : {appointment.email}
-Service  : {appointment.get_service_display_name()}
-Date     : {appointment.date.strftime('%d %B %Y')}
-Time     : {appointment.get_time_display_name()}
+Service  : {get_service_name(appointment)}
+Date     : {format_date(appointment.date)}
+Time     : {get_time_name(appointment)}
 Notes    : {appointment.notes or 'None'}
 
-Login to the admin panel to confirm or manage this appointment.
+Login to admin panel to confirm or manage this appointment.
 """
-    return send_clinic_email(subject, body, admin_email)
+    return send_clinic_email(subject, body, CLINIC_EMAIL)
 
 
-# ─── OTP EMAILS ──────────────────────────────────────────────
+# ── OTP EMAILS ───────────────────────────────────────────────
 
 def send_otp_email(email, otp, purpose="Password Reset"):
-    """Send OTP for password reset / change."""
     subject = f"{purpose} OTP"
     body = f"""Your OTP for {purpose} at {CLINIC_NAME}:
 
     OTP Code : {otp}
 
-This OTP is valid for 5 minutes. Do not share it with anyone.
-
-If you did not request this, please ignore this email.
+Valid for 5 minutes. Do not share it with anyone.
 
 {CLINIC_NAME}
 """
     return send_clinic_email(subject, body, email)
 
 
-# ─── STAFF EMAILS ────────────────────────────────────────────
+# ── STAFF EMAILS ─────────────────────────────────────────────
 
 def send_leave_status_email(leave):
-    """Email staff when leave is approved/rejected."""
-    email = leave.staff.email
-    if not email:
+    if not leave.staff.email:
         return False
-
-    status_word = leave.status.upper()
-    subject = f"Leave Application {status_word}"
+    subject = f"Leave Application {leave.status.upper()}"
     body = f"""Dear {leave.staff.get_full_name()},
 
 Your leave application has been {leave.status}.
 
-Details:
-  Type     : {leave.get_leave_type_display()}
-  From     : {leave.from_date.strftime('%d %B %Y')}
-  To       : {leave.to_date.strftime('%d %B %Y')}
-  Status   : {status_word}
-  Note     : {leave.admin_note or 'No note from admin'}
-
-For queries, contact the admin.
+  Type   : {leave.get_leave_type_display()}
+  From   : {format_date(leave.from_date)}
+  To     : {format_date(leave.to_date)}
+  Status : {leave.status.upper()}
+  Note   : {leave.admin_note or 'No note'}
 
 {CLINIC_NAME}
 """
-    return send_clinic_email(subject, body, email)
+    return send_clinic_email(subject, body, leave.staff.email)
 
 
 def send_salary_paid_email(salary_record):
-    """Email staff when salary is processed."""
-    email = salary_record.staff.email
-    if not email:
+    if not salary_record.staff.email:
         return False
-
     subject = f"Salary Processed – {salary_record.month} {salary_record.year}"
     body = f"""Dear {salary_record.staff.get_full_name()},
 
 Your salary for {salary_record.month} {salary_record.year} has been processed.
 
-Breakdown:
   Basic Salary : ₹{salary_record.basic_salary}
   Bonus        : ₹{salary_record.bonus}
   Deduction    : ₹{salary_record.deduction}
   Net Salary   : ₹{salary_record.net_salary}
-  Paid On      : {salary_record.paid_on.strftime('%d %B %Y') if salary_record.paid_on else 'N/A'}
+  Paid On      : {format_date(salary_record.paid_on) if salary_record.paid_on else 'N/A'}
 
-Thank you for your service at {CLINIC_NAME}!
+{CLINIC_NAME}
 """
-    return send_clinic_email(subject, body, email)
+    return send_clinic_email(subject, body, salary_record.staff.email)
 
 
 def send_task_assigned_email(task):
-    """Email staff when a new task is assigned to them."""
-    email = task.assigned_to.email
-    if not email:
+    if not task.assigned_to.email:
         return False
-
     subject = f"New Task Assigned: {task.title}"
     body = f"""Dear {task.assigned_to.get_full_name()},
 
 A new task has been assigned to you.
 
-Task     : {task.title}
-Priority : {task.priority.upper()}
-Due Date : {task.due_date.strftime('%d %B %Y') if task.due_date else 'No deadline'}
-Details  : {task.description or 'N/A'}
+  Task     : {task.title}
+  Priority : {task.priority.upper()}
+  Due Date : {format_date(task.due_date) if task.due_date else 'No deadline'}
+  Details  : {task.description or 'N/A'}
 
 Login to your dashboard to update the task status.
 
 {CLINIC_NAME}
 """
-    return send_clinic_email(subject, body, email)
+    return send_clinic_email(subject, body, task.assigned_to.email)
 
 
 def send_staff_welcome_email(user, password):
-    """Email new staff their login credentials."""
-    email = user.email
-    if not email:
+    if not user.email:
         return False
-
-    subject = "Welcome to PhysioRehab Clinic – Staff Login Details"
+    subject = "Welcome to PhysioRehab – Your Login Details"
     body = f"""Dear {user.get_full_name()},
 
 Welcome to {CLINIC_NAME}! Your staff account has been created.
 
-Login Details:
   Username : {user.username}
   Password : {password}
-  Login URL: http://your-domain.com/login/
 
 Please change your password after first login.
 
 {CLINIC_NAME}
 """
-    return send_clinic_email(subject, body, email)
+    return send_clinic_email(subject, body, user.email)

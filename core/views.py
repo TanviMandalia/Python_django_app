@@ -680,7 +680,8 @@ def start_typing(request):
         obj, _ = UserActivity.objects.get_or_create(user=request.user)
         obj.is_typing    = True
         obj.typing_to_id = receiver_id
-        obj.save(update_fields=['is_typing', 'typing_to_id'])
+        obj.last_seen    = timezone.now()   # ← timestamp every keystroke
+        obj.save(update_fields=['is_typing', 'typing_to_id', 'last_seen'])
         return JsonResponse({'status': 'started'})
     return JsonResponse({'status': 'invalid'}, status=400)
 
@@ -690,19 +691,34 @@ def start_typing(request):
 def stop_typing(request):
     if request.method == 'POST':
         obj, _ = UserActivity.objects.get_or_create(user=request.user)
-        obj.is_typing = False
-        obj.typing_to = None
-        obj.save(update_fields=['is_typing', 'typing_to'])
+        obj.is_typing    = False
+        obj.typing_to_id = None
+        obj.last_seen    = timezone.now()
+        obj.save(update_fields=['is_typing', 'typing_to_id', 'last_seen'])
         return JsonResponse({'status': 'stopped'})
     return JsonResponse({'status': 'invalid'}, status=400)
 
-
 @login_required
 def check_typing(request, user_id):
-    obj = UserActivity.objects.filter(
-        user_id=user_id, is_typing=True, typing_to=request.user
-    ).first()
-    return JsonResponse({'is_typing': bool(obj)})
+    obj = UserActivity.objects.filter(user_id=user_id).first()
+    if not obj:
+        return JsonResponse({'is_typing': False})
+    
+    # Auto-expire typing after 3 seconds of no update
+    if obj.is_typing:
+        from datetime import timedelta
+        time_diff = timezone.now() - obj.last_seen
+        if time_diff.seconds > 3:
+            obj.is_typing = False
+            obj.typing_to_id = None
+            obj.save(update_fields=['is_typing', 'typing_to_id'])
+            return JsonResponse({'is_typing': False})
+    
+    is_typing = (
+        obj.is_typing and
+        obj.typing_to_id == request.user.id
+    )
+    return JsonResponse({'is_typing': is_typing})
 
 
 # ─── ADMIN – STAFF ───────────────────────────────────────────

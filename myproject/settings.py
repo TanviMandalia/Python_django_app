@@ -138,3 +138,8 @@ EMAIL_HOST_USER = "mandaliatanvi1504@gmail.com"
 EMAIL_HOST_PASSWORD = "kulp byry scfu fzdd"
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/client-dashboard/'
+LOGOUT_REDIRECT_URL = '/'
