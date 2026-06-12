@@ -420,37 +420,36 @@
 </head>
 
 <body>
-  <!-- ══ SIDEBAR ══ -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
-    </div>
 
-    <!-- FIX 1 — sidebar-user with correct flex layout -->
-    <div class="sidebar-user">
-      <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
-      <div class="user-info">
-        <h4>{{ user.get_full_name|default:user.username }}</h4>
-        <span>🟢 Patient</span>
-      </div>
-    </div>
-
-    <nav>
-      <div class="nav-section">Main Menu</div>
-      <a href="{% url 'client_dashboard' %}" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-      <a href="{% url 'book_appointment' %}" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
-      <a href="{% url 'my_appointments' %}" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
-
-      <div class="nav-section">Communication</div>
-      <a href="{% url 'client_chat' %}" class="nav-item active"><i class="fas fa-comments"></i> Chat with Doctor</a>
-
-      <div class="nav-section">Account</div>
-      <a href="{% url 'profile' %}" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
-      <a href="{% url 'payments' %}" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
-    </nav>
-
-    <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-  </aside>
+  <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+        </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <span>🟢 Patient</span>
+            </div>
+        </div>
+        <nav>
+            <div class="nav-section">Main Menu</div>
+            <a href="/client-dashboard" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="{% url "book_appointment" %}" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointments</a>
+            <a href="/my-appointments" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
+            <a href="/my-appointments" class="nav-item"><i class="fas fa-history"></i> Session History</a>
+            <div class="nav-section">Communication</div>
+            <a href="/chat" class="nav-item"><i class="fas fa-comments"></i> Chat with Doctor</a>
+            <a href="/chat" class="nav-item"><i class="fas fa-bell"></i> Notifications</a>
+            <div class="nav-section">Account</div>
+            <a href="/profile/" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
+            <a href="/payments/" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
+            <div class="nav-section">Quick Links</div>
+            <a href="/" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+        </nav>
+        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
 
   <!-- ══ MAIN CONTENT ══ -->
   <div class="main-content">
