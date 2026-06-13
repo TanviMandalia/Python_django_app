@@ -366,18 +366,18 @@
                 <div class="card">
                     <h2><i class="fas fa-plus-circle"></i> Add Salary Record</h2>
                     <p>Add monthly salary payment for a staff member</p>
-                    <form method="POST" action="/admin-salary">
+                    <form method="POST" action="{% url 'admin_salary' %}">
                         {% csrf_token %}
                         <div class="form-group">
                             <label>Select Staff</label>
                             <div class="input-box">
                                 <i class="fas fa-user-md"></i>
-                                <select name="staff_id" required>
+                                <select name="staff_id" id="staff_id" required>
                                     <option value="">-- Select Staff --</option>
                                     {% for staff in staff_list %}
-                                    <option value="{{ staff.user.id }}">{{
-                                        staff.user.get_full_name|default:staff.user.username }} ({{
-                                        staff.get_role_display }})</option>
+                                    <option value="{{ staff.user.id }}">
+                                        {{ staff.user.get_full_name|default:staff.user.username }} ({{ staff.get_role_display }})
+                                    </option>
                                     {% endfor %}
                                 </select>
                             </div>

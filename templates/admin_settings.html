@@ -554,7 +554,7 @@
                     </div>
                 </div>
 
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" action="{% url 'admin_settings' %}" enctype="multipart/form-data">
                     {% csrf_token %}
 
                     <!-- LOGO SECTION -->

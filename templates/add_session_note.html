@@ -307,7 +307,7 @@
                 <div class="alert-success">{{ message }}</div>
                 {% endfor %}{% endif %}
 
-                <form method="POST" action="/add-session-note">
+                <form method="POST" action="{% url 'add_session_note' %}">
                     {% csrf_token %}
                     <div class="form-group">
                         <label>Select Patient <span>*</span></label>

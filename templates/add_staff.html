@@ -327,7 +327,7 @@
                 </div>
                 {% endfor %}{% endif %}
 
-                <form method="POST" action="/add-staff">
+                <form method="POST" action="{% url 'add_staff' %}">
                     {% csrf_token %}
 
                     <div class="divider">👤 Personal Information</div>

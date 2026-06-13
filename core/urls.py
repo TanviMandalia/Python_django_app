@@ -90,6 +90,9 @@ urlpatterns = [
     path('update-task/<int:task_id>/<str:status>/', views.update_task, name='update_task'),
     path('staff-session-notes/', views.staff_session_notes, name='staff_session_notes'),
     path('add-session-note/', views.add_session_note, name='add_session_note'),
+    
+    path('progress/', views.progress_tracking, name='progress_tracking'),
+    path('analytics/', views.reports_analytics, name='reports_analytics'),
 ]
 
 if settings.DEBUG:

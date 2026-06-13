@@ -28,8 +28,17 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'core.middleware.UpdateLastSeenMiddleware',   # auto-updates last_seen on every request
+    'core.middleware.UpdateLastSeenMiddleware',      # ← ADD
+    'core.middleware.SessionTimeoutMiddleware',      # ← ADD
+    'core.middleware.LoginAttemptMiddleware',        # ← ADD
 ]
+ 
+# Also add cache config (uses Django's built-in memory cache)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
 
 ROOT_URLCONF = 'physio_rehab.urls'
 

@@ -9,6 +9,11 @@ from django.utils.text import slugify
 
 # DASHBOARD APPOINTMENT
 
+morning_clock_out = models.TimeField(null=True, blank=True)
+morning_hours     = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+evening_clock_in  = models.TimeField(null=True, blank=True)
+evening_hours     = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
 class Appointment(models.Model):
 
     STATUS_CHOICES = [
