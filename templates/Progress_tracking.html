@@ -1,0 +1,456 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Tracking - Physio Rehab</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 260px; height: 100vh;
+            position: fixed; left: 0; top: 0;
+            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
+            overflow-y: auto; scrollbar-width: none;
+            display: flex; flex-direction: column;
+        }
+        .sidebar::-webkit-scrollbar { display: none; }
+        .sidebar-logo { padding: 22px 20px; border-bottom: 1px solid rgba(245,197,24,0.2); text-align: center; }
+        .sidebar-logo img { width: 130px; border-radius: 10px; }
+        .sidebar-logo p { color: #F5C518; font-size: 0.75em; margin-top: 8px; font-weight: 600; }
+        .sidebar-user { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 42px; height: 42px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2C2C2C; flex-shrink: 0; }
+        .user-info h4 { color: white; font-size: 0.88em; font-weight: 600; }
+        .user-info span { color: #F5C518; font-size: 0.72em; }
+        .nav-section { padding: 12px 22px 5px; color: #555; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 22px; color: #bbb; text-decoration: none; font-size: 0.9em; transition: all 0.3s; border-left: 3px solid transparent; }
+        .nav-item:hover, .nav-item.active { background: rgba(245,197,24,0.1); color: #F5C518; border-left-color: #F5C518; }
+        .nav-item i { width: 18px; text-align: center; }
+        .logout-btn { margin: 15px; margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 11px 18px; background: rgba(220,53,69,0.15); color: #ff6b6b; border-radius: 10px; text-decoration: none; font-size: 0.86em; transition: all 0.3s; }
+        .logout-btn:hover { background: rgba(220,53,69,0.3); }
+
+        /* ── MAIN ── */
+        .main-content { margin-left: 260px; min-height: 100vh; }
+        .topbar { background: white; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 50; }
+        .topbar h1 { font-size: 1.2em; color: #2C2C2C; font-weight: 700; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+        .topbar-badge { background: #F5C518; color: #2C2C2C; padding: 5px 14px; border-radius: 20px; font-size: 0.8em; font-weight: 700; }
+
+        .dashboard-body { padding: 25px 28px; }
+
+        /* ── WELCOME BANNER ── */
+        .welcome-card {
+            background: linear-gradient(135deg, #1a1a1a, #2C2C2C);
+            border-radius: 18px; padding: 26px 32px; margin-bottom: 22px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .welcome-card h2 { color: white; font-size: 1.4em; font-weight: 700; margin-bottom: 6px; }
+        .welcome-card h2 span { color: #F5C518; }
+        .welcome-card p { color: #aaa; font-size: 0.88em; }
+        .welcome-icon { font-size: 3.5em; color: rgba(245,197,24,0.25); }
+
+        /* ── STAT CARDS ── */
+        .stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 22px; }
+        .stat-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 14px; transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-icon { width: 52px; height: 52px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.3em; flex-shrink: 0; }
+        .yellow { background: rgba(245,197,24,0.15); color: #F5C518; }
+        .green  { background: rgba(40,167,69,0.15);  color: #28a745; }
+        .blue   { background: rgba(0,123,255,0.15);  color: #007bff; }
+        .red    { background: rgba(220,53,69,0.15);  color: #dc3545; }
+        .purple { background: rgba(111,66,193,0.15); color: #6f42c1; }
+        .stat-info h3 { font-size: 1.6em; font-weight: 800; color: #2C2C2C; }
+        .stat-info p  { color: #888; font-size: 0.8em; }
+
+        /* ── CARDS ── */
+        .content-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 22px; }
+        .content-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin: 20px 0 2px 0; }
+        .card { background: white; border-radius: 14px; padding: 22px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        .card-title { font-size: 0.95em; font-weight: 700; color: #2C2C2C; display: flex; align-items: center; gap: 8px; }
+        .card-title i { color: #F5C518; }
+        .view-all { color: #F5C518; font-size: 0.8em; text-decoration: none; font-weight: 600; }
+
+        /* ── PROGRESS BARS ── */
+        .progress-item { margin-bottom: 16px; }
+        .progress-header { display: flex; justify-content: space-between; font-size: 0.84em; margin-bottom: 7px; }
+        .progress-header span:first-child { color: #2C2C2C; font-weight: 600; }
+        .progress-header span:last-child  { color: #F5C518; font-weight: 700; }
+        .progress-bar { height: 8px; background: #f0f0f0; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #F5C518, #e6b800); border-radius: 10px; transition: width 1s ease; }
+        .progress-fill.green  { background: linear-gradient(90deg, #28a745, #20c353); }
+        .progress-fill.blue   { background: linear-gradient(90deg, #007bff, #0056b3); }
+        .progress-fill.red    { background: linear-gradient(90deg, #dc3545, #c82333); }
+        .progress-fill.purple { background: linear-gradient(90deg, #6f42c1, #5a32a3); }
+
+        /* ── APPOINTMENT TIMELINE ── */
+        .timeline { position: relative; padding-left: 28px; }
+        .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: #f0f0f0; }
+        .timeline-item { position: relative; margin-bottom: 18px; }
+        .timeline-item::before { content: ''; position: absolute; left: -22px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: #F5C518; border: 2px solid white; box-shadow: 0 0 0 2px #F5C518; }
+        .timeline-item.completed::before { background: #28a745; box-shadow: 0 0 0 2px #28a745; }
+        .timeline-item.pending::before   { background: #ffc107; box-shadow: 0 0 0 2px #ffc107; }
+        .timeline-item.cancelled::before { background: #dc3545; box-shadow: 0 0 0 2px #dc3545; }
+        .timeline-content { background: #f9f9f9; border-radius: 10px; padding: 12px 15px; }
+        .timeline-content h4 { font-size: 0.88em; font-weight: 600; color: #2C2C2C; margin-bottom: 3px; }
+        .timeline-content p  { font-size: 0.78em; color: #888; }
+        .timeline-date { font-size: 0.72em; color: #aaa; margin-top: 4px; }
+
+        /* ── SESSION NOTES ── */
+        .note-card { background: #f9f9f9; border-radius: 12px; padding: 15px; margin-bottom: 12px; border-left: 3px solid #F5C518; }
+        .note-card:last-child { margin-bottom: 0; }
+        .note-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .note-header h4 { font-size: 0.88em; font-weight: 700; color: #2C2C2C; }
+        .note-date { font-size: 0.75em; color: #aaa; }
+        .note-label { font-size: 0.75em; font-weight: 600; color: #F5C518; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .note-text  { font-size: 0.83em; color: #555; line-height: 1.5; }
+
+        /* ── BADGES ── */
+        .badge { padding: 3px 10px; border-radius: 15px; font-size: 0.73em; font-weight: 600; }
+        .badge-confirmed { background: #d4edda; color: #155724; }
+        .badge-pending   { background: #fff3cd; color: #856404; }
+        .badge-completed { background: #e2e3e5; color: #383d41; }
+        .badge-cancelled { background: #f8d7da; color: #721c24; }
+
+        /* ── RECOVERY SCORE ── */
+        .score-circle {
+            width: 120px; height: 120px; border-radius: 50%;
+            background: conic-gradient(#F5C518 0% var(--pct), #f0f0f0 var(--pct) 100%);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 15px; position: relative;
+        }
+        .score-circle::before {
+            content: ''; position: absolute;
+            width: 88px; height: 88px; border-radius: 50%; background: white;
+        }
+        .score-number { position: relative; z-index: 1; font-size: 1.5em; font-weight: 800; color: #2C2C2C; }
+        .score-label  { text-align: center; font-size: 0.82em; color: #888; }
+
+        /* ── PATIENT SELECTOR (admin only) ── */
+        .patient-selector { display: flex; gap: 10px; align-items: center; margin-bottom: 22px; flex-wrap: wrap; }
+        .patient-selector select {
+            flex: 1; padding: 10px 14px; border: 2px solid #eee;
+            border-radius: 10px; font-size: 0.9em; outline: none;
+            background: white; color: #2C2C2C; transition: all 0.3s;
+        }
+        .patient-selector select:focus { border-color: #F5C518; }
+        .btn-filter {
+            padding: 10px 20px; background: #F5C518; color: #2C2C2C;
+            border: none; border-radius: 10px; font-weight: 700;
+            font-size: 0.88em; cursor: pointer; transition: all 0.3s;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-filter:hover { background: #e6b800; transform: translateY(-1px); }
+
+        /* ── EMPTY STATE ── */
+        .empty-state { text-align: center; padding: 35px; color: #aaa; }
+        .empty-state i { font-size: 2.5em; color: #ddd; margin-bottom: 10px; display: block; }
+        .empty-state p { font-size: 0.88em; }
+
+        /* ── TABLE ── */
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f9f9f9; padding: 10px 12px; text-align: left; font-size: 0.78em; color: #888; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #f0f0f0; }
+        td { padding: 11px 12px; font-size: 0.84em; color: #333; border-bottom: 1px solid #f5f5f5; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #fafafa; }
+    </style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+        {% if user.is_superuser %}<p>⚙️ ADMIN PANEL</p>{% endif %}
+    </div>
+    <div class="sidebar-user">
+        <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+        <div class="user-info">
+            <h4>{{ user.get_full_name|default:user.username }}</h4>
+            {% if user.is_superuser %}<span>🔴 Super Admin</span>{% else %}<span>🟢 Patient</span>{% endif %}
+        </div>
+    </div>
+    <nav>
+        {% if user.is_superuser %}
+            <div class="nav-section">Overview</div>
+            <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <div class="nav-section">Management</div>
+            <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+            <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+            <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
+            <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+            <div class="nav-section">Staff Tools</div>
+            <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
+            <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+            <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+            <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
+            <div class="nav-section">Communication</div>
+            <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+            <div class="nav-section">Reports</div>
+            <a href="#" class="nav-item active"><i class="fas fa-chart-line"></i> Progress Tracking</a>
+            <a href="#" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+            <div class="nav-section">System</div>
+            <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+            <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+            <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+        {% else %}
+            <div class="nav-section">Main Menu</div>
+            <a href="{% url 'client_dashboard' %}" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="{% url 'book_appointment' %}" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
+            <a href="{% url 'my_appointments' %}" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
+            <div class="nav-section">Progress</div>
+            <a href="#" class="nav-item active"><i class="fas fa-chart-line"></i> Progress Tracking</a>
+            <div class="nav-section">Communication</div>
+            <a href="{% url 'client_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Chat with Doctor</a>
+            <a href="{% url 'notifications' %}" class="nav-item"><i class="fas fa-bell"></i> Notifications</a>
+            <div class="nav-section">Account</div>
+            <a href="{% url 'profile' %}" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
+            <a href="{% url 'payments' %}" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
+        {% endif %}
+    </nav>
+    <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<div class="main-content">
+    <div class="topbar">
+        <h1><i class="fas fa-chart-line" style="color:#F5C518;margin-right:8px;"></i> Progress Tracking</h1>
+        <div class="topbar-right">
+            {% if user.is_superuser %}
+                <span class="topbar-badge">⚡ Admin View</span>
+            {% else %}
+                <span class="topbar-badge">🟢 My Progress</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="dashboard-body">
+
+        <!-- WELCOME BANNER -->
+        <div class="welcome-card">
+            <div>
+                {% if user.is_superuser %}
+                    <h2>Patient <span>Progress Overview</span></h2>
+                    <p>Track treatment progress, session notes and recovery status for all patients.</p>
+                {% else %}
+                    <h2>Your <span>Recovery Journey</span></h2>
+                    <p>Track your appointments, session notes and overall recovery progress here.</p>
+                {% endif %}
+            </div>
+            <div class="welcome-icon"><i class="fas fa-heartbeat"></i></div>
+        </div>
+
+        <!-- ADMIN: Patient selector -->
+        {% if user.is_superuser %}
+        <div class="patient-selector">
+            <i class="fas fa-user" style="color:#F5C518;font-size:1.1em;"></i>
+            <select id="patientSelect" onchange="window.location='?patient_id='+this.value">
+                <option value="">— Select a Patient —</option>
+                {% for p in all_patients %}
+                    <option value="{{ p.id }}" {% if selected_patient and selected_patient.id == p.id %}selected{% endif %}>
+                        {{ p.get_full_name|default:p.username }}
+                    </option>
+                {% endfor %}
+            </select>
+            {% if selected_patient %}
+                <a href="?" class="btn-filter"><i class="fas fa-times"></i> Clear</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- STAT CARDS -->
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon yellow"><i class="fas fa-calendar-check"></i></div>
+                <div class="stat-info"><h3>{{ total_appointments }}</h3><p>Total Appointments</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info"><h3>{{ completed_count }}</h3><p>Completed Sessions</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-clock"></i></div>
+                <div class="stat-info"><h3>{{ upcoming_count }}</h3><p>Upcoming Sessions</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="fas fa-notes-medical"></i></div>
+                <div class="stat-info"><h3>{{ session_notes_count }}</h3><p>Session Notes</p></div>
+            </div>
+        </div>
+
+        <!-- RECOVERY SCORE + PROGRESS BARS -->
+        <div class="content-grid">
+
+            <!-- RECOVERY SCORE -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-trophy"></i> Recovery Progress</div>
+                </div>
+                <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:140px;text-align:center;">
+                        <div class="score-circle" style="--pct:{{ recovery_pct }}%;">
+                            <span class="score-number">{{ recovery_pct }}%</span>
+                        </div>
+                        <div class="score-label">Overall Recovery Score</div>
+                    </div>
+                    <div style="flex:2;min-width:200px;">
+                        <div class="progress-item">
+                            <div class="progress-header"><span>Sessions Completed</span><span>{{ completed_count }}/{{ total_appointments }}</span></div>
+                            <div class="progress-bar"><div class="progress-fill green" style="width:{{ recovery_pct }}%"></div></div>
+                        </div>
+                        <div class="progress-item">
+                            <div class="progress-header"><span>Appointment Attendance</span><span>{{ attendance_pct }}%</span></div>
+                            <div class="progress-bar"><div class="progress-fill" style="width:{{ attendance_pct }}%"></div></div>
+                        </div>
+                        <div class="progress-item">
+                            <div class="progress-header"><span>Treatment Consistency</span><span>{{ consistency_pct }}%</span></div>
+                            <div class="progress-bar"><div class="progress-fill blue" style="width:{{ consistency_pct }}%"></div></div>
+                        </div>
+                        <div class="progress-item">
+                            <div class="progress-header"><span>Sessions with Notes</span><span>{{ notes_pct }}%</span></div>
+                            <div class="progress-bar"><div class="progress-fill purple" style="width:{{ notes_pct }}%"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SERVICE BREAKDOWN -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-stethoscope"></i> Service Breakdown</div>
+                </div>
+                {% if service_breakdown %}
+                    {% for service in service_breakdown %}
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span>{{ service.label }}</span>
+                            <span>{{ service.count }} session{{ service.count|pluralize }}</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width:{{ service.pct }}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state"><i class="fas fa-stethoscope"></i><p>No service data yet.</p></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- APPOINTMENT TIMELINE + SESSION NOTES -->
+        <div class="content-grid">
+
+            <!-- TIMELINE -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-stream"></i> Appointment Timeline</div>
+                    <a href="{% url 'my_appointments' %}" class="view-all">View All →</a>
+                </div>
+                {% if appointments %}
+                    <div class="timeline">
+                        {% for appt in appointments|slice:":8" %}
+                        <div class="timeline-item {{ appt.status }}">
+                            <div class="timeline-content">
+                                <h4>{{ appt.get_service_display }}</h4>
+                                <p>
+                                    <span class="badge badge-{{ appt.status }}">{{ appt.status|title }}</span>
+                                </p>
+                                <div class="timeline-date">
+                                    <i class="fas fa-calendar" style="color:#F5C518;"></i>
+                                    {{ appt.date|date:"d M Y" }} &nbsp;
+                                    <i class="fas fa-clock" style="color:#F5C518;"></i>
+                                    {{ appt.time }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-times"></i>
+                        <p>No appointments found.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- SESSION NOTES -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-notes-medical"></i> Session Notes</div>
+                    {% if user.is_superuser %}
+                        <a href="{% url 'admin_session_notes' %}" class="view-all">View All →</a>
+                    {% endif %}
+                </div>
+                {% if session_notes %}
+                    {% for note in session_notes|slice:":5" %}
+                    <div class="note-card">
+                        <div class="note-header">
+                            <h4>Session — {{ note.date|date:"d M Y" }}</h4>
+                            <span class="note-date">by {{ note.staff.get_full_name|default:note.staff.username }}</span>
+                        </div>
+                        <div class="note-label">Diagnosis</div>
+                        <div class="note-text">{{ note.diagnosis|truncatechars:100 }}</div>
+                        {% if note.treatment %}
+                            <div class="note-label" style="margin-top:8px;">Treatment</div>
+                            <div class="note-text">{{ note.treatment|truncatechars:100 }}</div>
+                        {% endif %}
+                        {% if note.next_session %}
+                            <div class="note-label" style="margin-top:8px;">Next Session Plan</div>
+                            <div class="note-text">{{ note.next_session|truncatechars:80 }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-notes-medical"></i>
+                        <p>No session notes yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ALL APPOINTMENTS TABLE -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title"><i class="fas fa-table"></i> All Appointment Records</div>
+                <a href="{% if user.is_superuser %}{% url 'admin_appointments' %}{% else %}{% url 'my_appointments' %}{% endif %}" class="view-all">View Full List →</a>
+            </div>
+            {% if appointments %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            {% if user.is_superuser %}<th>Patient</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in appointments %}
+                        <tr>
+                            <td>{{ appt.get_service_display }}</td>
+                            <td>{{ appt.date|date:"d M Y" }}</td>
+                            <td>{{ appt.time }}</td>
+                            <td><span class="badge badge-{{ appt.status }}">{{ appt.status|title }}</span></td>
+                            {% if user.is_superuser %}
+                                <td>{{ appt.patient.get_full_name|default:appt.patient.username|default:appt.name }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state"><i class="fas fa-calendar-times"></i><p>No records found.</p></div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

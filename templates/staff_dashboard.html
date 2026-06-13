@@ -560,8 +560,7 @@
             <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
             <div class="user-info">
                 <h4>{{ user.get_full_name|default:user.username }}</h4>
-                <span>🟢 {% if user.staff_profile %}{{ user.staff_profile.get_role_display }}{% else %}Staff{% endif
-                    %}</span>
+                <span>🟢 {% if user.staff_profile %}{{ user.staff_profile.get_role_display }}{% else %}Staff{% endif %}</span>
             </div>
         </div>
         <nav>

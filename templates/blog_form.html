@@ -229,7 +229,11 @@
       </div>
 
       <div class="form-card">
-        <form method="POST" enctype="multipart/form-data">
+        {% if blog %}
+          <form method="POST" action="{% url 'admin_blog_edit' blog.id %}" enctype="multipart/form-data">
+        {% else %}
+          <form method="POST" action="{% url 'admin_blog_add' %}" enctype="multipart/form-data">
+        {% endif %}
           {% csrf_token %}
           <div class="form-group">
             <label>Blog Title</label>

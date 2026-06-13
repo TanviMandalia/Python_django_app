@@ -9,7 +9,7 @@
 
     <h2>Forgot Password</h2>
 
-    <form method="POST">
+    <form method="POST" action="{% url 'request_otp' %}">
         {% csrf_token %}
         <input type="email" name="email" placeholder="Enter email">
         <button type="submit">Send OTP</button>

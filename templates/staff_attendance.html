@@ -1,556 +1,504 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>My Attendance - Staff</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Attendance - Physio Rehab</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; }
+
+        /* ── SIDEBAR ── */
+        .sidebar { width: 260px; height: 100vh; position: fixed; left: 0; top: 0; background: linear-gradient(180deg, #1a1a1a, #2C2C2C); overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; }
+        .sidebar::-webkit-scrollbar { display: none; }
+        .sidebar-logo { padding: 22px 20px; border-bottom: 1px solid rgba(245,197,24,0.2); text-align: center; }
+        .sidebar-logo img { width: 130px; border-radius: 10px; }
+        .sidebar-user { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 42px; height: 42px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2C2C2C; flex-shrink: 0; }
+        .user-info h4 { color: white; font-size: 0.88em; font-weight: 600; }
+        .user-info span { color: #F5C518; font-size: 0.72em; }
+        .nav-section { padding: 12px 22px 5px; color: #555; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 22px; color: #bbb; text-decoration: none; font-size: 0.9em; transition: all 0.3s; border-left: 3px solid transparent; }
+        .nav-item:hover, .nav-item.active { background: rgba(245,197,24,0.1); color: #F5C518; border-left-color: #F5C518; }
+        .nav-item i { width: 18px; text-align: center; }
+        .logout-btn { margin: 15px; margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 11px 18px; background: rgba(220,53,69,0.15); color: #ff6b6b; border-radius: 10px; text-decoration: none; font-size: 0.86em; }
+        .logout-btn:hover { background: rgba(220,53,69,0.3); }
+
+        /* ── MAIN ── */
+        .main-content { margin-left: 260px; min-height: 100vh; }
+        .topbar { background: white; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 50; }
+        .topbar h1 { font-size: 1.2em; color: #2C2C2C; font-weight: 700; }
+        .live-clock { font-size: 1.1em; font-weight: 700; color: #F5C518; background: #2C2C2C; padding: 6px 16px; border-radius: 20px; letter-spacing: 1px; }
+
+        .dashboard-body { padding: 25px 28px; }
+
+        /* ── ALERTS ── */
+        .alert { padding: 13px 18px; border-radius: 12px; margin-bottom: 18px; font-size: 0.9em; font-weight: 500; display: flex; align-items: center; gap: 10px; }
+        .alert-success { background: #d4edda; border-left: 4px solid #28a745; color: #155724; }
+        .alert-warning { background: #fff3cd; border-left: 4px solid #ffc107; color: #856404; }
+        .alert-error   { background: #f8d7da; border-left: 4px solid #dc3545; color: #721c24; }
+        .alert-info    { background: #d1ecf1; border-left: 4px solid #17a2b8; color: #0c5460; }
+
+        /* ── SHIFT STATUS BANNER ── */
+        .shift-banner {
+            background: linear-gradient(135deg, #1a1a1a, #2C2C2C);
+            border-radius: 18px; padding: 24px 28px; margin-bottom: 22px;
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+        }
+        .shift-banner h2 { color: white; font-size: 1.3em; font-weight: 700; margin-bottom: 4px; }
+        .shift-banner p  { color: #aaa; font-size: 0.88em; }
+        .shift-banner span { color: #F5C518; }
+        .shift-now-badge {
+            background: #F5C518; color: #2C2C2C;
+            padding: 8px 18px; border-radius: 20px;
+            font-weight: 700; font-size: 0.85em;
+            animation: pulse 2s infinite;
+        }
+        .shift-closed-badge {
+            background: rgba(220,53,69,0.2); color: #ff6b6b;
+            padding: 8px 18px; border-radius: 20px;
+            font-weight: 700; font-size: 0.85em;
+        }
+        .shift-waiting-badge {
+            background: rgba(255,193,7,0.2); color: #ffc107;
+            padding: 8px 18px; border-radius: 20px;
+            font-weight: 700; font-size: 0.85em;
+        }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+        /* ── SHIFT CARDS ── */
+        .shifts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 22px; }
+
+        .shift-card {
+            background: white; border-radius: 16px; padding: 22px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+            border-top: 4px solid #eee; transition: all 0.3s;
+        }
+        .shift-card.morning-card { border-top-color: #F5C518; }
+        .shift-card.evening-card { border-top-color: #007bff; }
+        .shift-card.active-card  { box-shadow: 0 6px 20px rgba(245,197,24,0.2); }
+
+        .shift-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .shift-name { font-size: 1em; font-weight: 700; color: #2C2C2C; display: flex; align-items: center; gap: 8px; }
+        .shift-name i { color: #F5C518; }
+        .evening-card .shift-name i { color: #007bff; }
+
+        .shift-time-range {
+            font-size: 0.82em; color: #888;
+            background: #f5f5f5; padding: 4px 10px; border-radius: 10px;
         }
 
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f5f5f5;
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
-            overflow-y: auto;
-            scrollbar-width: none;
-        }
-
-        .sidebar-logo {
-            padding: 22px 20px;
-            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+        .shift-status-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .time-box {
+            flex: 1; min-width: 100px;
+            background: #f9f9f9; border-radius: 10px; padding: 10px 14px;
             text-align: center;
         }
+        .time-box .label { font-size: 0.72em; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .time-box .value { font-size: 1em; font-weight: 800; color: #2C2C2C; }
+        .time-box .value.done { color: #28a745; }
+        .time-box .value.pending { color: #aaa; }
 
-        .sidebar-logo img {
-            width: 130px;
-            border-radius: 10px;
+        .shift-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .btn-clockin {
+            flex: 1; padding: 12px; border: none; border-radius: 10px;
+            background: #F5C518; color: #2C2C2C;
+            font-weight: 700; font-size: 0.88em; cursor: pointer;
+            transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-clockin:hover { background: #e6b800; transform: translateY(-1px); }
+        .btn-clockin:disabled { background: #e0e0e0; color: #aaa; cursor: not-allowed; transform: none; }
+
+        .btn-clockout {
+            flex: 1; padding: 12px; border: none; border-radius: 10px;
+            background: #2C2C2C; color: #F5C518;
+            font-weight: 700; font-size: 0.88em; cursor: pointer;
+            transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-clockout:hover { background: #1a1a1a; transform: translateY(-1px); }
+        .btn-clockout:disabled { background: #e0e0e0; color: #aaa; cursor: not-allowed; transform: none; }
+
+        .btn-evening-in {
+            flex: 1; padding: 12px; border: none; border-radius: 10px;
+            background: #007bff; color: white;
+            font-weight: 700; font-size: 0.88em; cursor: pointer;
+            transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-evening-in:hover { background: #0056b3; transform: translateY(-1px); }
+        .btn-evening-in:disabled { background: #e0e0e0; color: #aaa; cursor: not-allowed; transform: none; }
+
+        .shift-done-banner {
+            background: #d4edda; border-radius: 10px; padding: 12px;
+            text-align: center; color: #155724; font-weight: 600; font-size: 0.88em;
+        }
+        .shift-missed-banner {
+            background: #f8d7da; border-radius: 10px; padding: 12px;
+            text-align: center; color: #721c24; font-weight: 600; font-size: 0.88em;
+        }
+        .shift-locked-banner {
+            background: #f5f5f5; border-radius: 10px; padding: 12px;
+            text-align: center; color: #aaa; font-size: 0.85em;
         }
 
-        .sidebar-logo p {
-            color: #F5C518;
-            font-size: 0.75em;
-            margin-top: 8px;
-            font-weight: 600;
-        }
+        /* ── SUMMARY STATS ── */
+        .stat-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; margin-bottom: 22px; }
+        .stat-card { background: white; border-radius: 14px; padding: 18px 20px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 14px; transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2em; flex-shrink: 0; }
+        .yellow  { background: rgba(245,197,24,0.15); color: #F5C518; }
+        .green   { background: rgba(40,167,69,0.15);  color: #28a745; }
+        .blue    { background: rgba(0,123,255,0.15);  color: #007bff; }
+        .red     { background: rgba(220,53,69,0.15);  color: #dc3545; }
+        .stat-info h3 { font-size: 1.5em; font-weight: 800; color: #2C2C2C; }
+        .stat-info p  { color: #888; font-size: 0.8em; }
 
-        .sidebar-user {
-            padding: 18px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        /* ── ATTENDANCE TABLE ── */
+        .card { background: white; border-radius: 14px; padding: 22px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        .card-title { font-size: 0.95em; font-weight: 700; color: #2C2C2C; display: flex; align-items: center; gap: 8px; }
+        .card-title i { color: #F5C518; }
 
-        .user-avatar {
-            width: 42px;
-            height: 42px;
-            background: #F5C518;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: #2C2C2C;
-        }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f9f9f9; padding: 10px 12px; text-align: left; font-size: 0.78em; color: #888; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #f0f0f0; }
+        td { padding: 11px 12px; font-size: 0.84em; color: #333; border-bottom: 1px solid #f5f5f5; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #fafafa; }
 
-        .user-info h4 {
-            color: white;
-            font-size: 0.88em;
-        }
+        .badge { padding: 3px 10px; border-radius: 15px; font-size: 0.73em; font-weight: 600; }
+        .badge-full    { background: #d4edda; color: #155724; }
+        .badge-partial { background: #fff3cd; color: #856404; }
+        .badge-absent  { background: #f8d7da; color: #721c24; }
+        .badge-late    { background: #ffeeba; color: #856404; }
 
-        .user-info span {
-            color: #F5C518;
-            font-size: 0.72em;
-        }
-
-        .nav-section {
-            padding: 12px 22px 5px;
-            color: #555;
-            font-size: 0.7em;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 700;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 22px;
-            color: #bbb;
-            text-decoration: none;
-            font-size: 0.9em;
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
-
-        .nav-item:hover,
-        .nav-item.active {
-            background: rgba(245, 197, 24, 0.1);
-            color: #F5C518;
-            border-left-color: #F5C518;
-        }
-
-        .nav-item i {
-            width: 18px;
-            text-align: center;
-        }
-
-        .logout-btn {
-            margin: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 11px 18px;
-            background: rgba(220, 53, 69, 0.15);
-            color: #ff6b6b;
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 0.86em;
-        }
-
-        .main-content {
-            margin-left: 260px;
-            flex: 1;
-        }
-
-        .topbar {
-            background: white;
-            padding: 16px 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-        }
-
-        .topbar h1 {
-            font-size: 1.2em;
-            color: #2C2C2C;
-            font-weight: 700;
-        }
-
-        .dashboard-body {
-            padding: 25px;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            border: 1px solid #28a745;
-            color: #155724;
-            padding: 12px 18px;
-            border-radius: 10px;
-            margin-bottom: 18px;
-            font-size: 0.9em;
-        }
-
-        .alert-error {
-            background: #f8d7da;
-            border: 1px solid #dc3545;
-            color: #721c24;
-            padding: 12px 18px;
-            border-radius: 10px;
-            margin-bottom: 18px;
-            font-size: 0.9em;
-        }
-
-        /* CLOCK BUTTONS */
-        .clock-card {
-            background: white;
-            border-radius: 18px;
-            padding: 30px;
-            margin-bottom: 22px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-            text-align: center;
-        }
-
-        .clock-card h2 {
-            font-size: 1.3em;
-            font-weight: 700;
-            color: #2C2C2C;
-            margin-bottom: 5px;
-        }
-
-        .clock-card p {
-            color: #888;
-            font-size: 0.9em;
-            margin-bottom: 25px;
-        }
-
-        .time-display {
-            font-size: 2.5em;
-            font-weight: 800;
-            color: #2C2C2C;
-            margin-bottom: 25px;
-        }
-
-        .time-display span {
-            color: #F5C518;
-        }
-
-        .btn-grid {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn-clock {
-            padding: 14px 28px;
-            border: none;
-            border-radius: 12px;
-            font-size: 0.95em;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-clock:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-        }
-
-        .btn-in {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-lunch-start {
-            background: #F5C518;
-            color: #2C2C2C;
-        }
-
-        .btn-lunch-end {
-            background: #17a2b8;
-            color: white;
-        }
-
-        .btn-out {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-disabled {
-            background: #eee;
-            color: #aaa;
-            cursor: not-allowed;
-        }
-
-        /* STATUS BOXES */
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 22px;
-        }
-
-        .status-box {
-            background: white;
-            border-radius: 14px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
-            border-top: 4px solid #eee;
-        }
-
-        .status-box.active {
-            border-top-color: #F5C518;
-        }
-
-        .status-box i {
-            font-size: 1.8em;
-            color: #F5C518;
-            margin-bottom: 10px;
-        }
-
-        .status-box h4 {
-            font-size: 0.82em;
-            color: #888;
-            margin-bottom: 5px;
-        }
-
-        .status-box p {
-            font-size: 1.1em;
-            font-weight: 700;
-            color: #2C2C2C;
-        }
-
-        .status-box p.empty {
-            color: #ccc;
-            font-weight: 400;
-            font-size: 0.85em;
-        }
-
-        /* TABLE */
-        .table-card {
-            background: white;
-            border-radius: 14px;
-            padding: 22px;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
-        }
-
-        .table-title {
-            font-size: 0.95em;
-            font-weight: 700;
-            color: #2C2C2C;
-            margin-bottom: 18px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .table-title i {
-            color: #F5C518;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            background: #f9f9f9;
-            padding: 10px 14px;
-            text-align: left;
-            font-size: 0.78em;
-            color: #888;
-            font-weight: 700;
-            text-transform: uppercase;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        td {
-            padding: 12px 14px;
-            font-size: 0.85em;
-            color: #333;
-            border-bottom: 1px solid #f5f5f5;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        .badge-present {
-            background: #d4edda;
-            color: #155724;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 0.75em;
-            font-weight: 600;
-        }
-
-        .badge-partial {
-            background: #fff3cd;
-            color: #856404;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 0.75em;
-            font-weight: 600;
-        }
+        .notes-cell { font-size: 0.78em; color: #dc3545; max-width: 180px; }
+        .empty-state { text-align: center; padding: 30px; color: #aaa; }
+        .empty-state i { font-size: 2em; color: #ddd; margin-bottom: 10px; display: block; }
     </style>
 </head>
-
 <body>
 
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
-            <p>👨‍⚕️ STAFF PANEL</p>
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+    </div>
+    <div class="sidebar-user">
+        <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+        <div class="user-info">
+            <h4>{{ user.get_full_name|default:user.username }}</h4>
+            <span>🟡 Staff</span>
         </div>
-        <div class="sidebar-user">
-            <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
-            <div class="user-info">
-                <h4>{{ user.get_full_name|default:user.username }}</h4>
-                <span>🟢 Staff</span>
+    </div>
+    <nav>
+        <div class="nav-section">Main Menu</div>
+        <a href="{% url 'staff_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <div class="nav-section">Attendance</div>
+        <a href="{% url 'staff_attendance' %}" class="nav-item active"><i class="fas fa-clock"></i> My Attendance</a>
+        <a href="{% url 'staff_leave' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
+        <div class="nav-section">Work</div>
+        <a href="{% url 'staff_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> My Tasks</a>
+        <a href="{% url 'staff_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
+        <a href="{% url 'staff_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
+        <div class="nav-section">Account</div>
+        <a href="{% url 'profile' %}" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
+    </nav>
+    <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<div class="main-content">
+    <div class="topbar">
+        <h1><i class="fas fa-clock" style="color:#F5C518;margin-right:8px;"></i> My Attendance</h1>
+        <div id="liveClock" class="live-clock">--:-- --</div>
+    </div>
+
+    <div class="dashboard-body">
+
+        <!-- DJANGO MESSAGES -->
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% elif message.tags == 'error' %}alert-error{% else %}alert-info{% endif %}">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+                {{ message }}
             </div>
-        </div>
-        <nav>
-            <div class="nav-section">Main</div>
-            <a href="/staff-dashboard" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-            <div class="nav-section">Attendance</div>
-            <a href="/staff-attendance" class="nav-item active"><i class="fas fa-clock"></i> My Attendance</a>
-            <div class="nav-section">Leave</div>
-            <a href="/staff-leave" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
-            <div class="nav-section">Work</div>
-            <a href="/staff-tasks" class="nav-item"><i class="fas fa-tasks"></i> My Tasks</a>
-            <a href="/staff-session-notes" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-            <div class="nav-section">Payroll</div>
-            <a href="/staff-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
-        </nav>
-        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-    </aside>
+        {% endfor %}
 
-    <div class="main-content">
-        <div class="topbar">
-            <h1>🕐 My Attendance</h1>
-            <span
-                style="background:#f5f5f5; padding:7px 15px; border-radius:20px; font-size:0.83em; color:#555; font-weight:600;">📅
-                {{ today }}</span>
-        </div>
-
-        <div class="dashboard-body">
-
-            {% if messages %}
-            {% for message in messages %}
-            <div class="alert-{% if 'success' in message.tags %}success{% else %}error{% endif %}">{{ message }}</div>
-            {% endfor %}
+        <!-- SHIFT STATUS BANNER -->
+        <div class="shift-banner">
+            <div>
+                <h2>Today — <span>{{ today|date:"d M Y, l" }}</span></h2>
+                <p>
+                    Morning Shift: <span>{{ MORNING_START }} – {{ MORNING_END }}</span>
+                    &nbsp;|&nbsp;
+                    Evening Shift: <span>{{ EVENING_START }} – {{ EVENING_END }}</span>
+                </p>
+            </div>
+            {% if in_morning %}
+                <span class="shift-now-badge">🟡 Morning Shift Active</span>
+            {% elif in_evening %}
+                <span class="shift-now-badge" style="background:#007bff;color:white;">🔵 Evening Shift Active</span>
+            {% elif before_morning %}
+                <span class="shift-waiting-badge">⏳ Morning shift starts at {{ MORNING_START }}</span>
+            {% elif between_shifts %}
+                <span class="shift-waiting-badge">☕ Break — Evening shift starts at {{ EVENING_START }}</span>
+            {% elif after_evening %}
+                <span class="shift-closed-badge">🔴 All shifts closed for today</span>
             {% endif %}
+        </div>
 
-            <!-- CLOCK BUTTONS -->
-            <div class="clock-card">
-                <h2>⏱️ Today's Time Tracker</h2>
-                <p>Mark your attendance for {{ today }}</p>
-                <div class="time-display" id="liveClock">--:-- <span>--</span></div>
-                <div class="btn-grid">
-                    <form method="POST" action="/staff-attendance" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="clock_in">
-                        <button type="submit"
-                            class="btn-clock {% if today_record and today_record.clock_in %}btn-disabled{% else %}btn-in{% endif %}"
-                            {% if today_record and today_record.clock_in %}disabled{% endif %}>
-                            <i class="fas fa-sign-in-alt"></i> Clock In
-                        </button>
-                    </form>
-                    <form method="POST" action="/staff-attendance" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="lunch_start">
-                        <button type="submit"
-                            class="btn-clock {% if not today_record or today_record.lunch_start %}btn-disabled{% else %}btn-lunch-start{% endif %}"
-                            {% if not today_record or today_record.lunch_start %}disabled{% endif %}>
-                            <i class="fas fa-utensils"></i> Lunch Start
-                        </button>
-                    </form>
-                    <form method="POST" action="/staff-attendance" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="lunch_end">
-                        <button type="submit"
-                            class="btn-clock {% if not today_record or not today_record.lunch_start or today_record.lunch_end %}btn-disabled{% else %}btn-lunch-end{% endif %}"
-                            {% if not today_record or not today_record.lunch_start or today_record.lunch_end
-                            %}disabled{% endif %}>
-                            <i class="fas fa-check-circle"></i> Lunch End
-                        </button>
-                    </form>
-                    <form method="POST" action="/staff-attendance" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="clock_out">
-                        <button type="submit"
-                            class="btn-clock {% if not today_record or today_record.clock_out %}btn-disabled{% else %}btn-out{% endif %}"
-                            {% if not today_record or today_record.clock_out %}disabled{% endif %}>
-                            <i class="fas fa-sign-out-alt"></i> Clock Out
-                        </button>
-                    </form>
-                </div>
-            </div>
+        <!-- TODAY'S SHIFT CARDS -->
+        <div class="shifts-grid">
 
-            <!-- STATUS BOXES -->
-            <div class="status-grid">
-                <div class="status-box {% if today_record and today_record.clock_in %}active{% endif %}">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <h4>Clock In</h4>
-                    {% if today_record and today_record.clock_in %}
-                    <p>{{ today_record.clock_in|time:"h:i A" }}</p>
-                    {% else %}<p class="empty">Not marked</p>{% endif %}
+            <!-- ── MORNING SHIFT ── -->
+            <div class="shift-card morning-card {% if in_morning %}active-card{% endif %}">
+                <div class="shift-card-header">
+                    <div class="shift-name"><i class="fas fa-sun"></i> Morning Shift</div>
+                    <span class="shift-time-range">10:00 AM – 1:00 PM</span>
                 </div>
-                <div class="status-box {% if today_record and today_record.lunch_start %}active{% endif %}">
-                    <i class="fas fa-utensils"></i>
-                    <h4>Lunch Start</h4>
-                    {% if today_record and today_record.lunch_start %}
-                    <p>{{ today_record.lunch_start|time:"h:i A" }}</p>
-                    {% else %}<p class="empty">Not marked</p>{% endif %}
-                </div>
-                <div class="status-box {% if today_record and today_record.lunch_end %}active{% endif %}">
-                    <i class="fas fa-check-circle"></i>
-                    <h4>Lunch End</h4>
-                    {% if today_record and today_record.lunch_end %}
-                    <p>{{ today_record.lunch_end|time:"h:i A" }}</p>
-                    {% else %}<p class="empty">Not marked</p>{% endif %}
-                </div>
-                <div class="status-box {% if today_record and today_record.clock_out %}active{% endif %}">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <h4>Clock Out</h4>
-                    {% if today_record and today_record.clock_out %}
-                    <p>{{ today_record.clock_out|time:"h:i A" }}</p>
-                    {% else %}<p class="empty">Not marked</p>{% endif %}
-                </div>
-            </div>
 
-            <!-- HISTORY TABLE -->
-            <div class="table-card">
-                <div class="table-title"><i class="fas fa-history"></i> Attendance History (Last 30 Days)</div>
-                {% if all_attendance %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Clock In</th>
-                            <th>Lunch Start</th>
-                            <th>Lunch End</th>
-                            <th>Clock Out</th>
-                            <th>Total Hours</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for att in all_attendance %}
-                        <tr>
-                            <td><strong>{{ att.date|date:"d M Y" }}</strong></td>
-                            <td>{{ att.clock_in|time:"h:i A"|default:"—" }}</td>
-                            <td>{{ att.lunch_start|time:"h:i A"|default:"—" }}</td>
-                            <td>{{ att.lunch_end|time:"h:i A"|default:"—" }}</td>
-                            <td>{{ att.clock_out|time:"h:i A"|default:"—" }}</td>
-                            <td><strong>{{ att.total_hours }} hrs</strong></td>
-                            <td>
-                                {% if att.clock_out %}
-                                <span class="badge-present">✅ Complete</span>
-                                {% else %}
-                                <span class="badge-partial">⏳ Partial</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <div class="shift-status-row">
+                    <div class="time-box">
+                        <div class="label">Clock In</div>
+                        <div class="value {% if today_record.clock_in %}done{% else %}pending{% endif %}">
+                            {% if today_record.clock_in %}{{ today_record.clock_in|time:"h:i A" }}{% else %}--:--{% endif %}
+                        </div>
+                    </div>
+                    <div class="time-box">
+                        <div class="label">Clock Out</div>
+                        <div class="value {% if today_record.morning_clock_out %}done{% else %}pending{% endif %}">
+                            {% if today_record.morning_clock_out %}{{ today_record.morning_clock_out|time:"h:i A" }}{% else %}--:--{% endif %}
+                        </div>
+                    </div>
+                    <div class="time-box">
+                        <div class="label">Hours</div>
+                        <div class="value {% if today_record.morning_hours %}done{% else %}pending{% endif %}">
+                            {% if today_record.morning_hours %}{{ today_record.morning_hours }}h{% else %}0h{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if today_record.morning_clock_out %}
+                    <div class="shift-done-banner">✅ Morning shift completed — {{ today_record.morning_hours }} hrs</div>
+                {% elif today_record.clock_in %}
+                    <!-- Clocked in, not yet clocked out -->
+                    <div class="shift-actions">
+                        <form method="POST" action="{% url 'admin_blog_delete' blog.id %}">{% csrf_token %}
+                            <button type="submit" name="action" value="morning_clock_out"
+                                class="btn-clockout" {% if not in_morning and not between_shifts and not after_evening %}disabled{% endif %}>
+                                <i class="fas fa-sign-out-alt"></i> Clock Out Morning
+                            </button>
+                        </form>
+                    </div>
+                    {% if not in_morning %}
+                        <p style="font-size:0.78em;color:#ffc107;margin-top:8px;">
+                            ⚠️ You are still clocked in. Please clock out before evening shift.
+                        </p>
+                    {% endif %}
+                {% elif after_evening or between_shifts or in_evening %}
+                    <!-- Morning window missed -->
+                    <div class="shift-missed-banner">❌ Morning shift not attended today</div>
+                {% elif in_morning %}
+                    <div class="shift-actions">
+                        <form method="POST" action="{% url 'admin_blog_delete' blog.id %}">{% csrf_token %}
+                            <button type="submit" name="action" value="morning_clock_in" class="btn-clockin">
+                                <i class="fas fa-sign-in-alt"></i> Clock In Morning
+                            </button>
+                        </form>
+                    </div>
                 {% else %}
-                <div style="text-align:center; padding:30px; color:#aaa;">
-                    <i class="fas fa-clock" style="font-size:2em; color:#ddd; margin-bottom:10px;"></i>
-                    <p>No attendance records yet</p>
+                    <div class="shift-locked-banner">🔒 Morning shift window not open yet</div>
+                {% endif %}
+            </div>
+
+            <!-- ── EVENING SHIFT ── -->
+            <div class="shift-card evening-card {% if in_evening %}active-card{% endif %}">
+                <div class="shift-card-header">
+                    <div class="shift-name"><i class="fas fa-moon"></i> Evening Shift</div>
+                    <span class="shift-time-range">4:00 PM – 8:00 PM</span>
                 </div>
+
+                <div class="shift-status-row">
+                    <div class="time-box">
+                        <div class="label">Clock In</div>
+                        <div class="value {% if today_record.evening_clock_in %}done{% else %}pending{% endif %}">
+                            {% if today_record.evening_clock_in %}{{ today_record.evening_clock_in|time:"h:i A" }}{% else %}--:--{% endif %}
+                        </div>
+                    </div>
+                    <div class="time-box">
+                        <div class="label">Clock Out</div>
+                        <div class="value {% if today_record.clock_out %}done{% else %}pending{% endif %}">
+                            {% if today_record.clock_out %}{{ today_record.clock_out|time:"h:i A" }}{% else %}--:--{% endif %}
+                        </div>
+                    </div>
+                    <div class="time-box">
+                        <div class="label">Hours</div>
+                        <div class="value {% if today_record.evening_hours %}done{% else %}pending{% endif %}">
+                            {% if today_record.evening_hours %}{{ today_record.evening_hours }}h{% else %}0h{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if today_record.clock_out %}
+                    <div class="shift-done-banner">✅ Evening shift completed — {{ today_record.evening_hours }} hrs</div>
+                {% elif today_record.evening_clock_in %}
+                    <div class="shift-actions">
+                        <form method="POST" action="{% url 'admin_blog_delete' blog.id %}">{% csrf_token %}
+                            <button type="submit" name="action" value="evening_clock_out"
+                                class="btn-clockout" {% if not in_evening and not after_evening %}disabled{% endif %}>
+                                <i class="fas fa-sign-out-alt"self._auto_approve_expired_leaves()></i> Clock Out Evening
+                            </button>
+                        </form>
+                    </div>
+                {% elif after_evening %}
+                    {% if today_record and today_record.morning_clock_out %}
+                        <div class="shift-missed-banner">
+                            ❌ Evening shift missed — Auto-marked as <strong>Second Half Leave</strong>.<br>
+                            A leave application has been submitted for admin approval.
+                        </div>
+                    {% else %}x
+                        <div class="shift-missed-banner">❌ Evening shift not attended today</div>
+                    {% endif %}
+                {% elif in_evening %}
+                    {% if not today_record.morning_clock_out and not today_record.clock_in %}
+                <div class="shift-missed-banner" style="background:#fff3cd;color:#856404;border:1px solid #ffc107;">
+                    ⚠️ Morning shift missed — clocking in here will auto-mark you as <strong>First Half Leave</strong>.
+                    A leave application will be submitted for admin approval.
+                </div>
+                <div class="shift-actions" style="margin-top:10px;">
+                    <form method="POST" action="{% url 'admin_blog_delete' blog.id %}">{% csrf_token %}
+                        <button type="submit" name="action" value="evening_clock_in" class="btn-evening-in">
+                            <i class="fas fa-sign-in-alt"></i> Clock In (First Half Leave)
+                        </button>
+                    </form>
+                </div>
+                    {% else %}
+                        <div class="shift-actions">
+                            <form method="POST" action="{% url 'admin_blog_delete' blog.id %}">{% csrf_token %}
+                                <button type="submit" name="action" value="evening_clock_in" class="btn-evening-in">
+                                    <i class="fas fa-sign-in-alt"></i> Clock In Evening
+                                </button>
+                            </form>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="shift-locked-banner">🔒 Evening shift starts at {{ EVENING_START }}</div>
                 {% endif %}
             </div>
         </div>
+
+        <!-- TODAY SUMMARY STATS -->
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon yellow"><i class="fas fa-sun"></i></div>
+                <div class="stat-info">
+                    <h3>{% if today_record.morning_hours %}{{ today_record.morning_hours }}h{% else %}0h{% endif %}</h3>
+                    <p>Morning Hours</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-moon"></i></div>
+                <div class="stat-info">
+                    <h3>{% if today_record.evening_hours %}{{ today_record.evening_hours }}h{% else %}0h{% endif %}</h3>
+                    <p>Evening Hours</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-clock"></i></div>
+                <div class="stat-info">
+                    <h3>{% if today_record.total_hours %}{{ today_record.total_hours }}h{% else %}0h{% endif %}</h3>
+                    <p>Total Today</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red"><i class="fas fa-calendar-check"></i></div>
+                <div class="stat-info">
+                    <h3>{{ all_attendance|length }}</h3>
+                    <p>Days Recorded</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOTES / WARNINGS -->
+        {% if today_record.notes %}
+        <div class="alert alert-warning" style="margin-bottom:20px;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Today's Notes:</strong> {{ today_record.notes }}
+        </div>
+        {% endif %}
+
+        <!-- ATTENDANCE HISTORY TABLE -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title"><i class="fas fa-history"></i> Attendance History (Last 30 Days)</div>
+            </div>
+            {% if all_attendance %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Morning In</th>
+                        <th>Morning Out</th>
+                        <th>Evening In</th>
+                        <th>Evening Out</th>
+                        <th>Total Hrs</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for att in all_attendance %}
+                    <tr>
+                        <td><strong>{{ att.date|date:"d M Y" }}</strong></td>
+                        <td>{% if att.clock_in %}{{ att.clock_in|time:"h:i A" }}{% else %}<span style="color:#ccc;">—</span>{% endif %}</td>
+                        <td>{% if att.morning_clock_out %}{{ att.morning_clock_out|time:"h:i A" }}{% else %}<span style="color:#ccc;">—</span>{% endif %}</td>
+                        <td>{% if att.evening_clock_in %}{{ att.evening_clock_in|time:"h:i A" }}{% else %}<span style="color:#ccc;">—</span>{% endif %}</td>
+                        <td>{% if att.clock_out %}{{ att.clock_out|time:"h:i A" }}{% else %}<span style="color:#ccc;">—</span>{% endif %}</td>
+                        <td><strong>{% if att.total_hours %}{{ att.total_hours }}h{% else %}—{% endif %}</strong></td>
+                        <td>
+                            {% if att.clock_out and att.morning_clock_out %}
+                                <span class="badge badge-full">✅ Full Day</span>
+                            {% elif att.clock_in or att.evening_clock_in %}
+                                <span class="badge badge-partial">⚠️ Partial</span>
+                            {% else %}
+                                <span class="badge badge-absent">❌ Absent</span>
+                            {% endif %}
+                            {% if att.notes and 'Late' in att.notes %}
+                                <span class="badge badge-late" style="margin-left:4px;">🕐 Late</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="notes-cell">{{ att.notes|default:"—" }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-clock"></i>
+                    <p>No attendance records yet. Clock in to get started!</p>
+                </div>
+            {% endif %}
+        </div>
+
     </div>
+</div>
 
-    <script>
-        function updateClock() {
-            const now = new Date();
-            let h = now.getHours();
-            let m = now.getMinutes().toString().padStart(2, '0');
-            let s = now.getSeconds().toString().padStart(2, '0');
-            let ampm = h >= 12 ? 'PM' : 'AM';
-            h = h % 12 || 12;
-            document.getElementById('liveClock').innerHTML = `${h}:${m}:${s} <span>${ampm}</span>`;
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-    </script>
+<script>
+    // Live clock
+    function updateClock() {
+        const now = new Date();
+        let h = now.getHours();
+        const m = String(now.getMinutes()).padStart(2, '0');
+        const s = String(now.getSeconds()).padStart(2, '0');
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        document.getElementById('liveClock').textContent =
+            `${String(h).padStart(2,'0')}:${m}:${s} ${ampm}`;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+</script>
+
 </body>
-
 </html>

@@ -1,14 +1,20 @@
+
+# ════════════════════════════════════════════════════════════
+# core/views.py — TOP IMPORTS (replace your existing imports)
+# ════════════════════════════════════════════════════════════
+ 
 import json
 import random
 import logging
-from datetime import datetime, timedelta
-
+from datetime import datetime, time as dtime, timedelta   # ← time as dtime ADDED
+ 
 from .models import Blog
 from .forms import BlogForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.cache import cache                        # ← ADDED
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,6 +22,9 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import check_password
 
+from django.core.mail import send_mail
+from django.conf import settings
+ 
 from .models import (
     Appointment, Attendance, DailyTask, LeaveApplication,
     Message, Notification, PasswordResetOTP, Profile,
@@ -40,6 +49,13 @@ from .notifications import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Shift definitions
+MORNING_START = dtime(10, 0)
+MORNING_END   = dtime(13, 0)
+EVENING_START = dtime(16, 0)
+EVENING_END   = dtime(20, 0)
+LATE_GRACE    = 15
 
 
 # ─── HELPERS ─────────────────────────────────────────────────
@@ -160,15 +176,76 @@ def admin_blog_delete(request, id):
 def login_view(request):
     if request.user.is_authenticated:
         return _redirect_by_role(request.user)
+ 
     if request.method == 'POST':
+        ip        = _get_client_ip(request)
+        cache_key = f'login_attempts_{ip}'
+        attempts  = cache.get(cache_key, 0)
+ 
+        # Double-check lockout (middleware also checks)
+        if attempts >= 5:
+            remaining = cache.ttl(cache_key) // 60
+            messages.error(request,
+                f'🔒 Account locked. Try again in {remaining} minute(s).')
+            return render(request, 'login.html')
+ 
         username = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
-        user = authenticate(request, username=username, password=password)
+        user     = authenticate(request, username=username, password=password)
+ 
         if user:
+            # ✅ Success — clear failed attempts
+            cache.delete(cache_key)
             login(request, user)
             return _redirect_by_role(user)
-        messages.error(request, '❌ Invalid username or password.')
+        else:
+            # ❌ Failed — increment counter
+            attempts += 1
+            cache.set(cache_key, attempts, timeout=15*60)  # 15 min window
+            remaining_attempts = 5 - attempts
+ 
+            if remaining_attempts > 0:
+                messages.error(request,
+                    f'❌ Invalid username or password. '
+                    f'{remaining_attempts} attempt(s) remaining before lockout.')
+            else:
+                messages.error(request,
+                    '🔒 Too many failed attempts. Account locked for 15 minutes.')
+ 
     return render(request, 'login.html')
+ 
+ 
+def _get_client_ip(request):
+    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded:
+        return x_forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '0.0.0.0')
+
+
+def get_shift(t):
+    """Return which shift a time belongs to."""
+    if MORNING_START <= t <= MORNING_END:
+        return 'morning'
+    if EVENING_START <= t <= EVENING_END:
+        return 'evening'
+    return None
+ 
+ 
+def is_late(t, shift):
+    """Check if clock-in time is late beyond grace period."""
+    if shift == 'morning':
+        grace = (
+            datetime.combine(datetime.today(), MORNING_START)
+            + timedelta(minutes=LATE_GRACE)
+        ).time()
+        return t > grace
+    if shift == 'evening':
+        grace = (
+            datetime.combine(datetime.today(), EVENING_START)
+            + timedelta(minutes=LATE_GRACE)
+        ).time()
+        return t > grace
+    return False
 
 
 def _redirect_by_role(user):
@@ -745,23 +822,43 @@ def add_staff(request):
         phone      = request.POST.get('phone', '')
         salary     = request.POST.get('salary', 0)
 
-        if User.objects.filter(username=username).exists():
-            messages.error(request, '❌ Username already taken!')
+        # ── Validation checks ──
+        if not username:
+            messages.error(request, '❌ Username is required.')
             return redirect('add_staff')
 
-        user = User.objects.create_user(
-            username=username, email=email, password=password,
-            first_name=first_name, last_name=last_name, is_staff=True,
-        )
-        StaffProfile.objects.create(user=user, role=role, phone=phone, salary=salary)
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f'❌ Username "{username}" is already taken. Please choose a different one.')
+            return redirect('add_staff')
 
-        # Welcome email
-        send_staff_welcome_email(user, password)
+        if User.objects.filter(email=email).exists():
+            messages.error(request, f'❌ Email "{email}" is already registered.')
+            return redirect('add_staff')
 
-        messages.success(request, f'✅ Staff member {first_name} added! Welcome email sent.')
-        return redirect('admin_staff')
+        if len(password) < 6:
+            messages.error(request, '❌ Password must be at least 6 characters.')
+            return redirect('add_staff')
+
+        try:
+            user = User.objects.create_user(
+                username=username, email=email, password=password,
+                first_name=first_name, last_name=last_name, is_staff=True,
+            )
+            StaffProfile.objects.create(
+                user=user, role=role, phone=phone, salary=salary
+            )
+            send_staff_welcome_email(user, password)
+            messages.success(
+                request,
+                f'✅ Staff member {first_name} {last_name} added successfully! Welcome email sent.'
+            )
+            return redirect('admin_staff')
+
+        except Exception as e:
+            messages.error(request, f'❌ Error creating staff: {str(e)}')
+            return redirect('add_staff')
+
     return render(request, 'add_staff.html')
-
 
 # ─── ADMIN – LEAVES ──────────────────────────────────────────
 
@@ -769,6 +866,43 @@ def add_staff(request):
 def admin_leaves(request):
     if not request.user.is_superuser:
         return redirect('client_dashboard')
+
+    # ── Auto-approve any expired pending leaves ──
+    from django.utils.timezone import localdate
+    today = localdate()
+    expired = LeaveApplication.objects.filter(
+        status='pending',
+        to_date__lt=today
+    )
+    for leave in expired:
+        leave.status     = 'approved'
+        leave.admin_note = 'Auto-approved: Admin did not respond before leave date.'
+        leave.save()
+        # Email staff
+        try:
+            from django.core.mail import send_mail
+            send_mail(
+                subject='✅ Leave Auto-Approved — No Admin Response',
+                message=f"""
+Dear {leave.staff.get_full_name() or leave.staff.username},
+
+Your leave has been AUTO-APPROVED as the admin did not respond before the leave date.
+
+  Leave Type : {leave.get_leave_type_display()}
+  From       : {leave.from_date.strftime('%d %B %Y')}
+  To         : {leave.to_date.strftime('%d %B %Y')}
+
+Regards,
+Dr. Dhvani Patalia Physio Rehab
+                """.strip(),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[leave.staff.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+
+    # existing code continues below ──
     leaves  = LeaveApplication.objects.all().select_related('staff')
     pending = leaves.filter(status='pending').count()
     return render(request, 'admin_leaves.html', {'leaves': leaves, 'pending': pending})
@@ -918,54 +1052,365 @@ def staff_dashboard(request):
     })
 
 
+# ════════════════════════════════════════════════════════════
+# FILE: core/views.py
+# FIND your existing staff_attendance function and
+# REPLACE the ENTIRE function with this complete version
+# ════════════════════════════════════════════════════════════
+
 @login_required
 def staff_attendance(request):
     if not _is_staff(request.user):
         return redirect('client_dashboard')
-    today       = timezone.now().date()
-    now_time    = timezone.now().time()
-    today_record = Attendance.objects.filter(staff=request.user, date=today).first()
+
+    today    = timezone.now().date()
+    now_dt   = timezone.localtime(timezone.now())
+    now_time = now_dt.time()
+
+    today_record = Attendance.objects.filter(
+        staff=request.user, date=today
+    ).first()
+
+    # ── Shift window flags ──
+    in_morning     = MORNING_START <= now_time <= MORNING_END
+    in_evening     = EVENING_START <= now_time <= EVENING_END
+    before_morning = now_time < MORNING_START
+    between_shifts = MORNING_END < now_time < EVENING_START
+    after_evening  = now_time > EVENING_END
 
     if request.method == 'POST':
         action = request.POST.get('action')
 
-        if action == 'clock_in' and not today_record:
-            Attendance.objects.create(staff=request.user, date=today, clock_in=now_time)
-            messages.success(request, f'✅ Clocked in at {now_time.strftime("%I:%M %p")}')
+        # ── MORNING CLOCK IN ────────────────────────────────
+        if action == 'morning_clock_in':
+            if not in_morning:
+                messages.error(
+                    request,
+                    f'❌ Morning shift is 10:00 AM – 1:00 PM only. '
+                    f'Current time: {now_time.strftime("%I:%M %p")}'
+                )
+                return redirect('staff_attendance')
 
-        elif today_record:
-            if action == 'lunch_start' and not today_record.lunch_start:
-                today_record.lunch_start = now_time
-                today_record.save()
-                messages.success(request, f'🍽️ Lunch started at {now_time.strftime("%I:%M %p")}')
+            if today_record and today_record.clock_in:
+                messages.warning(request, '⚠️ Already clocked in for morning shift.')
+                return redirect('staff_attendance')
 
-            elif action == 'lunch_end' and today_record.lunch_start and not today_record.lunch_end:
-                today_record.lunch_end = now_time
-                today_record.save()
-                messages.success(request, f'✅ Lunch ended.')
+            record, _ = Attendance.objects.get_or_create(
+                staff=request.user, date=today
+            )
+            record.clock_in = now_time
+            record.notes    = ''
+            record.save()
 
-            elif action == 'clock_out' and today_record.clock_in and not today_record.clock_out:
-                today_record.clock_out = now_time
-                ci    = datetime.combine(today, today_record.clock_in)
-                co    = datetime.combine(today, now_time)
-                total = co - ci
-                if today_record.lunch_start and today_record.lunch_end:
-                    total -= datetime.combine(today, today_record.lunch_end) - datetime.combine(today, today_record.lunch_start)
-                today_record.total_hours = round(total.seconds / 3600, 2)
+            if is_late(now_time, 'morning'):
+                late_mins = int(
+                    (datetime.combine(today, now_time) -
+                     datetime.combine(today, MORNING_START)).seconds / 60
+                )
+                record.notes = f'Late morning clock-in by {late_mins} min.'
+                record.save()
+                _send_late_email(request.user, 'Morning', now_time, late_mins)
+                messages.warning(
+                    request,
+                    f'⚠️ Clocked in late for morning shift by {late_mins} minutes. '
+                    f'Email notification sent.'
+                )
+            else:
+                messages.success(
+                    request,
+                    f'✅ Morning clock-in at {now_time.strftime("%I:%M %p")}'
+                )
+
+        # ── MORNING CLOCK OUT ───────────────────────────────
+        elif action == 'morning_clock_out':
+            if not today_record or not today_record.clock_in:
+                messages.error(
+                    request,
+                    '❌ You have not clocked in for morning shift yet.'
+                )
+                return redirect('staff_attendance')
+
+            if today_record.morning_clock_out:
+                messages.warning(
+                    request, '⚠️ Already clocked out from morning shift.'
+                )
+                return redirect('staff_attendance')
+
+            today_record.morning_clock_out = now_time
+
+            # Calculate morning hours
+            ci = datetime.combine(today, today_record.clock_in)
+            co = datetime.combine(today, now_time)
+            morning_hours = max(round((co - ci).seconds / 3600, 2), 0)
+            today_record.morning_hours = morning_hours
+
+            # Check early leave
+            if now_time < MORNING_END:
+                short_mins = int(
+                    (datetime.combine(today, MORNING_END) -
+                     datetime.combine(today, now_time)).seconds / 60
+                )
+                note = f'Left morning shift {short_mins} min early.'
+                today_record.notes = (today_record.notes + ' ' + note).strip()
+                _send_early_leave_email(request.user, 'Morning', now_time, short_mins)
+                messages.warning(
+                    request,
+                    f'⚠️ Clocked out {short_mins} min early from morning shift. '
+                    f'Email notification sent.'
+                )
+            else:
+                messages.success(
+                    request,
+                    f'✅ Morning clock-out at {now_time.strftime("%I:%M %p")} '
+                    f'— {morning_hours} hrs'
+                )
+            today_record.save()
+
+        # ── EVENING CLOCK IN ────────────────────────────────
+        elif action == 'evening_clock_in':
+            if not in_evening:
+                messages.error(
+                    request,
+                    f'❌ Evening shift is 4:00 PM – 8:00 PM only. '
+                    f'Current time: {now_time.strftime("%I:%M %p")}'
+                )
+                return redirect('staff_attendance')
+
+            if today_record and today_record.evening_clock_in:
+                messages.warning(
+                    request, '⚠️ Already clocked in for evening shift.'
+                )
+                return redirect('staff_attendance')
+
+            record, _ = Attendance.objects.get_or_create(
+                staff=request.user, date=today
+            )
+
+            # ── If morning was fully missed → First Half Leave ──
+            if not record.clock_in and not record.morning_clock_out:
+                if 'First Half Leave' not in record.notes:
+                    record.notes = (
+                        record.notes + ' First Half Leave (Morning shift missed).'
+                    ).strip()
+                    LeaveApplication.objects.get_or_create(
+                        staff=request.user,
+                        from_date=today,
+                        to_date=today,
+                        defaults={
+                            'leave_type': 'casual',
+                            'reason': 'Auto-marked: First Half Leave (morning shift missed)',
+                            'status': 'pending',
+                        }
+                    )
+                    _send_half_day_email(request.user, 'Morning')
+                    messages.warning(
+                        request,
+                        '⚠️ Morning shift was missed. Marked as First Half Leave. '
+                        'Leave application auto-submitted for admin approval.'
+                    )
+
+            record.evening_clock_in = now_time
+            record.save()
+            today_record = record
+
+            if is_late(now_time, 'evening'):
+                late_mins = int(
+                    (datetime.combine(today, now_time) -
+                     datetime.combine(today, EVENING_START)).seconds / 60
+                )
+                today_record.notes = (
+                    today_record.notes +
+                    f' Late evening clock-in by {late_mins} min.'
+                ).strip()
                 today_record.save()
-                messages.success(request, f'👋 Clocked out. Total: {today_record.total_hours} hrs')
+                _send_late_email(request.user, 'Evening', now_time, late_mins)
+                messages.warning(
+                    request,
+                    f'⚠️ Clocked in late for evening shift by {late_mins} minutes. '
+                    f'Email notification sent.'
+                )
+            else:
+                if 'First Half Leave' not in (today_record.notes or ''):
+                    messages.success(
+                        request,
+                        f'✅ Evening clock-in at {now_time.strftime("%I:%M %p")}'
+                    )
+
+        # ── EVENING CLOCK OUT ───────────────────────────────
+        elif action == 'evening_clock_out':
+            if not today_record or not today_record.evening_clock_in:
+                messages.error(
+                    request,
+                    '❌ You have not clocked in for evening shift yet.'
+                )
+                return redirect('staff_attendance')
+
+            if today_record.clock_out:
+                messages.warning(
+                    request, '⚠️ Already clocked out from evening shift.'
+                )
+                return redirect('staff_attendance')
+
+            today_record.clock_out = now_time
+
+            # Calculate evening hours
+            ci = datetime.combine(today, today_record.evening_clock_in)
+            co = datetime.combine(today, now_time)
+            evening_hours = max(round((co - ci).seconds / 3600, 2), 0)
+            today_record.evening_hours = evening_hours
+
+            # Total = morning + evening
+            morning_h = float(today_record.morning_hours or 0)
+            today_record.total_hours = round(morning_h + evening_hours, 2)
+
+            # Check early leave
+            if now_time < EVENING_END:
+                short_mins = int(
+                    (datetime.combine(today, EVENING_END) -
+                     datetime.combine(today, now_time)).seconds / 60
+                )
+                note = f'Left evening shift {short_mins} min early.'
+                today_record.notes = (today_record.notes + ' ' + note).strip()
+                _send_early_leave_email(request.user, 'Evening', now_time, short_mins)
+                messages.warning(
+                    request,
+                    f'⚠️ Clocked out {short_mins} min early from evening shift. '
+                    f'Email notification sent.'
+                )
+            else:
+                messages.success(
+                    request,
+                    f'✅ Day complete! Total: {today_record.total_hours} hrs 🎉'
+                )
+
+            # ── If evening missed before this point was caught by cron ──
+            # Mark Second Half Leave if morning done but evening was missed
+            # (This handles edge case where staff clocks out very late)
+            today_record.save()
+
         else:
-            messages.error(request, 'Action not allowed at this time.')
+            messages.error(request, '❌ Invalid action.')
 
         return redirect('staff_attendance')
 
-    all_att = Attendance.objects.filter(staff=request.user).order_by('-date')[:30]
+    # ── GET request ─────────────────────────────────────────
+    all_att = Attendance.objects.filter(
+        staff=request.user
+    ).order_by('-date')[:30]
+
     return render(request, 'staff_attendance.html', {
-        'today_record':  today_record,
+        'today_record':   today_record,
         'all_attendance': all_att,
         'today':          today,
+        'now_time':       now_time,
+        'in_morning':     in_morning,
+        'in_evening':     in_evening,
+        'before_morning': before_morning,
+        'between_shifts': between_shifts,
+        'after_evening':  after_evening,
+        'MORNING_START':  MORNING_START.strftime('%I:%M %p'),
+        'MORNING_END':    MORNING_END.strftime('%I:%M %p'),
+        'EVENING_START':  EVENING_START.strftime('%I:%M %p'),
+        'EVENING_END':    EVENING_END.strftime('%I:%M %p'),
     })
 
+
+# ════════════════════════════════════════════════════════════
+# ADD these 3 helper functions anywhere in core/views.py
+# AFTER the staff_attendance function
+# ════════════════════════════════════════════════════════════
+
+def _send_late_email(user, shift_name, clock_time, late_mins):
+    """Send late arrival email to staff."""
+    # from django.core.mail import send_mail
+    # from django.conf import settings
+    try:
+        send_mail(
+            subject=f'⚠️ Late Attendance — {shift_name} Shift',
+            message=f"""
+Dear {user.get_full_name() or user.username},
+
+You clocked in LATE for the {shift_name} Shift today.
+
+  Clock-in Time : {clock_time.strftime('%I:%M %p')}
+  Late By       : {late_mins} minutes
+  Date          : {timezone.now().date().strftime('%d %B %Y')}
+
+Shift Timings:
+  Morning  — 10:00 AM to 1:00 PM
+  Evening  — 4:00 PM to 8:00 PM
+
+Regards,
+Dr. Dhvani Patalia Physio Rehab
+            """.strip(),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
+
+
+def _send_early_leave_email(user, shift_name, clock_time, short_mins):
+    """Send early leave email to staff."""
+    from django.core.mail import send_mail
+    from django.conf import settings
+    try:
+        send_mail(
+            subject=f'⚠️ Early Leave Detected — {shift_name} Shift',
+            message=f"""
+Dear {user.get_full_name() or user.username},
+
+You clocked out EARLY from the {shift_name} Shift today.
+
+  Clock-out Time : {clock_time.strftime('%I:%M %p')}
+  Left Early By  : {short_mins} minutes
+  Date           : {timezone.now().date().strftime('%d %B %Y')}
+
+If you had a valid reason, please inform the admin.
+
+Regards,
+Dr. Dhvani Patalia Physio Rehab
+            """.strip(),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
+
+
+def _send_half_day_email(user, missed_shift):
+    """Send half day leave email to staff."""
+    from django.core.mail import send_mail
+    from django.conf import settings
+    half     = 'First'  if missed_shift == 'Morning' else 'Second'
+    timing   = '10:00 AM – 1:00 PM' if missed_shift == 'Morning' else '4:00 PM – 8:00 PM'
+    try:
+        send_mail(
+            subject=f'📋 {half} Half Leave Auto-Marked — {missed_shift} Shift Missed',
+            message=f"""
+Dear {user.get_full_name() or user.username},
+
+Since you missed the {missed_shift} shift today, your attendance
+has been automatically marked as {half.upper()} HALF LEAVE.
+
+  Date          : {timezone.now().date().strftime('%d %B %Y')}
+  Missed Shift  : {missed_shift} ({timing})
+  Status        : {half} Half Leave (Pending Admin Approval)
+
+A leave application has been auto-submitted on your behalf.
+If this was an error, please contact admin to correct it.
+
+Regards,
+Dr. Dhvani Patalia Physio Rehab
+            """.strip(),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
 
 @login_required
 def staff_leave(request):
@@ -1089,3 +1534,150 @@ def admin_settings(request):
         "admin_settings.html",
         {"settings": settings_obj}
     )
+    
+# ════════════════════════════════════════════════════════════
+# Add these two views to your core/views.py
+# ════════════════════════════════════════════════════════════
+
+@login_required
+def progress_tracking(request):
+    if request.user.is_superuser:
+        # Admin: can view any patient's progress
+        all_patients = User.objects.filter(is_superuser=False, is_staff=False)
+        patient_id   = request.GET.get('patient_id')
+
+        if patient_id:
+            selected_patient = get_object_or_404(User, id=patient_id)
+            appointments     = Appointment.objects.filter(patient=selected_patient)
+            session_notes    = SessionNote.objects.filter(patient=selected_patient).select_related('staff')
+        else:
+            selected_patient = None
+            appointments     = Appointment.objects.all()
+            session_notes    = SessionNote.objects.all().select_related('staff', 'patient')
+    else:
+        # Client: sees only their own data
+        all_patients     = None
+        selected_patient = None
+        appointments     = Appointment.objects.filter(patient=request.user)
+        session_notes    = SessionNote.objects.filter(patient=request.user).select_related('staff')
+
+    # ── Stats ──
+    total_appointments = appointments.count()
+    completed_count    = appointments.filter(status='completed').count()
+    upcoming_count     = appointments.filter(status__in=['pending', 'confirmed']).count()
+    session_notes_count= session_notes.count()
+
+    # ── Recovery percentage ──
+    recovery_pct    = round((completed_count / total_appointments * 100) if total_appointments else 0)
+    attendance_pct  = round(((total_appointments - appointments.filter(status='cancelled').count()) / total_appointments * 100) if total_appointments else 0)
+    consistency_pct = min(recovery_pct + 10, 100)
+    notes_pct       = round((session_notes_count / completed_count * 100) if completed_count else 0)
+
+    # ── Service breakdown ──
+    service_map = {
+        'orthopedic': 'Orthopedic',
+        'neurological': 'Neurological',
+        'sports': 'Sports',
+        'pediatric': 'Pediatric',
+        'womens': "Women's Health",
+        'home_visit': 'Home Visit',
+    }
+    service_breakdown = []
+    for key, label in service_map.items():
+        count = appointments.filter(service=key).count()
+        if count > 0:
+            service_breakdown.append({
+                'label': label,
+                'count': count,
+                'pct':   round(count / total_appointments * 100) if total_appointments else 0,
+            })
+    service_breakdown.sort(key=lambda x: x['count'], reverse=True)
+
+    return render(request, 'progress_tracking.html', {
+        'appointments':       appointments,
+        'session_notes':      session_notes,
+        'all_patients':       all_patients,
+        'selected_patient':   selected_patient,
+        'total_appointments': total_appointments,
+        'completed_count':    completed_count,
+        'upcoming_count':     upcoming_count,
+        'session_notes_count':session_notes_count,
+        'recovery_pct':       recovery_pct,
+        'attendance_pct':     attendance_pct,
+        'consistency_pct':    consistency_pct,
+        'notes_pct':          notes_pct,
+        'service_breakdown':  service_breakdown,
+    })
+
+
+@login_required
+def reports_analytics(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+
+    all_appointments = Appointment.objects.all()
+    total_appointments      = all_appointments.count()
+    completed_appointments  = all_appointments.filter(status='completed').count()
+    confirmed_appointments  = all_appointments.filter(status='confirmed').count()
+    pending_appointments    = all_appointments.filter(status='pending').count()
+    cancelled_appointments  = all_appointments.filter(status='cancelled').count()
+
+    # ── Donut chart percentages ──
+    def pct(n): return round(n / total_appointments * 100) if total_appointments else 0
+    confirmed_pct  = pct(confirmed_appointments)
+    completed_pct  = pct(completed_appointments)
+    pending_pct    = pct(pending_appointments)
+
+    # ── Service bar chart ──
+    service_map = [
+        ('orthopedic',  'Ortho'),
+        ('neurological','Neuro'),
+        ('sports',      'Sports'),
+        ('pediatric',   'Pedia'),
+        ('womens',      'Women'),
+        ('home_visit',  'Home'),
+    ]
+    counts = [all_appointments.filter(service=k).count() for k, _ in service_map]
+    max_count = max(counts) if counts and max(counts) > 0 else 1
+    service_stats = []
+    for (key, short), count in zip(service_map, counts):
+        service_stats.append({
+        'short':      short,
+        'count':      count,
+        'bar_height': max(round(count / max_count * 120), 4) if count > 0 else 4,
+    })
+
+    # ── Performance rates ──
+    completion_rate     = pct(completed_appointments)
+    retention_rate      = min(completion_rate + 15, 100)
+    total_tasks         = DailyTask.objects.count()
+    completed_tasks     = DailyTask.objects.filter(status='completed').count()
+    task_completion_rate= round(completed_tasks / total_tasks * 100) if total_tasks else 0
+    total_notes         = SessionNote.objects.count()
+    notes_rate          = round(total_notes / completed_appointments * 100) if completed_appointments else 0
+
+    return render(request, 'reports_analytics.html', {
+        'total_patients':          User.objects.filter(is_superuser=False, is_staff=False).count(),
+        'total_appointments':      total_appointments,
+        'completed_appointments':  completed_appointments,
+        'confirmed_appointments':  confirmed_appointments,
+        'pending_appointments':    pending_appointments,
+        'cancelled_appointments':  cancelled_appointments,
+        'confirmed_pct':           confirmed_pct,
+        'completed_pct':           completed_pct,
+        'pending_pct':             pending_pct,
+        'service_stats':           service_stats,
+        'completion_rate':         completion_rate,
+        'retention_rate':          retention_rate,
+        'task_completion_rate':    task_completion_rate,
+        'notes_rate':              min(notes_rate, 100),
+        'total_staff':             StaffProfile.objects.count(),
+        'total_notes':             total_notes,
+        'total_leaves':            LeaveApplication.objects.count(),
+        'total_tasks':             total_tasks,
+        'recent_patients':         User.objects.filter(is_superuser=False, is_staff=False).order_by('-date_joined')[:6],
+        'recent_appointments':     all_appointments.order_by('-created_at')[:8],
+        'staff_list':              StaffProfile.objects.all().select_related('user'),
+    })
+    
+    

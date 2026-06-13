@@ -301,7 +301,7 @@
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
         gap: 20px;
-        margin-bottom: 20px;
+        margin: 20px 0 2px 0;
       }
       
       .card {
@@ -640,29 +640,35 @@
         </div>
       </div>
       <nav>
-        <div class="nav-section">Overview</div>
-        <a href="/admin-dashboard" class="nav-item active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        <div class="nav-section">Management</div>
-        <a href="/admin-patients" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
-        <a href="/admin-staff" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
-        <a href="/admin-appointments" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
-        <a href="/admin-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
-        <div class="nav-section">Staff Tools</div>
-        <a href="/admin-leaves" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
-        <a href="/admin-attendance" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
-        <a href="/admin-tasks" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
-        <a href="/admin-session-notes" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-        <div class="nav-section">Communication</div>
-        <a href="/admin-chat" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
-        <div class="nav-section">Content</div>
-        <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
-        <div class="nav-section">Reports</div>
-        <a href="#" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
-        <a href="#" class="nav-item"><i class="fas fa-history"></i> Activity Logs</a>
-        <div class="nav-section">System</div>
-        <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
-        <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
-        <a href="/" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+          <div class="nav-section">Overview</div>
+          <a href="{% url 'admin_dashboard' %}" class="nav-item active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+
+          <div class="nav-section">Management</div>
+          <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+          <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+          <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
+          <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+
+          <div class="nav-section">Staff Tools</div>
+          <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
+          <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+          <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+          <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
+
+          <div class="nav-section">Communication</div>
+          <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+
+          <div class="nav-section">Content</div>
+          <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
+
+          <div class="nav-section">Reports</div>
+          <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress Tracking</a>
+          <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+
+          <div class="nav-section">System</div>
+          <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+          <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+          <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
       </nav>
       <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </aside>
@@ -1013,12 +1019,12 @@
               </div>
             </div>
             <div class="activity-item">
-              <div class="activity-dot dot-yellow">
+              <div class="activity-dot dot-green">
                 <i class="fas fa-envelope"></i>
               </div>
               <div class="activity-info">
                 <h4>Email Service</h4>
-                <p>⚠️ Not configured</p>
+                <p>✅ Running perfectly</p>
               </div>
             </div>
           </div>
