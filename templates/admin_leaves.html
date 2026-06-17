@@ -497,6 +497,7 @@
                         <a href="/update-leave/{{ leave.id }}/approved" class="btn-approve">✅ Approve</a>
                         <a href="/update-leave/{{ leave.id }}/rejected" class="btn-reject">❌ Reject</a>
                         {% endif %}
+                        <a href="/admin-leaves/delete/{{ leave.id }}/" style="background:#f8d7da;color:#721c24;border:none;padding:6px 12px;border-radius:8px;font-size:0.8em;font-weight:700;text-decoration:none;display:inline-block;">🗑️ Delete</a>
                     </div>
                 </div>
                 {% endfor %}

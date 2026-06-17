@@ -70,16 +70,48 @@ urlpatterns = [
     path('stop-typing/', views.stop_typing),
     path('check-typing/<int:user_id>/', views.check_typing),
 
+    # ── Admin Appointments CRUD ───────────────────────────────
+    path('admin-appointments/add/', views.add_appointment, name='add_appointment'),
+    path('admin-appointments/edit/<int:appt_id>/', views.edit_appointment, name='edit_appointment'),
+    path('admin-appointments/delete/<int:appt_id>/', views.delete_appointment, name='delete_appointment'),
+
+    # ── Admin Patients CRUD ───────────────────────────────────
+    path('admin-patients/edit/<int:user_id>/', views.edit_patient, name='edit_patient'),
+    path('admin-patients/delete/<int:user_id>/', views.delete_patient, name='delete_patient'),
+
     # ── Admin Staff Management ────────────────────────────────
     path('admin-staff/', views.admin_staff, name='admin_staff'),
     path('add-staff/', views.add_staff, name='add_staff'),
+    path('admin-staff/edit/<int:staff_id>/', views.edit_staff, name='edit_staff'),
+    path('admin-staff/delete/<int:staff_id>/', views.delete_staff, name='delete_staff'),
+
+    # ── Admin Leaves CRUD ─────────────────────────────────────
     path('admin-leaves/', views.admin_leaves, name='admin_leaves'),
     path('update-leave/<int:leave_id>/<str:status>/', views.update_leave, name='update_leave'),
+    path('admin-leaves/delete/<int:leave_id>/', views.delete_leave, name='delete_leave'),
+
+    # ── Admin Attendance CRUD ─────────────────────────────────
     path('admin-attendance/', views.admin_attendance, name='admin_attendance'),
+    path('admin-attendance/add/', views.add_attendance, name='add_attendance'),
+    path('admin-attendance/edit/<int:att_id>/', views.edit_attendance, name='edit_attendance'),
+    path('admin-attendance/delete/<int:att_id>/', views.delete_attendance, name='delete_attendance'),
+
+    # ── Admin Salary CRUD ─────────────────────────────────────
     path('admin-salary/', views.admin_salary, name='admin_salary'),
+    path('admin-salary/edit/<int:record_id>/', views.edit_salary, name='edit_salary'),
+    path('admin-salary/delete/<int:record_id>/', views.delete_salary, name='delete_salary'),
+
+    # ── Admin Tasks CRUD ──────────────────────────────────────
     path('admin-tasks/', views.admin_tasks, name='admin_tasks'),
     path('add-task/', views.add_task, name='add_task'),
+    path('admin-tasks/edit/<int:task_id>/', views.edit_task_admin, name='edit_task_admin'),
+    path('admin-tasks/delete/<int:task_id>/', views.delete_task_admin, name='delete_task_admin'),
+
+    # ── Admin Session Notes CRUD ──────────────────────────────
     path('admin-session-notes/', views.admin_session_notes, name='admin_session_notes'),
+    path('admin-session-notes/add/', views.admin_add_session_note, name='admin_add_session_note'),
+    path('admin-session-notes/edit/<int:note_id>/', views.edit_session_note, name='edit_session_note'),
+    path('admin-session-notes/delete/<int:note_id>/', views.delete_session_note, name='delete_session_note'),
 
     # ── Staff ─────────────────────────────────────────────────
     path('staff-dashboard/', views.staff_dashboard, name='staff_dashboard'),

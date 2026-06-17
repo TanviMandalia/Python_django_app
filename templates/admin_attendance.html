@@ -318,7 +318,7 @@
     <div class="main-content">
       <div class="topbar">
         <h1>🕐 Staff Attendance</h1>
-        <span class="date-badge">📅 Today: {{ today }}</span>
+        <a href="/admin-attendance/add/" style="background:#F5C518;color:#2C2C2C;padding:9px 20px;border-radius:20px;font-weight:700;text-decoration:none;font-size:0.88em;">+ Add Attendance</a>
       </div>
       <div class="dashboard-body">
         <!-- TODAY -->
@@ -400,6 +400,7 @@
                   <th>Clock Out</th>
                   <th>Total Hours</th>
                   <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -425,6 +426,12 @@
                       {% else %}
                         <span class="badge-partial">⏳ Partial</span>
                       {% endif %}
+                    </td>
+                    <td>
+                      <div style="display:flex;gap:5px;">
+                        <a href="/admin-attendance/edit/{{ att.id }}/" style="background:#e8f4fd;color:#0056b3;padding:5px 10px;border-radius:8px;font-size:0.76em;font-weight:700;text-decoration:none;">✏️ Edit</a>
+                        <a href="/admin-attendance/delete/{{ att.id }}/" style="background:#f8d7da;color:#721c24;padding:5px 10px;border-radius:8px;font-size:0.76em;font-weight:700;text-decoration:none;">🗑️ Del</a>
+                      </div>
                     </td>
                   </tr>
                 {% endfor %}

@@ -296,6 +296,7 @@
     <div class="main-content">
         <div class="topbar">
             <h1>📋 All Session Notes</h1>
+            <a href="/admin-session-notes/add/" style="background:#F5C518;color:#2C2C2C;padding:9px 20px;border-radius:20px;font-weight:700;text-decoration:none;font-size:0.88em;">+ Add Note</a>
         </div>
         <div class="dashboard-body">
             <div class="notes-grid">
@@ -329,6 +330,10 @@
                         <p>{{ note.next_session }}</p>
                     </div>
                     {% endif %}
+                    <div style="display:flex;gap:8px;margin-top:14px;border-top:1px solid #f0f0f0;padding-top:12px;">
+                        <a href="/admin-session-notes/edit/{{ note.id }}/" style="background:#e8f4fd;color:#0056b3;padding:7px 14px;border-radius:10px;font-size:0.82em;font-weight:700;text-decoration:none;flex:1;text-align:center;">✏️ Edit</a>
+                        <a href="/admin-session-notes/delete/{{ note.id }}/" style="background:#f8d7da;color:#721c24;padding:7px 14px;border-radius:10px;font-size:0.82em;font-weight:700;text-decoration:none;flex:1;text-align:center;">🗑️ Delete</a>
+                    </div>
                 </div>
                 {% endfor %}
                 {% else %}

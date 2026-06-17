@@ -508,7 +508,7 @@
     <div class="main-content">
         <div class="topbar">
             <h1>📅 All Appointments</h1>
-            <span class="topbar-badge">⚡ Admin View</span>
+            <a href="/admin-appointments/add/" style="background:#F5C518;color:#2C2C2C;padding:9px 20px;border-radius:20px;font-weight:700;text-decoration:none;font-size:0.88em;">+ Add Appointment</a>
         </div>
 
         <div class="dashboard-body">
@@ -608,20 +608,18 @@
                             <td>
                                 <div class="action-btns">
                                     {% if appt.status == 'pending' %}
-                                    <a href="/update-appointment/{{ appt.id }}/confirmed" class="btn-confirm">✅
-                                        Confirm</a>
-                                    <a href="/update-appointment/{{ appt.id }}/cancelled" class="btn-cancel">❌
-                                        Cancel</a>
+                                    <a href="/update-appointment/{{ appt.id }}/confirmed" class="btn-confirm">✅ Confirm</a>
+                                    <a href="/update-appointment/{{ appt.id }}/cancelled" class="btn-cancel">❌ Cancel</a>
                                     {% elif appt.status == 'confirmed' %}
-                                    <a href="/update-appointment/{{ appt.id }}/completed" class="btn-complete">🏁
-                                        Complete</a>
-                                    <a href="/update-appointment/{{ appt.id }}/cancelled" class="btn-cancel">❌
-                                        Cancel</a>
+                                    <a href="/update-appointment/{{ appt.id }}/completed" class="btn-complete">🏁 Complete</a>
+                                    <a href="/update-appointment/{{ appt.id }}/cancelled" class="btn-cancel">❌ Cancel</a>
                                     {% elif appt.status == 'completed' %}
                                     <span style="color:#aaa; font-size:0.82em;">✅ Done</span>
                                     {% else %}
                                     <span style="color:#aaa; font-size:0.82em;">Closed</span>
                                     {% endif %}
+                                    <a href="/admin-appointments/edit/{{ appt.id }}/" style="background:#e8f4fd;color:#0056b3;border:none;padding:5px 10px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;display:inline-block;transition:all 0.3s;">✏️ Edit</a>
+                                    <a href="/admin-appointments/delete/{{ appt.id }}/" style="background:#f8d7da;color:#721c24;border:none;padding:5px 10px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;display:inline-block;transition:all 0.3s;">🗑️ Del</a>
                                 </div>
                             </td>
                         </tr>

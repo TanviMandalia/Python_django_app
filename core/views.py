@@ -1492,6 +1492,355 @@ def add_session_note(request):
     patients = User.objects.filter(is_superuser=False, is_staff=False)
     return render(request, 'add_session_note.html', {'patients': patients})
 
+# ─── ADMIN – APPOINTMENTS CRUD ───────────────────────────────
+
+@login_required
+def add_appointment(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    patients = User.objects.filter(is_superuser=False, is_staff=False)
+    if request.method == 'POST':
+        patient_id = request.POST.get('patient_id')
+        service    = request.POST.get('service', '')
+        date       = request.POST.get('date', '')
+        time       = request.POST.get('time', '')
+        notes      = request.POST.get('notes', '')
+        status     = request.POST.get('status', 'pending')
+        patient    = get_object_or_404(User, id=patient_id)
+        Appointment.objects.create(
+            patient=patient,
+            name=patient.get_full_name() or patient.username,
+            email=patient.email,
+            phone=getattr(getattr(patient, 'profile', None), 'phone_number', ''),
+            service=service, date=date, time=time,
+            notes=notes, status=status,
+        )
+        messages.success(request, '✅ Appointment added successfully!')
+        return redirect('admin_appointments')
+    return render(request, 'add_appointment.html', {'patients': patients})
+
+
+@login_required
+def edit_appointment(request, appt_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    appt = get_object_or_404(Appointment, id=appt_id)
+    if request.method == 'POST':
+        appt.service = request.POST.get('service', appt.service)
+        appt.date    = request.POST.get('date', str(appt.date))
+        appt.time    = request.POST.get('time', appt.time)
+        appt.notes   = request.POST.get('notes', appt.notes)
+        appt.status  = request.POST.get('status', appt.status)
+        appt.save()
+        messages.success(request, '✅ Appointment updated successfully!')
+        return redirect('admin_appointments')
+    return render(request, 'edit_appointment.html', {'appt': appt})
+
+
+@login_required
+def delete_appointment(request, appt_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    appt = get_object_or_404(Appointment, id=appt_id)
+    if request.method == 'POST':
+        appt.delete()
+        messages.success(request, '✅ Appointment deleted.')
+        return redirect('admin_appointments')
+    return render(request, 'confirm_delete.html', {
+        'title': 'Delete Appointment',
+        'item': f'{appt.name} — {appt.get_service_display()} on {appt.date}',
+        'cancel_url': '/admin-appointments/',
+    })
+
+
+# ─── ADMIN – PATIENTS CRUD ───────────────────────────────────
+
+@login_required
+def edit_patient(request, user_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    patient = get_object_or_404(User, id=user_id)
+    profile, _ = Profile.objects.get_or_create(user=patient)
+    if request.method == 'POST':
+        patient.first_name = request.POST.get('first_name', '').strip()
+        patient.last_name  = request.POST.get('last_name', '').strip()
+        patient.email      = request.POST.get('email', '').strip()
+        patient.save()
+        profile.phone_number = request.POST.get('phone_number', '').strip()
+        profile.address      = request.POST.get('address', '').strip()
+        profile.save()
+        messages.success(request, '✅ Patient updated successfully!')
+        return redirect('admin_patients')
+    return render(request, 'edit_patient.html', {'patient': patient, 'profile': profile})
+
+
+@login_required
+def delete_patient(request, user_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    patient = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        patient.delete()
+        messages.success(request, '✅ Patient deleted.')
+        return redirect('admin_patients')
+    return render(request, 'confirm_delete.html', {
+        'title': 'Delete Patient',
+        'item': patient.get_full_name() or patient.username,
+        'cancel_url': '/admin-patients/',
+    })
+
+
+# ─── ADMIN – STAFF CRUD ──────────────────────────────────────
+
+@login_required
+def edit_staff(request, staff_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    staff = get_object_or_404(StaffProfile, id=staff_id)
+    if request.method == 'POST':
+        staff.user.first_name = request.POST.get('first_name', '').strip()
+        staff.user.last_name  = request.POST.get('last_name', '').strip()
+        staff.user.email      = request.POST.get('email', '').strip()
+        staff.user.save()
+        staff.role   = request.POST.get('role', staff.role)
+        staff.phone  = request.POST.get('phone', '').strip()
+        staff.salary = request.POST.get('salary', staff.salary)
+        staff.save()
+        messages.success(request, '✅ Staff member updated successfully!')
+        return redirect('admin_staff')
+    return render(request, 'edit_staff.html', {'staff': staff})
+
+
+@login_required
+def delete_staff(request, staff_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    staff = get_object_or_404(StaffProfile, id=staff_id)
+    if request.method == 'POST':
+        staff.user.delete()
+        messages.success(request, '✅ Staff member deleted.')
+        return redirect('admin_staff')
+    return render(request, 'confirm_delete.html', {
+        'title': 'Delete Staff Member',
+        'item': staff.user.get_full_name() or staff.user.username,
+        'cancel_url': '/admin-staff/',
+    })
+
+
+# ─── ADMIN – ATTENDANCE CRUD ─────────────────────────────────
+
+@login_required
+def add_attendance(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    staff_list = StaffProfile.objects.all().select_related('user')
+    if request.method == 'POST':
+        staff_user  = get_object_or_404(User, id=request.POST.get('staff_id'))
+        date        = request.POST.get('date')
+        clock_in    = request.POST.get('clock_in') or None
+        clock_out   = request.POST.get('clock_out') or None
+        total_hours = request.POST.get('total_hours', 0)
+        notes       = request.POST.get('notes', '')
+        Attendance.objects.update_or_create(
+            staff=staff_user, date=date,
+            defaults={
+                'clock_in': clock_in,
+                'clock_out': clock_out,
+                'total_hours': total_hours,
+                'notes': notes,
+            }
+        )
+        messages.success(request, '✅ Attendance record saved!')
+        return redirect('admin_attendance')
+    return render(request, 'add_attendance.html', {'staff_list': staff_list})
+
+
+@login_required
+def edit_attendance(request, att_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    att = get_object_or_404(Attendance, id=att_id)
+    if request.method == 'POST':
+        att.clock_in    = request.POST.get('clock_in') or None
+        att.clock_out   = request.POST.get('clock_out') or None
+        att.total_hours = request.POST.get('total_hours', att.total_hours)
+        att.notes       = request.POST.get('notes', '')
+        att.save()
+        messages.success(request, '✅ Attendance updated!')
+        return redirect('admin_attendance')
+    return render(request, 'edit_attendance.html', {'att': att})
+
+
+@login_required
+def delete_attendance(request, att_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    att = get_object_or_404(Attendance, id=att_id)
+    if request.method == 'POST':
+        att.delete()
+        messages.success(request, '✅ Attendance record deleted.')
+        return redirect('admin_attendance')
+    return render(request, 'confirm_delete.html', {
+        'title': 'Delete Attendance Record',
+        'item': f'{att.staff.get_full_name() or att.staff.username} — {att.date}',
+        'cancel_url': '/admin-attendance/',
+    })
+
+
+# ─── ADMIN – LEAVES CRUD ─────────────────────────────────────
+
+@login_required
+def delete_leave(request, leave_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    leave = get_object_or_404(LeaveApplication, id=leave_id)
+    if request.method == 'POST':
+        leave.delete()
+        messages.success(request, '✅ Leave application deleted.')
+        return redirect('admin_leaves')
+    return render(request, 'confirm_delete.html', {
+        'title': 'Delete Leave Application',
+        'item': f'{leave.staff.get_full_name() or leave.staff.username} — {leave.from_date} to {leave.to_date}',
+        'cancel_url': '/admin-leaves/',
+    })
+
+
+# ─── ADMIN – SALARY CRUD ─────────────────────────────────────
+
+@login_required
+def edit_salary(request, record_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    record = get_object_or_404(SalaryRecord, id=record_id)
+    if request.method == 'POST':
+        record.month        = request.POST.get('month', record.month)
+        record.year         = request.POST.get('year', record.year)
+        record.basic_salary = request.POST.get('basic_salary', record.basic_salary)
+        record.bonus        = request.POST.get('bonus', record.bonus)
+        record.deduction    = request.POST.get('deduction', record.deduction)
+        record.net_salary   = float(record.basic_salary) + float(record.bonus) - float(record.deduction)
+        record.save()
+        messages.success(request, '✅ Salary record updated!')
+        return redirect('admin_salary')
+    return render(request, 'edit_salary.html', {'record': record})
+
+
+@login_required
+def delete_salary(request, record_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    record = get_object_or_404(SalaryRecord, id=record_id)
+    if request.method == 'POST':
+        record.delete()
+        messages.success(request, '✅ Salary record deleted.')
+        return redirect('admin_salary')
+    return render(request, 'confirm_delete.html', {
+        'title': 'Delete Salary Record',
+        'item': f'{record.staff.get_full_name() or record.staff.username} — {record.month} {record.year}',
+        'cancel_url': '/admin-salary/',
+    })
+
+
+# ─── ADMIN – TASKS CRUD ──────────────────────────────────────
+
+@login_required
+def edit_task_admin(request, task_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    task = get_object_or_404(DailyTask, id=task_id)
+    staff_list = StaffProfile.objects.all().select_related('user')
+    if request.method == 'POST':
+        task.title       = request.POST.get('title', task.title)
+        task.description = request.POST.get('description', '')
+        task.priority    = request.POST.get('priority', task.priority)
+        task.status      = request.POST.get('status', task.status)
+        task.due_date    = request.POST.get('due_date') or None
+        new_staff_id     = request.POST.get('staff_id')
+        if new_staff_id:
+            task.assigned_to = get_object_or_404(User, id=new_staff_id)
+        task.save()
+        messages.success(request, '✅ Task updated!')
+        return redirect('admin_tasks')
+    return render(request, 'edit_task.html', {'task': task, 'staff_list': staff_list})
+
+
+@login_required
+def delete_task_admin(request, task_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    task = get_object_or_404(DailyTask, id=task_id)
+    if request.method == 'POST':
+        task.delete()
+        messages.success(request, '✅ Task deleted.')
+        return redirect('admin_tasks')
+    return render(request, 'confirm_delete.html', {
+        'title': 'Delete Task',
+        'item': task.title,
+        'cancel_url': '/admin-tasks/',
+    })
+
+
+# ─── ADMIN – SESSION NOTES CRUD ──────────────────────────────
+
+@login_required
+def admin_add_session_note(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    patients   = User.objects.filter(is_superuser=False, is_staff=False)
+    staff_list = StaffProfile.objects.all().select_related('user')
+    if request.method == 'POST':
+        staff   = get_object_or_404(User, id=request.POST.get('staff_id'))
+        patient = get_object_or_404(User, id=request.POST.get('patient_id'))
+        SessionNote.objects.create(
+            staff=staff, patient=patient,
+            diagnosis=request.POST.get('diagnosis', ''),
+            treatment=request.POST.get('treatment', ''),
+            next_session=request.POST.get('next_session', ''),
+        )
+        messages.success(request, '✅ Session note added!')
+        return redirect('admin_session_notes')
+    return render(request, 'admin_add_session_note.html', {
+        'patients': patients, 'staff_list': staff_list
+    })
+
+
+@login_required
+def edit_session_note(request, note_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    note       = get_object_or_404(SessionNote, id=note_id)
+    patients   = User.objects.filter(is_superuser=False, is_staff=False)
+    staff_list = StaffProfile.objects.all().select_related('user')
+    if request.method == 'POST':
+        note.staff        = get_object_or_404(User, id=request.POST.get('staff_id'))
+        note.patient      = get_object_or_404(User, id=request.POST.get('patient_id'))
+        note.diagnosis    = request.POST.get('diagnosis', '')
+        note.treatment    = request.POST.get('treatment', '')
+        note.next_session = request.POST.get('next_session', '')
+        note.save()
+        messages.success(request, '✅ Session note updated!')
+        return redirect('admin_session_notes')
+    return render(request, 'edit_session_note.html', {
+        'note': note, 'patients': patients, 'staff_list': staff_list
+    })
+
+
+@login_required
+def delete_session_note(request, note_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    note = get_object_or_404(SessionNote, id=note_id)
+    if request.method == 'POST':
+        note.delete()
+        messages.success(request, '✅ Session note deleted.')
+        return redirect('admin_session_notes')
+    return render(request, 'confirm_delete.html', {
+        'title': 'Delete Session Note',
+        'item': f'{note.patient.get_full_name() or note.patient.username} — {note.date}',
+        'cancel_url': '/admin-session-notes/',
+    })
+
+
 @login_required
 def admin_settings(request):
 

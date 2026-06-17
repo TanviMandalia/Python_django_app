@@ -453,6 +453,7 @@
                                 <th>Basic</th>
                                 <th>Net</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -463,6 +464,12 @@
                                 <td>₹{{ record.basic_salary }}</td>
                                 <td><strong>₹{{ record.net_salary }}</strong></td>
                                 <td><span class="badge-paid">✅ Paid</span></td>
+                                <td>
+                                    <div style="display:flex;gap:5px;">
+                                        <a href="/admin-salary/edit/{{ record.id }}/" style="background:#e8f4fd;color:#0056b3;padding:5px 10px;border-radius:8px;font-size:0.76em;font-weight:700;text-decoration:none;">✏️ Edit</a>
+                                        <a href="/admin-salary/delete/{{ record.id }}/" style="background:#f8d7da;color:#721c24;padding:5px 10px;border-radius:8px;font-size:0.76em;font-weight:700;text-decoration:none;">🗑️ Del</a>
+                                    </div>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>

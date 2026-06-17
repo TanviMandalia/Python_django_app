@@ -322,8 +322,11 @@
                         </div>
                         <div class="detail-item"><i class="fas fa-phone"></i> {{ staff.phone|default:"—" }}</div>
                         <div class="detail-item"><i class="fas fa-rupee-sign"></i> ₹{{ staff.salary }}/month</div>
-                        <div class="detail-item"><i class="fas fa-calendar"></i> Joined: {{ staff.joining_date|date:"d M
-                            Y" }}</div>
+                        <div class="detail-item"><i class="fas fa-calendar"></i> Joined: {{ staff.joining_date|date:"d M Y" }}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:14px;justify-content:center;">
+                        <a href="/admin-staff/edit/{{ staff.id }}/" style="background:#e8f4fd;color:#0056b3;padding:7px 16px;border-radius:10px;font-size:0.82em;font-weight:700;text-decoration:none;">✏️ Edit</a>
+                        <a href="/admin-staff/delete/{{ staff.id }}/" style="background:#f8d7da;color:#721c24;padding:7px 16px;border-radius:10px;font-size:0.82em;font-weight:700;text-decoration:none;">🗑️ Delete</a>
                     </div>
                 </div>
                 {% endfor %}
