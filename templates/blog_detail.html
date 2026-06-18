@@ -470,6 +470,27 @@
 
         <div class="article-content">{{ blog.content }}</div>
 
+        {% if blog.before_image or blog.after_image %}
+        <div style="margin:40px 0;padding:30px;background:#f9f9f9;border-radius:18px;border-left:5px solid #f5c518;">
+          <h3 style="font-size:1.4rem;color:#2c2c2c;margin-bottom:6px;"><i class="fas fa-images" style="color:#f5c518;margin-right:8px;"></i>Before &amp; After Results</h3>
+          <p style="color:#888;font-size:0.9rem;margin-bottom:25px;">Real patient outcome from this treatment approach</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+            {% if blog.before_image %}
+            <div>
+              <div style="background:#c0392b;color:white;padding:8px 16px;border-radius:8px 8px 0 0;font-weight:700;font-size:0.85rem;text-align:center;"><i class="fas fa-arrow-left" style="margin-right:6px;"></i>BEFORE</div>
+              <img src="{{ blog.before_image.url }}" alt="Before Treatment" style="width:100%;height:260px;object-fit:cover;border-radius:0 0 12px 12px;display:block;" />
+            </div>
+            {% endif %}
+            {% if blog.after_image %}
+            <div>
+              <div style="background:#27ae60;color:white;padding:8px 16px;border-radius:8px 8px 0 0;font-weight:700;font-size:0.85rem;text-align:center;">AFTER <i class="fas fa-arrow-right" style="margin-left:6px;"></i></div>
+              <img src="{{ blog.after_image.url }}" alt="After Treatment" style="width:100%;height:260px;object-fit:cover;border-radius:0 0 12px 12px;display:block;" />
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
         <section class="related-articles">
           <h2>Related Articles</h2>
 

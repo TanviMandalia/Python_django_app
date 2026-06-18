@@ -660,6 +660,7 @@
 
           <div class="nav-section">Content</div>
           <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
+          <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
 
           <div class="nav-section">Reports</div>
           <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress Tracking</a>
@@ -921,6 +922,48 @@
               <p>Create your first article.</p>
             </div>
           {% endfor %}
+        </div>
+
+        <!-- REVIEWS WIDGET -->
+        <div class="card" style="margin-bottom:30px;">
+          <div class="card-title" style="margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <span><i class="fas fa-star" style="color:#f5c518;"></i> Patient Reviews</span>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              {% if pending_reviews > 0 %}
+              <span style="background:rgba(245,197,24,0.15);color:#b8960c;padding:5px 14px;border-radius:20px;font-size:0.8rem;font-weight:700;">
+                <i class="fas fa-clock"></i> {{ pending_reviews }} Pending
+              </span>
+              {% endif %}
+              <a href="{% url 'admin_reviews' %}" style="background:#f5c518;color:#2c2c2c;text-decoration:none;padding:8px 18px;border-radius:8px;font-size:0.85rem;font-weight:700;"><i class="fas fa-cog"></i> Manage</a>
+              <a href="{% url 'admin_add_review' %}" style="background:#2c2c2c;color:#f5c518;text-decoration:none;padding:8px 18px;border-radius:8px;font-size:0.85rem;font-weight:700;"><i class="fas fa-plus"></i> Add Review</a>
+            </div>
+          </div>
+          {% if recent_reviews %}
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
+            {% for review in recent_reviews %}
+            <div style="background:#fafafa;border-radius:14px;padding:18px;border:1px solid #f0f0f0;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+                <div>
+                  <div style="font-weight:700;color:#2c2c2c;font-size:0.95rem;">{{ review.reviewer_name }}</div>
+                  {% if review.reviewer_title %}
+                  <div style="color:#888;font-size:0.78rem;">{{ review.reviewer_title }}</div>
+                  {% endif %}
+                </div>
+                <div style="color:#f5c518;font-size:0.95rem;">
+                  {% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}
+                </div>
+              </div>
+              <p style="color:#555;font-size:0.85rem;line-height:1.6;">{{ review.message|truncatechars:110 }}</p>
+              <div style="margin-top:10px;font-size:0.75rem;color:#aaa;">{{ review.created_at|date:"d M Y" }}</div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div style="text-align:center;padding:30px;color:#bbb;">
+            <i class="fas fa-star" style="font-size:2.5rem;margin-bottom:12px;display:block;"></i>
+            <p>No approved reviews yet. <a href="{% url 'admin_add_review' %}" style="color:#f5c518;">Add the first one!</a></p>
+          </div>
+          {% endif %}
         </div>
 
         <!-- BOTTOM GRID -->

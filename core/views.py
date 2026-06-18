@@ -28,7 +28,8 @@ from django.conf import settings
 from .models import (
     Appointment, Attendance, DailyTask, LeaveApplication,
     Message, Notification, PasswordResetOTP, Profile,
-    SalaryRecord, SessionNote, StaffProfile, UserActivity, ClinicSettings
+    SalaryRecord, SessionNote, StaffProfile, UserActivity, ClinicSettings,
+    Blog, Review
 )
 from .email_utils import (
     send_appointment_confirmation,
@@ -77,7 +78,8 @@ def is_online(user):
 # ─── PUBLIC PAGES ────────────────────────────────────────────
 
 def home(request):
-    return render(request, 'home.html')
+    approved_reviews = Review.objects.filter(is_approved=True).order_by('-created_at')[:8]
+    return render(request, 'home.html', {'approved_reviews': approved_reviews})
 
 def about(request):
     return render(request, 'about.html')
@@ -95,8 +97,12 @@ def contact(request):
 # PUBLIC BLOG LIST
 # =========================
 def blog_list(request):
+    category = request.GET.get('category', '')
     blogs = Blog.objects.order_by('-created_at')
-    return render(request, 'blog.html', {'blogs': blogs})
+    if category:
+        blogs = blogs.filter(category=category)
+    categories = Blog.CATEGORY_CHOICES
+    return render(request, 'blog.html', {'blogs': blogs, 'categories': categories, 'active_category': category})
 
 
 # =========================
@@ -124,19 +130,17 @@ def admin_blog_list(request):
 # =========================
 def admin_blog_add(request):
     if request.method == "POST":
-        title = request.POST.get('title')
-        content = request.POST.get('content')
-        image = request.FILES.get('image')
-
         Blog.objects.create(
-            title=title,
-            content=content,
-            image=image
+            title=request.POST.get('title'),
+            excerpt=request.POST.get('excerpt', ''),
+            category=request.POST.get('category', 'General'),
+            content=request.POST.get('content'),
+            image=request.FILES.get('image') or None,
+            before_image=request.FILES.get('before_image') or None,
+            after_image=request.FILES.get('after_image') or None,
         )
-
         return redirect('admin_blog_list')
-
-    return render(request, 'blog_form.html')
+    return render(request, 'blog_form.html', {'categories': Blog.CATEGORY_CHOICES})
 
 
 # =========================
@@ -144,18 +148,20 @@ def admin_blog_add(request):
 # =========================
 def admin_blog_edit(request, id):
     blog = get_object_or_404(Blog, id=id)
-
     if request.method == "POST":
-        blog.title = request.POST.get('title')
+        blog.title   = request.POST.get('title')
+        blog.excerpt = request.POST.get('excerpt', '')
+        blog.category = request.POST.get('category', 'General')
         blog.content = request.POST.get('content')
-
         if request.FILES.get('image'):
             blog.image = request.FILES.get('image')
-
+        if request.FILES.get('before_image'):
+            blog.before_image = request.FILES.get('before_image')
+        if request.FILES.get('after_image'):
+            blog.after_image = request.FILES.get('after_image')
         blog.save()
         return redirect('admin_blog_list')
-
-    return render(request, 'blog_form.html', {'blog': blog})
+    return render(request, 'blog_form.html', {'blog': blog, 'categories': Blog.CATEGORY_CHOICES})
 
 
 # =========================
@@ -169,7 +175,80 @@ def admin_blog_delete(request, id):
         return redirect('admin_blog_list')
 
     return render(request, 'blog_delete.html', {'blog': blog})
-    
+
+
+# ──────────────────────────────────────────────────────────
+# REVIEWS
+# ──────────────────────────────────────────────────────────
+
+@login_required
+def submit_review(request):
+    if request.method == 'POST':
+        name  = request.POST.get('reviewer_name', '').strip() or request.user.get_full_name() or request.user.username
+        title = request.POST.get('reviewer_title', '').strip()
+        rating  = int(request.POST.get('rating', 5))
+        message = request.POST.get('message', '').strip()
+        if message:
+            Review.objects.create(
+                patient=request.user,
+                reviewer_name=name,
+                reviewer_title=title,
+                rating=max(1, min(5, rating)),
+                message=message,
+                is_approved=False,
+                added_by_admin=False,
+            )
+            messages.success(request, "Thank you! Your review has been submitted for approval.")
+        return redirect('client_dashboard')
+    return redirect('client_dashboard')
+
+
+@login_required
+def admin_reviews(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    reviews = Review.objects.all()
+    pending_count = reviews.filter(is_approved=False).count()
+    return render(request, 'admin_reviews.html', {'reviews': reviews, 'pending_count': pending_count})
+
+
+@login_required
+def admin_add_review(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    if request.method == 'POST':
+        Review.objects.create(
+            reviewer_name=request.POST.get('reviewer_name', ''),
+            reviewer_title=request.POST.get('reviewer_title', ''),
+            rating=int(request.POST.get('rating', 5)),
+            message=request.POST.get('message', ''),
+            is_approved=True,
+            added_by_admin=True,
+        )
+        messages.success(request, "Review added successfully.")
+        return redirect('admin_reviews')
+    return render(request, 'admin_add_review.html')
+
+
+@login_required
+def toggle_review_approval(request, review_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    review = get_object_or_404(Review, id=review_id)
+    review.is_approved = not review.is_approved
+    review.save()
+    return redirect('admin_reviews')
+
+
+@login_required
+def admin_delete_review(request, review_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    review = get_object_or_404(Review, id=review_id)
+    review.delete()
+    return redirect('admin_reviews')
+
+
 
 # ─── AUTH ────────────────────────────────────────────────────
 
@@ -530,14 +609,18 @@ def client_dashboard(request):
     upcoming      = appointments.filter(status__in=['pending', 'confirmed'])
     completed     = appointments.filter(status='completed')
     recent_notifs = Notification.objects.filter(recipient=request.user)[:5]
+    has_reviewed  = Review.objects.filter(patient=request.user).exists()
+    approved_reviews = Review.objects.filter(is_approved=True).order_by('-created_at')[:6]
     return render(request, 'client_dashboard.html', {
-        'appointments':     appointments,
-        'upcoming':         upcoming,
-        'completed':        completed,
-        'total':            appointments.count(),
-        'upcoming_count':   upcoming.count(),
-        'completed_count':  completed.count(),
-        'recent_notifs':    recent_notifs,
+        'appointments':      appointments,
+        'upcoming':          upcoming,
+        'completed':         completed,
+        'total':             appointments.count(),
+        'upcoming_count':    upcoming.count(),
+        'completed_count':   completed.count(),
+        'recent_notifs':     recent_notifs,
+        'has_reviewed':      has_reviewed,
+        'approved_reviews':  approved_reviews,
     })
 
 
@@ -554,6 +637,9 @@ def admin_dashboard(request):
     total_users      = User.objects.filter(is_superuser=False, is_staff=False).count()
     new_messages     = Message.objects.filter(receiver=request.user, is_read=False).count()
     total_staff      = StaffProfile.objects.count()
+    blogs            = Blog.objects.order_by('-created_at')[:6]
+    pending_reviews  = Review.objects.filter(is_approved=False).count()
+    recent_reviews   = Review.objects.filter(is_approved=True).order_by('-created_at')[:4]
     return render(request, 'admin_dashboard.html', {
         'total_users':        total_users,
         'all_appointments':   all_appointments,
@@ -563,6 +649,9 @@ def admin_dashboard(request):
         'completed':          completed,
         'new_messages':       new_messages,
         'total_staff':        total_staff,
+        'blogs':              blogs,
+        'pending_reviews':    pending_reviews,
+        'recent_reviews':     recent_reviews,
     })
 
 

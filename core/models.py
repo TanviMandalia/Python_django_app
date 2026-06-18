@@ -393,15 +393,45 @@ class ClinicSettings(models.Model):
     
 
 class Blog(models.Model):
+    CATEGORY_CHOICES = [
+        ('General', 'General'),
+        ('Orthopaedic', 'Orthopaedic'),
+        ('Neurological', 'Neurological'),
+        ('Sports', 'Sports Rehab'),
+        ('Pediatric', 'Pediatric'),
+        ('Posture', 'Posture & Spine'),
+        ('Recovery', 'Patient Recovery'),
+    ]
     title = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, blank=True)
+    excerpt = models.TextField(blank=True, help_text="Short summary shown on listing page")
     content = models.TextField()
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='General')
     image = models.ImageField(upload_to='blogs/', null=True, blank=True)
+    before_image = models.ImageField(upload_to='blogs/before_after/', null=True, blank=True)
+    after_image = models.ImageField(upload_to='blogs/before_after/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
-        
-        
+
+
+class Review(models.Model):
+    RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
+    patient = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviews')
+    reviewer_name = models.CharField(max_length=100)
+    reviewer_title = models.CharField(max_length=100, blank=True)
+    rating = models.PositiveIntegerField(choices=RATING_CHOICES, default=5)
+    message = models.TextField()
+    is_approved = models.BooleanField(default=False)
+    added_by_admin = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.reviewer_name} — {self.rating}★"
+

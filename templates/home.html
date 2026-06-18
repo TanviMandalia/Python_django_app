@@ -707,6 +707,17 @@
                 <p>Real stories from our happy patients</p>
             </div>
             <div class="testi-grid">
+                {% if approved_reviews %}
+                    {% for review in approved_reviews %}
+                    <div class="testi-card">
+                        <div class="stars">
+                            {% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}
+                        </div>
+                        <p>{{ review.message }}</p>
+                        <h5>— {{ review.reviewer_name }}{% if review.reviewer_title %}, <span style="font-weight:400;">{{ review.reviewer_title }}</span>{% endif %}</h5>
+                    </div>
+                    {% endfor %}
+                {% else %}
                 <div class="testi-card">
                     <div class="stars">★★★★★</div>
                     <p>I had severe knee lock and was <b>unable to bend or walk properly</b>. After taking phisiotherapy
@@ -724,22 +735,15 @@
                 </div>
                 <div class="testi-card">
                     <div class="stars">★★★★★</div>
-                    <p>I was suffering from <b>serve heel pain</b> for almost <b>6 Months</b>and walking in the morning
+                    <p>I was suffering from <b>serve heel pain</b> for almost <b>6 Months</b> and walking in the morning
                         was very painful, I visited Dr. Dhvani Patalia Phisio rehab Clinic, Jamanagar and within a few
                         session i felt clear improvement. The tretment was explained properly and exercises really
-                        helped. highly recommanded.</p>
+                        helped. Highly recommanded.</p>
                     <h5>— Tina Jogiya</h5>
                 </div>
                 <div class="testi-card">
                     <div class="stars">★★★★★</div>
-                    <p>Best phisiotherapy clinic in Jamanagarfor <b>cervical spondylosis and neck pain</b>, I got
-                        excellent results after phisiotherapy at Dr. Dhvani Patalia Phisio Rehab Clinic. Very
-                        proffessional and effective tretment.</p>
-                    <h5>— Chandresh Upadhyay</h5>
-                </div>
-                <div class="testi-card">
-                    <div class="stars">★★★★★</div>
-                    <p>Best phisiotherapy clinic in Jamanagarfor <b>cervical spondylosis and neck pain</b>, I got
+                    <p>Best phisiotherapy clinic in Jamnagar for <b>cervical spondylosis and neck pain</b>. I got
                         excellent results after phisiotherapy at Dr. Dhvani Patalia Phisio Rehab Clinic. Very
                         proffessional and effective tretment.</p>
                     <h5>— Chandresh Upadhyay</h5>
@@ -747,19 +751,19 @@
                 <div class="testi-card">
                     <div class="stars">★★★★★</div>
                     <p>I was having <b>Balancing issue and frequent dizzines</b>. After phisiotherapy at Phisio Rehab
-                        Clinic, my balance has improved a loat and I feel more confident while walking Dr. Dhvani
-                        Patalia is attentive.</p>
+                        Clinic, my balance has improved a lot and I feel more confident while walking. Dr. Dhvani
+                        Patalia is very attentive.</p>
                     <h5>— Asha Shah</h5>
                 </div>
                 <div class="testi-card">
                     <div class="stars">★★★★★</div>
-                    <p>I was diagnosed with <b>Bell's Palsy</b> and had <b>Facial Weekness</b> on one side. I came to
+                    <p>I was diagnosed with <b>Bell's Palsy</b> and had <b>Facial Weakness</b> on one side. I came to
                         Dr. Dhvani Patalia PHISHIOREHAB CLINIC for phisiotherapy. The Doctor explained everything
                         clearly and started proper facial muscle exercises and electrotherapy. Within a few weeks, My
-                        facial Movemens started improving and my confident came back. Very satisfied with the tretment
-                        and care</p>
+                        facial Movements started improving and my confidence came back.</p>
                     <h5>— Anisa Aambaliya</h5>
                 </div>
+                {% endif %}
             </div>
         </div>
     </section>

@@ -240,44 +240,66 @@
             <input type="text" name="title" class="form-control" value="{{ blog.title|default:'' }}" placeholder="Enter blog title" required />
           </div>
           <div class="form-group">
+            <label>Short Excerpt <small style="color:#aaa;">(shown on listing page)</small></label>
+            <textarea name="excerpt" class="form-control" style="min-height:80px;" placeholder="A brief summary of this article (1–2 sentences)...">{{ blog.excerpt|default:'' }}</textarea>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select name="category" class="form-control">
+              {% for val, label in categories %}
+                <option value="{{ val }}" {% if blog.category == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
             <label>Blog Content</label>
             <textarea name="content" class="form-control" placeholder="Write your blog content here..." required>{{ blog.content|default:'' }}</textarea>
           </div>
           <div class="form-group">
-            <label>Blog Image</label>
-            <input type="file" name="image" class="form-control" />
+            <label>Featured Image</label>
+            <input type="file" name="image" class="form-control" accept="image/*" />
           </div>
           {% if blog.image %}
             <div class="form-group">
-              <label>Current Featured Image</label>
-
               <div class="image-preview-card">
                 <div class="image-preview-wrapper">
                   <img src="{{ blog.image.url }}" alt="{{ blog.title }}" class="current-image" />
                 </div>
-
                 <div class="image-preview-info">
-                  <div class="image-badge">
-                    <i class="fas fa-image"></i>
-                    Current Blog Image
-                  </div>
-
+                  <div class="image-badge"><i class="fas fa-image"></i> Current Featured Image</div>
                   <h4>{{ blog.title }}</h4>
-
-                  <p>Upload a new image only if you want to replace the current featured image.</p>
+                  <p>Upload a new image to replace this one.</p>
                 </div>
               </div>
             </div>
           {% endif %}
 
+          <hr style="border:none;border-top:1px solid #eee;margin:25px 0;" />
+          <p style="font-weight:700;color:#2c2c2c;margin-bottom:18px;"><i class="fas fa-images" style="color:#f5c518;margin-right:6px;"></i>Before &amp; After Images <small style="color:#aaa;font-weight:400;">(optional — for patient result posts)</small></p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div class="form-group">
+              <label>Before Image</label>
+              <input type="file" name="before_image" class="form-control" accept="image/*" />
+              {% if blog.before_image %}
+                <img src="{{ blog.before_image.url }}" alt="Before" style="width:100%;border-radius:10px;margin-top:10px;height:160px;object-fit:cover;" />
+              {% endif %}
+            </div>
+            <div class="form-group">
+              <label>After Image</label>
+              <input type="file" name="after_image" class="form-control" accept="image/*" />
+              {% if blog.after_image %}
+                <img src="{{ blog.after_image.url }}" alt="After" style="width:100%;border-radius:10px;margin-top:10px;height:160px;object-fit:cover;" />
+              {% endif %}
+            </div>
+          </div>
+
           <div class="actions">
             <button type="submit" class="btn-save">
               {% if blog %}
-                <i class="fas fa-save"></i>
-                Update Blog
+                <i class="fas fa-save"></i> Update Blog
               {% else %}
-                <i class="fas fa-plus"></i>
-                Create Blog
+                <i class="fas fa-plus"></i> Create Blog
               {% endif %}
             </button>
             <a href="{% url 'admin_blog_list' %}" class="btn-back"><i class="fas fa-arrow-left"></i> Back to Blogs</a>

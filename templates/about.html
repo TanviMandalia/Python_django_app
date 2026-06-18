@@ -208,14 +208,43 @@
 
         /* ── CERTIFICATE ────────────────────────── */
         .cert-section { background: #f9f9f9; }
-        .cert-wrapper {
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 12px 50px rgba(0,0,0,0.12);
-            max-width: 900px;
+        .cert-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1000px;
             margin: 0 auto;
         }
-        .cert-wrapper img { width: 100%; height: auto; display: block; }
+        .cert-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            border: 1px solid #eee;
+        }
+        .cert-badge {
+            background: linear-gradient(135deg, #2c2c2c, #1a1a1a);
+            color: #F5C518;
+            padding: 12px 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .cert-card img { width: 100%; height: auto; display: block; }
+        .cert-footer {
+            background: #f9f9f9;
+            border-top: 1px solid #eee;
+            padding: 14px 20px;
+            font-size: 0.85rem;
+            color: #2C2C2C;
+            font-weight: 600;
+        }
+        .cert-footer i { color: #27ae60; margin-right: 6px; }
+        @media (max-width: 768px) {
+            .cert-grid { grid-template-columns: 1fr; }
+        }
 
         /* ── VALUES ──────────────────────────────── */
         .values-section { background: #2C2C2C; }
@@ -508,8 +537,21 @@
                 <p>Proof of expertise and continuous professional development</p>
                 <div class="divider"></div>
             </div>
-            <div class="cert-wrapper">
-                <img src="{% static 'images/certificate_image.webp' %}" alt="Dr. Dhvani Patalia Certificates">
+            <div class="cert-grid">
+                <div class="cert-card">
+                    <div class="cert-badge"><i class="fas fa-award"></i> Certificate of Excellence</div>
+                    <img src="{% static 'images/certificate_image.webp' %}" alt="Dr. Dhvani Patalia Certificate 1">
+                    <div class="cert-footer">
+                        <span><i class="fas fa-check-circle"></i> Verified Professional Qualification</span>
+                    </div>
+                </div>
+                <div class="cert-card">
+                    <div class="cert-badge"><i class="fas fa-star"></i> Advanced Specialisation</div>
+                    <img src="{% static 'images/certificate_image.webp' %}" alt="Dr. Dhvani Patalia Certificate 2">
+                    <div class="cert-footer">
+                        <span><i class="fas fa-check-circle"></i> Internationally Recognised Training</span>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
