@@ -655,6 +655,7 @@
           </div>
           <div class="blog-grid">
             {% for blog in blogs|slice:':3' %}
+
               <div class="blog-card">
                 {% if blog.image %}
                   <img src="{{ blog.image.url }}" class="blog-image" alt="{{ blog.title }}" />
@@ -674,6 +675,11 @@
                 </div>
               </div>
             {% endfor %}
+          </div>
+          <div style="text-align:center;margin-top:16px;">
+            <a href="{% url 'admin_blog_list' %}" style="display:inline-block;background:rgba(245,197,24,0.1);color:#2c2c2c;border:1px solid rgba(245,197,24,0.35);padding:9px 26px;border-radius:22px;font-size:0.83em;font-weight:700;text-decoration:none;">
+              <i class="fas fa-th-list" style="color:#f5c518;margin-right:6px;"></i>View All Blog Posts →
+            </a>
           </div>
         </div>
         {% else %}
@@ -720,6 +726,11 @@
               <div class="review-date">{{ review.created_at|date:"d M Y" }}</div>
             </div>
             {% endfor %}
+          </div>
+          <div style="text-align:center;margin-top:16px;">
+            <a href="{% url 'admin_reviews' %}" style="display:inline-block;background:rgba(245,197,24,0.1);color:#2c2c2c;border:1px solid rgba(245,197,24,0.35);padding:9px 26px;border-radius:22px;font-size:0.83em;font-weight:700;text-decoration:none;">
+              <i class="fas fa-star" style="color:#f5c518;margin-right:6px;"></i>View All Reviews →
+            </a>
           </div>
           {% else %}
           <div class="empty-state">

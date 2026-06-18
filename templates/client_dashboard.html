@@ -735,7 +735,7 @@
                                 >View All →</a
                             >
                         </div>
-                        {% if upcoming %} {% for appt in upcoming %}
+                        {% if upcoming %} {% for appt in upcoming|slice:":4" %}
                         <div class="appt-item">
                             <div class="appt-date">
                                 <div class="day">{{ appt.date|date:"d" }}</div>
@@ -753,7 +753,15 @@
                                 {% else %}{{ appt.status|title }}{% endif %}
                             </span>
                         </div>
-                        {% endfor %} {% else %}
+                        {% endfor %}
+                        {% if upcoming_count > 4 %}
+                        <div style="text-align:center;padding:12px 0 4px;">
+                            <a href="{% url 'my_appointments' %}" style="display:inline-block;background:rgba(245,197,24,0.12);color:#2c2c2c;border:1px solid rgba(245,197,24,0.4);padding:8px 22px;border-radius:20px;font-size:0.82em;font-weight:700;text-decoration:none;">
+                                <i class="fas fa-list" style="color:#f5c518;margin-right:6px;"></i>View All {{ upcoming_count }} Appointments →
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% else %}
                         <div class="empty-state">
                             <i class="fas fa-calendar-times"></i>
                             <p>
@@ -1115,7 +1123,7 @@
                     <div
                         style="display: flex; flex-direction: column; gap: 12px"
                     >
-                        {% for review in approved_reviews %}
+                        {% for review in approved_reviews|slice:":3" %}
                         <div
                             style="
                                 background: #fafafa;
@@ -1169,6 +1177,11 @@
                             </p>
                         </div>
                         {% endfor %}
+                    </div>
+                    <div style="text-align:center;margin-top:14px;">
+                        <a href="{% url 'home' %}#reviews" style="display:inline-block;background:rgba(245,197,24,0.1);color:#2c2c2c;border:1px solid rgba(245,197,24,0.35);padding:8px 22px;border-radius:20px;font-size:0.82em;font-weight:700;text-decoration:none;">
+                            <i class="fas fa-star" style="color:#f5c518;margin-right:6px;"></i>See All Reviews →
+                        </a>
                     </div>
                     {% endif %}
                 </div>
