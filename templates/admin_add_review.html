@@ -1,80 +1,217 @@
 {% load static %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Add Review — Admin</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; }
-        .topbar { background: white; padding: 18px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .topbar h1 { font-size: 1.2rem; color: #2c2c2c; }
-        .dashboard-body { padding: 30px; max-width: 750px; margin: auto; }
-        .welcome-card { background: linear-gradient(135deg, #1a1a1a, #2c2c2c); border-radius: 18px; padding: 25px; margin-bottom: 25px; }
-        .welcome-card h2 { color: white; margin-bottom: 8px; }
-        .welcome-card span { color: #f5c518; }
-        .welcome-card p { color: #bbb; }
-        .form-card { background: white; border-radius: 18px; padding: 30px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #2c2c2c; font-size: 0.9rem; }
-        .form-control { width: 100%; padding: 13px 16px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; font-family: inherit; transition: 0.3s; }
-        .form-control:focus { outline: none; border-color: #f5c518; box-shadow: 0 0 0 3px rgba(245,197,24,0.15); }
-        textarea.form-control { min-height: 140px; resize: vertical; }
-        .star-row { display: flex; gap: 8px; align-items: center; }
-        .star-row input[type="radio"] { display: none; }
-        .star-row label.star { font-size: 2rem; color: #ddd; cursor: pointer; transition: color 0.15s; }
-        .star-row input[type="radio"]:checked ~ label.star,
-        .star-row label.star:hover,
-        .star-row label.star:hover ~ label.star { color: #f5c518; }
-        .actions { display: flex; gap: 12px; margin-top: 25px; }
-        .btn-save { background: #f5c518; color: #2c2c2c; border: none; padding: 13px 24px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 0.95rem; }
-        .btn-back { background: #2c2c2c; color: white; text-decoration: none; padding: 13px 24px; border-radius: 10px; font-weight: 700; }
-    </style>
-</head>
-<body>
-    <div class="topbar">
-        <h1>⭐ Add Patient Review</h1>
-    </div>
-    <div class="dashboard-body">
-        <div class="welcome-card">
-            <h2>Add a <span>Review</span></h2>
-            <p>Reviews added by admin are automatically approved and shown publicly.</p>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Add Review — Admin</title>
+        <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: "Segoe UI", sans-serif;
+                background: #f5f5f5;
+            }
+            .topbar {
+                background: white;
+                padding: 18px 30px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+            .topbar h1 {
+                font-size: 1.2rem;
+                color: #2c2c2c;
+            }
+            .dashboard-body {
+                padding: 30px;
+                max-width: 750px;
+                margin: auto;
+            }
+            .welcome-card {
+                background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+                border-radius: 18px;
+                padding: 25px;
+                margin-bottom: 25px;
+            }
+            .welcome-card h2 {
+                color: white;
+                margin-bottom: 8px;
+            }
+            .welcome-card span {
+                color: #f5c518;
+            }
+            .welcome-card p {
+                color: #bbb;
+            }
+            .form-card {
+                background: white;
+                border-radius: 18px;
+                padding: 30px;
+                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+            }
+            .form-group {
+                margin-bottom: 20px;
+            }
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 600;
+                color: #2c2c2c;
+                font-size: 0.9rem;
+            }
+            .form-control {
+                width: 100%;
+                padding: 13px 16px;
+                border: 1px solid #ddd;
+                border-radius: 10px;
+                font-size: 14px;
+                font-family: inherit;
+                transition: 0.3s;
+            }
+            .form-control:focus {
+                outline: none;
+                border-color: #f5c518;
+                box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.15);
+            }
+            textarea.form-control {
+                min-height: 140px;
+                resize: vertical;
+            }
+            .star-row {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            .star-row input[type="radio"] {
+                display: none;
+            }
+            .star-row label.star {
+                font-size: 2rem;
+                color: #ddd;
+                cursor: pointer;
+                transition: color 0.15s;
+            }
+            .star-row input[type="radio"]:checked ~ label.star,
+            .star-row label.star:hover,
+            .star-row label.star:hover ~ label.star {
+                color: #f5c518;
+            }
+            .actions {
+                display: flex;
+                gap: 12px;
+                margin-top: 25px;
+            }
+            .btn-save {
+                background: #f5c518;
+                color: #2c2c2c;
+                border: none;
+                padding: 13px 24px;
+                border-radius: 10px;
+                cursor: pointer;
+                font-weight: 700;
+                font-size: 0.95rem;
+            }
+            .btn-back {
+                background: #2c2c2c;
+                color: white;
+                text-decoration: none;
+                padding: 13px 24px;
+                border-radius: 10px;
+                font-weight: 700;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="topbar">
+            <h1>⭐ Add Patient Review</h1>
         </div>
-        <div class="form-card">
-            <form method="POST" action="{% url 'admin_add_review' %}">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label>Patient Name <span style="color:#c0392b;">*</span></label>
-                    <input type="text" name="reviewer_name" class="form-control" placeholder="e.g. Hemal Parekh" required />
-                </div>
-                <div class="form-group">
-                    <label>Patient Description <small style="color:#aaa;">(optional)</small></label>
-                    <input type="text" name="reviewer_title" class="form-control" placeholder="e.g. Knee Pain Patient, Jamnagar" />
-                </div>
-                <div class="form-group">
-                    <label>Rating</label>
-                    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-                        <select name="rating" class="form-control" style="width:auto;">
-                            <option value="5">★★★★★ — 5 Stars</option>
-                            <option value="4">★★★★☆ — 4 Stars</option>
-                            <option value="3">★★★☆☆ — 3 Stars</option>
-                            <option value="2">★★☆☆☆ — 2 Stars</option>
-                            <option value="1">★☆☆☆☆ — 1 Star</option>
-                        </select>
+        <div class="dashboard-body">
+            <div class="welcome-card">
+                <h2>Add a <span>Review</span></h2>
+                <p>
+                    Reviews added by admin are automatically approved and shown
+                    publicly.
+                </p>
+            </div>
+            <div class="form-card">
+                <form method="POST" action="{% url 'admin_add_review' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label
+                            >Patient Name
+                            <span style="color: #c0392b">*</span></label
+                        >
+                        <input
+                            type="text"
+                            name="reviewer_name"
+                            class="form-control"
+                            placeholder="e.g. Hemal Parekh"
+                            required
+                        />
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Review Message <span style="color:#c0392b;">*</span></label>
-                    <textarea name="message" class="form-control" placeholder="Write the patient's review..." required></textarea>
-                </div>
-                <div class="actions">
-                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> Save Review</button>
-                    <a href="{% url 'admin_reviews' %}" class="btn-back"><i class="fas fa-arrow-left"></i> Back</a>
-                </div>
-            </form>
+                    <div class="form-group">
+                        <label
+                            >Patient Description
+                            <small style="color: #aaa">(optional)</small></label
+                        >
+                        <input
+                            type="text"
+                            name="reviewer_title"
+                            class="form-control"
+                            placeholder="e.g. Knee Pain Patient, Jamnagar"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label>Rating</label>
+                        <div
+                            style="
+                                display: flex;
+                                gap: 8px;
+                                align-items: center;
+                                margin-top: 4px;
+                            "
+                        >
+                            <select
+                                name="rating"
+                                class="form-control"
+                                style="width: auto"
+                            >
+                                <option value="5">★★★★★ — 5 Stars</option>
+                                <option value="4">★★★★☆ — 4 Stars</option>
+                                <option value="3">★★★☆☆ — 3 Stars</option>
+                                <option value="2">★★☆☆☆ — 2 Stars</option>
+                                <option value="1">★☆☆☆☆ — 1 Star</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label
+                            >Review Message
+                            <span style="color: #c0392b">*</span></label
+                        >
+                        <textarea
+                            name="message"
+                            class="form-control"
+                            placeholder="Write the patient's review..."
+                            required
+                        ></textarea>
+                    </div>
+                    <div class="actions">
+                        <button type="submit" class="btn-save">
+                            <i class="fas fa-save"></i> Save Review
+                        </button>
+                        <a href="{% url 'admin_reviews' %}" class="btn-back"
+                            ><i class="fas fa-arrow-left"></i> Back</a
+                        >
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
-</body>
+    </body>
 </html>
