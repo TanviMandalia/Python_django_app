@@ -437,9 +437,7 @@
                                 </td>
                                 <td>
                                     <div class="stars">
-                                        {% for i in "12345" %} {% if
-                                        forloop.counter <= review.rating %}★{%
-                                        else %}☆{% endif %} {% endfor %}
+                                        {% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}
                                     </div>
                                     <small style="color: #888"
                                         >{{ review.rating }}/5</small
