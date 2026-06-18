@@ -181,32 +181,36 @@
 <body>
 
 <!-- ══ SIDEBAR ══ -->
-<aside class="sidebar">
-    <div class="sidebar-logo">
-        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
-    </div>
-    <div class="sidebar-user">
-        <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
-        <div class="user-info">
-            <h4>{{ user.get_full_name|default:user.username }}</h4>
-            <span>🟡 Staff</span>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+            <p>👨‍⚕️ STAFF PANEL</p>
         </div>
-    </div>
-    <nav>
-        <div class="nav-section">Main Menu</div>
-        <a href="{% url 'staff_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        <div class="nav-section">Attendance</div>
-        <a href="{% url 'staff_attendance' %}" class="nav-item active"><i class="fas fa-clock"></i> My Attendance</a>
-        <a href="{% url 'staff_leave' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
-        <div class="nav-section">Work</div>
-        <a href="{% url 'staff_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> My Tasks</a>
-        <a href="{% url 'staff_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-        <a href="{% url 'staff_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
-        <div class="nav-section">Account</div>
-        <a href="{% url 'profile' %}" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
-    </nav>
-    <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-</aside>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <span>🟢 {% if user.staff_profile %}{{ user.staff_profile.get_role_display }}{% else %}Staff{% endif %}</span>
+            </div>
+        </div>
+        <nav>
+            <div class="nav-section">Main</div>
+            <a href="{% url 'staff_dashboard' %}" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <div class="nav-section">Attendance</div>
+            <a href="{% url 'staff_attendance' %}" class="nav-item active"><i class="fas fa-clock"></i> My Attendance</a>
+            <div class="nav-section">Leave</div>
+            <a href="{% url 'staff_leave' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
+            <div class="nav-section">Work</div>
+            <a href="{% url 'staff_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> My Tasks</a>
+            <a href="{% url 'staff_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
+            <a href="{% url 'add_session_note' %}" class="nav-item"><i class="fas fa-plus-circle"></i> Add Session Note</a>
+            <div class="nav-section">Payroll</div>
+            <a href="{% url 'staff_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
+            <div class="nav-section">Quick Links</div>
+            <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+        </nav>
+        <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
 
 <!-- ══ MAIN ══ -->
 <div class="main-content">

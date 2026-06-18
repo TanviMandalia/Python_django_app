@@ -265,7 +265,7 @@
 </head>
 
 <body>
-    <aside class="sidebar">
+        <aside class="sidebar">
         <div class="sidebar-logo">
             <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
             <p>👨‍⚕️ STAFF PANEL</p>
@@ -273,7 +273,8 @@
         <div class="sidebar-user">
             <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
             <div class="user-info">
-                <h4>{{ user.get_full_name|default:user.username }}</h4><span>🟢 Staff</span>
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <span>🟢 {% if user.staff_profile %}{{ user.staff_profile.get_role_display }}{% else %}Staff{% endif %}</span>
             </div>
         </div>
         <nav>
@@ -286,8 +287,11 @@
             <div class="nav-section">Work</div>
             <a href="{% url 'staff_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> My Tasks</a>
             <a href="{% url 'staff_session_notes' %}" class="nav-item active"><i class="fas fa-notes-medical"></i> Session Notes</a>
+            <a href="{% url 'add_session_note' %}" class="nav-item"><i class="fas fa-plus-circle"></i> Add Session Note</a>
             <div class="nav-section">Payroll</div>
             <a href="{% url 'staff_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
+            <div class="nav-section">Quick Links</div>
+            <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
         </nav>
         <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </aside>
