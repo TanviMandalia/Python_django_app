@@ -8,416 +8,271 @@
     <title>About Us - Dr. Dhvani Patalia Physio Rehab</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #fff;
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: #fff; color: #2C2C2C; }
 
+        /* ── HERO ─────────────────────────────── */
         .page-hero {
             position: relative;
-            padding: 100px 25px;
+            padding: 120px 25px 100px;
             text-align: center;
             overflow: hidden;
         }
-
         .page-hero-bg {
             position: absolute;
             inset: 0;
             background-image: url("{% static 'images/clinic_image.webp' %}");
             background-size: cover;
             background-position: center;
-            filter: brightness(0.25);
+            filter: brightness(0.22);
         }
-
-        .page-hero-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .page-hero h1 {
-            color: white;
-            font-size: 2.8em;
-            font-weight: 800;
-            margin-bottom: 10px;
-        }
-
-        .page-hero h1 span {
-            color: #F5C518;
-        }
-
-        .page-hero p {
-            color: #aaa;
-            font-size: 1em;
-        }
-
+        .page-hero-content { position: relative; z-index: 1; }
+        .page-hero h1 { color: white; font-size: 3em; font-weight: 800; margin-bottom: 10px; }
+        .page-hero h1 span { color: #F5C518; }
+        .page-hero p { color: #bbb; font-size: 1.05em; margin-top: 8px; }
         .breadcrumb {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 15px;
-            font-size: 0.88em;
+            display: flex; justify-content: center; gap: 8px;
+            margin-top: 18px; font-size: 0.88em;
         }
+        .breadcrumb a { color: #F5C518; text-decoration: none; }
+        .breadcrumb span { color: #888; }
 
-        .breadcrumb a {
-            color: #F5C518;
-            text-decoration: none;
+        /* ── STATS STRIP ────────────────────────── */
+        .stats-strip {
+            background: #F5C518;
+            padding: 28px 25px;
         }
-
-        .breadcrumb span {
-            color: #888;
-        }
-
-        section {
-            padding: 70px 25px;
-        }
-
-        .container {
-            max-width: 1150px;
+        .stats-inner {
+            max-width: 1100px;
             margin: 0 auto;
-        }
-
-        .section-title {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
             text-align: center;
-            margin-bottom: 50px;
         }
-
-        .section-title h2 {
-            font-size: 2.2em;
-            font-weight: 800;
+        .stat-item h3 {
+            font-size: 2.4em;
+            font-weight: 900;
             color: #2C2C2C;
+            line-height: 1;
+        }
+        .stat-item p {
+            font-size: 0.82em;
+            font-weight: 700;
+            color: #555;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .section-title h2 span {
-            color: #F5C518;
+        /* ── COMMON ─────────────────────────────── */
+        .container { max-width: 1150px; margin: 0 auto; }
+        section { padding: 80px 25px; }
+        .section-title { text-align: center; margin-bottom: 55px; }
+        .section-title h2 { font-size: 2.2em; font-weight: 800; color: #2C2C2C; }
+        .section-title h2 span { color: #F5C518; }
+        .section-title p { color: #777; margin-top: 10px; font-size: 0.95em; }
+        .divider {
+            width: 60px; height: 4px;
+            background: #F5C518;
+            border-radius: 2px;
+            margin: 14px auto 0;
         }
 
-        .section-title p {
-            color: #666;
-            margin-top: 10px;
-        }
-
-        /* ABOUT DOCTOR */
+        /* ── ABOUT DOCTOR ───────────────────────── */
         .about-grid {
             display: grid;
-            grid-template-columns: 1fr 1.4fr;
+            grid-template-columns: 1fr 1.5fr;
             gap: 60px;
             align-items: start;
         }
-
+        .about-img-wrap { position: relative; }
         .about-img-box {
-            background: linear-gradient(135deg, #F5C518, #e6b800);
-            border-radius: 20px;
-            padding: 30px;
+            background: linear-gradient(145deg, #F5C518, #e6b800);
+            border-radius: 24px;
+            padding: 28px;
             text-align: center;
-            position: relative;
+            box-shadow: 0 20px 60px rgba(245,197,24,0.25);
         }
-
         .about-img-box img {
             width: 100%;
-            border-radius: 15px;
-            border: 4px solid white;
+            border-radius: 18px;
+            border: 5px solid white;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
         }
+        .about-img-box h3 { color: #2C2C2C; font-size: 1.15em; font-weight: 800; margin-top: 16px; }
+        .about-img-box p { color: #555; font-size: 0.82em; margin-top: 4px; }
 
-        .about-img-box h3 {
-            color: #2C2C2C;
-            font-size: 1.2em;
-            font-weight: 800;
-            margin-top: 15px;
+        .clinic-info {
+            margin-top: 22px;
+            background: #f9f9f9;
+            border-radius: 16px;
+            padding: 20px;
+            border-left: 4px solid #F5C518;
         }
-
-        .about-img-box p {
-            color: #555;
-            font-size: 0.85em;
-            margin-top: 5px;
-        }
-
-        .exp-badge {
-            position: absolute;
-            bottom: -15px;
-            right: 20px;
-            background: #2C2C2C;
-            color: #F5C518;
-            padding: 15px 22px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .exp-badge h3 {
-            font-size: 2.2em;
-            font-weight: 900;
-            line-height: 1;
-        }
-
-        .exp-badge p {
-            font-size: 0.72em;
-            color: #E0E0E0;
-            margin-top: 3px;
-        }
+        .clinic-info h4 { color: #2C2C2C; font-weight: 700; margin-bottom: 10px; font-size: 0.93em; }
+        .clinic-info p { color: #666; font-size: 0.84em; line-height: 1.7; }
+        .clinic-info .phone { color: #F5C518; font-weight: 700; font-size: 0.92em; margin-top: 10px; display: block; }
+        .clinic-info .email { color: #888; font-size: 0.82em; }
 
         .about-content h2 {
-            font-size: 2em;
-            font-weight: 800;
-            color: #2C2C2C;
-            margin-bottom: 15px;
-            line-height: 1.3;
+            font-size: 2em; font-weight: 800; color: #2C2C2C;
+            margin-bottom: 16px; line-height: 1.3;
         }
-
-        .about-content h2 span {
-            color: #F5C518;
-        }
-
-        .about-content p {
-            color: #666;
-            line-height: 1.8;
-            margin-bottom: 15px;
-            font-size: 0.95em;
-        }
+        .about-content h2 span { color: #F5C518; }
+        .about-content p { color: #666; line-height: 1.85; margin-bottom: 15px; font-size: 0.95em; }
 
         .about-features {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 22px;
         }
-
         .feature-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.88em;
-            color: #444;
+            display: flex; align-items: center; gap: 10px;
+            font-size: 0.88em; color: #444; font-weight: 500;
         }
-
-        .feature-item i {
-            color: #F5C518;
-        }
+        .feature-item i { color: #F5C518; font-size: 1em; }
 
         .contact-cta {
             background: linear-gradient(135deg, #2C2C2C, #1a1a1a);
-            border-radius: 15px;
-            padding: 20px 25px;
-            margin-top: 25px;
+            border-radius: 16px;
+            padding: 22px 26px;
+            margin-top: 28px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 15px;
         }
-
-        .contact-cta p {
-            color: #E0E0E0;
-            font-size: 0.9em;
-        }
-
-        .contact-cta p strong {
-            color: #F5C518;
-        }
-
+        .contact-cta p { color: #ddd; font-size: 0.9em; line-height: 1.6; }
+        .contact-cta p strong { color: #F5C518; }
         .btn-gold {
-            background: #F5C518;
-            color: #2C2C2C;
-            padding: 12px 25px;
-            border-radius: 25px;
-            font-weight: 700;
-            text-decoration: none;
-            font-size: 0.9em;
-            transition: all 0.3s;
+            background: #F5C518; color: #2C2C2C;
+            padding: 12px 28px; border-radius: 30px;
+            font-weight: 800; text-decoration: none;
+            font-size: 0.9em; transition: all 0.3s;
+            white-space: nowrap;
         }
+        .btn-gold:hover { background: #e6b800; transform: translateY(-2px); }
 
-        .btn-gold:hover {
-            background: #e6b800;
-        }
-
-        /* WHY CHOOSE */
-        .why-section {
-            background: #f9f9f9;
-        }
-
+        /* ── WHY CHOOSE US ───────────────────────── */
+        .why-section { background: #f9f9f9; }
         .why-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+            gap: 16px;
         }
-
         .why-item {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+            background: white; border-radius: 14px;
+            padding: 22px 20px; display: flex;
+            align-items: flex-start; gap: 16px;
+            box-shadow: 0 3px 16px rgba(0,0,0,0.05);
             transition: all 0.3s;
-            border-left: 3px solid #eee;
+            border-left: 4px solid transparent;
         }
-
-        .why-item:hover {
-            border-left-color: #F5C518;
-            transform: translateX(5px);
-        }
-
+        .why-item:hover { border-left-color: #F5C518; transform: translateX(6px); }
         .why-icon-box {
-            width: 42px;
-            height: 42px;
-            background: rgba(245, 197, 24, 0.15);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
+            width: 46px; height: 46px; flex-shrink: 0;
+            background: rgba(245,197,24,0.12);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
         }
+        .why-icon-box i { color: #F5C518; font-size: 1.2em; }
+        .why-info h4 { color: #2C2C2C; font-weight: 700; margin-bottom: 5px; font-size: 0.93em; }
+        .why-info p { color: #888; font-size: 0.83em; line-height: 1.55; }
 
-        .why-icon-box i {
-            color: #F5C518;
-            font-size: 1.1em;
-        }
-
-        .why-info h4 {
-            color: #2C2C2C;
-            font-weight: 700;
-            margin-bottom: 4px;
-            font-size: 0.92em;
-        }
-
-        .why-info p {
-            color: #888;
-            font-size: 0.82em;
-            line-height: 1.5;
-        }
-
-        /* CERTIFICATES */
-        .cert-section {
-            background: white;
-        }
-
-        .cert-img {
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        }
-
-        .cert-img img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        /* QUALIFICATIONS */
-        .qual-section {
-            background: #f9f9f9;
-        }
-
+        /* ── QUALIFICATIONS ───────────────────────── */
+        .qual-section { background: white; }
         .qual-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            max-width: 800px;
+            display: flex; flex-direction: column; gap: 14px;
+            max-width: 820px; margin: 0 auto;
+        }
+        .qual-item {
+            display: flex; gap: 18px; align-items: flex-start;
+            background: #f9f9f9; padding: 20px 22px;
+            border-radius: 14px;
+            border-left: 4px solid #F5C518;
+            transition: box-shadow 0.3s;
+        }
+        .qual-item:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.07); }
+        .qual-icon {
+            width: 50px; height: 50px; flex-shrink: 0;
+            background: #F5C518; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .qual-icon i { color: #2C2C2C; font-size: 1.15em; }
+        .qual-info h4 { color: #2C2C2C; font-weight: 800; margin-bottom: 4px; font-size: 0.96em; }
+        .qual-info p { color: #888; font-size: 0.84em; line-height: 1.55; }
+
+        /* ── CERTIFICATE ────────────────────────── */
+        .cert-section { background: #f9f9f9; }
+        .cert-wrapper {
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 12px 50px rgba(0,0,0,0.12);
+            max-width: 900px;
             margin: 0 auto;
         }
+        .cert-wrapper img { width: 100%; height: auto; display: block; }
 
-        .qual-item {
-            display: flex;
-            gap: 15px;
-            align-items: flex-start;
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-
-        .qual-icon {
-            width: 48px;
-            height: 48px;
-            background: #F5C518;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .qual-icon i {
-            color: #2C2C2C;
-            font-size: 1.1em;
-        }
-
-        .qual-info h4 {
-            color: #2C2C2C;
-            font-weight: 700;
-            margin-bottom: 4px;
-            font-size: 0.95em;
-        }
-
-        .qual-info p {
-            color: #888;
-            font-size: 0.84em;
-            line-height: 1.5;
-        }
-
-        /* VALUES */
-        .values-section {
-            background: #2C2C2C;
-        }
-
+        /* ── VALUES ──────────────────────────────── */
+        .values-section { background: #2C2C2C; }
+        .values-section .section-title h2 { color: white; }
+        .values-section .section-title p { color: #aaa; }
         .values-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 20px;
         }
-
-        .value-card {
-            text-align: center;
-            padding: 25px 15px;
-        }
-
+        .value-card { text-align: center; padding: 30px 18px; }
         .value-icon {
-            width: 65px;
-            height: 65px;
-            background: rgba(245, 197, 24, 0.1);
-            border: 2px solid rgba(245, 197, 24, 0.3);
+            width: 70px; height: 70px;
+            background: rgba(245,197,24,0.08);
+            border: 2px solid rgba(245,197,24,0.25);
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 18px;
+            transition: all 0.3s;
         }
-
-        .value-icon i {
-            font-size: 1.5em;
-            color: #F5C518;
+        .value-card:hover .value-icon {
+            background: rgba(245,197,24,0.18);
+            border-color: #F5C518;
         }
+        .value-icon i { font-size: 1.6em; color: #F5C518; }
+        .value-card h3 { color: white; font-size: 0.97em; font-weight: 700; margin-bottom: 10px; }
+        .value-card p { color: #aaa; font-size: 0.83em; line-height: 1.65; }
 
-        .value-card h3 {
-            color: white;
-            font-size: 0.95em;
-            font-weight: 700;
-            margin-bottom: 8px;
+        /* ── CTA BANNER ──────────────────────────── */
+        .cta-section {
+            background: linear-gradient(135deg, #F5C518, #e6b800);
+            padding: 70px 25px;
+            text-align: center;
         }
-
-        .value-card p {
-            color: #aaa;
-            font-size: 0.82em;
-            line-height: 1.6;
+        .cta-section h2 { font-size: 2em; font-weight: 800; color: #2C2C2C; margin-bottom: 10px; }
+        .cta-section p { color: #555; font-size: 0.98em; margin-bottom: 28px; }
+        .btn-dark {
+            background: #2C2C2C; color: white;
+            padding: 14px 35px; border-radius: 30px;
+            font-weight: 800; text-decoration: none;
+            font-size: 0.95em; transition: all 0.3s;
+            display: inline-block;
         }
+        .btn-dark:hover { background: #111; transform: translateY(-2px); }
 
+        /* ── RESPONSIVE ──────────────────────────── */
         @media (max-width: 768px) {
-
-            .about-grid,
-            .why-grid,
-            .values-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .about-features {
-                grid-template-columns: 1fr;
-            }
+            .page-hero h1 { font-size: 2.2em; }
+            .stats-inner { grid-template-columns: repeat(2, 1fr); }
+            .about-grid { grid-template-columns: 1fr; gap: 30px; }
+            .about-features { grid-template-columns: 1fr; }
+            .why-grid { grid-template-columns: 1fr; }
+            .values-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .stats-inner { grid-template-columns: repeat(2, 1fr); }
+            .values-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -426,162 +281,170 @@
 
     {% include 'navbar.html' %}
 
-    <!-- PAGE HERO WITH CLINIC IMAGE -->
+    <!-- ── HERO ─────────────────────────────── -->
     <div class="page-hero">
         <div class="page-hero-bg"></div>
         <div class="page-hero-content">
-            <h1>About <span>Us</span></h1>
-            <p>Learn more about Dr. Dhvani Patalia and our physiotherapy clinic</p>
+            <h1>About <span>Dr. Dhvani Patalia</span></h1>
+            <p>Expert Physiotherapist &amp; Rehabilitation Specialist in Jamnagar</p>
             <div class="breadcrumb">
-                <a href="/">Home</a><span>›</span>
+                <a href="{% url 'home' %}">Home</a>
+                <span>›</span>
                 <span style="color:white;">About Us</span>
             </div>
         </div>
     </div>
 
-    <!-- ABOUT DOCTOR -->
+    <!-- ── STATS STRIP ────────────────────────── -->
+    <div class="stats-strip">
+        <div class="stats-inner">
+            <div class="stat-item">
+                <h3>500+</h3>
+                <p>Patients Recovered</p>
+            </div>
+            <div class="stat-item">
+                <h3>5+</h3>
+                <p>Years Experience</p>
+            </div>
+            <div class="stat-item">
+                <h3>7+</h3>
+                <p>Certifications</p>
+            </div>
+            <div class="stat-item">
+                <h3>100%</h3>
+                <p>Personalised Care</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ABOUT DOCTOR ───────────────────────── -->
     <section>
         <div class="container">
             <div class="about-grid">
-                <div>
+
+                <!-- LEFT: photo + clinic info -->
+                <div class="about-img-wrap">
                     <div class="about-img-box">
                         <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia">
                         <h3>Dr. Dhvani Patalia</h3>
-                        <p>BPT, COMT, CDT, CCT, CIASTM, FNMT, CCFINST</p>
+                        <p>BPT · COMT · CDT · CCT · CIASTM · FNMT · CCFINST</p>
                     </div>
-                    <div style="margin-top:30px; background:#f9f9f9; border-radius:15px; padding:20px;">
-                        <h4 style="color:#2C2C2C; font-weight:700; margin-bottom:12px; font-size:0.95em;">📍 Clinic
-                            Location</h4>
-                        <p style="color:#666; font-size:0.85em; line-height:1.6;">Dr. Dhvani Patalia - Phisyo Rehab, <br> Ground Floor, Sheetal Guest House
-                            Building,<br>Opp. New Super Medical, Bedi Gate,<br><strong>Jamnagar, Gujarat</strong></p>
-                        <p style="color:#F5C518; font-weight:700; font-size:0.9em; margin-top:10px;">📞 +91 94095 10501
+                    <div class="clinic-info">
+                        <h4>📍 Clinic Location</h4>
+                        <p>Dr. Dhvani Patalia – Phisyo Rehab<br>
+                            Ground Floor, Sheetal Guest House Building,<br>
+                            Opp. New Super Medical, Bedi Gate,<br>
+                            <strong>Jamnagar, Gujarat</strong>
                         </p>
-                        <p style="color:#666; font-size:0.82em; margin-top:5px;">physio.rehab.guj@gmail.com</p>
+                        <span class="phone">📞 +91 94095 10501</span>
+                        <span class="email">physio.rehab.guj@gmail.com</span>
                     </div>
                 </div>
+
+                <!-- RIGHT: bio -->
                 <div class="about-content">
                     <h2>Expert <span>Physiotherapist</span><br>in Jamnagar</h2>
-                    <p>Dr. Dhvani Patalia is a highly qualified physiotherapist with over 5 years of experience in
-                        treating musculoskeletal, neurological, and sports-related conditions.</p>
-                    <p>She focuses on <strong>root cause analysis</strong> rather than just treating symptoms, ensuring
-                        long-term recovery and functional improvement for every patient.</p>
-                    <p>Her approach combines modern physiotherapy techniques with personalized one-to-one care plans,
-                        supported by advanced equipment and hands-on therapy methods.</p>
+                    <p>Dr. Dhvani Patalia is a highly qualified physiotherapist with over <strong>5 years of experience</strong> treating musculoskeletal, neurological, and sports-related conditions across Jamnagar.</p>
+                    <p>She focuses on <strong>root cause analysis</strong> rather than just treating symptoms — ensuring long-term recovery and functional improvement for every patient who walks through the door.</p>
+                    <p>Her approach combines modern physiotherapy techniques with personalised one-to-one care plans, backed by advanced equipment and hands-on manual therapy methods.</p>
+
                     <div class="about-features">
-                        <div class="feature-item"><i class="fas fa-check-circle"></i> Personalized Treatment Plans</div>
+                        <div class="feature-item"><i class="fas fa-check-circle"></i> Personalised Treatment Plans</div>
                         <div class="feature-item"><i class="fas fa-check-circle"></i> Evidence-Based Techniques</div>
                         <div class="feature-item"><i class="fas fa-check-circle"></i> One-to-One Patient Attention</div>
                         <div class="feature-item"><i class="fas fa-check-circle"></i> Modern Equipment</div>
                         <div class="feature-item"><i class="fas fa-check-circle"></i> Home Visit Available</div>
                         <div class="feature-item"><i class="fas fa-check-circle"></i> WhatsApp Support</div>
-                        <div class="feature-item"><i class="fas fa-check-circle"></i> Focus on Root Cause</div>
-                        <div class="feature-item"><i class="fas fa-check-circle"></i> Long-Term Recovery Focus</div>
+                        <div class="feature-item"><i class="fas fa-check-circle"></i> Root Cause Focus</div>
+                        <div class="feature-item"><i class="fas fa-check-circle"></i> Long-Term Recovery</div>
                     </div>
+
                     <div class="contact-cta">
-                        <p>📞 <strong>+91 94095 10501</strong><br>WhatsApp or Call for Appointment</p>
-                        <a href="{% url "book_appointment" %}" class="btn-gold">📅 Book Now</a>
+                        <p>📞 <strong>+91 94095 10501</strong><br>Call or WhatsApp for appointment booking</p>
+                        <a href="{% url 'book_appointment' %}" class="btn-gold">📅 Book Now</a>
                     </div>
                 </div>
+
             </div>
         </div>
     </section>
 
-    <!-- WHY CHOOSE US -->
+    <!-- ── WHY CHOOSE US ───────────────────────── -->
     <section class="why-section">
         <div class="container">
             <div class="section-title">
                 <h2>Why Choose <span>Dr. Dhvani Patalia?</span></h2>
-                <p>What makes us different from other physiotherapy clinics</p>
+                <p>What makes us different from other physiotherapy clinics in Jamnagar</p>
+                <div class="divider"></div>
             </div>
             <div class="why-grid">
                 <div class="why-item">
                     <div class="why-icon-box"><i class="fas fa-clipboard-list"></i></div>
                     <div class="why-info">
-                        <h4>Personalized Physiotherapy Treatment Plans</h4>
-                        <p>Every patient receives a customized plan designed specifically for their condition and
-                            recovery goals.</p>
+                        <h4>Personalised Physiotherapy Plans</h4>
+                        <p>Every patient receives a customised plan designed for their specific condition and recovery goals.</p>
                     </div>
                 </div>
                 <div class="why-item">
                     <div class="why-icon-box"><i class="fas fa-microscope"></i></div>
                     <div class="why-info">
-                        <h4>Evidence-Based & Advanced Techniques</h4>
-                        <p>Dry needling, cupping therapy, kinesiology taping, manual therapy and more scientifically
-                            proven methods.</p>
+                        <h4>Advanced Evidence-Based Techniques</h4>
+                        <p>Dry needling, cupping, kinesiology taping, manual therapy — all scientifically proven methods.</p>
                     </div>
                 </div>
                 <div class="why-item">
                     <div class="why-icon-box"><i class="fas fa-search"></i></div>
                     <div class="why-info">
-                        <h4>Focus on Root Cause, Not Just Symptoms</h4>
-                        <p>We identify and treat the underlying cause of your pain for permanent relief and prevention.
-                        </p>
+                        <h4>Root Cause, Not Just Symptoms</h4>
+                        <p>We identify and treat the underlying cause of pain for permanent relief and future prevention.</p>
                     </div>
                 </div>
                 <div class="why-item">
                     <div class="why-icon-box"><i class="fas fa-user-friends"></i></div>
                     <div class="why-info">
                         <h4>One-to-One Patient Attention</h4>
-                        <p>Dedicated personal attention during every session to ensure maximum effectiveness of
-                            treatment.</p>
+                        <p>Dedicated personal care during every session to ensure maximum effectiveness of treatment.</p>
                     </div>
                 </div>
                 <div class="why-item">
                     <div class="why-icon-box"><i class="fas fa-dumbbell"></i></div>
                     <div class="why-info">
-                        <h4>Modern Equipment & Hands-On Therapy</h4>
-                        <p>State-of-the-art physiotherapy equipment combined with expert hands-on manual techniques.</p>
+                        <h4>Modern Equipment &amp; Hands-On Therapy</h4>
+                        <p>State-of-the-art physiotherapy equipment combined with expert manual techniques.</p>
                     </div>
                 </div>
                 <div class="why-item">
                     <div class="why-icon-box"><i class="fas fa-home"></i></div>
                     <div class="why-info">
                         <h4>Home Visit Physiotherapy Available</h4>
-                        <p>Can't travel? We come to you! Professional physiotherapy at your home, especially for elderly
-                            & post-surgery patients.</p>
+                        <p>Can't travel? We come to you — ideal for elderly and post-surgery patients.</p>
                     </div>
                 </div>
                 <div class="why-item">
                     <div class="why-icon-box"><i class="fas fa-chart-line"></i></div>
                     <div class="why-info">
-                        <h4>Fast Recovery & Functional Improvement</h4>
-                        <p>Proven results with real before & after patient success stories demonstrating effective
-                            recovery.</p>
+                        <h4>Fast Recovery &amp; Functional Improvement</h4>
+                        <p>Proven results with real patient success stories demonstrating effective recovery.</p>
                     </div>
                 </div>
                 <div class="why-item">
                     <div class="why-icon-box"><i class="fas fa-book-medical"></i></div>
                     <div class="why-info">
-                        <h4>Patient Education & Prevention Guidance</h4>
-                        <p>We educate you about your condition and give long-term guidance to prevent recurrence.</p>
+                        <h4>Patient Education &amp; Prevention</h4>
+                        <p>We educate you about your condition and provide long-term guidance to prevent recurrence.</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- CERTIFICATE WALL -->
-    <section class="cert-section">
-        <div class="container">
-            <div class="section-title">
-                <h2>Qualifications & <span>Certificates</span></h2>
-                <p>Proof of expertise and continuous professional development</p>
-            </div>
-            <div class="cert-img">
-                <img src="{% static 'images/certificate_image.webp' %}" alt="Dr. Dhvani Patalia Certificates">
-            </div>
-            <div class="cert-img">
-                <img src="{% static 'images/certificate_image.webp' %}" alt="Dr. Dhvani Patalia Certificates">
-            </div>
-        </div>
-    </section>
-
-    <!-- QUALIFICATIONS -->
+    <!-- ── QUALIFICATIONS ────────────────────────── -->
     <section class="qual-section">
         <div class="container">
             <div class="section-title">
                 <h2>Academic <span>Credentials</span></h2>
-                <p>Professional qualifications and certifications</p>
+                <p>Professional qualifications and advanced certifications</p>
+                <div class="divider"></div>
             </div>
             <div class="qual-list">
                 <div class="qual-item">
@@ -602,67 +465,98 @@
                     <div class="qual-icon"><i class="fas fa-certificate"></i></div>
                     <div class="qual-info">
                         <h4>CDT — Certified in Dry Needling Therapy</h4>
-                        <p>Specialized certification in trigger point dry needling</p>
+                        <p>Specialised certification in trigger point dry needling for pain management</p>
                     </div>
                 </div>
                 <div class="qual-item">
                     <div class="qual-icon"><i class="fas fa-certificate"></i></div>
                     <div class="qual-info">
-                        <h4>CIASTM — Certified in Instrument Assisted Soft Tissue Mobilization</h4>
-                        <p>Advanced soft tissue treatment using specialized instruments</p>
+                        <h4>CIASTM — Instrument Assisted Soft Tissue Mobilization</h4>
+                        <p>Advanced soft tissue treatment using specialised instruments for faster recovery</p>
                     </div>
                 </div>
                 <div class="qual-item">
                     <div class="qual-icon"><i class="fas fa-certificate"></i></div>
                     <div class="qual-info">
                         <h4>FNMT — Functional Neuromuscular Taping</h4>
-                        <p>Kinesiology taping certification for sports and rehabilitation</p>
+                        <p>Kinesiology taping certification for sports rehabilitation and injury prevention</p>
+                    </div>
+                </div>
+                <div class="qual-item">
+                    <div class="qual-icon"><i class="fas fa-certificate"></i></div>
+                    <div class="qual-info">
+                        <h4>CCT &amp; CCFINST — Advanced Clinical Certifications</h4>
+                        <p>Cupping therapy and clinical fascial instrument techniques for pain and mobility</p>
                     </div>
                 </div>
                 <div class="qual-item">
                     <div class="qual-icon"><i class="fas fa-award"></i></div>
                     <div class="qual-info">
                         <h4>500+ Successful Patient Recoveries</h4>
-                        <p>Proven track record of helping patients recover from complex conditions across Jamnagar</p>
+                        <p>Proven track record helping patients recover from complex conditions across Jamnagar</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- VALUES -->
+    <!-- ── CERTIFICATE ────────────────────────── -->
+    <section class="cert-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Qualifications &amp; <span>Certificates</span></h2>
+                <p>Proof of expertise and continuous professional development</p>
+                <div class="divider"></div>
+            </div>
+            <div class="cert-wrapper">
+                <img src="{% static 'images/certificate_image.webp' %}" alt="Dr. Dhvani Patalia Certificates">
+            </div>
+        </div>
+    </section>
+
+    <!-- ── VALUES ─────────────────────────────── -->
     <section class="values-section">
         <div class="container">
             <div class="section-title">
-                <h2 style="color:white;">Our Core <span>Values</span></h2>
-                <p style="color:#aaa;">What drives us to provide the best care</p>
+                <h2>Our Core <span>Values</span></h2>
+                <p>What drives us to provide the best physiotherapy care every day</p>
+                <div class="divider"></div>
             </div>
             <div class="values-grid">
                 <div class="value-card">
                     <div class="value-icon"><i class="fas fa-heart"></i></div>
                     <h3>Patient First</h3>
-                    <p>Every decision centered around patient wellbeing and comfort</p>
+                    <p>Every decision is centred around patient wellbeing, comfort, and long-term health</p>
                 </div>
                 <div class="value-card">
                     <div class="value-icon"><i class="fas fa-microscope"></i></div>
                     <h3>Evidence Based</h3>
-                    <p>Only proven, research-backed physiotherapy techniques</p>
+                    <p>Only proven, research-backed physiotherapy techniques are used in treatment</p>
                 </div>
                 <div class="value-card">
                     <div class="value-icon"><i class="fas fa-hands-helping"></i></div>
                     <h3>Compassionate</h3>
-                    <p>Treating every patient with empathy, kindness and genuine concern</p>
+                    <p>Treating every patient with empathy, kindness and genuine personal concern</p>
                 </div>
                 <div class="value-card">
                     <div class="value-icon"><i class="fas fa-star"></i></div>
                     <h3>Excellence</h3>
-                    <p>Striving for excellence in every treatment session</p>
+                    <p>Striving for the highest standard of excellence in every treatment session</p>
                 </div>
             </div>
         </div>
     </section>
 
-    {% include 'footer.html' %}
-</body>
+    <!-- ── CTA BANNER ─────────────────────────── -->
+    <div class="cta-section">
+        <div class="container">
+            <h2>Ready to Start Your Recovery?</h2>
+            <p>Book your consultation with Dr. Dhvani Patalia and take the first step towards a pain-free life.</p>
+            <a href="{% url 'book_appointment' %}" class="btn-dark">📅 Book an Appointment</a>
+        </div>
+    </div>
 
+    {% include 'footer.html' %}
+
+</body>
 </html>

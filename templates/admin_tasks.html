@@ -172,8 +172,8 @@
                     </div>
                     <span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
                     <div style="display:flex;gap:6px;margin-top:8px;">
-                        <a href="/admin-tasks/edit/{{ task.id }}/" style="background:#e8f4fd;color:#0056b3;padding:5px 11px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;">✏️ Edit</a>
-                        <a href="/admin-tasks/delete/{{ task.id }}/" style="background:#f8d7da;color:#721c24;padding:5px 11px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;">🗑️ Del</a>
+                        <a href="{% url 'edit_task_admin' task.id %}" style="background:#F5C518;color:#2C2C2C;padding:5px 11px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;">✏️ Edit</a>
+                        <a href="{% url 'delete_task_admin' task.id %}" style="background:#C0392B;color:#fff;padding:5px 11px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;">🗑️ Del</a>
                     </div>
                 </div>
 

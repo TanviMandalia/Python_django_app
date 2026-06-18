@@ -670,7 +670,7 @@
           <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
           <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
       </nav>
-      <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+      <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </aside>
 
     <!-- MAIN -->
@@ -794,7 +794,7 @@
               <div class="card-title">
                 <i class="fas fa-calendar"></i> Recent Appointments
               </div>
-              <a href="/admin-appointments" class="view-all">View All →</a>
+              <a href="{% url 'admin_appointments' %}" class="view-all">View All →</a>
             </div>
             {% if all_appointments %}
               <table>
@@ -840,11 +840,11 @@
                 <i class="fas fa-bolt"></i> Quick Actions
               </div>
               <div class="admin-actions">
-                <a href="/admin-patients" class="admin-action-btn"><i class="fas fa-users"></i><span>Patients</span></a>
-                <a href="/admin-appointments" class="admin-action-btn"><i class="fas fa-calendar"></i><span>Appointments</span></a>
-                <a href="/admin-staff" class="admin-action-btn"><i class="fas fa-user-md"></i><span>Staff</span></a>
-                <a href="/admin-leaves" class="admin-action-btn"><i class="fas fa-calendar-minus"></i><span>Leaves</span></a>
-                <a href="/admin-salary" class="admin-action-btn"><i class="fas fa-rupee-sign"></i><span>Salary</span></a>
+                <a href="{% url 'admin_patients' %}" class="admin-action-btn"><i class="fas fa-users"></i><span>Patients</span></a>
+                <a href="{% url 'admin_appointments' %}" class="admin-action-btn"><i class="fas fa-calendar"></i><span>Appointments</span></a>
+                <a href="{% url 'admin_staff' %}" class="admin-action-btn"><i class="fas fa-user-md"></i><span>Staff</span></a>
+                <a href="{% url 'admin_leaves' %}" class="admin-action-btn"><i class="fas fa-calendar-minus"></i><span>Leaves</span></a>
+                <a href="{% url 'admin_salary' %}" class="admin-action-btn"><i class="fas fa-rupee-sign"></i><span>Salary</span></a>
                 <a href="/admin/" class="admin-action-btn"><i class="fas fa-database"></i><span>Django Admin</span></a>
               </div>
             </div>

@@ -296,26 +296,26 @@
         </div>
         <nav>
             <div class="nav-section">Overview</div>
-            <a href="/admin-dashboard" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
             <div class="nav-section">Management</div>
-            <a href="/admin-patients" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
-            <a href="/admin-staff" class="nav-item active"><i class="fas fa-user-md"></i> Manage Staff</a>
-            <a href="/admin-appointments" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
-            <a href="/admin-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+            <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+            <a href="{% url 'admin_staff' %}" class="nav-item active"><i class="fas fa-user-md"></i> Manage Staff</a>
+            <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
+            <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
             <div class="nav-section">Staff Tools</div>
-            <a href="/admin-leaves" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
-            <a href="/admin-attendance" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
-            <a href="/admin-tasks" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+            <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
+            <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+            <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
             <div class="nav-section">System</div>
             <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
         </nav>
-        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </aside>
 
     <div class="main-content">
         <div class="topbar">
             <h1>➕ Add New Staff</h1>
-            <a href="/admin-staff" class="back-btn">← Back to Staff</a>
+            <a href="{% url 'admin_staff' %}" class="back-btn">← Back to Staff</a>
         </div>
         <div class="dashboard-body">
             <div class="form-card">

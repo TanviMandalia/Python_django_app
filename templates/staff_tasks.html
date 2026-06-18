@@ -394,18 +394,18 @@
         </div>
         <nav>
             <div class="nav-section">Main</div>
-            <a href="/staff-dashboard" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="{% url 'staff_dashboard' %}" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
             <div class="nav-section">Attendance</div>
-            <a href="/staff-attendance" class="nav-item"><i class="fas fa-clock"></i> My Attendance</a>
+            <a href="{% url 'staff_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> My Attendance</a>
             <div class="nav-section">Leave</div>
-            <a href="/staff-leave" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
+            <a href="{% url 'staff_leave' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
             <div class="nav-section">Work</div>
-            <a href="/staff-tasks" class="nav-item active"><i class="fas fa-tasks"></i> My Tasks</a>
-            <a href="/staff-session-notes" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
+            <a href="{% url 'staff_tasks' %}" class="nav-item active"><i class="fas fa-tasks"></i> My Tasks</a>
+            <a href="{% url 'staff_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
             <div class="nav-section">Payroll</div>
-            <a href="/staff-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
+            <a href="{% url 'staff_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
         </nav>
-        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </aside>
 
     <div class="main-content">
@@ -462,9 +462,9 @@
                         <span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
                         <div class="action-btns" style="margin-top:8px;">
                             {% if task.status == 'pending' %}
-                            <a href="/update-task/{{ task.id }}/in_progress" class="btn-start">▶ Start</a>
+                            <a href="{% url 'update_task' task.id 'in_progress' %}" class="btn-start">▶ Start</a>
                             {% elif task.status == 'in_progress' %}
-                            <a href="/update-task/{{ task.id }}/completed" class="btn-done">✅ Done</a>
+                            <a href="{% url 'update_task' task.id 'completed' %}" class="btn-done">✅ Done</a>
                             {% endif %}
                         </div>
                     </div>

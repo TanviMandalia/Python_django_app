@@ -565,21 +565,21 @@
         </div>
         <nav>
             <div class="nav-section">Main</div>
-            <a href="/staff-dashboard" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="{% url 'staff_dashboard' %}" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
             <div class="nav-section">Attendance</div>
-            <a href="/staff-attendance" class="nav-item"><i class="fas fa-clock"></i> My Attendance</a>
+            <a href="{% url 'staff_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> My Attendance</a>
             <div class="nav-section">Leave</div>
-            <a href="/staff-leave" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
+            <a href="{% url 'staff_leave' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
             <div class="nav-section">Work</div>
-            <a href="/staff-tasks" class="nav-item"><i class="fas fa-tasks"></i> My Tasks</a>
-            <a href="/staff-session-notes" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-            <a href="/add-session-note" class="nav-item"><i class="fas fa-plus-circle"></i> Add Session Note</a>
+            <a href="{% url 'staff_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> My Tasks</a>
+            <a href="{% url 'staff_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
+            <a href="{% url 'add_session_note' %}" class="nav-item"><i class="fas fa-plus-circle"></i> Add Session Note</a>
             <div class="nav-section">Payroll</div>
-            <a href="/staff-salary" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
+            <a href="{% url 'staff_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
             <div class="nav-section">Quick Links</div>
-            <a href="/" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+            <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
         </nav>
-        <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </aside>
 
     <!-- MAIN -->
@@ -634,7 +634,7 @@
                     </div>
                 </div>
                 <div style="margin-top:15px; text-align:center;">
-                    <a href="/staff-attendance" class="btn-gold">🕐 Manage Attendance</a>
+                    <a href="{% url 'staff_attendance' %}" class="btn-gold">🕐 Manage Attendance</a>
                 </div>
             </div>
 
@@ -678,7 +678,7 @@
                 <div class="card">
                     <div class="card-title">
                         <span><i class="fas fa-tasks"></i> Recent Tasks</span>
-                        <a href="/staff-tasks" class="view-all">View All →</a>
+                        <a href="{% url 'staff_tasks' %}" class="view-all">View All →</a>
                     </div>
                     {% if my_tasks %}
                     {% for task in my_tasks %}
@@ -703,22 +703,22 @@
                 <div class="card">
                     <div class="card-title"><span><i class="fas fa-bolt"></i> Quick Actions</span></div>
                     <div class="quick-grid">
-                        <a href="/staff-attendance" class="quick-btn">
+                        <a href="{% url 'staff_attendance' %}" class="quick-btn">
                             <i class="fas fa-clock"></i><span>Mark Attendance</span>
                         </a>
-                        <a href="/staff-leave" class="quick-btn">
+                        <a href="{% url 'staff_leave' %}" class="quick-btn">
                             <i class="fas fa-calendar-minus"></i><span>Apply Leave</span>
                         </a>
-                        <a href="/staff-tasks" class="quick-btn">
+                        <a href="{% url 'staff_tasks' %}" class="quick-btn">
                             <i class="fas fa-tasks"></i><span>My Tasks</span>
                         </a>
-                        <a href="/add-session-note" class="quick-btn">
+                        <a href="{% url 'add_session_note' %}" class="quick-btn">
                             <i class="fas fa-notes-medical"></i><span>Add Note</span>
                         </a>
-                        <a href="/staff-salary" class="quick-btn">
+                        <a href="{% url 'staff_salary' %}" class="quick-btn">
                             <i class="fas fa-rupee-sign"></i><span>My Salary</span>
                         </a>
-                        <a href="/staff-session-notes" class="quick-btn">
+                        <a href="{% url 'staff_session_notes' %}" class="quick-btn">
                             <i class="fas fa-history"></i><span>My Notes</span>
                         </a>
                     </div>

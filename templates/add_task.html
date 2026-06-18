@@ -302,13 +302,13 @@
           <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
           <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
       </nav>
-      <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+      <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </aside>
 
     <div class="main-content">
         <div class="topbar">
             <h1>➕ Assign New Task</h1>
-            <a href="/admin-tasks" class="back-btn">← Back to Tasks</a>
+            <a href="{% url 'admin_tasks' %}" class="back-btn">← Back to Tasks</a>
         </div>
         <div class="dashboard-body">
             <div class="form-card">
