@@ -513,7 +513,11 @@
     <div class="main-content">
         <div class="topbar">
             <h1>📅 All Appointments</h1>
-            <a href="{% url 'add_appointment' %}" style="background:#F5C518;color:#2C2C2C;padding:9px 20px;border-radius:20px;font-weight:700;text-decoration:none;font-size:0.88em;">+ Add Appointment</a>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <a href="{% url 'add_appointment' %}" style="background:#F5C518;color:#2C2C2C;padding:9px 20px;border-radius:20px;font-weight:700;text-decoration:none;font-size:0.88em;">+ Add Appointment</a>
+              <a href="{% url 'export_appointments_excel' %}" style="background:#1d6f42;color:#fff;padding:9px 16px;border-radius:20px;font-weight:700;text-decoration:none;font-size:0.85em;display:inline-flex;align-items:center;gap:6px;"><i class="fas fa-file-excel"></i> Excel</a>
+              <a href="{% url 'export_appointments_pdf' %}" style="background:#c0392b;color:#fff;padding:9px 16px;border-radius:20px;font-weight:700;text-decoration:none;font-size:0.85em;display:inline-flex;align-items:center;gap:6px;"><i class="fas fa-file-pdf"></i> PDF</a>
+            </div>
         </div>
 
         <div class="dashboard-body">
@@ -558,8 +562,12 @@
 
             <!-- TABLE -->
             <div class="table-card">
-                <div class="table-header">
+                <div class="table-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
                     <div class="table-title"><i class="fas fa-calendar"></i> All Appointments</div>
+                    <div style="display:flex;gap:8px;">
+                      <a href="{% url 'export_appointments_excel' %}" style="background:#1d6f42;color:#fff;padding:7px 14px;border-radius:8px;font-weight:700;text-decoration:none;font-size:0.82em;display:inline-flex;align-items:center;gap:6px;"><i class="fas fa-file-excel"></i> Export Excel</a>
+                      <a href="{% url 'export_appointments_pdf' %}" style="background:#c0392b;color:#fff;padding:7px 14px;border-radius:8px;font-weight:700;text-decoration:none;font-size:0.82em;display:inline-flex;align-items:center;gap:6px;"><i class="fas fa-file-pdf"></i> Export PDF</a>
+                    </div>
                 </div>
 
                 <div class="filter-tabs">

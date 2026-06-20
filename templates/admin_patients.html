@@ -240,8 +240,87 @@
         border-radius: 15px;
         font-size: 0.75em;
         font-weight: 700;
+        display:inline-flex;align-items:center;gap:4px;
       }
-      
+
+      .badge-inactive {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 3px 10px;
+        border-radius: 15px;
+        font-size: 0.75em;
+        font-weight: 700;
+        display:inline-flex;align-items:center;gap:4px;
+      }
+
+      .export-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 8px;
+        font-size: 0.82em;
+        font-weight: 700;
+        text-decoration: none;
+        transition: opacity 0.2s;
+      }
+      .export-btn:hover { opacity: 0.85; }
+      .excel-btn { background: #1d6f42; color: #fff; }
+      .pdf-btn   { background: #c0392b; color: #fff; }
+
+      .summary-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .summary-card {
+        background: white;
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        flex: 1;
+        min-width: 160px;
+      }
+      .summary-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+        flex-shrink: 0;
+      }
+      .summary-num { font-size: 1.5em; font-weight: 800; color: #2c2c2c; }
+      .summary-label { font-size: 0.78em; color: #888; margin-top: 2px; }
+
+      .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 5px 10px;
+        border-radius: 7px;
+        font-size: 0.77em;
+        font-weight: 700;
+        text-decoration: none;
+        transition: opacity 0.2s;
+        white-space: nowrap;
+      }
+      .action-btn:hover { opacity: 0.85; }
+      .edit-btn        { background: #F5C518; color: #2C2C2C; }
+      .deactivate-btn  { background: #e74c3c; color: #fff; }
+      .reactivate-btn  { background: #27ae60; color: #fff; }
+
+      .patient-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
       .total-badge {
         background: rgba(245, 197, 24, 0.15);
         color: #856404;
@@ -314,60 +393,133 @@
     <div class="main-content">
       <div class="topbar">
         <h1>👥 Manage Patients</h1>
-        <span class="topbar-badge">Total: {{ patients.count }}</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="topbar-badge">Total: {{ patient_data|length }}</span>
+          <a href="{% url 'export_patients_excel' %}" class="export-btn excel-btn"><i class="fas fa-file-excel"></i> Excel</a>
+          <a href="{% url 'export_patients_pdf' %}" class="export-btn pdf-btn"><i class="fas fa-file-pdf"></i> PDF</a>
+        </div>
       </div>
       <div class="dashboard-body">
-        <div class="table-card">
-          <div class="table-title">
-            <i class="fas fa-users"></i> All Registered Patients
+
+        <!-- Summary Cards -->
+        <div class="summary-row">
+          <div class="summary-card">
+            <div class="summary-icon" style="background:rgba(245,197,24,0.15);color:#f5c518;"><i class="fas fa-users"></i></div>
+            <div>
+              <div class="summary-num">{{ patient_data|length }}</div>
+              <div class="summary-label">Total Patients</div>
+            </div>
           </div>
-          {% if patients %}
+          <div class="summary-card">
+            <div class="summary-icon" style="background:rgba(39,174,96,0.15);color:#27ae60;"><i class="fas fa-user-check"></i></div>
+            <div>
+              <div class="summary-num">{% with active=0 %}{% for pd in patient_data %}{% if pd.user.is_active %}{% with active=active|add:1 %}{% endwith %}{% endif %}{% endfor %}{{ patient_data|length }}{% endwith %}</div>
+              <div class="summary-label">Active Patients</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon" style="background:rgba(52,152,219,0.15);color:#3498db;"><i class="fas fa-calendar-check"></i></div>
+            <div>
+              <div class="summary-num">{% for pd in patient_data %}{% endfor %}—</div>
+              <div class="summary-label">Total Appointments</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div><i class="fas fa-users"></i> All Registered Patients</div>
+            <div style="display:flex;gap:8px;">
+              <a href="{% url 'export_patients_excel' %}" class="export-btn excel-btn"><i class="fas fa-file-excel"></i> Export Excel</a>
+              <a href="{% url 'export_patients_pdf' %}" class="export-btn pdf-btn"><i class="fas fa-file-pdf"></i> Export PDF</a>
+            </div>
+          </div>
+          {% if patient_data %}
+            <div style="overflow-x:auto;">
             <table>
               <thead>
                 <tr>
                   <th>#</th>
                   <th>Patient</th>
-                  <th>Username</th>
+                  <th>Phone</th>
                   <th>Email</th>
-                  <th>Joined</th>
+                  <th>Gender</th>
+                  <th>Blood Grp</th>
+                  <th>Address</th>
+                  <th>Appointments</th>
                   <th>Status</th>
+                  <th>Joined</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {% for patient in patients %}
+                {% for pd in patient_data %}
                   <tr>
-                    <td style="color:#aaa; font-weight:600;">{{ forloop.counter }}</td>
+                    <td style="color:#aaa;font-weight:600;">{{ forloop.counter }}</td>
                     <td>
                       <div class="patient-cell">
-                        <div class="mini-avatar">{{ patient.username|first|upper }}</div>
+                        <div class="mini-avatar" style="{% if not pd.user.is_active %}background:#aaa;{% endif %}">
+                          {% if pd.profile and pd.profile.profile_photo %}
+                            <img src="{{ pd.profile.profile_photo.url }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="">
+                          {% else %}
+                            {{ pd.user.username|first|upper }}
+                          {% endif %}
+                        </div>
                         <div>
-                          <div style="font-weight:600; color:#2C2C2C;">
-                            {% if patient.first_name or patient.last_name %}
-                              {{ patient.first_name }} {{ patient.last_name }}
-                            {% else %}
-                              {{ patient.username }}
-                            {% endif %}
+                          <div style="font-weight:700;color:#2C2C2C;font-size:0.92em;">
+                            {% if pd.user.first_name or pd.user.last_name %}{{ pd.user.first_name }} {{ pd.user.last_name }}{% else %}{{ pd.user.username }}{% endif %}
                           </div>
+                          <div style="color:#888;font-size:0.78em;">@{{ pd.user.username }}</div>
                         </div>
                       </div>
                     </td>
-                    <td>@{{ patient.username }}</td>
-                    <td>{{ patient.email|default:'—' }}</td>
-                    <td>{{ patient.date_joined|date:'d M Y' }}</td>
                     <td>
-                      <span class="badge-active">✅ Active</span>
+                      {% if pd.profile and pd.profile.phone_number %}
+                        <span style="display:flex;align-items:center;gap:5px;"><i class="fas fa-phone" style="color:#27ae60;font-size:0.8em;"></i> {{ pd.profile.phone_number }}</span>
+                      {% else %}<span style="color:#ccc;">—</span>{% endif %}
+                    </td>
+                    <td style="font-size:0.85em;">{{ pd.user.email|default:'—' }}</td>
+                    <td>
+                      {% if pd.profile and pd.profile.gender %}
+                        {% if pd.profile.gender == 'Male' %}<span style="color:#3498db;font-size:0.82em;font-weight:600;"><i class="fas fa-mars"></i> Male</span>
+                        {% elif pd.profile.gender == 'Female' %}<span style="color:#e91e8c;font-size:0.82em;font-weight:600;"><i class="fas fa-venus"></i> Female</span>
+                        {% else %}<span style="font-size:0.82em;">{{ pd.profile.gender }}</span>{% endif %}
+                      {% else %}<span style="color:#ccc;">—</span>{% endif %}
                     </td>
                     <td>
-                      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                        <a href="{% url 'edit_patient' patient.id %}" style="background:#F5C518;color:#2C2C2C;padding:5px 11px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;">✏️ Edit</a>
-                        <a href="{% url 'delete_patient' patient.id %}" style="background:#C0392B;color:#fff;padding:5px 11px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;">🗑️ Delete</a>
+                      {% if pd.profile and pd.profile.blood_group %}
+                        <span style="background:#ffe0e0;color:#c0392b;padding:3px 8px;border-radius:12px;font-size:0.78em;font-weight:700;">{{ pd.profile.blood_group }}</span>
+                      {% else %}<span style="color:#ccc;">—</span>{% endif %}
+                    </td>
+                    <td style="font-size:0.82em;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                      {% if pd.profile and pd.profile.address %}{{ pd.profile.address }}{% else %}<span style="color:#ccc;">—</span>{% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                      <span style="background:rgba(52,152,219,0.12);color:#2980b9;padding:4px 10px;border-radius:12px;font-size:0.82em;font-weight:700;">{{ pd.appt_count }}</span>
+                    </td>
+                    <td>
+                      {% if pd.user.is_active %}
+                        <span class="badge-active"><i class="fas fa-circle" style="font-size:0.6em;"></i> Active</span>
+                      {% else %}
+                        <span class="badge-inactive"><i class="fas fa-circle" style="font-size:0.6em;"></i> Deactivated</span>
+                      {% endif %}
+                    </td>
+                    <td style="font-size:0.82em;color:#666;">{{ pd.user.date_joined|date:'d M Y' }}</td>
+                    <td>
+                      <div style="display:flex;gap:5px;flex-wrap:wrap;min-width:130px;">
+                        <a href="{% url 'edit_patient' pd.user.id %}" class="action-btn edit-btn"><i class="fas fa-edit"></i> Edit</a>
+                        {% if pd.user.is_active %}
+                          <a href="{% url 'delete_patient' pd.user.id %}" class="action-btn deactivate-btn"><i class="fas fa-ban"></i> Deactivate</a>
+                        {% else %}
+                          <a href="{% url 'reactivate_patient' pd.user.id %}" class="action-btn reactivate-btn"><i class="fas fa-check-circle"></i> Reactivate</a>
+                        {% endif %}
                       </div>
                     </td>
                   </tr>
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           {% else %}
             <div class="empty-state">
               <i class="fas fa-users"></i>

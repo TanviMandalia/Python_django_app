@@ -78,6 +78,18 @@ urlpatterns = [
     # ── Admin Patients CRUD ───────────────────────────────────
     path('admin-patients/edit/<int:user_id>/', views.edit_patient, name='edit_patient'),
     path('admin-patients/delete/<int:user_id>/', views.delete_patient, name='delete_patient'),
+    path('admin-patients/reactivate/<int:user_id>/', views.reactivate_patient, name='reactivate_patient'),
+
+    # ── Export: Patients ──────────────────────────────────────
+    path('export/patients/excel/', views.export_patients_excel, name='export_patients_excel'),
+    path('export/patients/pdf/', views.export_patients_pdf, name='export_patients_pdf'),
+
+    # ── Export: Appointments ──────────────────────────────────
+    path('export/appointments/excel/', views.export_appointments_excel, name='export_appointments_excel'),
+    path('export/appointments/pdf/', views.export_appointments_pdf, name='export_appointments_pdf'),
+
+    # ── Export: Analytics Report ──────────────────────────────
+    path('export/analytics/pdf/', views.export_analytics_pdf, name='export_analytics_pdf'),
 
     # ── Admin Staff Management ────────────────────────────────
     path('admin-staff/', views.admin_staff, name='admin_staff'),

@@ -16,7 +16,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.cache import cache                        # ← ADDED
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -735,8 +735,20 @@ def update_appointment(request, appt_id, status):
 def admin_patients(request):
     if not request.user.is_superuser:
         return redirect('client_dashboard')
-    patients = User.objects.filter(is_superuser=False, is_staff=False).order_by('-date_joined')
-    return render(request, 'admin_patients.html', {'patients': patients})
+    patients = User.objects.filter(is_superuser=False, is_staff=False).order_by('-date_joined').prefetch_related('profile', 'appointments')
+    patient_data = []
+    for p in patients:
+        try:
+            profile = p.profile
+        except Exception:
+            profile = None
+        appt_count = Appointment.objects.filter(patient=p).count()
+        patient_data.append({
+            'user': p,
+            'profile': profile,
+            'appt_count': appt_count,
+        })
+    return render(request, 'admin_patients.html', {'patient_data': patient_data})
 
 
 # ─── CHAT ────────────────────────────────────────────────────
@@ -1667,16 +1679,29 @@ def edit_patient(request, user_id):
 def delete_patient(request, user_id):
     if not request.user.is_superuser:
         return redirect('client_dashboard')
-    patient = get_object_or_404(User, id=user_id)
+    patient = get_object_or_404(User, id=user_id, is_superuser=False, is_staff=False)
     if request.method == 'POST':
-        patient.delete()
-        messages.success(request, '✅ Patient deleted.')
+        patient.is_active = False
+        patient.save()
+        messages.success(request, f'✅ Patient "{patient.get_full_name() or patient.username}" has been deactivated.')
         return redirect('admin_patients')
     return render(request, 'confirm_delete.html', {
-        'title': 'Delete Patient',
+        'title': 'Deactivate Patient',
         'item': patient.get_full_name() or patient.username,
+        'message': 'This will deactivate the patient account. They will not be able to log in. You can reactivate them anytime.',
         'cancel_url': '/admin-patients/',
     })
+
+
+@login_required
+def reactivate_patient(request, user_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    patient = get_object_or_404(User, id=user_id, is_superuser=False, is_staff=False)
+    patient.is_active = True
+    patient.save()
+    messages.success(request, f'✅ Patient "{patient.get_full_name() or patient.username}" has been reactivated.')
+    return redirect('admin_patients')
 
 
 # ─── ADMIN – STAFF CRUD ──────────────────────────────────────
@@ -2119,3 +2144,329 @@ def reports_analytics(request):
     })
     
     
+
+# ════════════════════════════════════════════════════════════
+# EXPORT VIEWS — Excel & PDF
+# ════════════════════════════════════════════════════════════
+
+import io
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib import colors
+from reportlab.lib.units import cm
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER
+
+
+# ─── PATIENTS EXPORT ─────────────────────────────────────────
+
+@login_required
+def export_patients_excel(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Patients'
+
+    # Styles
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    header_fill = PatternFill('solid', fgColor='1a1a1a')
+    header_align = Alignment(horizontal='center', vertical='center')
+    thin = Side(style='thin', color='CCCCCC')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    headers = ['#', 'Full Name', 'Username', 'Email', 'Phone', 'Gender', 'Date of Birth',
+               'Blood Group', 'Address', 'Appointments', 'Status', 'Joined Date']
+    ws.append(headers)
+
+    for col_idx, col in enumerate(ws[1], 1):
+        col.font = header_font
+        col.fill = header_fill
+        col.alignment = header_align
+        col.border = border
+
+    patients = User.objects.filter(is_superuser=False, is_staff=False).order_by('-date_joined')
+    for i, p in enumerate(patients, 1):
+        try:
+            prof = p.profile
+            phone = prof.phone_number or '—'
+            gender = prof.gender or '—'
+            dob = str(prof.date_of_birth) if prof.date_of_birth else '—'
+            blood = prof.blood_group or '—'
+            address = prof.address or '—'
+        except Exception:
+            phone = gender = dob = blood = address = '—'
+        appt_count = Appointment.objects.filter(patient=p).count()
+        status = 'Active' if p.is_active else 'Deactivated'
+        row = [i, p.get_full_name() or p.username, p.username, p.email,
+               phone, gender, dob, blood, address, appt_count, status,
+               p.date_joined.strftime('%d %b %Y')]
+        ws.append(row)
+        for cell in ws[ws.max_row]:
+            cell.border = border
+            cell.alignment = Alignment(vertical='center')
+
+    # Column widths
+    col_widths = [5, 22, 18, 28, 16, 10, 14, 12, 30, 14, 12, 16]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
+
+    ws.row_dimensions[1].height = 25
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="patients_list.xlsx"'
+    return response
+
+
+@login_required
+def export_patients_pdf(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
+                            rightMargin=1*cm, leftMargin=1*cm,
+                            topMargin=1.5*cm, bottomMargin=1*cm)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'],
+                                  fontSize=16, textColor=colors.HexColor('#1a1a1a'),
+                                  spaceAfter=6, alignment=TA_CENTER)
+    sub_style = ParagraphStyle('Sub', parent=styles['Normal'],
+                                fontSize=9, textColor=colors.grey,
+                                spaceAfter=12, alignment=TA_CENTER)
+    elements.append(Paragraph('Dr. Dhvani Patalia Physio-Rehab', title_style))
+    elements.append(Paragraph(f'Patient List — Generated on {timezone.now().strftime("%d %b %Y %H:%M")}', sub_style))
+
+    patients = User.objects.filter(is_superuser=False, is_staff=False).order_by('-date_joined')
+    data = [['#', 'Full Name', 'Email', 'Phone', 'Gender', 'Blood', 'Appointments', 'Status', 'Joined']]
+    for i, p in enumerate(patients, 1):
+        try:
+            prof = p.profile
+            phone = prof.phone_number or '—'
+            gender = prof.gender or '—'
+            blood = prof.blood_group or '—'
+        except Exception:
+            phone = gender = blood = '—'
+        appt_count = Appointment.objects.filter(patient=p).count()
+        status = 'Active' if p.is_active else 'Deactivated'
+        data.append([str(i), p.get_full_name() or p.username, p.email or '—',
+                     phone, gender, blood, str(appt_count), status,
+                     p.date_joined.strftime('%d %b %Y')])
+
+    col_widths = [0.8*cm, 4*cm, 5.5*cm, 3*cm, 2*cm, 1.8*cm, 2.5*cm, 2.5*cm, 3*cm]
+    t = Table(data, colWidths=col_widths, repeatRows=1)
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a1a1a')),
+        ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
+        ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE',   (0, 0), (-1, 0), 9),
+        ('ALIGN',      (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN',     (0, 0), (-1, -1), 'MIDDLE'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
+        ('FONTSIZE',   (0, 1), (-1, -1), 8),
+        ('GRID',       (0, 0), (-1, -1), 0.5, colors.HexColor('#DDDDDD')),
+        ('ROWHEIGHT',  (0, 0), (-1, -1), 18),
+    ]))
+    elements.append(t)
+    doc.build(elements)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="patients_list.pdf"'
+    return response
+
+
+# ─── APPOINTMENTS EXPORT ─────────────────────────────────────
+
+@login_required
+def export_appointments_excel(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Appointments'
+
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    header_fill = PatternFill('solid', fgColor='1a1a1a')
+    header_align = Alignment(horizontal='center', vertical='center')
+    thin = Side(style='thin', color='CCCCCC')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    headers = ['#', 'Patient Name', 'Email', 'Phone', 'Service', 'Date', 'Time', 'Status', 'Notes', 'Booked On']
+    ws.append(headers)
+    for col in ws[1]:
+        col.font = header_font
+        col.fill = header_fill
+        col.alignment = header_align
+        col.border = border
+
+    appts = Appointment.objects.all().order_by('-created_at')
+    for i, a in enumerate(appts, 1):
+        row = [i, a.name, a.email, a.phone, a.service,
+               str(a.date), a.time, a.status.upper(),
+               a.notes or '—', a.created_at.strftime('%d %b %Y')]
+        ws.append(row)
+        for cell in ws[ws.max_row]:
+            cell.border = border
+            cell.alignment = Alignment(vertical='center')
+
+    col_widths = [5, 22, 28, 16, 20, 14, 10, 14, 30, 16]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
+    ws.row_dimensions[1].height = 25
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="appointments.xlsx"'
+    return response
+
+
+@login_required
+def export_appointments_pdf(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
+                            rightMargin=1*cm, leftMargin=1*cm,
+                            topMargin=1.5*cm, bottomMargin=1*cm)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'],
+                                  fontSize=16, textColor=colors.HexColor('#1a1a1a'),
+                                  spaceAfter=6, alignment=TA_CENTER)
+    sub_style = ParagraphStyle('Sub', parent=styles['Normal'],
+                                fontSize=9, textColor=colors.grey,
+                                spaceAfter=12, alignment=TA_CENTER)
+    elements.append(Paragraph('Dr. Dhvani Patalia Physio-Rehab', title_style))
+    elements.append(Paragraph(f'Appointments Report — Generated on {timezone.now().strftime("%d %b %Y %H:%M")}', sub_style))
+
+    appts = Appointment.objects.all().order_by('-created_at')
+    data = [['#', 'Patient Name', 'Phone', 'Service', 'Date', 'Time', 'Status', 'Booked On']]
+    for i, a in enumerate(appts, 1):
+        data.append([str(i), a.name, a.phone, a.service,
+                     str(a.date), a.time, a.status.upper(),
+                     a.created_at.strftime('%d %b %Y')])
+
+    col_widths = [0.8*cm, 4.5*cm, 3*cm, 4.5*cm, 3*cm, 2.5*cm, 3*cm, 3*cm]
+    t = Table(data, colWidths=col_widths, repeatRows=1)
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a1a1a')),
+        ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
+        ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE',   (0, 0), (-1, 0), 9),
+        ('ALIGN',      (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN',     (0, 0), (-1, -1), 'MIDDLE'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
+        ('FONTSIZE',   (0, 1), (-1, -1), 8),
+        ('GRID',       (0, 0), (-1, -1), 0.5, colors.HexColor('#DDDDDD')),
+        ('ROWHEIGHT',  (0, 0), (-1, -1), 18),
+    ]))
+    elements.append(t)
+    doc.build(elements)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="appointments.pdf"'
+    return response
+
+
+# ─── ANALYTICS REPORT PDF ────────────────────────────────────
+
+@login_required
+def export_analytics_pdf(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                            rightMargin=2*cm, leftMargin=2*cm,
+                            topMargin=2*cm, bottomMargin=2*cm)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'],
+                                  fontSize=18, textColor=colors.HexColor('#1a1a1a'),
+                                  spaceAfter=4, alignment=TA_CENTER)
+    sub_style = ParagraphStyle('Sub', parent=styles['Normal'],
+                                fontSize=10, textColor=colors.grey,
+                                spaceAfter=20, alignment=TA_CENTER)
+    section_style = ParagraphStyle('Section', parent=styles['Heading2'],
+                                    fontSize=13, textColor=colors.HexColor('#f5c518'),
+                                    spaceBefore=14, spaceAfter=6)
+
+    elements.append(Paragraph('Dr. Dhvani Patalia Physio-Rehab', title_style))
+    elements.append(Paragraph(f'Analytics Report — {timezone.now().strftime("%d %b %Y")}', sub_style))
+
+    total_patients = User.objects.filter(is_superuser=False, is_staff=False).count()
+    active_patients = User.objects.filter(is_superuser=False, is_staff=False, is_active=True).count()
+    total_appts = Appointment.objects.count()
+    completed = Appointment.objects.filter(status='completed').count()
+    confirmed = Appointment.objects.filter(status='confirmed').count()
+    pending = Appointment.objects.filter(status='pending').count()
+    cancelled = Appointment.objects.filter(status='cancelled').count()
+    total_staff = StaffProfile.objects.count()
+
+    elements.append(Paragraph('Summary Statistics', section_style))
+    summary_data = [
+        ['Metric', 'Count'],
+        ['Total Patients', str(total_patients)],
+        ['Active Patients', str(active_patients)],
+        ['Deactivated Patients', str(total_patients - active_patients)],
+        ['Total Staff', str(total_staff)],
+        ['Total Appointments', str(total_appts)],
+        ['Completed Appointments', str(completed)],
+        ['Confirmed Appointments', str(confirmed)],
+        ['Pending Appointments', str(pending)],
+        ['Cancelled Appointments', str(cancelled)],
+    ]
+    t = Table(summary_data, colWidths=[10*cm, 5*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a1a1a')),
+        ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
+        ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('ALIGN',      (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN',     (0, 0), (-1, -1), 'MIDDLE'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
+        ('FONTSIZE',   (0, 0), (-1, -1), 10),
+        ('GRID',       (0, 0), (-1, -1), 0.5, colors.HexColor('#DDDDDD')),
+        ('ROWHEIGHT',  (0, 0), (-1, -1), 20),
+    ]))
+    elements.append(t)
+
+    elements.append(Paragraph('Service Breakdown', section_style))
+    from django.db.models import Count
+    service_stats = Appointment.objects.values('service').annotate(count=Count('id')).order_by('-count')
+    svc_data = [['Service', 'Total Appointments']]
+    for s in service_stats:
+        svc_data.append([s['service'].replace('_', ' ').title(), str(s['count'])])
+    if len(svc_data) > 1:
+        t2 = Table(svc_data, colWidths=[10*cm, 5*cm])
+        t2.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a1a1a')),
+            ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
+            ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('ALIGN',      (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN',     (0, 0), (-1, -1), 'MIDDLE'),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
+            ('FONTSIZE',   (0, 0), (-1, -1), 10),
+            ('GRID',       (0, 0), (-1, -1), 0.5, colors.HexColor('#DDDDDD')),
+            ('ROWHEIGHT',  (0, 0), (-1, -1), 20),
+        ]))
+        elements.append(t2)
+
+    doc.build(elements)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="analytics_report.pdf"'
+    return response
