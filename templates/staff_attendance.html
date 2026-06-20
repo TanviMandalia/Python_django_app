@@ -288,7 +288,7 @@
                 {% elif today_record.clock_in %}
                     <!-- Clocked in, not yet clocked out -->
                     <div class="shift-actions">
-                        <form method="POST" action="{% url 'admin_blog_delete' blog.id %}">{% csrf_token %}
+                        <form method="POST" action="{% url 'staff_attendance' %}">{% csrf_token %}
                             <button type="submit" name="action" value="morning_clock_out"
                                 class="btn-clockout" {% if not in_morning and not between_shifts and not after_evening %}disabled{% endif %}>
                                 <i class="fas fa-sign-out-alt"></i> Clock Out Morning
@@ -305,7 +305,7 @@
                     <div class="shift-missed-banner">❌ Morning shift not attended today</div>
                 {% elif in_morning %}
                     <div class="shift-actions">
-                        <form method="POST" action="{% url 'admin_blog_delete' blog.id %}">{% csrf_token %}
+                        <form method="POST" action="{% url 'staff_attendance' %}">{% csrf_token %}
                             <button type="submit" name="action" value="morning_clock_in" class="btn-clockin">
                                 <i class="fas fa-sign-in-alt"></i> Clock In Morning
                             </button>
@@ -348,7 +348,7 @@
                     <div class="shift-done-banner">✅ Evening shift completed — {{ today_record.evening_hours }} hrs</div>
                 {% elif today_record.evening_clock_in %}
                     <div class="shift-actions">
-                        <form method="POST" action="{% url 'admin_blog_delete' blog.id %}">{% csrf_token %}
+                        <form method="POST" action="{% url 'staff_attendance' %}">{% csrf_token %}
                             <button type="submit" name="action" value="evening_clock_out"
                                 class="btn-clockout" {% if not in_evening and not after_evening %}disabled{% endif %}>
                                 <i class="fas fa-sign-out-alt"self._auto_approve_expired_leaves()></i> Clock Out Evening
@@ -371,7 +371,7 @@
                     A leave application will be submitted for admin approval.
                 </div>
                 <div class="shift-actions" style="margin-top:10px;">
-                    <form method="POST" action="{% url 'admin_blog_delete' blog.id %}">{% csrf_token %}
+                    <form method="POST" action="{% url 'staff_attendance' %}">{% csrf_token %}
                         <button type="submit" name="action" value="evening_clock_in" class="btn-evening-in">
                             <i class="fas fa-sign-in-alt"></i> Clock In (First Half Leave)
                         </button>
@@ -379,7 +379,7 @@
                 </div>
                     {% else %}
                         <div class="shift-actions">
-                            <form method="POST" action="{% url 'admin_blog_delete' blog.id %}">{% csrf_token %}
+                            <form method="POST" action="{% url 'staff_attendance' %}">{% csrf_token %}
                                 <button type="submit" name="action" value="evening_clock_in" class="btn-evening-in">
                                     <i class="fas fa-sign-in-alt"></i> Clock In Evening
                                 </button>
