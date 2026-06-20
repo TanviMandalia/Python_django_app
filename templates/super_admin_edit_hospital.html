@@ -302,56 +302,52 @@
         <div class="topbar-user">👑 {{ user.username }}</div>
       </div>
       <div class="body">
-        {% for m in messages %}{% if m.tags == 'success' %}
-        <div class="alert-success">{{ m }}</div>
-        {% else %}
-        <div class="alert-error">{{ m }}</div>
-        {% endif %}{% endfor %}
+        {% for m in messages %}
+          {% if m.tags == 'success' %}
+            <div class="alert-success">{{ m }}</div>
+          {% else %}
+            <div class="alert-error">{{ m }}</div>
+          {% endif %}
+        {% endfor %}
 
         <form method="post">
           {% csrf_token %}
           <div class="form-grid">
+
+            <!-- Hospital Details Card -->
             <div class="card">
               <div class="section-title">
                 <i class="fas fa-hospital"></i> Hospital Details
               </div>
+
               {% if hospital.admins.all %}
               <div class="admin-info">
                 <strong>Admin accounts:</strong>
-                {% for ca in hospital.admins.all %} {{ ca.user.username }}{% if
-                not forloop.last %},{% endif %}{% endfor %}
+                {% for ca in hospital.admins.all %}
+                  {{ ca.user.username }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
               </div>
               {% endif %}
+
               <div class="form-group">
-                <label>Hospital Name</label
-                ><input
-                  type="text"
-                  name="name"
-                  value="{{ hospital.name }}"
-                  required
-                />
+                <label>Hospital Name</label>
+                <input type="text" name="name" value="{{ hospital.name }}" required />
               </div>
               <div class="form-group">
-                <label>City</label
-                ><input type="text" name="city" value="{{ hospital.city }}" />
+                <label>City</label>
+                <input type="text" name="city" value="{{ hospital.city }}" />
               </div>
               <div class="form-group">
-                <label>Address</label
-                ><textarea name="address" rows="2">
-{{ hospital.address }}</textarea
-                >
+                <label>Address</label>
+                <textarea name="address" rows="2">{{ hospital.address }}</textarea>
               </div>
               <div class="form-group">
-                <label>Phone</label
-                ><input type="text" name="phone" value="{{ hospital.phone }}" />
+                <label>Phone</label>
+                <input type="text" name="phone" value="{{ hospital.phone }}" />
               </div>
               <div class="form-group">
-                <label>Email</label
-                ><input
-                  type="email"
-                  name="email"
-                  value="{{ hospital.email }}"
-                />
+                <label>Email</label>
+                <input type="email" name="email" value="{{ hospital.email }}" />
               </div>
               <div class="form-group">
                 <label>Active Status</label>
@@ -360,26 +356,21 @@
                     type="checkbox"
                     name="is_active"
                     id="is_active"
-                    {%
-                    if
-                    hospital.is_active
-                    %}checked{%
-                    endif
-                    %}
+                    {% if hospital.is_active %}checked{% endif %}
                   />
-                  <label
-                    for="is_active"
-                    style="text-transform: none; letter-spacing: 0"
-                    >Hospital is active and can be accessed by its admin</label
-                  >
+                  <label for="is_active" style="text-transform: none; letter-spacing: 0">
+                    Hospital is active and can be accessed by its admin
+                  </label>
                 </div>
               </div>
             </div>
 
+            <!-- Subscription Card -->
             <div class="card">
               <div class="section-title">
                 <i class="fas fa-credit-card"></i> Subscription
               </div>
+
               <div class="form-group">
                 <label>Plan</label>
                 <select name="plan">
@@ -387,84 +378,36 @@
                   {% for p in plans %}
                   <option
                     value="{{ p.id }}"
-                    {%
-                    if
-                    subscription
-                    and
-                    subscription.plan
-                    and
-                    subscription.plan.id=""
-                    ="p.id"
-                    %}selected{%
-                    endif
-                    %}
+                    {% if subscription and subscription.plan and subscription.plan.id == p.id %}selected{% endif %}
                   >
                     {{ p.get_name_display }} (₹{{ p.price_monthly }}/mo)
                   </option>
                   {% endfor %}
                 </select>
               </div>
+
               <div class="form-group">
                 <label>Subscription Status</label>
                 <select name="sub_status">
-                  <option
-                    value="trial"
-                    {%
-                    if
-                    subscription
-                    and
-                    subscription.status=""
-                    ="trial"
-                    %}selected{%
-                    endif
-                    %}
-                  >
+                  <option value="trial"
+                    {% if subscription and subscription.status == "trial" %}selected{% endif %}>
                     Trial
                   </option>
-                  <option
-                    value="active"
-                    {%
-                    if
-                    subscription
-                    and
-                    subscription.status=""
-                    ="active"
-                    %}selected{%
-                    endif
-                    %}
-                  >
+                  <option value="active"
+                    {% if subscription and subscription.status == "active" %}selected{% endif %}>
                     Active
                   </option>
-                  <option
-                    value="expired"
-                    {%
-                    if
-                    subscription
-                    and
-                    subscription.status=""
-                    ="expired"
-                    %}selected{%
-                    endif
-                    %}
-                  >
+                  <option value="expired"
+                    {% if subscription and subscription.status == "expired" %}selected{% endif %}>
                     Expired
                   </option>
-                  <option
-                    value="cancelled"
-                    {%
-                    if
-                    subscription
-                    and
-                    subscription.status=""
-                    ="cancelled"
-                    %}selected{%
-                    endif
-                    %}
-                  >
+                  <option value="cancelled"
+                    {% if subscription and subscription.status == "cancelled" %}selected{% endif %}>
                     Cancelled
                   </option>
                 </select>
               </div>
+
               <div class="form-group">
                 <label>Expiry Date</label>
                 <input
@@ -474,15 +417,16 @@
                 />
               </div>
             </div>
-          </div>
+
+          </div><!-- /.form-grid -->
 
           <div class="btn-row">
             <button type="submit" class="btn-primary">
               <i class="fas fa-save"></i> Save Changes
             </button>
-            <a href="{% url 'super_admin_hospitals' %}" class="btn-cancel"
-              ><i class="fas fa-times"></i> Cancel</a
-            >
+            <a href="{% url 'super_admin_hospitals' %}" class="btn-cancel">
+              <i class="fas fa-times"></i> Cancel
+            </a>
           </div>
         </form>
       </div>

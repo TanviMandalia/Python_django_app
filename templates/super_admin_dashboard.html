@@ -1,14 +1,11 @@
 {% load static %}
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>Super Admin — Platform Dashboard</title>
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      rel="stylesheet"
-    />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <style>
       * {
         margin: 0;
@@ -16,7 +13,7 @@
         box-sizing: border-box;
       }
       body {
-        font-family: "Segoe UI", sans-serif;
+        font-family: 'Segoe UI', sans-serif;
         background: #f0f2f5;
         display: flex;
       }
@@ -401,38 +398,26 @@
       <div class="sidebar-badge">Platform Administrator</div>
       <nav>
         <div class="nav-section">Platform</div>
-        <a href="{% url 'super_admin_dashboard' %}" class="nav-item active"
-          ><i class="fas fa-tachometer-alt"></i> Dashboard</a
-        >
-        <a href="{% url 'super_admin_hospitals' %}" class="nav-item"
-          ><i class="fas fa-hospital"></i> Hospitals</a
-        >
-        <a href="{% url 'super_admin_subscriptions' %}" class="nav-item"
-          ><i class="fas fa-credit-card"></i> Subscriptions</a
-        >
+        <a href="{% url 'super_admin_dashboard' %}" class="nav-item active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="{% url 'super_admin_hospitals' %}" class="nav-item"><i class="fas fa-hospital"></i> Hospitals</a>
+        <a href="{% url 'super_admin_subscriptions' %}" class="nav-item"><i class="fas fa-credit-card"></i> Subscriptions</a>
         <div class="nav-section">Reports</div>
-        <a href="{% url 'super_admin_analytics' %}" class="nav-item"
-          ><i class="fas fa-chart-bar"></i> Analytics</a
-        >
+        <a href="{% url 'super_admin_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
         <div class="nav-section">Support</div>
-        <a href="{% url 'super_admin_support' %}" class="nav-item"
-          ><i class="fas fa-headset"></i> Support Tickets {% if open_tickets > 0
-          %}<span
-            style="
+        <a href="{% url 'super_admin_support' %}" class="nav-item">
+          <i class="fas fa-headset"></i> Support Tickets{% if open_tickets > 0 %}
+            <span style="
               background: #e83e8c;
               color: #fff;
               border-radius: 10px;
               padding: 1px 7px;
               font-size: 0.72em;
               margin-left: auto;
-            "
-            >{{ open_tickets }}</span
-          >{% endif %}</a
-        >
+            ">{{ open_tickets }}</span>
+          {% endif %}
+        </a>
       </nav>
-      <a href="{% url 'logout' %}" class="logout-btn"
-        ><i class="fas fa-sign-out-alt"></i> Logout</a
-      >
+      <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </aside>
 
     <div class="main">
@@ -443,24 +428,22 @@
         </div>
       </div>
       <div class="body">
-        {% for m in messages %}{% if m.tags == 'success' %}
-        <div class="alert-success">{{ m }}</div>
-        {% else %}
-        <div class="alert-error">{{ m }}</div>
-        {% endif %}{% endfor %}
+        {% for m in messages %}
+          {% if m.tags == 'success' %}
+            <div class="alert-success">{{ m }}</div>
+          {% else %}
+            <div class="alert-error">{{ m }}</div>
+          {% endif %}
+        {% endfor %}
 
         <div class="welcome-banner">
           <div>
-            <h2>
-              Welcome, <span>{{ user.first_name|default:user.username }}</span>!
-              👑
-            </h2>
-            <p>
-              You have full control over the platform. Manage all clinics,
-              subscriptions, and support tickets.
-            </p>
+            <h2>Welcome, <span>{{ user.first_name|default:user.username }}</span>! 👑</h2>
+            <p>You have full control over the platform. Manage all clinics, subscriptions, and support tickets.</p>
           </div>
-          <div class="welcome-icon"><i class="fas fa-crown"></i></div>
+          <div class="welcome-icon">
+            <i class="fas fa-crown"></i>
+          </div>
         </div>
 
         <div class="stats-grid">
@@ -483,7 +466,9 @@
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon icon-blue"><i class="fas fa-users"></i></div>
+            <div class="stat-icon icon-blue">
+              <i class="fas fa-users"></i>
+            </div>
             <div class="stat-info">
               <h3>{{ total_patients }}</h3>
               <p>Total Patients</p>
@@ -508,14 +493,18 @@
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon icon-gold"><i class="fas fa-star"></i></div>
+            <div class="stat-icon icon-gold">
+              <i class="fas fa-star"></i>
+            </div>
             <div class="stat-info">
               <h3>{{ active_subs }}</h3>
               <p>Active Subscriptions</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon icon-pink"><i class="fas fa-flask"></i></div>
+            <div class="stat-icon icon-pink">
+              <i class="fas fa-flask"></i>
+            </div>
             <div class="stat-info">
               <h3>{{ trial_subs }}</h3>
               <p>On Trial</p>
@@ -538,36 +527,36 @@
               <div class="card-title">
                 <i class="fas fa-hospital"></i> Recent Hospitals
               </div>
-              <a href="{% url 'super_admin_hospitals' %}" class="view-all"
-                >View All →</a
-              >
+              <a href="{% url 'super_admin_hospitals' %}" class="view-all">View All →</a>
             </div>
-            {% if recent_hospitals %} {% for h in recent_hospitals %}
-            <div class="hospital-item">
-              <div>
-                <div class="hospital-name">{{ h.name }}</div>
-                <div class="hospital-meta">
-                  {{ h.city|default:"—" }} · {{ h.created_at|date:"M d, Y" }}
+            {% if recent_hospitals %}
+              {% for h in recent_hospitals %}
+                <div class="hospital-item">
+                  <div>
+                    <div class="hospital-name">{{ h.name }}</div>
+                    <div class="hospital-meta">{{ h.city|default:'—' }} · {{ h.created_at|date:'M d, Y' }}</div>
+                  </div>
+                  <span class="badge {% if h.is_active %}
+                      badge-active
+                    {% else %}
+                      badge-inactive
+                    {% endif %}">
+                    {% if h.is_active %}
+                      Active
+                    {% else %}
+                      Inactive
+                    {% endif %}
+                  </span>
                 </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty">
+                <i class="fas fa-hospital"></i>
+                <p>
+                  No hospitals yet.
+                  <a href="{% url 'super_admin_add_hospital' %}" style="color: #8b5cf6">Add one →</a>
+                </p>
               </div>
-              <span
-                class="badge {% if h.is_active %}badge-active{% else %}badge-inactive{% endif %}"
-              >
-                {% if h.is_active %}Active{% else %}Inactive{% endif %}
-              </span>
-            </div>
-            {% endfor %} {% else %}
-            <div class="empty">
-              <i class="fas fa-hospital"></i>
-              <p>
-                No hospitals yet.
-                <a
-                  href="{% url 'super_admin_add_hospital' %}"
-                  style="color: #8b5cf6"
-                  >Add one →</a
-                >
-              </p>
-            </div>
             {% endif %}
           </div>
 
@@ -576,27 +565,26 @@
               <div class="card-title">
                 <i class="fas fa-headset"></i> Recent Support Tickets
               </div>
-              <a href="{% url 'super_admin_support' %}" class="view-all"
-                >View All →</a
-              >
+              <a href="{% url 'super_admin_support' %}" class="view-all">View All →</a>
             </div>
-            {% if recent_tickets %} {% for t in recent_tickets %}
-            <div class="ticket-item">
-              <div class="ticket-dot"><i class="fas fa-comment"></i></div>
-              <div class="ticket-info">
-                <h4>{{ t.subject|truncatechars:45 }}</h4>
-                <p>
-                  {{ t.hospital.name|default:"Platform" }} · {{
-                  t.created_at|date:"M d, Y" }}
-                </p>
+            {% if recent_tickets %}
+              {% for t in recent_tickets %}
+                <div class="ticket-item">
+                  <div class="ticket-dot">
+                    <i class="fas fa-comment"></i>
+                  </div>
+                  <div class="ticket-info">
+                    <h4>{{ t.subject|truncatechars:45 }}</h4>
+                    <p>{{ t.hospital.name|default:'Platform' }} · {{ t.created_at|date:'M d, Y' }}</p>
+                  </div>
+                  <span class="badge badge-open">{{ t.get_status_display }}</span>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty">
+                <i class="fas fa-headset"></i>
+                <p>No support tickets yet.</p>
               </div>
-              <span class="badge badge-open">{{ t.get_status_display }}</span>
-            </div>
-            {% endfor %} {% else %}
-            <div class="empty">
-              <i class="fas fa-headset"></i>
-              <p>No support tickets yet.</p>
-            </div>
             {% endif %}
           </div>
         </div>

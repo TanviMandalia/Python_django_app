@@ -1,322 +1,680 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <title>Manage Patients - Admin</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;display:flex;min-height:100vh}
-    .sidebar{width:260px;height:100vh;position:fixed;left:0;top:0;background:linear-gradient(180deg,#1a1a1a,#2c2c2c);overflow-y:auto;scrollbar-width:none}
-    .sidebar-logo{padding:22px 20px;border-bottom:1px solid rgba(245,197,24,0.2);text-align:center}
-    .sidebar-logo img{width:130px;border-radius:10px}
-    .sidebar-logo p{color:#f5c518;font-size:0.75em;margin-top:8px;font-weight:600}
-    .sidebar-user{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px}
-    .user-avatar{width:42px;height:42px;background:#f5c518;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#2c2c2c}
-    .user-info h4{color:#fff;font-size:0.88em}
-    .user-info span{color:#f5c518;font-size:0.72em}
-    .nav-section{padding:12px 22px 5px;color:#555;font-size:0.7em;text-transform:uppercase;letter-spacing:1.5px;font-weight:700}
-    .nav-item{display:flex;align-items:center;gap:12px;padding:12px 22px;color:#bbb;text-decoration:none;font-size:0.9em;transition:all 0.3s;border-left:3px solid transparent}
-    .nav-item:hover,.nav-item.active{background:rgba(245,197,24,0.1);color:#f5c518;border-left-color:#f5c518}
-    .nav-item i{width:18px;text-align:center}
-    .logout-btn{margin:15px;display:flex;align-items:center;gap:10px;padding:11px 18px;background:rgba(220,53,69,0.15);color:#ff6b6b;border-radius:10px;text-decoration:none;font-size:0.86em}
-    .main-content{margin-left:260px;flex:1}
-    .topbar{background:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,0.06);position:sticky;top:0;z-index:50}
-    .topbar h1{font-size:1.2em;color:#2c2c2c;font-weight:700}
-    .topbar-badge{background:#f5c518;color:#2c2c2c;padding:5px 14px;border-radius:20px;font-size:0.8em;font-weight:700}
-    .export-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:0.82em;font-weight:700;text-decoration:none;transition:opacity 0.2s}
-    .export-btn:hover{opacity:0.85}
-    .excel-btn{background:#1d6f42;color:#fff}
-    .pdf-btn{background:#c0392b;color:#fff}
-    .dashboard-body{padding:25px}
-    .summary-row{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
-    .summary-card{background:#fff;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);flex:1;min-width:150px}
-    .summary-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2em;flex-shrink:0}
-    .summary-num{font-size:1.5em;font-weight:800;color:#2c2c2c}
-    .summary-label{font-size:0.78em;color:#888;margin-top:2px}
-    .table-card{background:#fff;border-radius:15px;padding:22px;box-shadow:0 3px 12px rgba(0,0,0,0.06)}
-    .table-title{font-size:1em;font-weight:700;color:#2c2c2c;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px}
-    .table-title i{color:#f5c518}
-    table{width:100%;border-collapse:collapse}
-    th{background:#f9f9f9;padding:11px 12px;text-align:left;font-size:0.75em;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #f0f0f0;white-space:nowrap}
-    td{padding:12px 12px;font-size:0.84em;color:#333;border-bottom:1px solid #f5f5f5;vertical-align:top}
-    tr:last-child td{border-bottom:none}
-    tr:hover td{background:#fafafa}
-    .patient-cell{display:flex;align-items:center;gap:10px}
-    .mini-avatar{width:36px;height:36px;background:#f5c518;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#2c2c2c;font-size:0.83em;flex-shrink:0}
-    .badge-active{background:#d4edda;color:#155724;padding:3px 9px;border-radius:12px;font-size:0.73em;font-weight:700;display:inline-flex;align-items:center;gap:4px}
-    .badge-inactive{background:#f8d7da;color:#721c24;padding:3px 9px;border-radius:12px;font-size:0.73em;font-weight:700;display:inline-flex;align-items:center;gap:4px}
-    .action-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:7px;font-size:0.75em;font-weight:700;text-decoration:none;transition:opacity 0.2s;white-space:nowrap}
-    .action-btn:hover{opacity:0.82}
-    .edit-btn{background:#F5C518;color:#2C2C2C}
-    .deactivate-btn{background:#e74c3c;color:#fff}
-    .reactivate-btn{background:#27ae60;color:#fff}
-    .diag-cell{max-width:140px;font-size:0.82em;color:#555;line-height:1.35;word-break:break-word}
-    .fee-cell{font-weight:700;color:#27ae60;white-space:nowrap}
-    .date-cell{font-size:0.82em;color:#666;white-space:nowrap}
-    .phone-cell{white-space:nowrap;font-size:0.84em}
-    .empty-state{text-align:center;padding:50px;color:#aaa}
-    .empty-state i{font-size:3em;color:#ddd;margin-bottom:15px;display:block}
-    .search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-    .search-bar input{padding:8px 14px;border:1px solid #ddd;border-radius:8px;font-size:0.87em;outline:none;min-width:220px}
-    .search-bar input:focus{border-color:#f5c518}
-    .none-tag{color:#ccc;font-size:0.82em}
-  </style>
-</head>
-<body>
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo"/>
-      <p>Admin Panel</p>
-    </div>
-    <div class="sidebar-user">
-      <div class="user-avatar">{{ user.username|first|upper }}</div>
-      <div class="user-info">
-        <h4>{{ user.username }}</h4>
-        <span>Super Admin</span>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Manage Patients - Admin</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Segoe UI', sans-serif;
+        background: #f5f5f5;
+        display: flex;
+        min-height: 100vh;
+      }
+      .sidebar {
+        width: 260px;
+        height: 100vh;
+        position: fixed;
+        left: 0;
+        top: 0;
+        background: linear-gradient(180deg, #1a1a1a, #2c2c2c);
+        overflow-y: auto;
+        scrollbar-width: none;
+      }
+      .sidebar-logo {
+        padding: 22px 20px;
+        border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+        text-align: center;
+      }
+      .sidebar-logo img {
+        width: 130px;
+        border-radius: 10px;
+      }
+      .sidebar-logo p {
+        color: #f5c518;
+        font-size: 0.75em;
+        margin-top: 8px;
+        font-weight: 600;
+      }
+      .sidebar-user {
+        padding: 18px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .user-avatar {
+        width: 42px;
+        height: 42px;
+        background: #f5c518;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        color: #2c2c2c;
+      }
+      .user-info h4 {
+        color: #fff;
+        font-size: 0.88em;
+      }
+      .user-info span {
+        color: #f5c518;
+        font-size: 0.72em;
+      }
+      .nav-section {
+        padding: 12px 22px 5px;
+        color: #555;
+        font-size: 0.7em;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-weight: 700;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 22px;
+        color: #bbb;
+        text-decoration: none;
+        font-size: 0.9em;
+        transition: all 0.3s;
+        border-left: 3px solid transparent;
+      }
+      .nav-item:hover,
+      .nav-item.active {
+        background: rgba(245, 197, 24, 0.1);
+        color: #f5c518;
+        border-left-color: #f5c518;
+      }
+      .nav-item i {
+        width: 18px;
+        text-align: center;
+      }
+      .logout-btn {
+        margin: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 18px;
+        background: rgba(220, 53, 69, 0.15);
+        color: #ff6b6b;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 0.86em;
+      }
+      .main-content {
+        margin-left: 260px;
+        flex: 1;
+      }
+      .topbar {
+        background: #fff;
+        padding: 16px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        position: fixed;
+        width: 100%;
+      }
+      .topbar h1 {
+        font-size: 1.2em;
+        color: #2c2c2c;
+        font-weight: 700;
+      }
+      .topbar-badge {
+        background: #f5c518;
+        color: #2c2c2c;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: 700;
+      }
+      .export-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 8px;
+        font-size: 0.82em;
+        font-weight: 700;
+        text-decoration: none;
+        transition: opacity 0.2s;
+      }
+      .export-btn:hover {
+        opacity: 0.85;
+      }
+      .excel-btn {
+        background: #1d6f42;
+        color: #fff;
+      }
+      .pdf-btn {
+        background: #c0392b;
+        color: #fff;
+      }
+      .dashboard-body {
+        padding: 25px;
+      }
+      .summary-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .summary-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        flex: 1;
+        min-width: 150px;
+      }
+      .summary-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+        flex-shrink: 0;
+      }
+      .summary-num {
+        font-size: 1.5em;
+        font-weight: 800;
+        color: #2c2c2c;
+      }
+      .summary-label {
+        font-size: 0.78em;
+        color: #888;
+        margin-top: 2px;
+      }
+      .table-card {
+        background: #fff;
+        border-radius: 15px;
+        padding: 22px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+      }
+      .table-title {
+        font-size: 1em;
+        font-weight: 700;
+        color: #2c2c2c;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+      .table-title i {
+        color: #f5c518;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        background: #f9f9f9;
+        padding: 11px 12px;
+        text-align: left;
+        font-size: 0.75em;
+        color: #888;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #f0f0f0;
+        white-space: nowrap;
+      }
+      td {
+        padding: 12px 12px;
+        font-size: 0.84em;
+        color: #333;
+        border-bottom: 1px solid #f5f5f5;
+        vertical-align: top;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      tr:hover td {
+        background: #fafafa;
+      }
+      .patient-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .mini-avatar {
+        width: 36px;
+        height: 36px;
+        background: #f5c518;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        color: #2c2c2c;
+        font-size: 0.83em;
+        flex-shrink: 0;
+      }
+      .badge-active {
+        background: #d4edda;
+        color: #155724;
+        padding: 3px 9px;
+        border-radius: 12px;
+        font-size: 0.73em;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .badge-inactive {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 3px 9px;
+        border-radius: 12px;
+        font-size: 0.73em;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 9px;
+        border-radius: 7px;
+        font-size: 0.75em;
+        font-weight: 700;
+        text-decoration: none;
+        transition: opacity 0.2s;
+        white-space: nowrap;
+      }
+      .action-btn:hover {
+        opacity: 0.82;
+      }
+      .edit-btn {
+        background: #f5c518;
+        color: #2c2c2c;
+      }
+      .deactivate-btn {
+        background: #e74c3c;
+        color: #fff;
+      }
+      .reactivate-btn {
+        background: #27ae60;
+        color: #fff;
+      }
+      .diag-cell {
+        max-width: 140px;
+        font-size: 0.82em;
+        color: #555;
+        line-height: 1.35;
+        word-break: break-word;
+      }
+      .fee-cell {
+        font-weight: 700;
+        color: #27ae60;
+        white-space: nowrap;
+      }
+      .date-cell {
+        font-size: 0.82em;
+        color: #666;
+        white-space: nowrap;
+      }
+      .phone-cell {
+        white-space: nowrap;
+        font-size: 0.84em;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 50px;
+        color: #aaa;
+      }
+      .empty-state i {
+        font-size: 3em;
+        color: #ddd;
+        margin-bottom: 15px;
+        display: block;
+      }
+      .search-bar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .search-bar input {
+        padding: 8px 14px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 0.87em;
+        outline: none;
+        min-width: 220px;
+      }
+      .search-bar input:focus {
+        border-color: #f5c518;
+      }
+      .none-tag {
+        color: #ccc;
+        font-size: 0.82em;
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
+        <p>Admin Panel</p>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar">{{ user.username|first|upper }}</div>
+        <div class="user-info">
+          <h4>{{ user.username }}</h4>
+          <span>Super Admin</span>
+        </div>
+      </div>
+      <nav>
+        <div class="nav-section">Overview</div>
+        <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <div class="nav-section">Management</div>
+        <a href="{% url 'admin_patients' %}" class="nav-item active"><i class="fas fa-users"></i> Manage Patients</a>
+        <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+        <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
+        <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+        <div class="nav-section">Staff Tools</div>
+        <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
+        <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+        <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+        <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
+        <div class="nav-section">Communication</div>
+        <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+        <div class="nav-section">Content</div>
+        <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
+        <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
+        <div class="nav-section">Reports</div>
+        <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress Tracking</a>
+        <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+        <div class="nav-section">System</div>
+        <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+        <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+        <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+      </nav>
+      <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+
+    <div class="main-content">
+      <div class="topbar">
+        <h1>👥 Manage Patients</h1>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="topbar-badge">Total: {{ patient_data|length }}</span>
+          <a href="{% url 'export_patients_excel' %}" class="export-btn excel-btn"><i class="fas fa-file-excel"></i> Excel</a>
+          <a href="{% url 'export_patients_pdf' %}" class="export-btn pdf-btn"><i class="fas fa-file-pdf"></i> PDF</a>
+        </div>
+      </div>
+
+      <div class="dashboard-body">
+        <!-- Summary Cards -->
+        <div class="summary-row">
+          <div class="summary-card">
+            <div class="summary-icon" style="background:rgba(245,197,24,0.15);color:#f5c518;">
+              <i class="fas fa-users"></i>
+            </div>
+            <div>
+              <div class="summary-num">{{ patient_data|length }}</div>
+              <div class="summary-label">Total Patients</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon" style="background:rgba(39,174,96,0.15);color:#27ae60;">
+              <i class="fas fa-user-check"></i>
+            </div>
+            <div>
+              <div class="summary-num">
+                {% for pd in patient_data %}
+                  {% if pd.user.is_active %}{% endif %}
+                {% endfor %}{{ patient_data|length }}
+              </div>
+              <div class="summary-label">Active Patients</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon" style="background:rgba(52,152,219,0.15);color:#3498db;">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div>
+              <div class="summary-num">
+                {% with total=0 %}
+                  {% for pd in patient_data %}
+                    {{ pd.appt_count|add:0 }}
+                  {% endfor %}
+                {% endwith %}
+              </div>
+              <div class="summary-label">Total Appointments</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon" style="background:rgba(155,89,182,0.15);color:#9b59b6;">
+              <i class="fas fa-notes-medical"></i>
+            </div>
+            <div>
+              <div class="summary-num">
+                {% for pd in patient_data %}
+                  {% if pd.diagnosis %}{% endif %}
+                {% endfor %}—
+              </div>
+              <div class="summary-label">With Session Notes</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="🔍 Search by name, phone, diagnosis..." oninput="filterTable()" />
+        </div>
+
+        <div class="table-card">
+          <div class="table-title">
+            <div>
+              <i class="fas fa-users"></i> All Registered Patients
+            </div>
+            <div style="display:flex;gap:8px;">
+              <a href="{% url 'export_patients_excel' %}" class="export-btn excel-btn"><i class="fas fa-file-excel"></i> Export Excel</a>
+              <a href="{% url 'export_patients_pdf' %}" class="export-btn pdf-btn"><i class="fas fa-file-pdf"></i> Export PDF</a>
+            </div>
+          </div>
+
+          {% if patient_data %}
+            <div style="overflow-x:auto;">
+              <table id="patientsTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Patient</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Gender</th>
+                    <th>Blood Group</th>
+                    <th>Joining Date</th>
+                    <th>Completion Date</th>
+                    <th>Diagnosis</th>
+                    <th>Treatment</th>
+                    <th>Fees / Charges</th>
+                    <th>Appointments</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for pd in patient_data %}
+                    <tr>
+                      <td style="color:#aaa;font-weight:600;">{{ forloop.counter }}</td>
+
+                      <!-- Patient Name -->
+                      <td>
+                        <div class="patient-cell">
+                          <div class="mini-avatar" style="{% if not pd.user.is_active %}background:#aaa;{% endif %}">
+                            {% if pd.profile and pd.profile.profile_photo %}
+                              <img src="{{ pd.profile.profile_photo.url }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="" />
+                            {% else %}
+                              {{ pd.user.username|first|upper }}
+                            {% endif %}
+                          </div>
+                          <div>
+                            <div style="font-weight:700;color:#2C2C2C;font-size:0.91em;">
+                              {% if pd.user.first_name or pd.user.last_name %}
+                                {{ pd.user.first_name }} {{ pd.user.last_name }}
+                              {% else %}
+                                {{ pd.user.username }}
+                              {% endif %}
+                            </div>
+                            <div style="color:#aaa;font-size:0.76em;">@{{ pd.user.username }}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Phone -->
+                      <td class="phone-cell">
+                        {% if pd.phone %}
+                          <i class="fas fa-phone" style="color:#27ae60;font-size:0.78em;"></i> {{ pd.phone }}
+                        {% else %}
+                          <span class="none-tag">—</span>
+                        {% endif %}
+                      </td>
+
+                      <!-- Email -->
+                      <td style="font-size:0.82em;">{{ pd.user.email|default:'—' }}</td>
+
+                      <!-- Gender -->
+                      <td>
+                        {% if pd.profile and pd.profile.gender %}
+                          {% if pd.profile.gender == 'Male' %}
+                            <span style="color:#3498db;font-size:0.82em;font-weight:600;"><i class="fas fa-mars"></i> Male</span>
+                          {% elif pd.profile.gender == 'Female' %}
+                            <span style="color:#e91e8c;font-size:0.82em;font-weight:600;"><i class="fas fa-venus"></i> Female</span>
+                          {% else %}
+                            <span style="font-size:0.82em;">{{ pd.profile.gender }}</span>
+                          {% endif %}
+                        {% else %}
+                          <span class="none-tag">—</span>
+                        {% endif %}
+                      </td>
+
+                      <!-- Blood Group -->
+                      <td>
+                        {% if pd.profile and pd.profile.blood_group %}
+                          <span style="background:#ffe0e0;color:#c0392b;padding:3px 8px;border-radius:10px;font-size:0.78em;font-weight:700;">{{ pd.profile.blood_group }}</span>
+                        {% else %}
+                          <span class="none-tag">—</span>
+                        {% endif %}
+                      </td>
+
+                      <!-- Joining Date -->
+                      <td class="date-cell">
+                        {% if pd.joining_date %}
+                          <i class="fas fa-calendar-plus" style="color:#f5c518;font-size:0.8em;"></i>
+                          {{ pd.joining_date|date:'d M Y' }}
+                        {% else %}
+                          <span class="none-tag">—</span>
+                        {% endif %}
+                      </td>
+
+                      <!-- Completion Date -->
+                      <td class="date-cell">
+                        {% if pd.completion_date %}
+                          <i class="fas fa-calendar-check" style="color:#27ae60;font-size:0.8em;"></i>
+                          {{ pd.completion_date|date:'d M Y' }}
+                        {% else %}
+                          <span class="none-tag">—</span>
+                        {% endif %}
+                      </td>
+
+                      <!-- Diagnosis -->
+                      <td>
+                        {% if pd.diagnosis %}
+                          <div class="diag-cell" title="{{ pd.diagnosis }}">{{ pd.diagnosis|truncatechars:60 }}</div>
+                        {% else %}
+                          <span class="none-tag">—</span>
+                        {% endif %}
+                      </td>
+
+                      <!-- Treatment -->
+                      <td>
+                        {% if pd.treatment %}
+                          <div class="diag-cell" title="{{ pd.treatment }}">{{ pd.treatment|truncatechars:60 }}</div>
+                        {% else %}
+                          <span class="none-tag">—</span>
+                        {% endif %}
+                      </td>
+
+                      <!-- Fees / Consultation Charge -->
+                      <td class="fee-cell">
+                        {% if pd.total_fees %}
+                          ₹{{ pd.total_fees }}
+                        {% else %}
+                          <span class="none-tag">—</span>
+                        {% endif %}
+                      </td>
+
+                      <!-- Appointment Count -->
+                      <td style="text-align:center;">
+                        <span style="background:rgba(52,152,219,0.12);color:#2980b9;padding:4px 10px;border-radius:12px;font-size:0.82em;font-weight:700;">{{ pd.appt_count }}</span>
+                      </td>
+
+                      <!-- Active Status -->
+                      <td>
+                        {% if pd.user.is_active %}
+                          <span class="badge-active"><i class="fas fa-circle" style="font-size:0.6em;"></i> Active</span>
+                        {% else %}
+                          <span class="badge-inactive"><i class="fas fa-circle" style="font-size:0.6em;"></i> Inactive</span>
+                        {% endif %}
+                      </td>
+
+                      <!-- Actions -->
+                      <td>
+                        <div style="display:flex;gap:5px;flex-wrap:wrap;min-width:110px;">
+                          <a href="{% url 'edit_patient' pd.user.id %}" class="action-btn edit-btn"><i class="fas fa-edit"></i> Edit</a>
+                          {% if pd.user.is_active %}
+                            <a href="{% url 'delete_patient' pd.user.id %}" class="action-btn deactivate-btn"><i class="fas fa-ban"></i> Deactivate</a>
+                          {% else %}
+                            <a href="{% url 'reactivate_patient' pd.user.id %}" class="action-btn reactivate-btn"><i class="fas fa-check-circle"></i> Reactivate</a>
+                          {% endif %}
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="empty-state">
+              <i class="fas fa-users"></i>
+              <p>No patients registered yet</p>
+            </div>
+          {% endif %}
+        </div>
       </div>
     </div>
-    <nav>
-      <div class="nav-section">Overview</div>
-      <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-      <div class="nav-section">Management</div>
-      <a href="{% url 'admin_patients' %}" class="nav-item active"><i class="fas fa-users"></i> Manage Patients</a>
-      <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
-      <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
-      <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
-      <div class="nav-section">Staff Tools</div>
-      <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
-      <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
-      <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
-      <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-      <div class="nav-section">Communication</div>
-      <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
-      <div class="nav-section">Content</div>
-      <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
-      <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
-      <div class="nav-section">Reports</div>
-      <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress Tracking</a>
-      <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
-      <div class="nav-section">System</div>
-      <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
-      <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
-      <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
-    </nav>
-    <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-  </aside>
 
-  <div class="main-content">
-    <div class="topbar">
-      <h1>👥 Manage Patients</h1>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span class="topbar-badge">Total: {{ patient_data|length }}</span>
-        <a href="{% url 'export_patients_excel' %}" class="export-btn excel-btn"><i class="fas fa-file-excel"></i> Excel</a>
-        <a href="{% url 'export_patients_pdf' %}" class="export-btn pdf-btn"><i class="fas fa-file-pdf"></i> PDF</a>
-      </div>
-    </div>
-
-    <div class="dashboard-body">
-
-      <!-- Summary Cards -->
-      <div class="summary-row">
-        <div class="summary-card">
-          <div class="summary-icon" style="background:rgba(245,197,24,0.15);color:#f5c518;"><i class="fas fa-users"></i></div>
-          <div><div class="summary-num">{{ patient_data|length }}</div><div class="summary-label">Total Patients</div></div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-icon" style="background:rgba(39,174,96,0.15);color:#27ae60;"><i class="fas fa-user-check"></i></div>
-          <div>
-            <div class="summary-num">{% for pd in patient_data %}{% if pd.user.is_active %}{% endif %}{% endfor %}{{ patient_data|length }}</div>
-            <div class="summary-label">Active Patients</div>
-          </div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-icon" style="background:rgba(52,152,219,0.15);color:#3498db;"><i class="fas fa-calendar-check"></i></div>
-          <div>
-            <div class="summary-num">{% with total=0 %}{% for pd in patient_data %}{{ pd.appt_count|add:0 }}{% endfor %}{% endwith %}</div>
-            <div class="summary-label">Total Appointments</div>
-          </div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-icon" style="background:rgba(155,89,182,0.15);color:#9b59b6;"><i class="fas fa-notes-medical"></i></div>
-          <div>
-            <div class="summary-num">{% for pd in patient_data %}{% if pd.diagnosis %}{% endif %}{% endfor %}—</div>
-            <div class="summary-label">With Session Notes</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Search Bar -->
-      <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="🔍 Search by name, phone, diagnosis..." oninput="filterTable()"/>
-      </div>
-
-      <div class="table-card">
-        <div class="table-title">
-          <div><i class="fas fa-users"></i> All Registered Patients</div>
-          <div style="display:flex;gap:8px;">
-            <a href="{% url 'export_patients_excel' %}" class="export-btn excel-btn"><i class="fas fa-file-excel"></i> Export Excel</a>
-            <a href="{% url 'export_patients_pdf' %}" class="export-btn pdf-btn"><i class="fas fa-file-pdf"></i> Export PDF</a>
-          </div>
-        </div>
-
-        {% if patient_data %}
-        <div style="overflow-x:auto;">
-          <table id="patientsTable">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Patient</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Gender</th>
-                <th>Blood Group</th>
-                <th>Joining Date</th>
-                <th>Completion Date</th>
-                <th>Diagnosis</th>
-                <th>Treatment</th>
-                <th>Fees / Charges</th>
-                <th>Appointments</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for pd in patient_data %}
-              <tr>
-                <td style="color:#aaa;font-weight:600;">{{ forloop.counter }}</td>
-
-                <!-- Patient Name -->
-                <td>
-                  <div class="patient-cell">
-                    <div class="mini-avatar" style="{% if not pd.user.is_active %}background:#aaa;{% endif %}">
-                      {% if pd.profile and pd.profile.profile_photo %}
-                        <img src="{{ pd.profile.profile_photo.url }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt=""/>
-                      {% else %}
-                        {{ pd.user.username|first|upper }}
-                      {% endif %}
-                    </div>
-                    <div>
-                      <div style="font-weight:700;color:#2C2C2C;font-size:0.91em;">
-                        {% if pd.user.first_name or pd.user.last_name %}{{ pd.user.first_name }} {{ pd.user.last_name }}{% else %}{{ pd.user.username }}{% endif %}
-                      </div>
-                      <div style="color:#aaa;font-size:0.76em;">@{{ pd.user.username }}</div>
-                    </div>
-                  </div>
-                </td>
-
-                <!-- Phone -->
-                <td class="phone-cell">
-                  {% if pd.phone %}
-                    <i class="fas fa-phone" style="color:#27ae60;font-size:0.78em;"></i> {{ pd.phone }}
-                  {% else %}<span class="none-tag">—</span>{% endif %}
-                </td>
-
-                <!-- Email -->
-                <td style="font-size:0.82em;">{{ pd.user.email|default:'—' }}</td>
-
-                <!-- Gender -->
-                <td>
-                  {% if pd.profile and pd.profile.gender %}
-                    {% if pd.profile.gender == 'Male' %}<span style="color:#3498db;font-size:0.82em;font-weight:600;"><i class="fas fa-mars"></i> Male</span>
-                    {% elif pd.profile.gender == 'Female' %}<span style="color:#e91e8c;font-size:0.82em;font-weight:600;"><i class="fas fa-venus"></i> Female</span>
-                    {% else %}<span style="font-size:0.82em;">{{ pd.profile.gender }}</span>{% endif %}
-                  {% else %}<span class="none-tag">—</span>{% endif %}
-                </td>
-
-                <!-- Blood Group -->
-                <td>
-                  {% if pd.profile and pd.profile.blood_group %}
-                    <span style="background:#ffe0e0;color:#c0392b;padding:3px 8px;border-radius:10px;font-size:0.78em;font-weight:700;">{{ pd.profile.blood_group }}</span>
-                  {% else %}<span class="none-tag">—</span>{% endif %}
-                </td>
-
-                <!-- Joining Date -->
-                <td class="date-cell">
-                  {% if pd.joining_date %}
-                    <i class="fas fa-calendar-plus" style="color:#f5c518;font-size:0.8em;"></i>
-                    {{ pd.joining_date|date:"d M Y" }}
-                  {% else %}<span class="none-tag">—</span>{% endif %}
-                </td>
-
-                <!-- Completion Date -->
-                <td class="date-cell">
-                  {% if pd.completion_date %}
-                    <i class="fas fa-calendar-check" style="color:#27ae60;font-size:0.8em;"></i>
-                    {{ pd.completion_date|date:"d M Y" }}
-                  {% else %}<span class="none-tag">—</span>{% endif %}
-                </td>
-
-                <!-- Diagnosis -->
-                <td>
-                  {% if pd.diagnosis %}
-                    <div class="diag-cell" title="{{ pd.diagnosis }}">{{ pd.diagnosis|truncatechars:60 }}</div>
-                  {% else %}<span class="none-tag">—</span>{% endif %}
-                </td>
-
-                <!-- Treatment -->
-                <td>
-                  {% if pd.treatment %}
-                    <div class="diag-cell" title="{{ pd.treatment }}">{{ pd.treatment|truncatechars:60 }}</div>
-                  {% else %}<span class="none-tag">—</span>{% endif %}
-                </td>
-
-                <!-- Fees / Consultation Charge -->
-                <td class="fee-cell">
-                  {% if pd.total_fees %}
-                    ₹{{ pd.total_fees }}
-                  {% else %}<span class="none-tag">—</span>{% endif %}
-                </td>
-
-                <!-- Appointment Count -->
-                <td style="text-align:center;">
-                  <span style="background:rgba(52,152,219,0.12);color:#2980b9;padding:4px 10px;border-radius:12px;font-size:0.82em;font-weight:700;">{{ pd.appt_count }}</span>
-                </td>
-
-                <!-- Active Status -->
-                <td>
-                  {% if pd.user.is_active %}
-                    <span class="badge-active"><i class="fas fa-circle" style="font-size:0.6em;"></i> Active</span>
-                  {% else %}
-                    <span class="badge-inactive"><i class="fas fa-circle" style="font-size:0.6em;"></i> Inactive</span>
-                  {% endif %}
-                </td>
-
-                <!-- Actions -->
-                <td>
-                  <div style="display:flex;gap:5px;flex-wrap:wrap;min-width:110px;">
-                    <a href="{% url 'edit_patient' pd.user.id %}" class="action-btn edit-btn"><i class="fas fa-edit"></i> Edit</a>
-                    {% if pd.user.is_active %}
-                      <a href="{% url 'delete_patient' pd.user.id %}" class="action-btn deactivate-btn"><i class="fas fa-ban"></i> Deactivate</a>
-                    {% else %}
-                      <a href="{% url 'reactivate_patient' pd.user.id %}" class="action-btn reactivate-btn"><i class="fas fa-check-circle"></i> Reactivate</a>
-                    {% endif %}
-                  </div>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        {% else %}
-          <div class="empty-state">
-            <i class="fas fa-users"></i>
-            <p>No patients registered yet</p>
-          </div>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-
-  <script>
-    function filterTable() {
-      const q = document.getElementById('searchInput').value.toLowerCase();
-      const rows = document.querySelectorAll('#patientsTable tbody tr');
-      rows.forEach(row => {
-        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-      });
-    }
-  </script>
-</body>
+    <script>
+      function filterTable() {
+        const q = document.getElementById('searchInput').value.toLowerCase()
+        const rows = document.querySelectorAll('#patientsTable tbody tr')
+        rows.forEach((row) => {
+          row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'
+        })
+      }
+    </script>
+  </body>
 </html>
