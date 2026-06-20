@@ -744,11 +744,7 @@
                                 <h4>{{ appt.get_service_display }}</h4>
                                 <p>🕐 {{ appt.time }}</p>
                             </div>
-                            <span class="badge badge-{{ appt.status }}">
-                                {% if appt.status == 'pending' %}⏳ Pending {%
-                                elif appt.status == 'confirmed' %}✅ Confirmed
-                                {% else %}{{ appt.status|title }}{% endif %}
-                            </span>
+                            <span class="badge badge-{{ appt.status }}">{% if appt.status == 'pending' %}⏳ Pending{% elif appt.status == 'confirmed' %}✅ Confirmed{% else %}{{ appt.status|title }}{% endif %}</span>
                         </div>
                         {% endfor %} {% if upcoming_count > 4 %}
                         <div style="text-align: center; padding: 12px 0 4px">
@@ -1171,11 +1167,7 @@
                                     >
                                     {% endif %}
                                 </div>
-                                <span style="color: #f5c518; font-size: 0.9rem"
-                                    >{% for i in "12345" %}{% if forloop.counter
-                                    <= review.rating %}★{% else %}☆{% endif %}{%
-                                    endfor %}</span
-                                >
+                                <span style="color: #f5c518; font-size: 0.9rem">{% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
                             </div>
                             <p
                                 style="
