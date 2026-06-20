@@ -14,6 +14,111 @@ morning_hours     = models.DecimalField(max_digits=5, decimal_places=2, default=
 evening_clock_in  = models.TimeField(null=True, blank=True)
 evening_hours     = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
+class Hospital(models.Model):
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, blank=True)
+    address = models.TextField(blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    logo = models.ImageField(upload_to='hospital_logos/', null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.name)
+            slug = base
+            counter = 1
+            while Hospital.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class SubscriptionPlan(models.Model):
+    PLAN_CHOICES = [
+        ('basic', 'Basic'),
+        ('standard', 'Standard'),
+        ('premium', 'Premium'),
+    ]
+    name = models.CharField(max_length=50, choices=PLAN_CHOICES, unique=True)
+    price_monthly = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    max_staff = models.IntegerField(default=5)
+    max_patients = models.IntegerField(default=500)
+    features = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.get_name_display()
+
+
+class HospitalSubscription(models.Model):
+    STATUS_CHOICES = [
+        ('trial', 'Trial'),
+        ('active', 'Active'),
+        ('expired', 'Expired'),
+        ('cancelled', 'Cancelled'),
+    ]
+    hospital = models.OneToOneField('Hospital', on_delete=models.CASCADE, related_name='subscription')
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='trial')
+    started_at = models.DateField(default=timezone.now)
+    expires_at = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    @property
+    def is_expired(self):
+        if self.expires_at:
+            return timezone.now().date() > self.expires_at
+        return False
+
+    def __str__(self):
+        return f"{self.hospital.name} — {self.plan}"
+
+
+class SupportTicket(models.Model):
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed'),
+    ]
+    hospital = models.ForeignKey('Hospital', on_delete=models.CASCADE, related_name='support_tickets', null=True, blank=True)
+    submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.subject} [{self.status}]"
+
+
+class SupportReply(models.Model):
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name='replies')
+    replier = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Reply on {self.ticket.subject}"
+
+
 class Appointment(models.Model):
 
     STATUS_CHOICES = [
@@ -42,6 +147,14 @@ class Appointment(models.Model):
         ('16:00', '4:00 PM'),
         ('17:00', '5:00 PM'),
     ]
+
+    # Clinic this appointment belongs to
+    hospital = models.ForeignKey(
+        'Hospital',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='appointments'
+    )
 
     # Registered user (optional)
     patient = models.ForeignKey(
@@ -98,6 +211,7 @@ class StaffProfile(models.Model):
         ('assistant', 'Assistant/Helper'),
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_profile')
+    hospital = models.ForeignKey('Hospital', on_delete=models.SET_NULL, null=True, blank=True, related_name='staff')
     role = models.CharField(max_length=30, choices=ROLE_CHOICES)
     phone = models.CharField(max_length=15, blank=True)
     address = models.TextField(blank=True)
@@ -286,6 +400,7 @@ class Profile(models.Model):
 
     # Account
     last_seen = models.DateTimeField(null=True, blank=True)
+    is_platform_admin = models.BooleanField(default=False)
 
     # Personal Info
     phone_number = models.CharField(max_length=15, blank=True)
@@ -392,6 +507,15 @@ class ClinicSettings(models.Model):
         return self.clinic_name
     
 
+class ClinicAdmin(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='clinic_admin_profile')
+    hospital = models.ForeignKey('Hospital', on_delete=models.CASCADE, related_name='admins')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} → {self.hospital.name}"
+
+
 class Blog(models.Model):
     CATEGORY_CHOICES = [
         ('General', 'General'),
@@ -402,6 +526,7 @@ class Blog(models.Model):
         ('Posture', 'Posture & Spine'),
         ('Recovery', 'Patient Recovery'),
     ]
+    hospital = models.ForeignKey('Hospital', on_delete=models.SET_NULL, null=True, blank=True, related_name='blogs')
     title = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, blank=True)
     excerpt = models.TextField(blank=True, help_text="Short summary shown on listing page")
@@ -420,6 +545,7 @@ class Blog(models.Model):
 
 class Review(models.Model):
     RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
+    hospital = models.ForeignKey('Hospital', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviews')
     patient = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviews')
     reviewer_name = models.CharField(max_length=100)
     reviewer_title = models.CharField(max_length=100, blank=True)

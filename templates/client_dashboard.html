@@ -636,10 +636,7 @@
                         class="notification-bell"
                     >
                         <i class="fas fa-bell"></i>
-                        {% with unread=recent_notifs|length %} {% if unread > 0
-                        %}
-                        <span class="notification-count">{{ unread }}</span>
-                        {% endif %} {% endwith %}
+                        {% with unread=recent_notifs|length %}{% if unread > 0 %}<span class="notification-count">{{ unread }}</span>{% endif %}{% endwith %}
                     </a>
                     <div class="topbar-user">
                         <i
@@ -753,15 +750,30 @@
                                 {% else %}{{ appt.status|title }}{% endif %}
                             </span>
                         </div>
-                        {% endfor %}
-                        {% if upcoming_count > 4 %}
-                        <div style="text-align:center;padding:12px 0 4px;">
-                            <a href="{% url 'my_appointments' %}" style="display:inline-block;background:rgba(245,197,24,0.12);color:#2c2c2c;border:1px solid rgba(245,197,24,0.4);padding:8px 22px;border-radius:20px;font-size:0.82em;font-weight:700;text-decoration:none;">
-                                <i class="fas fa-list" style="color:#f5c518;margin-right:6px;"></i>View All {{ upcoming_count }} Appointments →
+                        {% endfor %} {% if upcoming_count > 4 %}
+                        <div style="text-align: center; padding: 12px 0 4px">
+                            <a
+                                href="{% url 'my_appointments' %}"
+                                style="
+                                    display: inline-block;
+                                    background: rgba(245, 197, 24, 0.12);
+                                    color: #2c2c2c;
+                                    border: 1px solid rgba(245, 197, 24, 0.4);
+                                    padding: 8px 22px;
+                                    border-radius: 20px;
+                                    font-size: 0.82em;
+                                    font-weight: 700;
+                                    text-decoration: none;
+                                "
+                            >
+                                <i
+                                    class="fas fa-list"
+                                    style="color: #f5c518; margin-right: 6px"
+                                ></i
+                                >View All {{ upcoming_count }} Appointments →
                             </a>
                         </div>
-                        {% endif %}
-                        {% else %}
+                        {% endif %} {% else %}
                         <div class="empty-state">
                             <i class="fas fa-calendar-times"></i>
                             <p>
@@ -1178,9 +1190,26 @@
                         </div>
                         {% endfor %}
                     </div>
-                    <div style="text-align:center;margin-top:14px;">
-                        <a href="{% url 'home' %}#reviews" style="display:inline-block;background:rgba(245,197,24,0.1);color:#2c2c2c;border:1px solid rgba(245,197,24,0.35);padding:8px 22px;border-radius:20px;font-size:0.82em;font-weight:700;text-decoration:none;">
-                            <i class="fas fa-star" style="color:#f5c518;margin-right:6px;"></i>See All Reviews →
+                    <div style="text-align: center; margin-top: 14px">
+                        <a
+                            href="{% url 'home' %}#reviews"
+                            style="
+                                display: inline-block;
+                                background: rgba(245, 197, 24, 0.1);
+                                color: #2c2c2c;
+                                border: 1px solid rgba(245, 197, 24, 0.35);
+                                padding: 8px 22px;
+                                border-radius: 20px;
+                                font-size: 0.82em;
+                                font-weight: 700;
+                                text-decoration: none;
+                            "
+                        >
+                            <i
+                                class="fas fa-star"
+                                style="color: #f5c518; margin-right: 6px"
+                            ></i
+                            >See All Reviews →
                         </a>
                     </div>
                     {% endif %}

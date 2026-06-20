@@ -144,6 +144,20 @@ urlpatterns = [
     path('admin-reviews/add/', views.admin_add_review, name='admin_add_review'),
     path('admin-reviews/toggle/<int:review_id>/', views.toggle_review_approval, name='toggle_review_approval'),
     path('admin-reviews/delete/<int:review_id>/', views.admin_delete_review, name='admin_delete_review'),
+
+    # ── Support Ticket (clinic admin → platform) ──────────────
+    path('support/submit/', views.submit_support_ticket, name='submit_support_ticket'),
+
+    # ── Super Admin ───────────────────────────────────────────
+    path('super-admin/', views.super_admin_dashboard, name='super_admin_dashboard'),
+    path('super-admin/hospitals/', views.super_admin_hospitals, name='super_admin_hospitals'),
+    path('super-admin/hospitals/add/', views.super_admin_add_hospital, name='super_admin_add_hospital'),
+    path('super-admin/hospitals/edit/<int:hospital_id>/', views.super_admin_edit_hospital, name='super_admin_edit_hospital'),
+    path('super-admin/hospitals/delete/<int:hospital_id>/', views.super_admin_delete_hospital, name='super_admin_delete_hospital'),
+    path('super-admin/subscriptions/', views.super_admin_subscriptions, name='super_admin_subscriptions'),
+    path('super-admin/analytics/', views.super_admin_analytics, name='super_admin_analytics'),
+    path('super-admin/support/', views.super_admin_support, name='super_admin_support'),
+    path('super-admin/support/reply/<int:ticket_id>/', views.super_admin_support_reply, name='super_admin_support_reply'),
 ]
 
 if settings.DEBUG:

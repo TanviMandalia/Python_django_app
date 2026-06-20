@@ -29,7 +29,9 @@ from .models import (
     Appointment, Attendance, DailyTask, LeaveApplication,
     Message, Notification, PasswordResetOTP, Profile,
     SalaryRecord, SessionNote, StaffProfile, UserActivity, ClinicSettings,
-    Blog, Review
+    Blog, Review,
+    Hospital, ClinicAdmin, SubscriptionPlan, HospitalSubscription,
+    SupportTicket, SupportReply,
 )
 from .email_utils import (
     send_appointment_confirmation,
@@ -327,8 +329,35 @@ def is_late(t, shift):
     return False
 
 
+def _is_platform_superadmin(user):
+    if not user.is_authenticated or not user.is_superuser:
+        return False
+    profile = getattr(user, 'profile', None)
+    return bool(profile and profile.is_platform_admin)
+
+
+def _is_clinic_admin(user):
+    if not user.is_authenticated or not user.is_superuser:
+        return False
+    return not _is_platform_superadmin(user)
+
+
+def platform_superadmin_required(view_func):
+    from functools import wraps
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        if not _is_platform_superadmin(request.user):
+            return redirect('home')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
 def _redirect_by_role(user):
     if user.is_superuser:
+        if _is_platform_superadmin(user):
+            return redirect('super_admin_dashboard')
         return redirect('admin_dashboard')
     if user.is_staff or hasattr(user, 'staff_profile'):
         return redirect('staff_dashboard')
@@ -2470,3 +2499,285 @@ def export_analytics_pdf(request):
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="analytics_report.pdf"'
     return response
+
+
+# ════════════════════════════════════════════════════════════
+# SUPER ADMIN PANEL — Platform-level multi-clinic management
+# ════════════════════════════════════════════════════════════
+
+@platform_superadmin_required
+def super_admin_dashboard(request):
+    from django.db.models import Count
+    total_hospitals   = Hospital.objects.count()
+    active_hospitals  = Hospital.objects.filter(is_active=True).count()
+    total_patients    = User.objects.filter(is_superuser=False, is_staff=False).count()
+    total_staff       = StaffProfile.objects.count()
+    total_appointments= Appointment.objects.count()
+    open_tickets      = SupportTicket.objects.filter(status='open').count()
+    active_subs       = HospitalSubscription.objects.filter(status='active').count()
+    trial_subs        = HospitalSubscription.objects.filter(status='trial').count()
+    recent_hospitals  = Hospital.objects.order_by('-created_at')[:6]
+    recent_tickets    = SupportTicket.objects.select_related('hospital').order_by('-created_at')[:5]
+    return render(request, 'super_admin_dashboard.html', {
+        'total_hospitals':    total_hospitals,
+        'active_hospitals':   active_hospitals,
+        'total_patients':     total_patients,
+        'total_staff':        total_staff,
+        'total_appointments': total_appointments,
+        'open_tickets':       open_tickets,
+        'active_subs':        active_subs,
+        'trial_subs':         trial_subs,
+        'recent_hospitals':   recent_hospitals,
+        'recent_tickets':     recent_tickets,
+    })
+
+
+@platform_superadmin_required
+def super_admin_hospitals(request):
+    hospitals = Hospital.objects.prefetch_related('subscription', 'admins__user').all()
+    return render(request, 'super_admin_hospitals.html', {'hospitals': hospitals})
+
+
+@platform_superadmin_required
+def super_admin_add_hospital(request):
+    plans = SubscriptionPlan.objects.filter(is_active=True)
+    if request.method == 'POST':
+        name           = request.POST.get('name', '').strip()
+        city           = request.POST.get('city', '').strip()
+        address        = request.POST.get('address', '').strip()
+        phone          = request.POST.get('phone', '').strip()
+        email          = request.POST.get('email', '').strip()
+        admin_username = request.POST.get('admin_username', '').strip()
+        admin_email    = request.POST.get('admin_email', '').strip()
+        admin_password = request.POST.get('admin_password', '').strip()
+        admin_first    = request.POST.get('admin_first', '').strip()
+        admin_last     = request.POST.get('admin_last', '').strip()
+        plan_id        = request.POST.get('plan', '')
+
+        errors = []
+        if not name:          errors.append('Hospital name is required.')
+        if not admin_username:errors.append('Admin username is required.')
+        if not admin_email:   errors.append('Admin email is required.')
+        if not admin_password:errors.append('Admin password is required.')
+        if User.objects.filter(username=admin_username).exists():
+            errors.append(f'Username "{admin_username}" is already taken.')
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+            return render(request, 'super_admin_add_hospital.html', {'plans': plans})
+
+        hospital = Hospital.objects.create(
+            name=name, city=city, address=address, phone=phone, email=email
+        )
+        admin_user = User.objects.create_user(
+            username=admin_username, email=admin_email, password=admin_password,
+            first_name=admin_first, last_name=admin_last,
+            is_superuser=True, is_staff=True,
+        )
+        ClinicAdmin.objects.create(user=admin_user, hospital=hospital)
+
+        plan = None
+        if plan_id:
+            try:
+                plan = SubscriptionPlan.objects.get(id=plan_id)
+            except SubscriptionPlan.DoesNotExist:
+                pass
+        HospitalSubscription.objects.create(hospital=hospital, plan=plan, status='trial')
+
+        messages.success(request, f'✅ Hospital "{name}" created with admin "{admin_username}".')
+        return redirect('super_admin_hospitals')
+
+    return render(request, 'super_admin_add_hospital.html', {'plans': plans})
+
+
+@platform_superadmin_required
+def super_admin_edit_hospital(request, hospital_id):
+    hospital = get_object_or_404(Hospital, id=hospital_id)
+    plans    = SubscriptionPlan.objects.filter(is_active=True)
+    try:
+        subscription = hospital.subscription
+    except HospitalSubscription.DoesNotExist:
+        subscription = None
+
+    if request.method == 'POST':
+        hospital.name      = request.POST.get('name', hospital.name).strip()
+        hospital.city      = request.POST.get('city', '').strip()
+        hospital.address   = request.POST.get('address', '').strip()
+        hospital.phone     = request.POST.get('phone', '').strip()
+        hospital.email     = request.POST.get('email', '').strip()
+        hospital.is_active = request.POST.get('is_active') == 'on'
+        hospital.save()
+
+        plan_id    = request.POST.get('plan', '')
+        sub_status = request.POST.get('sub_status', 'trial')
+        expires_raw= request.POST.get('expires_at', '')
+        expires_at = expires_raw if expires_raw else None
+
+        if subscription:
+            if plan_id:
+                try:
+                    subscription.plan = SubscriptionPlan.objects.get(id=plan_id)
+                except SubscriptionPlan.DoesNotExist:
+                    pass
+            subscription.status     = sub_status
+            subscription.expires_at = expires_at
+            subscription.save()
+        else:
+            plan = None
+            if plan_id:
+                try:
+                    plan = SubscriptionPlan.objects.get(id=plan_id)
+                except SubscriptionPlan.DoesNotExist:
+                    pass
+            HospitalSubscription.objects.create(
+                hospital=hospital, plan=plan, status=sub_status, expires_at=expires_at
+            )
+
+        messages.success(request, f'✅ Hospital "{hospital.name}" updated.')
+        return redirect('super_admin_hospitals')
+
+    return render(request, 'super_admin_edit_hospital.html', {
+        'hospital':     hospital,
+        'plans':        plans,
+        'subscription': subscription,
+    })
+
+
+@platform_superadmin_required
+def super_admin_delete_hospital(request, hospital_id):
+    hospital = get_object_or_404(Hospital, id=hospital_id)
+    if request.method == 'POST':
+        name = hospital.name
+        hospital.delete()
+        messages.success(request, f'Hospital "{name}" deleted.')
+    return redirect('super_admin_hospitals')
+
+
+@platform_superadmin_required
+def super_admin_subscriptions(request):
+    subscriptions = HospitalSubscription.objects.select_related('hospital', 'plan').all()
+    plans         = SubscriptionPlan.objects.all()
+
+    # Save plan changes
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'save_plan':
+            plan_name     = request.POST.get('plan_name', '').strip()
+            price_monthly = request.POST.get('price_monthly', '0')
+            max_staff     = request.POST.get('max_staff', '5')
+            max_patients  = request.POST.get('max_patients', '500')
+            features      = request.POST.get('features', '')
+            plan_id       = request.POST.get('plan_id', '')
+            if plan_id:
+                try:
+                    p = SubscriptionPlan.objects.get(id=plan_id)
+                    p.price_monthly = price_monthly
+                    p.max_staff     = max_staff
+                    p.max_patients  = max_patients
+                    p.features      = features
+                    p.save()
+                    messages.success(request, 'Plan updated.')
+                except SubscriptionPlan.DoesNotExist:
+                    pass
+            else:
+                SubscriptionPlan.objects.create(
+                    name=plan_name, price_monthly=price_monthly,
+                    max_staff=max_staff, max_patients=max_patients, features=features
+                )
+                messages.success(request, 'Plan created.')
+        return redirect('super_admin_subscriptions')
+
+    return render(request, 'super_admin_subscriptions.html', {
+        'subscriptions': subscriptions,
+        'plans':         plans,
+    })
+
+
+@platform_superadmin_required
+def super_admin_analytics(request):
+    from django.db.models import Count
+    hospitals = Hospital.objects.annotate(
+        appt_count=Count('appointments', distinct=True),
+        staff_count=Count('staff', distinct=True),
+    ).order_by('-appt_count')
+    total_hospitals    = Hospital.objects.count()
+    active_hospitals   = Hospital.objects.filter(is_active=True).count()
+    total_appointments = Appointment.objects.count()
+    total_patients     = User.objects.filter(is_superuser=False, is_staff=False).count()
+    total_staff        = StaffProfile.objects.count()
+    active_subs        = HospitalSubscription.objects.filter(status='active').count()
+    trial_subs         = HospitalSubscription.objects.filter(status='trial').count()
+    expired_subs       = HospitalSubscription.objects.filter(status='expired').count()
+    return render(request, 'super_admin_analytics.html', {
+        'hospitals':          hospitals,
+        'total_hospitals':    total_hospitals,
+        'active_hospitals':   active_hospitals,
+        'total_appointments': total_appointments,
+        'total_patients':     total_patients,
+        'total_staff':        total_staff,
+        'active_subs':        active_subs,
+        'trial_subs':         trial_subs,
+        'expired_subs':       expired_subs,
+    })
+
+
+@platform_superadmin_required
+def super_admin_support(request):
+    status_filter = request.GET.get('status', '')
+    tickets = SupportTicket.objects.select_related('hospital', 'submitted_by').all()
+    if status_filter:
+        tickets = tickets.filter(status=status_filter)
+    open_count       = SupportTicket.objects.filter(status='open').count()
+    in_progress_count= SupportTicket.objects.filter(status='in_progress').count()
+    resolved_count   = SupportTicket.objects.filter(status='resolved').count()
+    return render(request, 'super_admin_support.html', {
+        'tickets':          tickets,
+        'status_filter':    status_filter,
+        'open_count':       open_count,
+        'in_progress_count':in_progress_count,
+        'resolved_count':   resolved_count,
+    })
+
+
+@platform_superadmin_required
+def super_admin_support_reply(request, ticket_id):
+    ticket  = get_object_or_404(SupportTicket, id=ticket_id)
+    replies = ticket.replies.select_related('replier').all()
+    hospitals = Hospital.objects.filter(is_active=True)
+    if request.method == 'POST':
+        msg        = request.POST.get('message', '').strip()
+        new_status = request.POST.get('status', ticket.status)
+        if msg:
+            SupportReply.objects.create(ticket=ticket, replier=request.user, message=msg)
+        ticket.status = new_status
+        ticket.save()
+        messages.success(request, '✅ Reply sent.')
+        return redirect('super_admin_support_reply', ticket_id=ticket_id)
+    return render(request, 'super_admin_support_reply.html', {
+        'ticket':    ticket,
+        'replies':   replies,
+        'hospitals': hospitals,
+    })
+
+
+# ── Clinic admin can submit a support ticket ──────────────────
+@login_required
+def submit_support_ticket(request):
+    if not _is_clinic_admin(request.user):
+        return redirect('home')
+    hospital = None
+    if hasattr(request.user, 'clinic_admin_profile'):
+        hospital = request.user.clinic_admin_profile.hospital
+    if request.method == 'POST':
+        subject = request.POST.get('subject', '').strip()
+        msg     = request.POST.get('message', '').strip()
+        if subject and msg:
+            SupportTicket.objects.create(
+                hospital=hospital,
+                submitted_by=request.user,
+                subject=subject,
+                message=msg,
+            )
+            messages.success(request, '✅ Support ticket submitted successfully.')
+        return redirect('admin_dashboard')
+    return redirect('admin_dashboard')
