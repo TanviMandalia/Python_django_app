@@ -898,26 +898,25 @@
                                 >View All →</a
                             >
                         </div>
-                        {% if completed %} {% for appt in completed|slice:":5"
-                        %}
-                        <div class="appt-item">
-                            <div class="appt-date">
-                                <div class="day">{{ appt.date|date:"d" }}</div>
-                                <div class="month">
-                                    {{ appt.date|date:"M" }}
+                        {% if completed %}
+                            {% for appt in completed|slice:":5" %}
+                            <div class="appt-item">
+                                <div class="appt-date">
+                                    <div class="day">{{ appt.date|date:"d" }}</div>
+                                    <div class="month">{{ appt.date|date:"M" }}</div>
                                 </div>
+                                <div class="appt-info">
+                                    <h4>{{ appt.get_service_display }}</h4>
+                                    <p>🕐 {{ appt.time }}</p>
+                                </div>
+                                <span class="badge badge-completed">✅ Done</span>
                             </div>
-                            <div class="appt-info">
-                                <h4>{{ appt.get_service_display }}</h4>
-                                <p>🕐 {{ appt.time }}</p>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-check-circle"></i>
+                                <p>No completed sessions yet.</p>
                             </div>
-                            <span class="badge badge-completed">✅ Done</span>
-                        </div>
-                        {% endfor %} {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-check-circle"></i>
-                            <p>No completed sessions yet.</p>
-                        </div>
                         {% endif %}
                     </div>
                 </div>

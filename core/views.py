@@ -15,7 +15,8 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.cache import cache                        # ← ADDED
-from django.db.models import Q
+from django.db.models import Q, Sum
+from django.db import models
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -764,18 +765,36 @@ def update_appointment(request, appt_id, status):
 def admin_patients(request):
     if not request.user.is_superuser:
         return redirect('client_dashboard')
-    patients = User.objects.filter(is_superuser=False, is_staff=False).order_by('-date_joined').prefetch_related('profile', 'appointments')
+    patients = User.objects.filter(is_superuser=False, is_staff=False).order_by('-date_joined').prefetch_related('profile', 'appointments', 'patient_notes')
     patient_data = []
     for p in patients:
         try:
             profile = p.profile
         except Exception:
             profile = None
-        appt_count = Appointment.objects.filter(patient=p).count()
+        appts = Appointment.objects.filter(patient=p).order_by('date')
+        appt_count = appts.count()
+        first_appt = appts.first()
+        last_completed = appts.filter(status='completed').order_by('-date').first()
+        latest_note = SessionNote.objects.filter(patient=p).order_by('-date').first()
+        total_fees = appts.filter(consultation_fee__isnull=False).aggregate(
+            total=Sum('consultation_fee')
+        )['total']
+        phone = None
+        if profile and profile.phone_number:
+            phone = profile.phone_number
+        elif first_appt and first_appt.phone:
+            phone = first_appt.phone
         patient_data.append({
             'user': p,
             'profile': profile,
             'appt_count': appt_count,
+            'joining_date': first_appt.date if first_appt else p.date_joined.date(),
+            'completion_date': last_completed.date if last_completed else None,
+            'diagnosis': latest_note.diagnosis if latest_note else None,
+            'treatment': latest_note.treatment if latest_note else None,
+            'total_fees': total_fees,
+            'phone': phone,
         })
     return render(request, 'admin_patients.html', {'patient_data': patient_data})
 
