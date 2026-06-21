@@ -357,7 +357,10 @@
                     <tbody>
                         {% for pay in my_payments %}
                         <tr>
-                            <td>{{ pay.created_at|date:"d M Y" }}</td>
+                            <td>
+                                <div style="font-weight:600;">{{ pay.created_at|date:"d M Y" }}</div>
+                                <div style="color:#888;font-size:.78rem;">{{ pay.created_at|time:"h:i A" }}</div>
+                            </td>
                             <td>{% if pay.appointment %}{{ pay.appointment.date }} — {{ pay.appointment.get_service_display }}{% else %}<span style="color:#aaa;">General</span>{% endif %}</td>
                             <td><strong>₹{{ pay.amount }}</strong></td>
                             <td class="method-icon">

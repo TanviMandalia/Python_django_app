@@ -2688,7 +2688,7 @@ def export_analytics_pdf(request):
 
 @platform_superadmin_required
 def super_admin_dashboard(request):
-    from django.db.models import Count
+    from django.db.models import Count, Sum
     total_hospitals   = Hospital.objects.count()
     active_hospitals  = Hospital.objects.filter(is_active=True).count()
     total_patients    = User.objects.filter(is_superuser=False, is_staff=False).count()
@@ -2699,6 +2699,9 @@ def super_admin_dashboard(request):
     trial_subs        = HospitalSubscription.objects.filter(status='trial').count()
     recent_hospitals  = Hospital.objects.order_by('-created_at')[:6]
     recent_tickets    = SupportTicket.objects.select_related('hospital').order_by('-created_at')[:5]
+    recent_payments   = PaymentRecord.objects.select_related('patient', 'appointment').order_by('-created_at')[:15]
+    total_revenue     = PaymentRecord.objects.filter(status='paid').aggregate(t=Sum('amount'))['t'] or 0
+    pending_payments  = PaymentRecord.objects.filter(status='pending').count()
     return render(request, 'super_admin_dashboard.html', {
         'total_hospitals':    total_hospitals,
         'active_hospitals':   active_hospitals,
@@ -2710,6 +2713,9 @@ def super_admin_dashboard(request):
         'trial_subs':         trial_subs,
         'recent_hospitals':   recent_hospitals,
         'recent_tickets':     recent_tickets,
+        'recent_payments':    recent_payments,
+        'total_revenue':      total_revenue,
+        'pending_payments':   pending_payments,
     })
 
 
@@ -2861,11 +2867,25 @@ def super_admin_subscriptions(request):
                 except SubscriptionPlan.DoesNotExist:
                     pass
             else:
-                SubscriptionPlan.objects.create(
-                    name=plan_name, price_monthly=price_monthly,
-                    max_staff=max_staff, max_patients=max_patients, features=features
+                obj, created = SubscriptionPlan.objects.get_or_create(
+                    name=plan_name,
+                    defaults={
+                        'price_monthly': price_monthly,
+                        'max_staff': max_staff,
+                        'max_patients': max_patients,
+                        'features': features,
+                    }
                 )
-                messages.success(request, 'Plan created.')
+                if not created:
+                    obj.price_monthly = price_monthly
+                    obj.max_staff = max_staff
+                    obj.max_patients = max_patients
+                    obj.features = features
+                    obj.is_active = True
+                    obj.save()
+                    messages.success(request, f'{obj.get_name_display()} plan updated successfully.')
+                else:
+                    messages.success(request, f'{obj.get_name_display()} plan created successfully.')
         return redirect('super_admin_subscriptions')
 
     return render(request, 'super_admin_subscriptions.html', {

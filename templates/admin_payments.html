@@ -96,7 +96,10 @@
                     <tbody>
                         {% for pay in payments %}
                         <tr>
-                            <td>{{ pay.created_at|date:"d M Y" }}</td>
+                            <td>
+                                <div style="font-weight:600;">{{ pay.created_at|date:"d M Y" }}</div>
+                                <div style="color:#888;font-size:.78rem;">{{ pay.created_at|time:"h:i A" }}</div>
+                            </td>
                             <td>{{ pay.patient.get_full_name|default:pay.patient.username }}</td>
                             <td>{% if pay.appointment %}{{ pay.appointment.date }}{% else %}<span style="color:#aaa;">General</span>{% endif %}</td>
                             <td><strong>₹{{ pay.amount }}</strong></td>

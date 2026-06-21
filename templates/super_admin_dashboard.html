@@ -521,6 +521,63 @@
           </div>
         </div>
 
+        <!-- Payment History -->
+        <div class="card" style="margin-bottom:24px;">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div class="card-title" style="font-size:1em;font-weight:700;color:#1a1a2e;display:flex;align-items:center;gap:8px;margin:0;"><i class="fas fa-credit-card" style="color:#8b5cf6;"></i> Payment History</div>
+            <div style="display:flex;gap:16px;font-size:.82em;">
+              <span style="background:#d4edda;color:#155724;padding:4px 12px;border-radius:20px;font-weight:700;">₹{{ total_revenue }} Collected</span>
+              {% if pending_payments %}<span style="background:#fff3cd;color:#856404;padding:4px 12px;border-radius:20px;font-weight:700;">{{ pending_payments }} Pending</span>{% endif %}
+            </div>
+          </div>
+          {% if recent_payments %}
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;min-width:700px;">
+              <thead>
+                <tr>
+                  <th style="text-align:left;padding:10px 12px;background:#f8f9fa;font-size:.75em;text-transform:uppercase;letter-spacing:.8px;color:#666;font-weight:700;border-bottom:1px solid #eee;">Date & Time</th>
+                  <th style="text-align:left;padding:10px 12px;background:#f8f9fa;font-size:.75em;text-transform:uppercase;letter-spacing:.8px;color:#666;font-weight:700;border-bottom:1px solid #eee;">Patient</th>
+                  <th style="text-align:left;padding:10px 12px;background:#f8f9fa;font-size:.75em;text-transform:uppercase;letter-spacing:.8px;color:#666;font-weight:700;border-bottom:1px solid #eee;">Amount</th>
+                  <th style="text-align:left;padding:10px 12px;background:#f8f9fa;font-size:.75em;text-transform:uppercase;letter-spacing:.8px;color:#666;font-weight:700;border-bottom:1px solid #eee;">Method</th>
+                  <th style="text-align:left;padding:10px 12px;background:#f8f9fa;font-size:.75em;text-transform:uppercase;letter-spacing:.8px;color:#666;font-weight:700;border-bottom:1px solid #eee;">Txn ID</th>
+                  <th style="text-align:left;padding:10px 12px;background:#f8f9fa;font-size:.75em;text-transform:uppercase;letter-spacing:.8px;color:#666;font-weight:700;border-bottom:1px solid #eee;">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pay in recent_payments %}
+                <tr style="border-bottom:1px solid #f5f5f5;">
+                  <td style="padding:11px 12px;font-size:.86em;">
+                    <div style="font-weight:600;color:#1a1a2e;">{{ pay.created_at|date:"d M Y" }}</div>
+                    <div style="color:#888;font-size:.8em;margin-top:2px;">{{ pay.created_at|time:"h:i A" }}</div>
+                  </td>
+                  <td style="padding:11px 12px;font-size:.86em;">{% if pay.patient %}{{ pay.patient.get_full_name|default:pay.patient.username }}{% else %}<span style="color:#bbb;">—</span>{% endif %}</td>
+                  <td style="padding:11px 12px;font-size:.86em;"><strong>₹{{ pay.amount }}</strong></td>
+                  <td style="padding:11px 12px;font-size:.86em;">
+                    {% if pay.method == 'stripe' %}<i class="fab fa-stripe" style="color:#635BFF"></i> Card
+                    {% elif pay.method == 'upi' %}<i class="fas fa-qrcode" style="color:#00B900"></i> UPI
+                    {% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color:#28a745"></i> Cash
+                    {% else %}<i class="fas fa-university" style="color:#1a73e8"></i> Net Banking{% endif %}
+                  </td>
+                  <td style="padding:11px 12px;font-family:monospace;font-size:.78em;color:#666;">{{ pay.transaction_id|default:"—" }}</td>
+                  <td style="padding:11px 12px;">
+                    {% if pay.status == 'paid' %}<span style="background:#d4edda;color:#155724;padding:3px 10px;border-radius:12px;font-size:.75em;font-weight:700;">Paid</span>
+                    {% elif pay.status == 'pending' %}<span style="background:#fff3cd;color:#856404;padding:3px 10px;border-radius:12px;font-size:.75em;font-weight:700;">Pending</span>
+                    {% elif pay.status == 'failed' %}<span style="background:#f8d7da;color:#721c24;padding:3px 10px;border-radius:12px;font-size:.75em;font-weight:700;">Failed</span>
+                    {% else %}<span style="background:#d1ecf1;color:#0c5460;padding:3px 10px;border-radius:12px;font-size:.75em;font-weight:700;">{{ pay.get_status_display }}</span>{% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div style="text-align:center;padding:32px;color:#bbb;">
+            <i class="fas fa-credit-card" style="font-size:2.5em;display:block;margin-bottom:10px;color:#ddd;"></i>
+            <p>No payment records yet.</p>
+          </div>
+          {% endif %}
+        </div>
+
         <div class="row-2">
           <div class="card">
             <div class="card-header">
