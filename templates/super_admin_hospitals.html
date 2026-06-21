@@ -1,14 +1,11 @@
 {% load static %}
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>Super Admin — Hospitals</title>
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      rel="stylesheet"
-    />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <style>
       * {
         margin: 0;
@@ -16,7 +13,7 @@
         box-sizing: border-box;
       }
       body {
-        font-family: "Segoe UI", sans-serif;
+        font-family: 'Segoe UI', sans-serif;
         background: #f0f2f5;
         display: flex;
       }
@@ -298,153 +295,124 @@
       <div class="sidebar-badge">Platform Administrator</div>
       <nav>
         <div class="nav-section">Platform</div>
-        <a href="{% url 'super_admin_dashboard' %}" class="nav-item"
-          ><i class="fas fa-tachometer-alt"></i> Dashboard</a
-        >
-        <a href="{% url 'super_admin_hospitals' %}" class="nav-item active"
-          ><i class="fas fa-hospital"></i> Hospitals</a
-        >
-        <a href="{% url 'super_admin_subscriptions' %}" class="nav-item"
-          ><i class="fas fa-credit-card"></i> Subscriptions</a
-        >
+        <a href="{% url 'super_admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="{% url 'super_admin_hospitals' %}" class="nav-item active"><i class="fas fa-hospital"></i> Hospitals</a>
+        <a href="{% url 'super_admin_subscriptions' %}" class="nav-item"><i class="fas fa-credit-card"></i> Subscriptions</a>
         <div class="nav-section">Reports</div>
-        <a href="{% url 'super_admin_analytics' %}" class="nav-item"
-          ><i class="fas fa-chart-bar"></i> Analytics</a
-        >
+        <a href="{% url 'super_admin_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
         <div class="nav-section">Support</div>
-        <a href="{% url 'super_admin_support' %}" class="nav-item"
-          ><i class="fas fa-headset"></i> Support Tickets</a
-        >
+        <a href="{% url 'super_admin_support' %}" class="nav-item"><i class="fas fa-headset"></i> Support Tickets</a>
       </nav>
-      <a href="{% url 'logout' %}" class="logout-btn"
-        ><i class="fas fa-sign-out-alt"></i> Logout</a
-      >
+      <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </aside>
 
     <div class="main">
       <div class="topbar">
         <h1>🏥 All Hospitals</h1>
         <div class="topbar-right">
-          <a href="{% url 'super_admin_add_hospital' %}" class="btn-primary"
-            ><i class="fas fa-plus"></i> Add Hospital</a
-          >
+          <a href="{% url 'super_admin_add_hospital' %}" class="btn-primary"><i class="fas fa-plus"></i> Add Hospital</a>
           <div class="topbar-user">👑 {{ user.username }}</div>
         </div>
       </div>
       <div class="body">
-        {% for m in messages %}{% if m.tags == 'success' %}
-        <div class="alert-success">{{ m }}</div>
-        {% else %}
-        <div class="alert-error">{{ m }}</div>
-        {% endif %}{% endfor %}
+        {% for m in messages %}
+          {% if m.tags == 'success' %}
+            <div class="alert-success">{{ m }}</div>
+          {% else %}
+            <div class="alert-error">{{ m }}</div>
+          {% endif %}
+        {% endfor %}
 
         <div class="card">
           {% if hospitals %}
-          <table class="table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Hospital Name</th>
-                <th>City</th>
-                <th>Admin</th>
-                <th>Plan</th>
-                <th>Subscription</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for h in hospitals %}
-              <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>
-                  <strong>{{ h.name }}</strong>
-                  {% if h.email %}<br /><small style="color: #888"
-                    >{{ h.email }}</small
-                  >{% endif %}
-                </td>
-                <td>{{ h.city|default:"—" }}</td>
-                <td>
-                  {% for ca in h.admins.all %}
-                  <span class="admin-chip">{{ ca.user.username }}</span>
-                  {% empty %}—{% endfor %}
-                </td>
-                <td>
-                  {% if h.subscription and h.subscription.plan %}
-                  <span class="badge badge-{{ h.subscription.plan.name }}"
-                    >{{ h.subscription.plan.get_name_display }}</span
-                  >
-                  {% else %}—{% endif %}
-                </td>
-                <td>
-                  {% if h.subscription %}
-                  <span class="badge badge-{{ h.subscription.status }}"
-                    >{{ h.subscription.get_status_display }}</span
-                  >
-                  {% if h.subscription.expires_at %}<br /><small
-                    style="color: #aaa"
-                    >Exp: {{ h.subscription.expires_at|date:"M d, Y" }}</small
-                  >{% endif %} {% else %}<span class="badge badge-trial"
-                    >No Plan</span
-                  >{% endif %}
-                </td>
-                <td>
-                  <span
-                    class="badge {% if h.is_active %}badge-active{% else %}badge-inactive{% endif %}"
-                    >{% if h.is_active %}Active{% else %}Inactive{% endif
-                    %}</span
-                  >
-                </td>
-                <td style="color: #888; font-size: 0.82em">
-                  {{ h.created_at|date:"M d, Y" }}
-                </td>
-                <td>
-                  <div class="action-btns">
-                    <a
-                      href="{% url 'super_admin_edit_hospital' h.id %}"
-                      class="btn-sm btn-edit"
-                      ><i class="fas fa-edit"></i> Edit</a
-                    >
-                    <form
-                      method="post"
-                      action="{% url 'super_admin_delete_hospital' h.id %}"
-                      onsubmit="return confirm('Delete {{ h.name }}? This cannot be undone.')"
-                    >
-                      {% csrf_token %}
-                      <button type="submit" class="btn-sm btn-delete">
-                        <i class="fas fa-trash"></i> Delete
-                      </button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Hospital Name</th>
+                  <th>City</th>
+                  <th>Admin</th>
+                  <th>Plan</th>
+                  <th>Subscription</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for h in hospitals %}
+                  <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                      <strong>{{ h.name }}</strong>
+                      {% if h.email %}
+                        <br /><small style="color: #888">{{ h.email }}</small>
+                      {% endif %}
+                    </td>
+                    <td>{{ h.city|default:'—' }}</td>
+                    <td>
+                      {% for ca in h.admins.all %}
+                        <span class="admin-chip">{{ ca.user.username }}</span>
+                      {% empty %}
+                        —
+                      {% endfor %}
+                    </td>
+                    <td>
+                      {% if h.subscription and h.subscription.plan %}
+                        <span class="badge badge-{{ h.subscription.plan.name }}">{{ h.subscription.plan.get_name_display }}</span>
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if h.subscription %}
+                        <span class="badge badge-{{ h.subscription.status }}">{{ h.subscription.get_status_display }}</span>
+                        {% if h.subscription.expires_at %}
+                          <br /><small style="color: #aaa">Exp: {{ h.subscription.expires_at|date:'M d, Y' }}</small>
+                        {% endif %}
+                      {% else %}
+                        <span class="badge badge-trial">No Plan</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <span class="badge {% if h.is_active %}
+                          badge-active
+                        {% else %}
+                          badge-inactive
+                        {% endif %}">
+                        {% if h.is_active %}
+                          Active
+                        {% else %}
+                          Inactive
+                        {% endif %}
+                      </span>
+                    </td>
+                    <td style="color: #888; font-size: 0.82em">{{ h.created_at|date:'M d, Y' }}</td>
+                    <td>
+                      <div class="action-btns">
+                        <a href="{% url 'super_admin_edit_hospital' h.id %}" class="btn-sm btn-edit"><i class="fas fa-edit"></i> Edit</a>
+                        <form method="post" action="{% url 'super_admin_delete_hospital' h.id %}" onsubmit="return confirm('Delete {{ h.name }}? This cannot be undone.')">
+                          {% csrf_token %}
+                          <button type="submit" class="btn-sm btn-delete"><i class="fas fa-trash"></i> Delete</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           {% else %}
-          <div class="empty">
-            <i class="fas fa-hospital"></i>
-            <p
-              style="
+            <div class="empty">
+              <i class="fas fa-hospital"></i>
+              <p style="
                 font-size: 1em;
                 font-weight: 600;
                 color: #666;
                 margin-bottom: 8px;
-              "
-            >
-              No hospitals yet
-            </p>
-            <p style="margin-bottom: 18px">
-              Start by adding the first clinic or hospital to the platform.
-            </p>
-            <a
-              href="{% url 'super_admin_add_hospital' %}"
-              class="btn-primary"
-              style="display: inline-flex"
-              >+ Add First Hospital</a
-            >
-          </div>
+              ">No hospitals yet</p>
+              <p style="margin-bottom: 18px">Start by adding the first clinic or hospital to the platform.</p>
+              <a href="{% url 'super_admin_add_hospital' %}" class="btn-primary" style="display: inline-flex">+ Add First Hospital</a>
+            </div>
           {% endif %}
         </div>
       </div>
