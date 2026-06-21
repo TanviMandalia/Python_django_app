@@ -221,3 +221,44 @@ Please change your password after first login.
 {CLINIC_NAME}
 """
     return send_clinic_email(subject, body, user.email)
+
+# ── SUBSCRIPTION EMAILS ──────────────────────────────────────
+
+def send_subscription_success_email(hospital, plan, expires_at):
+    """Sent to clinic admin when subscription is activated."""
+    subject = "Subscription Activated Successfully"
+    body = f"""Dear {hospital.name} Team,
+
+Your subscription to {CLINIC_NAME} Platform has been activated successfully!
+
+Plan Details:
+  Plan      : {plan.get_name_display() if plan else 'N/A'}
+  Expires On: {expires_at.strftime('%d %B %Y') if expires_at else 'N/A'}
+  Price     : ₹{plan.price_monthly}/month
+
+You now have full access to all features included in your plan.
+Login to your dashboard to get started.
+
+Thank you for choosing {CLINIC_NAME}!
+"""
+    return send_clinic_email(subject, body, hospital.email)
+
+
+def send_subscription_expiry_warning_email(hospital, plan, expires_at, days_left):
+    """Sent 5 days before subscription expires."""
+    subject = f"⚠️ Subscription Expiring in {days_left} Days"
+    body = f"""Dear {hospital.name} Team,
+
+This is a reminder that your subscription will expire in {days_left} day(s).
+
+Plan Details:
+  Plan       : {plan.get_name_display() if plan else 'N/A'}
+  Expiry Date: {expires_at.strftime('%d %B %Y')}
+
+To continue using all features without interruption, please renew your subscription before the expiry date.
+
+Contact us: {CLINIC_EMAIL} | {CLINIC_PHONE}
+
+{CLINIC_NAME} Platform
+"""
+    return send_clinic_email(subject, body, hospital.email)

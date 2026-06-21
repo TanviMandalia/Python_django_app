@@ -1,0 +1,4 @@
+- [Template tag formatting](template-tag-formatting.md) — Django template tags broken across lines by code formatter; must always be single-line.
+- [Stripe integration](stripe-integration.md) — Stripe 15.2.1 installed; keys in env (STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET); PaymentRecord model in core/models.py (migration 0026).
+- [Subscription gate](subscription-gate.md) — SubscriptionGateMiddleware + SubscriptionExpiryNotifierMiddleware in core/middleware.py; added to MIDDLEWARE in settings.py after existing middleware.
+- [Promo popup system](promo-popup.md) — ClinicPromo model (migration 0026); admin_dashboard view passes active_promos; JS popup on admin_dashboard.html dismisses via /api/promos/dismiss/ POST.

@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Plans</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#1a1a2e,#16213e);min-height:100vh;color:#fff;padding:30px 16px;}
+        .container{max-width:960px;margin:0 auto;}
+        .header{text-align:center;margin-bottom:40px;}
+        .header h1{font-size:2rem;font-weight:800;}
+        .header p{color:#aaa;margin-top:8px;}
+        .back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:rgba(255,255,255,.1);color:#fff;border-radius:10px;text-decoration:none;margin-bottom:28px;font-size:.88rem;transition:.2s;}
+        .back-btn:hover{background:rgba(255,255,255,.2);}
+        {% if current_sub %}.current-sub-badge{background:rgba(245,197,24,.15);border:1px solid rgba(245,197,24,.4);border-radius:12px;padding:16px 22px;margin-bottom:30px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+        .current-sub-badge .label{color:#F5C518;font-weight:700;}{% endif %}
+        .plans-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;}
+        .plan-card{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.1);border-radius:18px;padding:28px 24px;position:relative;transition:.3s;}
+        .plan-card:hover{transform:translateY(-6px);border-color:#F5C518;}
+        .plan-card.featured{border-color:#F5C518;background:rgba(245,197,24,.08);}
+        .plan-card.featured::before{content:'⭐ Most Popular';position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#F5C518;color:#222;padding:4px 16px;border-radius:20px;font-size:.75rem;font-weight:700;white-space:nowrap;}
+        .plan-name{font-size:1.2rem;font-weight:700;margin-bottom:6px;}
+        .plan-price{font-size:2.2rem;font-weight:800;color:#F5C518;margin:12px 0 4px;}
+        .plan-price span{font-size:.9rem;color:#aaa;font-weight:400;}
+        .plan-features{list-style:none;margin:18px 0;space-y:8px;}
+        .plan-features li{padding:7px 0;font-size:.88rem;color:#ccc;display:flex;align-items:center;gap:8px;}
+        .plan-features li i{color:#F5C518;width:16px;}
+        .btn-subscribe{width:100%;padding:13px;background:#F5C518;color:#222;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:16px;transition:.2s;}
+        .btn-subscribe:hover{background:#d4a800;}
+        .contact-note{text-align:center;margin-top:36px;color:#aaa;font-size:.88rem;}
+        .contact-note a{color:#F5C518;}
+        @media(max-width:600px){.header h1{font-size:1.5rem;}.plan-price{font-size:1.8rem;}}
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="{% url 'admin_dashboard' %}" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    <div class="header">
+        <h1>Choose Your Plan</h1>
+        <p>Unlock the full power of PhysioRehab Clinic Management</p>
+    </div>
+
+    {% if current_sub %}
+    <div class="current-sub-badge">
+        <i class="fas fa-check-circle" style="color:#F5C518;font-size:1.5rem;"></i>
+        <div>
+            <div class="label">Current Plan: {{ current_sub.plan.get_name_display|default:"Trial" }}</div>
+            <div style="color:#ccc;font-size:.85rem;">Status: {{ current_sub.get_status_display }} {% if current_sub.expires_at %}| Expires: {{ current_sub.expires_at|date:"d M Y" }}{% endif %}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="plans-grid">
+        {% for plan in plans %}
+        <div class="plan-card {% if plan.name == 'standard' %}featured{% endif %}">
+            <div class="plan-name">{{ plan.get_name_display }}</div>
+            <div class="plan-price">₹{{ plan.price_monthly }}<span>/month</span></div>
+            <ul class="plan-features">
+                <li><i class="fas fa-users"></i> Up to {{ plan.max_staff }} staff members</li>
+                <li><i class="fas fa-user-injured"></i> Up to {{ plan.max_patients }} patients</li>
+                {% if plan.features %}
+                {% for feat in plan.features.splitlines %}
+                {% if feat %}<li><i class="fas fa-check"></i> {{ feat }}</li>{% endif %}
+                {% endfor %}
+                {% endif %}
+                <li><i class="fas fa-bell"></i> Appointment reminders</li>
+                <li><i class="fas fa-chart-bar"></i> Analytics & reports</li>
+                {% if plan.name != 'basic' %}<li><i class="fas fa-credit-card"></i> Payment tracking</li>{% endif %}
+                {% if plan.name == 'premium' %}<li><i class="fas fa-headset"></i> Priority support</li>{% endif %}
+            </ul>
+            <button class="btn-subscribe" onclick="contactForPlan('{{ plan.get_name_display }}', '{{ plan.price_monthly }}')">
+                {% if current_sub and current_sub.plan == plan %}Current Plan{% else %}Subscribe Now{% endif %}
+            </button>
+        </div>
+        {% empty %}
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:#aaa;">No subscription plans configured yet. Contact the platform admin.</div>
+        {% endfor %}
+    </div>
+
+    <div class="contact-note">
+        <p>To activate a subscription, contact the platform admin at <a href="mailto:{{ request.user.email }}">support</a> or use the <a href="{% url 'submit_support_ticket' %}">Support Ticket</a> system.</p>
+    </div>
+</div>
+<script>
+function contactForPlan(name, price) {
+    alert('To subscribe to the ' + name + ' plan (₹' + price + '/month), please submit a support ticket or contact the platform admin. They will activate your subscription.');
+}
+</script>
+</body>
+</html>

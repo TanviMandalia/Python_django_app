@@ -567,3 +567,59 @@ class Review(models.Model):
     def __str__(self):
         return f"{self.reviewer_name} — {self.rating}★"
 
+
+class PaymentRecord(models.Model):
+    METHOD_CHOICES = [
+        ('cash', 'Cash'),
+        ('upi', 'UPI / QR Code'),
+        ('netbanking', 'Net Banking'),
+        ('stripe', 'Card (Stripe)'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('failed', 'Failed'),
+        ('refunded', 'Refunded'),
+    ]
+    appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments')
+    patient = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='payment_records')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    method = models.CharField(max_length=20, choices=METHOD_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    stripe_payment_intent = models.CharField(max_length=200, blank=True)
+    stripe_session_id = models.CharField(max_length=200, blank=True)
+    transaction_id = models.CharField(max_length=200, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.patient} — ₹{self.amount} via {self.method} [{self.status}]"
+
+
+class ClinicPromo(models.Model):
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    is_active = models.BooleanField(default=True)
+    start_date = models.DateField(default=timezone.now)
+    end_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_live(self):
+        today = timezone.now().date()
+        if not self.is_active:
+            return False
+        if self.end_date and today > self.end_date:
+            return False
+        return today >= self.start_date
+

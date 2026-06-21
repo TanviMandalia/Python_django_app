@@ -47,6 +47,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.UpdateLastSeenMiddleware',
+    'core.middleware.SessionTimeoutMiddleware',
+    'core.middleware.LoginAttemptMiddleware',
+    'core.middleware.SubscriptionGateMiddleware',
+    'core.middleware.SubscriptionExpiryNotifierMiddleware',
 ]
 
 ROOT_URLCONF = 'myproject.urls'
@@ -150,3 +155,13 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/client-dashboard/'
 LOGOUT_REDIRECT_URL = '/'
+# =========================
+# STRIPE CONFIG
+# =========================
+import os
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+
+# Clinic UPI ID for QR payments
+CLINIC_UPI_ID = os.environ.get('CLINIC_UPI_ID', 'dhvanipatalia@upi')

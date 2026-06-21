@@ -1,0 +1,122 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Management — Admin</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;color:#222;}
+        .layout{display:flex;min-height:100vh;}
+        .sidebar{width:260px;min-height:100vh;background:linear-gradient(180deg,#1a1a1a,#2c2c2c);flex-shrink:0;display:flex;flex-direction:column;}
+        .sidebar-logo{padding:22px 20px;border-bottom:1px solid rgba(245,197,24,.15);text-align:center;}
+        .sidebar-logo img{width:120px;border-radius:10px;}
+        .sidebar-logo p{color:#F5C518;font-size:.75rem;margin-top:6px;font-weight:600;}
+        .sidebar-user{padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.06);}
+        .user-avatar{width:42px;height:42px;background:#F5C518;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#2c2c2c;}
+        .user-info h4{color:#fff;font-size:.88rem;}
+        .user-info span{color:#F5C518;font-size:.72rem;}
+        .nav-section{padding:12px 22px 4px;color:#777;font-size:.68rem;letter-spacing:1px;text-transform:uppercase;}
+        .nav-item{display:flex;align-items:center;gap:12px;padding:11px 22px;color:#ccc;text-decoration:none;font-size:.88rem;border-left:3px solid transparent;transition:.2s;}
+        .nav-item:hover,.nav-item.active{background:rgba(245,197,24,.08);color:#F5C518;border-left-color:#F5C518;}
+        .sidebar-footer{margin-top:auto;padding:12px;}
+        .logout-btn{display:flex;gap:10px;padding:11px 16px;background:rgba(220,53,69,.15);color:#ff6b6b;border-radius:10px;text-decoration:none;transition:.2s;}
+        .logout-btn:hover{background:rgba(220,53,69,.3);}
+        .main{flex:1;padding:28px;overflow-x:hidden;}
+        .page-header{margin-bottom:24px;}
+        .page-header h1{font-size:1.6rem;font-weight:700;}
+        .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px;}
+        .stat-box{background:#fff;border-radius:12px;padding:20px;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.07);}
+        .stat-box .val{font-size:1.7rem;font-weight:800;color:#F5C518;}
+        .stat-box .lbl{font-size:.8rem;color:#666;margin-top:4px;}
+        .card{background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.07);padding:24px;margin-bottom:22px;}
+        .card-title{font-size:1.1rem;font-weight:700;margin-bottom:18px;}
+        .table-wrap{overflow-x:auto;}
+        table{width:100%;border-collapse:collapse;min-width:700px;}
+        th{text-align:left;padding:12px 14px;background:#fafafa;font-size:.82rem;font-weight:700;color:#555;border-bottom:2px solid #eee;}
+        td{padding:12px 14px;border-bottom:1px solid #f0f0f0;font-size:.88rem;}
+        tr:hover td{background:#fafff7;}
+        .badge{padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:700;}
+        .badge-paid{background:#d4edda;color:#155724;}
+        .badge-pending{background:#fff3cd;color:#856404;}
+        .badge-failed{background:#f8d7da;color:#721c24;}
+        .badge-refunded{background:#d1ecf1;color:#0c5460;}
+        .hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;background:#F5C518;border:none;border-radius:8px;width:40px;height:40px;cursor:pointer;align-items:center;justify-content:center;font-size:1.1rem;}
+        @media(max-width:768px){
+            .hamburger{display:flex;}
+            .sidebar{position:fixed;top:0;left:-280px;width:260px;height:100%;z-index:150;transition:.3s;}
+            .sidebar.open{left:0;}
+            .main{padding:70px 16px 20px;}
+        }
+    </style>
+</head>
+<body>
+<button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')"><i class="fas fa-bars"></i></button>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+            <p>Admin Panel</p>
+        </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+            <div class="user-info"><h4>{{ user.get_full_name|default:user.username }}</h4><span>🔴 Admin</span></div>
+        </div>
+        <nav>
+            <div class="nav-section">Main</div>
+            <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar"></i> Appointments</a>
+            <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Patients</a>
+            <a href="{% url 'admin_payments' %}" class="nav-item active"><i class="fas fa-credit-card"></i> Payments</a>
+            <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Staff</a>
+        </nav>
+        <div class="sidebar-footer"><a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a></div>
+    </aside>
+    <main class="main">
+        <div class="page-header">
+            <h1>💳 Payment Management</h1>
+            <p style="color:#666;margin-top:4px;">All clinic payment records</p>
+        </div>
+        <div class="stats-row">
+            <div class="stat-box"><div class="val">₹{{ total_paid }}</div><div class="lbl">Total Collected</div></div>
+            <div class="stat-box"><div class="val">{{ payments|length }}</div><div class="lbl">All Transactions</div></div>
+            <div class="stat-box"><div class="val" style="color:#856404;">{{ pending_count }}</div><div class="lbl">Pending Verification</div></div>
+        </div>
+        <div class="card">
+            <div class="card-title"><i class="fas fa-list"></i> All Transactions</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th><th>Patient</th><th>Appointment</th><th>Amount</th><th>Method</th><th>Txn ID</th><th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pay in payments %}
+                        <tr>
+                            <td>{{ pay.created_at|date:"d M Y" }}</td>
+                            <td>{{ pay.patient.get_full_name|default:pay.patient.username }}</td>
+                            <td>{% if pay.appointment %}{{ pay.appointment.date }}{% else %}<span style="color:#aaa;">General</span>{% endif %}</td>
+                            <td><strong>₹{{ pay.amount }}</strong></td>
+                            <td>
+                                {% if pay.method == 'stripe' %}<i class="fab fa-stripe" style="color:#635BFF"></i> Card
+                                {% elif pay.method == 'upi' %}<i class="fas fa-qrcode" style="color:#00B900"></i> UPI
+                                {% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color:#28a745"></i> Cash
+                                {% else %}<i class="fas fa-university" style="color:#1a73e8"></i> Net Banking{% endif %}
+                            </td>
+                            <td style="font-family:monospace;font-size:.78rem;color:#666;">{{ pay.transaction_id|default:"—" }}</td>
+                            <td><span class="badge badge-{{ pay.status }}">{{ pay.get_status_display }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" style="text-align:center;padding:32px;color:#aaa;">No payment records yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

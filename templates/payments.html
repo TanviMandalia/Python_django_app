@@ -1,361 +1,433 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>Payments</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments — PhysioRehab</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    {% if stripe_pub %}<script src="https://js.stripe.com/v3/"></script>{% endif %}
     <style>
-        /* ================= RESET ================= */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;color:#222;}
+        .layout{display:flex;min-height:100vh;}
 
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f5f5f5;
-            color: #222;
-            line-height: 1.5;
-        }
+        /* SIDEBAR */
+        .sidebar{width:260px;min-height:100vh;background:linear-gradient(180deg,#1a1a1a,#2c2c2c);flex-shrink:0;display:flex;flex-direction:column;}
+        .sidebar-logo{padding:22px 20px;border-bottom:1px solid rgba(245,197,24,.15);text-align:center;}
+        .sidebar-logo img{width:120px;border-radius:10px;}
+        .sidebar-logo p{color:#F5C518;font-size:.75rem;margin-top:6px;font-weight:600;}
+        .sidebar-user{padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.06);}
+        .user-avatar{width:42px;height:42px;background:#F5C518;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#2c2c2c;font-size:1rem;}
+        .user-info h4{color:#fff;font-size:.88rem;}
+        .user-info span{color:#F5C518;font-size:.72rem;}
+        .nav-section{padding:12px 22px 4px;color:#777;font-size:.68rem;letter-spacing:1px;text-transform:uppercase;}
+        .nav-item{display:flex;align-items:center;gap:12px;padding:11px 22px;color:#ccc;text-decoration:none;font-size:.88rem;border-left:3px solid transparent;transition:.2s;}
+        .nav-item:hover,.nav-item.active{background:rgba(245,197,24,.08);color:#F5C518;border-left-color:#F5C518;}
+        .sidebar-footer{margin-top:auto;padding:12px;}
+        .logout-btn{display:flex;gap:10px;padding:11px 16px;background:rgba(220,53,69,.15);color:#ff6b6b;border-radius:10px;text-decoration:none;transition:.2s;}
+        .logout-btn:hover{background:rgba(220,53,69,.3);}
 
-        /* ================= SIDEBAR ================= */
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
-            overflow-y: auto;
-            scrollbar-width: none;
-        }
+        /* MAIN */
+        .main{flex:1;padding:28px;overflow-x:hidden;}
+        .page-header{margin-bottom:24px;}
+        .page-header h1{font-size:1.6rem;font-weight:700;}
+        .page-header p{color:#666;font-size:.9rem;margin-top:4px;}
 
-        .sidebar::-webkit-scrollbar {
-            display: none;
-        }
+        /* MESSAGES */
+        .alert{padding:12px 16px;border-radius:10px;margin-bottom:18px;font-size:.9rem;}
+        .alert-success{background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
+        .alert-error{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
+        .alert-warning{background:#fff3cd;color:#856404;border:1px solid #ffc107;}
 
-        /* logo */
-        .sidebar-logo {
-            padding: 22px 20px;
-            border-bottom: 1px solid rgba(245, 197, 24, 0.15);
-            text-align: center;
-        }
+        /* CARDS */
+        .card{background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.07);padding:24px;margin-bottom:22px;}
+        .card-title{font-size:1.1rem;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
 
-        .sidebar-logo img {
-            width: 130px;
-            border-radius: 10px;
-        }
+        /* PAYMENT METHOD TABS */
+        .method-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px;}
+        .method-tab{padding:10px 20px;border-radius:50px;border:2px solid #e0e0e0;background:#fff;cursor:pointer;font-size:.88rem;font-weight:600;transition:.2s;display:flex;align-items:center;gap:6px;}
+        .method-tab.active{border-color:#F5C518;background:#FFF9E6;color:#856404;}
+        .method-tab:hover{border-color:#F5C518;}
 
-        .sidebar-logo p {
-            color: #F5C518;
-            font-size: 0.75rem;
-            margin-top: 8px;
-            font-weight: 600;
-        }
+        .method-panel{display:none;}
+        .method-panel.active{display:block;}
 
-        /* user */
-        .sidebar-user {
-            padding: 18px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        }
+        /* STRIPE CARD */
+        .stripe-panel{text-align:center;padding:20px 0;}
+        .stripe-panel .pay-icon{font-size:3rem;margin-bottom:12px;}
+        .amount-input-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:16px 0;}
+        .form-group{flex:1;min-width:140px;}
+        .form-group label{display:block;font-size:.82rem;color:#555;margin-bottom:6px;font-weight:600;}
+        .form-control{width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:.93rem;outline:none;transition:.2s;}
+        .form-control:focus{border-color:#F5C518;}
+        select.form-control{cursor:pointer;}
 
-        .user-avatar {
-            width: 45px;
-            height: 45px;
-            background: #F5C518;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: #2C2C2C;
-        }
+        /* UPI PANEL */
+        .upi-panel{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;}
+        .qr-box{text-align:center;flex:0 0 220px;}
+        .qr-box canvas,.qr-placeholder{width:200px;height:200px;border:2px dashed #ddd;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:.82rem;color:#999;}
+        .upi-id-box{background:#f9f9f9;border-radius:8px;padding:10px 14px;font-family:monospace;font-size:1rem;color:#333;border:1px solid #eee;margin-bottom:8px;}
+        .copy-btn{padding:7px 16px;background:#F5C518;border:none;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;}
+        .upi-form{flex:1;min-width:220px;}
+        .upi-steps{margin:12px 0;list-style:none;counter-reset:steps;}
+        .upi-steps li{counter-increment:steps;padding:6px 0 6px 28px;font-size:.88rem;color:#555;position:relative;}
+        .upi-steps li::before{content:counter(steps);position:absolute;left:0;top:6px;width:20px;height:20px;background:#F5C518;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#222;}
 
-        .user-info h4 {
-            color: white;
-            font-size: 0.9rem;
-        }
+        /* CASH PANEL */
+        .cash-panel{max-width:480px;}
+        .cash-note{background:#fff3cd;border-radius:10px;padding:14px;margin-bottom:16px;font-size:.88rem;color:#856404;border-left:4px solid #F5C518;}
 
-        .user-info span {
-            color: #F5C518;
-            font-size: 0.75rem;
-        }
+        /* NET BANKING */
+        .bank-logos{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0;}
+        .bank-logo{width:80px;height:50px;border:1.5px solid #eee;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#555;cursor:pointer;transition:.2s;}
+        .bank-logo:hover{border-color:#F5C518;color:#856404;}
 
-        /* nav */
-        .nav-section {
-            padding: 12px 22px 6px;
-            color: #777;
-            font-size: 0.7rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
+        /* BUTTONS */
+        .btn{padding:11px 22px;border:none;border-radius:10px;cursor:pointer;font-size:.92rem;font-weight:600;transition:.2s;display:inline-flex;align-items:center;gap:8px;text-decoration:none;}
+        .btn-primary{background:#F5C518;color:#222;}
+        .btn-primary:hover{background:#d4a800;}
+        .btn-stripe{background:#635BFF;color:#fff;}
+        .btn-stripe:hover{background:#4a44cc;}
+        .btn-sm{padding:7px 14px;font-size:.82rem;}
 
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 22px;
-            color: #ccc;
-            text-decoration: none;
-            font-size: 0.9rem;
-            border-left: 3px solid transparent;
-            transition: 0.25s ease;
-        }
+        /* HISTORY TABLE */
+        .table-wrap{overflow-x:auto;}
+        table{width:100%;border-collapse:collapse;min-width:560px;}
+        th{text-align:left;padding:12px 14px;background:#fafafa;font-size:.82rem;font-weight:700;color:#555;border-bottom:2px solid #eee;}
+        td{padding:12px 14px;border-bottom:1px solid #f0f0f0;font-size:.88rem;}
+        tr:hover td{background:#fafff7;}
+        .badge{padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:700;}
+        .badge-paid{background:#d4edda;color:#155724;}
+        .badge-pending{background:#fff3cd;color:#856404;}
+        .badge-failed{background:#f8d7da;color:#721c24;}
+        .badge-refunded{background:#d1ecf1;color:#0c5460;}
+        .method-icon{font-size:.82rem;color:#666;}
 
-        .nav-item:hover,
-        .nav-item.active {
-            background: rgba(245, 197, 24, 0.08);
-            color: #F5C518;
-            border-left-color: #F5C518;
-        }
+        /* SUMMARY STATS */
+        .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:22px;}
+        .stat-box{background:#fff;border-radius:12px;padding:18px;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.06);}
+        .stat-box .val{font-size:1.5rem;font-weight:800;color:#F5C518;}
+        .stat-box .lbl{font-size:.78rem;color:#666;margin-top:4px;}
 
-        /* logout */
-        .logout-btn {
-            margin: 15px;
-            display: flex;
-            gap: 10px;
-            padding: 12px 16px;
-            background: rgba(220, 53, 69, 0.15);
-            color: #ff6b6b;
-            border-radius: 10px;
-            text-decoration: none;
-            transition: 0.25s;
-        }
+        /* HAMBURGER */
+        .hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;background:#F5C518;border:none;border-radius:8px;width:40px;height:40px;cursor:pointer;align-items:center;justify-content:center;font-size:1.1rem;}
 
-        .logout-btn:hover {
-            background: rgba(220, 53, 69, 0.3);
-        }
-
-        /* ================= MAIN ================= */
-        .container {
-            margin-left: 260px;
-            padding: 30px;
-        }
-
-        /* cards */
-        .card {
-            background: #fff;
-            padding: 22px;
-            border-radius: 12px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-            margin-bottom: 20px;
-        }
-
-        /* headings */
-        h2 {
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-        }
-
-        /* ================= PAYMENT GRID ================= */
-        .payment-box {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 18px;
-        }
-
-        .pay-card {
-            padding: 22px;
-            border: 1px solid #eee;
-            border-radius: 12px;
-            text-align: center;
-            background: #fff;
-            transition: all 0.25s ease;
-        }
-
-        .pay-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
-        }
-
-        .amount {
-            font-size: 24px;
-            font-weight: 700;
-            margin: 12px 0;
-        }
-
-        /* ================= BUTTON ================= */
-        .btn {
-            padding: 10px 16px;
-            background: #4facfe;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            display: inline-block;
-            text-decoration: none;
-            transition: 0.25s;
-            font-size: 0.9rem;
-        }
-
-        .btn:hover {
-            background: #007bff;
-        }
-
-        /* ================= TABLE ================= */
-        .history {
-            margin-top: 20px;
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 600px;
-        }
-
-        table th {
-            text-align: left;
-            padding: 12px;
-            background: #fafafa;
-            font-weight: 600;
-        }
-
-        table td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-        }
-
-        /* ================= STATUS ================= */
-        .status {
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .paid {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .pending {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        /* ================= RESPONSIVE ================= */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: relative;
-                width: 100%;
-                height: auto;
-            }
-
-            .container {
-                margin-left: 0;
-                padding: 15px;
-            }
+        /* RESPONSIVE */
+        @media(max-width:768px){
+            .hamburger{display:flex;}
+            .layout{flex-direction:column;}
+            .sidebar{position:fixed;top:0;left:-280px;width:260px;height:100%;z-index:150;transition:.3s;}
+            .sidebar.open{left:0;}
+            .main{padding:70px 16px 20px;}
+            .upi-panel{flex-direction:column;}
+            .qr-box{flex:none;width:100%;}
+            .method-tabs{gap:6px;}
+            .method-tab{padding:8px 14px;font-size:.82rem;}
         }
     </style>
 </head>
-
 <body>
 
-    <!-- SIDEBAR -->
-            <aside class="sidebar">
-            <div class="sidebar-logo">
-                <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
+<button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+    <i class="fas fa-bars"></i>
+</button>
+
+<div class="layout">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+            <p>PhysioRehab Clinic</p>
+        </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <span>🟢 Patient</span>
             </div>
-            <div class="sidebar-user">
-                <div class="user-avatar">
-                    {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
-                </div>
-                <div class="user-info">
-                    <h4>{{ user.get_full_name|default:user.username }}</h4>
-                    <span>🟢 Patient</span>
-                </div>
-            </div>
-            <nav>
-                <div class="nav-section">Main Menu</div>
-                <a href="{% url 'client_dashboard' %}" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-                <a href="{% url 'book_appointment' %}" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
-                <a href="{% url 'my_appointments' %}" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
-                <div class="nav-section">Communication</div>
-                <a href="{% url 'client_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Chat with Doctor</a>
-                <a href="{% url 'notifications' %}" class="nav-item"><i class="fas fa-bell"></i> Notifications</a>
-                <div class="nav-section">Account</div>
-                <a href="{% url 'profile' %}" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
-                <a href="{% url 'payments' %}" class="nav-item active"><i class="fas fa-credit-card"></i> Payments</a>
-                <div class="nav-section">Quick Links</div>
-                <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
-            </nav>
+        </div>
+        <nav>
+            <div class="nav-section">Main Menu</div>
+            <a href="{% url 'client_dashboard' %}" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="{% url 'book_appointment' %}" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
+            <a href="{% url 'my_appointments' %}" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
+            <div class="nav-section">Communication</div>
+            <a href="{% url 'client_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Chat with Doctor</a>
+            <a href="{% url 'notifications' %}" class="nav-item"><i class="fas fa-bell"></i> Notifications</a>
+            <div class="nav-section">Account</div>
+            <a href="{% url 'profile' %}" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
+            <a href="{% url 'payments' %}" class="nav-item active"><i class="fas fa-credit-card"></i> Payments</a>
+        </nav>
+        <div class="sidebar-footer">
             <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-        </aside>
+        </div>
+    </aside>
 
-    <div class="container">
+    <main class="main">
+        {% if messages %}
+        {% for msg in messages %}
+        <div class="alert alert-{% if msg.tags == 'error' %}error{% elif msg.tags == 'warning' %}warning{% else %}success{% endif %}">
+            {{ msg }}
+        </div>
+        {% endfor %}
+        {% endif %}
 
-        <div class="card">
-            <h2>💳 Payments</h2>
-            <p>Manage your consultation payments and history</p>
+        <div class="page-header">
+            <h1>💳 Payments</h1>
+            <p>Pay for your consultations using any method that suits you</p>
         </div>
 
-        <div class="card">
-            <h3>Choose Payment Option</h3>
-
-            <div class="payment-box">
-
-                <div class="pay-card">
-                    <h4>Basic Consultation</h4>
-                    <div class="amount">₹500</div>
-                    <p>30 min session</p>
-                    <a href="/pay/basic/" class="btn">Pay Now</a>
-                </div>
-
-                <div class="pay-card">
-                    <h4>Premium Consultation</h4>
-                    <div class="amount">₹1000</div>
-                    <p>60 min session</p>
-                    <a href="/pay/premium/" class="btn">Pay Now</a>
-                </div>
-
-                <div class="pay-card">
-                    <h4>Emergency Session</h4>
-                    <div class="amount">₹1500</div>
-                    <p>Instant support</p>
-                    <a href="/pay/emergency/" class="btn">Pay Now</a>
-                </div>
-
+        <!-- STATS -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="val">₹{{ my_payments|length|default:"0" }}</div>
+                <div class="lbl">Total Transactions</div>
+            </div>
+            <div class="stat-box">
+                <div class="val">{{ upcoming_appointments.count }}</div>
+                <div class="lbl">Upcoming Sessions</div>
             </div>
         </div>
 
-        <div class="card history">
-            <h3>Payment History</h3>
+        <!-- MAKE A PAYMENT -->
+        <div class="card">
+            <div class="card-title"><i class="fas fa-hand-holding-usd" style="color:#F5C518"></i> Make a Payment</div>
 
-            <table>
-                <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                </tr>
+            <!-- METHOD TABS -->
+            <div class="method-tabs">
+                <button class="method-tab active" onclick="switchTab('stripe',this)"><i class="fab fa-stripe" style="color:#635BFF"></i> Card (Stripe)</button>
+                <button class="method-tab" onclick="switchTab('upi',this)"><i class="fas fa-qrcode" style="color:#00B900"></i> UPI / QR Code</button>
+                <button class="method-tab" onclick="switchTab('cash',this)"><i class="fas fa-money-bill-wave" style="color:#28a745"></i> Cash</button>
+                <button class="method-tab" onclick="switchTab('netbanking',this)"><i class="fas fa-university" style="color:#1a73e8"></i> Net Banking</button>
+            </div>
 
-                <tr>
-                    <td>05 June 2026</td>
-                    <td>Basic Consultation</td>
-                    <td>₹500</td>
-                    <td><span class="status paid">Paid</span></td>
-                </tr>
+            <!-- STRIPE PANEL -->
+            <div class="method-panel active" id="panel-stripe">
+                <div class="stripe-panel">
+                    <div class="pay-icon">💳</div>
+                    <p style="color:#555;margin-bottom:16px;">Secure card payment powered by Stripe. Supports Visa, Mastercard, RuPay & more.</p>
+                    <form method="POST" action="{% url 'stripe_checkout' %}">
+                        {% csrf_token %}
+                        <div class="amount-input-row">
+                            <div class="form-group">
+                                <label>Select Appointment</label>
+                                <select class="form-control" name="appointment_id">
+                                    <option value="">— General Payment —</option>
+                                    {% for appt in upcoming_appointments %}
+                                    <option value="{{ appt.id }}" {% if appt.consultation_fee %}data-fee="{{ appt.consultation_fee }}"{% endif %}>
+                                        {{ appt.date }} — {{ appt.get_service_display }}
+                                        {% if appt.consultation_fee %}(₹{{ appt.consultation_fee }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Amount (₹)</label>
+                                <input type="number" class="form-control" name="amount" id="stripe-amount" value="500" min="50" step="50">
+                            </div>
+                        </div>
+                        {% if stripe_pub %}
+                        <button type="submit" class="btn btn-stripe"><i class="fab fa-stripe"></i> Pay Securely via Stripe</button>
+                        {% else %}
+                        <div class="alert alert-warning" style="margin-top:12px;display:inline-block;">⚠️ Stripe keys not configured — contact admin to enable card payments.</div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
 
-                <tr>
-                    <td>02 June 2026</td>
-                    <td>Premium Consultation</td>
-                    <td>₹1000</td>
-                    <td><span class="status pending">Pending</span></td>
-                </tr>
-            </table>
+            <!-- UPI PANEL -->
+            <div class="method-panel" id="panel-upi">
+                <div class="upi-panel">
+                    <div class="qr-box">
+                        <canvas id="qr-canvas" width="200" height="200" style="border-radius:12px;border:2px solid #eee;"></canvas>
+                        <p style="font-size:.8rem;color:#666;margin-bottom:8px;">Scan with any UPI app</p>
+                        <div class="upi-id-box" id="upi-id-display">{{ upi_id }}</div>
+                        <button class="copy-btn" onclick="copyUPI()"><i class="fas fa-copy"></i> Copy UPI ID</button>
+                    </div>
+                    <div class="upi-form">
+                        <ol class="upi-steps">
+                            <li>Open any UPI app (GPay, PhonePe, Paytm, BHIM)</li>
+                            <li>Scan the QR code or enter UPI ID: <strong>{{ upi_id }}</strong></li>
+                            <li>Enter the amount and complete payment</li>
+                            <li>Copy the Transaction ID and submit below</li>
+                        </ol>
+                        <form method="POST" action="{% url 'record_upi_payment' %}">
+                            {% csrf_token %}
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label>Select Appointment</label>
+                                <select class="form-control" name="appointment_id">
+                                    <option value="">— General Payment —</option>
+                                    {% for appt in upcoming_appointments %}
+                                    <option value="{{ appt.id }}">{{ appt.date }} — {{ appt.get_service_display }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label>Amount Paid (₹)</label>
+                                <input type="number" class="form-control" name="amount" placeholder="Enter amount" min="1">
+                            </div>
+                            <div class="form-group" style="margin-bottom:16px;">
+                                <label>UPI Transaction ID</label>
+                                <input type="text" class="form-control" name="transaction_id" placeholder="e.g. 415678901234">
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-check-circle"></i> Submit UPI Payment</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CASH PANEL -->
+            <div class="method-panel" id="panel-cash">
+                <div class="cash-panel">
+                    <div class="cash-note">
+                        <i class="fas fa-info-circle"></i> Cash payments are recorded after you visit the clinic. The doctor/receptionist will confirm receipt.
+                    </div>
+                    <form method="POST" action="{% url 'record_cash_payment' %}">
+                        {% csrf_token %}
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <label>Select Appointment</label>
+                            <select class="form-control" name="appointment_id">
+                                <option value="">— General Payment —</option>
+                                {% for appt in upcoming_appointments %}
+                                <option value="{{ appt.id }}">{{ appt.date }} — {{ appt.get_service_display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <label>Amount (₹)</label>
+                            <input type="number" class="form-control" name="amount" placeholder="Amount paid in cash" min="1">
+                        </div>
+                        <div class="form-group" style="margin-bottom:16px;">
+                            <label>Notes (optional)</label>
+                            <input type="text" class="form-control" name="notes" placeholder="e.g. Paid at reception on 20 June">
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-money-bill-wave"></i> Record Cash Payment</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- NET BANKING PANEL -->
+            <div class="method-panel" id="panel-netbanking">
+                <p style="color:#555;margin-bottom:16px;">Net banking payments are processed securely. Please use your bank's NEFT/RTGS to transfer funds to the clinic account and then notify us.</p>
+                <div class="bank-logos">
+                    <div class="bank-logo" style="color:#1a73e8;">SBI</div>
+                    <div class="bank-logo" style="color:#d9232d;">HDFC</div>
+                    <div class="bank-logo" style="color:#f7941d;">ICICI</div>
+                    <div class="bank-logo" style="color:#800000;">Axis</div>
+                    <div class="bank-logo" style="color:#00558b;">PNB</div>
+                    <div class="bank-logo" style="color:#003087;">Kotak</div>
+                </div>
+                <div class="card" style="background:#f9f9f9;padding:16px;margin-top:0;">
+                    <strong>Bank Account Details:</strong>
+                    <table style="min-width:0;margin-top:10px;">
+                        <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:.85rem;">Account Name</td><td style="font-weight:600;font-size:.85rem;">Dr. Dhvani Patalia PhysioRehab</td></tr>
+                        <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:.85rem;">Account No.</td><td style="font-weight:600;font-size:.85rem;">Contact clinic for details</td></tr>
+                        <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:.85rem;">IFSC Code</td><td style="font-weight:600;font-size:.85rem;">Contact clinic for details</td></tr>
+                    </table>
+                    <p style="margin-top:12px;font-size:.82rem;color:#666;">After transferring, submit the UTR number below or call us to confirm.</p>
+                </div>
+                <form method="POST" action="{% url 'record_upi_payment' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="amount" value="0">
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label>UTR / Reference Number</label>
+                        <input type="text" class="form-control" name="transaction_id" placeholder="Enter UTR number from bank transfer">
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-university"></i> Submit Bank Transfer</button>
+                </form>
+            </div>
         </div>
 
-    </div>
+        <!-- PAYMENT HISTORY -->
+        <div class="card">
+            <div class="card-title"><i class="fas fa-history" style="color:#F5C518"></i> Payment History</div>
+            {% if my_payments %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Appointment</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Transaction ID</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pay in my_payments %}
+                        <tr>
+                            <td>{{ pay.created_at|date:"d M Y" }}</td>
+                            <td>{% if pay.appointment %}{{ pay.appointment.date }} — {{ pay.appointment.get_service_display }}{% else %}<span style="color:#aaa;">General</span>{% endif %}</td>
+                            <td><strong>₹{{ pay.amount }}</strong></td>
+                            <td class="method-icon">
+                                {% if pay.method == 'stripe' %}<i class="fab fa-stripe" style="color:#635BFF"></i> Card
+                                {% elif pay.method == 'upi' %}<i class="fas fa-qrcode" style="color:#00B900"></i> UPI
+                                {% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color:#28a745"></i> Cash
+                                {% else %}<i class="fas fa-university" style="color:#1a73e8"></i> Net Banking{% endif %}
+                            </td>
+                            <td style="font-family:monospace;font-size:.8rem;color:#666;">{{ pay.transaction_id|default:"—" }}</td>
+                            <td><span class="badge badge-{{ pay.status }}">{{ pay.get_status_display }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="text-align:center;padding:32px;color:#aaa;">
+                <i class="fas fa-receipt" style="font-size:2.5rem;margin-bottom:12px;display:block;"></i>
+                No payment records yet. Book an appointment and pay here.
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+function switchTab(name, btn) {
+    document.querySelectorAll('.method-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.method-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'upi') generateQR();
+}
+
+function generateQR() {
+    const canvas = document.getElementById('qr-canvas');
+    const upiId = '{{ upi_id }}';
+    const upiUrl = 'upi://pay?pa=' + upiId + '&pn=PhysioRehab&cu=INR';
+    if (canvas._qrDone) return;
+    canvas._qrDone = true;
+    try {
+        new QRCode(canvas.parentElement, {
+            text: upiUrl,
+            width: 200,
+            height: 200,
+            colorDark: '#000',
+            colorLight: '#fff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+        canvas.style.display = 'none';
+    } catch(e) {
+        canvas.getContext('2d').fillText('QR: ' + upiId, 10, 100);
+    }
+}
+
+function copyUPI() {
+    const upi = document.getElementById('upi-id-display').textContent.trim();
+    navigator.clipboard.writeText(upi).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i> Copy UPI ID'; }, 2000);
+    });
+}
+
+document.querySelector('select[name="appointment_id"]')?.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const fee = opt.getAttribute('data-fee');
+    if (fee) document.getElementById('stripe-amount').value = fee;
+});
+</script>
 </body>
-
 </html>

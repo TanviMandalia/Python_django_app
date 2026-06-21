@@ -625,8 +625,167 @@ def mark_all_read(request):
 
 # ─── PAYMENT ─────────────────────────────────────────────────
 
+import stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY if hasattr(settings, 'STRIPE_SECRET_KEY') else ''
+
+from .models import PaymentRecord, ClinicPromo
+
+@login_required
 def payments(request):
-    return render(request, 'payments.html')
+    my_payments = PaymentRecord.objects.filter(patient=request.user).order_by('-created_at')
+    upcoming_appointments = Appointment.objects.filter(
+        patient=request.user, status__in=['pending', 'confirmed']
+    ).order_by('date')
+    clinic = ClinicSettings.objects.first()
+    stripe_pub = getattr(settings, 'STRIPE_PUBLISHABLE_KEY', '')
+    upi_id = getattr(settings, 'CLINIC_UPI_ID', 'dhvanipatalia@upi')
+    return render(request, 'payments.html', {
+        'my_payments': my_payments,
+        'upcoming_appointments': upcoming_appointments,
+        'clinic': clinic,
+        'stripe_pub': stripe_pub,
+        'upi_id': upi_id,
+    })
+
+
+@login_required
+def stripe_checkout(request):
+    if request.method != 'POST':
+        return redirect('payments')
+    amount_str = request.POST.get('amount', '500')
+    appt_id = request.POST.get('appointment_id', '')
+    try:
+        amount_cents = int(float(amount_str) * 100)
+    except (ValueError, TypeError):
+        amount_cents = 50000
+    sk = getattr(settings, 'STRIPE_SECRET_KEY', '')
+    if not sk:
+        messages.error(request, '⚠️ Stripe is not configured yet. Please contact admin.')
+        return redirect('payments')
+    stripe.api_key = sk
+    host = request.build_absolute_uri('/').rstrip('/')
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=[{
+            'price_data': {
+                'currency': 'inr',
+                'product_data': {'name': 'Physiotherapy Consultation'},
+                'unit_amount': amount_cents,
+            },
+            'quantity': 1,
+        }],
+        mode='payment',
+        success_url=host + '/payments/stripe-success/?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url=host + '/payments/stripe-cancel/',
+        metadata={
+            'user_id': str(request.user.id),
+            'appointment_id': appt_id,
+        },
+    )
+    PaymentRecord.objects.create(
+        patient=request.user,
+        appointment_id=appt_id if appt_id else None,
+        amount=float(amount_str),
+        method='stripe',
+        status='pending',
+        stripe_session_id=session.id,
+    )
+    return redirect(session.url, permanent=False)
+
+
+@login_required
+def stripe_success(request):
+    session_id = request.GET.get('session_id', '')
+    if session_id:
+        try:
+            PaymentRecord.objects.filter(
+                stripe_session_id=session_id, patient=request.user
+            ).update(status='paid', transaction_id=session_id)
+        except Exception:
+            pass
+    messages.success(request, '✅ Payment successful! Thank you.')
+    return redirect('payments')
+
+
+@login_required
+def stripe_cancel(request):
+    messages.warning(request, '⚠️ Payment was cancelled.')
+    return redirect('payments')
+
+
+@csrf_exempt
+def stripe_webhook(request):
+    sk = getattr(settings, 'STRIPE_SECRET_KEY', '')
+    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
+    if webhook_secret and sig_header:
+        try:
+            stripe.api_key = sk
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+            if event['type'] == 'checkout.session.completed':
+                sess = event['data']['object']
+                PaymentRecord.objects.filter(stripe_session_id=sess['id']).update(
+                    status='paid', transaction_id=sess['id']
+                )
+        except Exception as e:
+            logger.error(f"Stripe webhook error: {e}")
+            return HttpResponse(status=400)
+    return HttpResponse(status=200)
+
+
+@login_required
+def record_cash_payment(request):
+    if request.method != 'POST':
+        return redirect('payments')
+    amount = request.POST.get('amount', '0')
+    appt_id = request.POST.get('appointment_id', '')
+    notes = request.POST.get('notes', '')
+    PaymentRecord.objects.create(
+        patient=request.user,
+        appointment_id=appt_id if appt_id else None,
+        amount=float(amount) if amount else 0,
+        method='cash',
+        status='paid',
+        notes=notes,
+        transaction_id=f"CASH-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+    )
+    messages.success(request, '✅ Cash payment recorded.')
+    return redirect('payments')
+
+
+@login_required
+def record_upi_payment(request):
+    if request.method != 'POST':
+        return redirect('payments')
+    amount = request.POST.get('amount', '0')
+    appt_id = request.POST.get('appointment_id', '')
+    txn_id = request.POST.get('transaction_id', '')
+    PaymentRecord.objects.create(
+        patient=request.user,
+        appointment_id=appt_id if appt_id else None,
+        amount=float(amount) if amount else 0,
+        method='upi',
+        status='paid' if txn_id else 'pending',
+        transaction_id=txn_id,
+        notes=f"UPI Ref: {txn_id}",
+    )
+    messages.success(request, '✅ UPI payment recorded. Admin will verify shortly.')
+    return redirect('payments')
+
+
+@login_required
+def admin_payments(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    all_payments = PaymentRecord.objects.select_related('patient', 'appointment').order_by('-created_at')
+    total_paid = all_payments.filter(status='paid').aggregate(t=Sum('amount'))['t'] or 0
+    pending_count = all_payments.filter(status='pending').count()
+    return render(request, 'admin_payments.html', {
+        'payments': all_payments,
+        'total_paid': total_paid,
+        'pending_count': pending_count,
+    })
 
 
 # ─── CLIENT DASHBOARD ────────────────────────────────────────
@@ -670,6 +829,8 @@ def admin_dashboard(request):
     blogs            = Blog.objects.order_by('-created_at')[:6]
     pending_reviews  = Review.objects.filter(is_approved=False).count()
     recent_reviews   = Review.objects.filter(is_approved=True).order_by('-created_at')[:4]
+    dismissed = request.session.get('dismissed_promos', [])
+    active_promos = [p for p in ClinicPromo.objects.filter(is_active=True) if p.is_live and str(p.id) not in dismissed]
     return render(request, 'admin_dashboard.html', {
         'total_users':        total_users,
         'all_appointments':   all_appointments,
@@ -682,6 +843,7 @@ def admin_dashboard(request):
         'blogs':              blogs,
         'pending_reviews':    pending_reviews,
         'recent_reviews':     recent_reviews,
+        'active_promos':      active_promos,
     })
 
 
@@ -2800,3 +2962,108 @@ def submit_support_ticket(request):
             messages.success(request, '✅ Support ticket submitted successfully.')
         return redirect('admin_dashboard')
     return redirect('admin_dashboard')
+
+
+# ─── SUBSCRIPTION PAGE ────────────────────────────────────────
+
+@login_required
+def subscription_page(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    plans = SubscriptionPlan.objects.filter(is_active=True)
+    hospital = None
+    current_sub = None
+    if hasattr(request.user, 'clinic_admin_profile'):
+        hospital = request.user.clinic_admin_profile.hospital
+        try:
+            current_sub = hospital.subscription
+        except Exception:
+            pass
+    return render(request, 'subscription_page.html', {
+        'plans': plans,
+        'hospital': hospital,
+        'current_sub': current_sub,
+    })
+
+
+# ─── PROMO MANAGEMENT ────────────────────────────────────────
+
+@login_required
+def admin_promos(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    promos = ClinicPromo.objects.all()
+    return render(request, 'admin_promos.html', {'promos': promos})
+
+
+@login_required
+def admin_promo_add(request):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    if request.method == 'POST':
+        ClinicPromo.objects.create(
+            title=request.POST.get('title', '').strip(),
+            message=request.POST.get('message', '').strip(),
+            start_date=request.POST.get('start_date') or timezone.now().date(),
+            end_date=request.POST.get('end_date') or None,
+            is_active=True,
+        )
+        messages.success(request, '✅ Promo created.')
+        return redirect('admin_promos')
+    return render(request, 'admin_promo_add.html')
+
+
+@login_required
+def admin_promo_delete(request, promo_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    promo = get_object_or_404(ClinicPromo, id=promo_id)
+    promo.delete()
+    messages.success(request, '🗑️ Promo deleted.')
+    return redirect('admin_promos')
+
+
+@login_required
+def dismiss_promo(request):
+    if request.method == 'POST':
+        promo_id = request.POST.get('promo_id')
+        dismissed = request.session.get('dismissed_promos', [])
+        if promo_id and promo_id not in dismissed:
+            dismissed.append(promo_id)
+            request.session['dismissed_promos'] = dismissed
+    return JsonResponse({'ok': True})
+
+
+# ─── EXERCISE REMINDER ────────────────────────────────────────
+
+@login_required
+def send_exercise_reminder(request, patient_id):
+    if not request.user.is_superuser:
+        return redirect('client_dashboard')
+    patient = get_object_or_404(User, id=patient_id)
+    last_note = SessionNote.objects.filter(patient=patient).order_by('-created_at').first()
+    next_info = last_note.next_session if last_note else 'your scheduled session'
+    from .notifications import notify
+    notify(
+        recipient=patient,
+        message=f'🏃 Reminder from Dr. Dhvani: Please complete your exercises before {next_info}. Stay consistent for faster recovery!',
+        link='/my-appointments/',
+    )
+    if patient.email:
+        from .email_utils import send_clinic_email
+        send_clinic_email(
+            subject='Exercise Reminder from Dr. Dhvani Patalia',
+            message_text=f"""Dear {patient.get_full_name() or patient.username},
+
+This is a friendly reminder from Dr. Dhvani Patalia's PhysioRehab Clinic.
+
+Please ensure you complete your prescribed exercises before your next session: {next_info}
+
+Consistency is key to a faster recovery. If you have any questions, feel free to chat with us.
+
+Dr. Dhvani Patalia — PhysioRehab Clinic
+""",
+            recipient_list=[patient.email],
+        )
+    messages.success(request, f'✅ Exercise reminder sent to {patient.get_full_name() or patient.username}.')
+    return redirect('admin_patients')

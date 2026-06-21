@@ -356,6 +356,8 @@
           <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
 
           <div class="nav-section">Content</div>
+          <a href="{% url 'admin_payments' %}" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
+          <a href="{% url 'admin_promos' %}" class="nav-item"><i class="fas fa-bullhorn"></i> Promo Notifications</a>
           <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
           <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
 
@@ -819,5 +821,58 @@
       updateDate();
       setInterval(updateDate, 60000);
     </script>
+
+    {% if active_promos %}
+    <!-- PROMO POPUPS -->
+    <div id="promo-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div id="promo-box" style="background:#fff;border-radius:18px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#F5C518,#f0a800);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#7a5900;margin-bottom:2px;">📢 Clinic Announcement</div>
+            <h3 id="promo-title" style="font-size:1.15rem;font-weight:800;color:#222;"></h3>
+          </div>
+          <button onclick="dismissCurrentPromo()" style="background:rgba(0,0,0,.1);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
+        <div style="padding:22px 24px;">
+          <p id="promo-msg" style="color:#444;font-size:.95rem;line-height:1.6;margin-bottom:18px;"></p>
+          <div id="promo-nav" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+            <span id="promo-counter" style="font-size:.78rem;color:#aaa;"></span>
+            <div style="display:flex;gap:8px;">
+              <button onclick="prevPromo()" id="btn-prev" style="padding:8px 16px;background:#f0f0f0;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;">← Prev</button>
+              <button onclick="nextPromo()" id="btn-next" style="padding:8px 18px;background:#F5C518;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;">Next →</button>
+              <button onclick="dismissAll()" style="padding:8px 16px;background:#222;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;">Got it!</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+    const promos = [
+      {% for p in active_promos %}{"id":"{{ p.id }}","title":{{ p.title|escapejs|stringformat:'"%s"' }},"msg":{{ p.message|escapejs|stringformat:'"%s"' }}}{% if not forloop.last %},{% endif %}{% endfor %}
+    ];
+    let cur = 0;
+    function showPromo(i) {
+      if (!promos.length) { document.getElementById('promo-overlay').style.display='none'; return; }
+      cur = i;
+      document.getElementById('promo-title').textContent = promos[i].title;
+      document.getElementById('promo-msg').textContent = promos[i].msg;
+      document.getElementById('promo-counter').textContent = (i+1) + ' of ' + promos.length;
+      document.getElementById('btn-prev').style.visibility = i===0?'hidden':'visible';
+      document.getElementById('btn-next').style.display = i===promos.length-1?'none':'inline-block';
+    }
+    function nextPromo() { if(cur<promos.length-1) showPromo(cur+1); }
+    function prevPromo() { if(cur>0) showPromo(cur-1); }
+    function dismissCurrentPromo() {
+      fetch("{% url 'dismiss_promo' %}",{method:'POST',headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/x-www-form-urlencoded'},body:'promo_id='+promos[cur].id});
+      promos.splice(cur,0); cur=0;
+      if(!promos.length) { document.getElementById('promo-overlay').style.display='none'; } else showPromo(0);
+    }
+    function dismissAll() {
+      promos.forEach(p=>fetch("{% url 'dismiss_promo' %}",{method:'POST',headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/x-www-form-urlencoded'},body:'promo_id='+p.id}));
+      document.getElementById('promo-overlay').style.display='none';
+    }
+    if(promos.length) showPromo(0); else document.getElementById('promo-overlay').style.display='none';
+    </script>
+    {% endif %}
   </body>
 </html>

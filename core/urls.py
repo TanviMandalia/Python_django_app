@@ -41,6 +41,25 @@ urlpatterns = [
 
     # ── Payments ──────────────────────────────────────────────
     path('payments/', views.payments, name='payments'),
+    path('payments/stripe-checkout/', views.stripe_checkout, name='stripe_checkout'),
+    path('payments/stripe-success/', views.stripe_success, name='stripe_success'),
+    path('payments/stripe-cancel/', views.stripe_cancel, name='stripe_cancel'),
+    path('payments/stripe-webhook/', views.stripe_webhook, name='stripe_webhook'),
+    path('payments/record-cash/', views.record_cash_payment, name='record_cash_payment'),
+    path('payments/record-upi/', views.record_upi_payment, name='record_upi_payment'),
+    path('payments/admin/', views.admin_payments, name='admin_payments'),
+
+    # ── Subscription ──────────────────────────────────────────
+    path('subscription/', views.subscription_page, name='subscription_page'),
+
+    # ── Promo Management ──────────────────────────────────────
+    path('admin-promos/', views.admin_promos, name='admin_promos'),
+    path('admin-promos/add/', views.admin_promo_add, name='admin_promo_add'),
+    path('admin-promos/delete/<int:promo_id>/', views.admin_promo_delete, name='admin_promo_delete'),
+    path('api/promos/dismiss/', views.dismiss_promo, name='dismiss_promo'),
+
+    # ── Exercise Reminder ─────────────────────────────────────
+    path('send-exercise-reminder/<int:patient_id>/', views.send_exercise_reminder, name='send_exercise_reminder'),
 
     # ── Client ────────────────────────────────────────────────
     path('client-dashboard/', views.client_dashboard, name='client_dashboard'),
