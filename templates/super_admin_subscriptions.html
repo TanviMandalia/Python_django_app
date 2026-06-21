@@ -1,485 +1,359 @@
-{% load static %}
+{% load static custom_filters %}
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Super Admin — Subscriptions</title>
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      rel="stylesheet"
-    />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Super Admin — Subscriptions & Payments</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        font-family: "Segoe UI", sans-serif;
-        background: #f0f2f5;
-        display: flex;
-      }
-      .sidebar {
-        width: 260px;
-        min-height: 100vh;
-        background: linear-gradient(180deg, #0f0f1a, #1a1a2e);
-        position: fixed;
-        top: 0;
-        left: 0;
-        display: flex;
-        flex-direction: column;
-        z-index: 100;
-      }
-      .sidebar-logo {
-        padding: 24px 20px;
-        border-bottom: 1px solid rgba(139, 92, 246, 0.25);
-        text-align: center;
-      }
-      .sidebar-logo .brand {
-        color: #fff;
-        font-size: 1.1em;
-        font-weight: 800;
-      }
-      .sidebar-logo .sub {
-        color: #8b5cf6;
-        font-size: 0.72em;
-        font-weight: 600;
-        margin-top: 2px;
-      }
-      .sidebar-badge {
-        margin: 12px 20px;
-        background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-        color: #fff;
-        padding: 8px 14px;
-        border-radius: 10px;
-        font-size: 0.78em;
-        font-weight: 700;
-        text-align: center;
-      }
-      .nav-section {
-        padding: 12px 22px 5px;
-        color: #444;
-        font-size: 0.68em;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        font-weight: 700;
-      }
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 13px;
-        padding: 12px 22px;
-        color: #aaa;
-        text-decoration: none;
-        font-size: 0.88em;
-        transition: all 0.25s;
-        border-left: 3px solid transparent;
-      }
-      .nav-item:hover,
-      .nav-item.active {
-        background: rgba(139, 92, 246, 0.12);
-        color: #a78bfa;
-        border-left-color: #8b5cf6;
-      }
-      .nav-item i {
-        width: 18px;
-        text-align: center;
-      }
-      .logout-btn {
-        margin: 15px;
-        margin-top: auto;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 18px;
-        background: rgba(220, 53, 69, 0.12);
-        color: #ff6b6b;
-        border-radius: 10px;
-        text-decoration: none;
-        font-size: 0.84em;
-      }
-      .main {
-        margin-left: 260px;
-        min-height: 100vh;
-        width: calc(100% - 260px);
-      }
-      .topbar {
-        background: #fff;
-        padding: 18px 30px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-        position: sticky;
-        top: 0;
-        z-index: 50;
-      }
-      .topbar h1 {
-        font-size: 1.25em;
-        color: #1a1a2e;
-        font-weight: 700;
-      }
-      .topbar-user {
-        background: #f5f5f5;
-        padding: 8px 16px;
-        border-radius: 25px;
-        font-size: 0.86em;
-        font-weight: 600;
-        color: #333;
-      }
-      .body {
-        padding: 28px 30px;
-      }
-      .alert-success {
-        background: #d4edda;
-        border: 1px solid #28a745;
-        color: #155724;
-        padding: 12px 18px;
-        border-radius: 10px;
-        margin-bottom: 16px;
-        font-size: 0.9em;
-      }
-      .row-2 {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 24px;
-      }
-      .card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
-      }
-      .card-title {
-        font-size: 1em;
-        font-weight: 700;
-        color: #1a1a2e;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 20px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #f0f0f0;
-      }
-      .card-title i {
-        color: #8b5cf6;
-      }
-      .table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      .table th {
-        background: #f8f9fa;
-        padding: 11px 14px;
-        text-align: left;
-        font-size: 0.76em;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        color: #666;
-        font-weight: 700;
-        border-bottom: 1px solid #eee;
-      }
-      .table td {
-        padding: 13px 14px;
-        border-bottom: 1px solid #f5f5f5;
-        font-size: 0.87em;
-        color: #333;
-        vertical-align: middle;
-      }
-      .table tr:hover td {
-        background: #fafafa;
-      }
-      .badge {
-        display: inline-block;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 0.72em;
-        font-weight: 700;
-      }
-      .badge-active {
-        background: #d4edda;
-        color: #155724;
-      }
-      .badge-trial {
-        background: #fff3cd;
-        color: #856404;
-      }
-      .badge-expired {
-        background: #f8d7da;
-        color: #721c24;
-      }
-      .badge-cancelled {
-        background: #e2e3e5;
-        color: #383d41;
-      }
-      .badge-basic {
-        background: #e2e3e5;
-        color: #383d41;
-      }
-      .badge-standard {
-        background: #cce5ff;
-        color: #004085;
-      }
-      .badge-premium {
-        background: #d4edda;
-        color: #155724;
-      }
-      .plan-card {
-        background: #f8f4ff;
-        border: 1px solid rgba(139, 92, 246, 0.15);
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 12px;
-      }
-      .plan-card h4 {
-        font-size: 0.92em;
-        font-weight: 700;
-        color: #7c3aed;
-        margin-bottom: 6px;
-      }
-      .plan-card p {
-        font-size: 0.82em;
-        color: #666;
-      }
-      .plan-price {
-        font-size: 1.1em;
-        font-weight: 800;
-        color: #1a1a2e;
-      }
-      .form-group {
-        margin-bottom: 12px;
-      }
-      .form-group label {
-        display: block;
-        font-size: 0.8em;
-        font-weight: 700;
-        color: #555;
-        margin-bottom: 5px;
-      }
-      .form-group input,
-      .form-group select {
-        width: 100%;
-        padding: 9px 12px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 0.88em;
-        outline: none;
-      }
-      .form-group input:focus,
-      .form-group select:focus {
-        border-color: #8b5cf6;
-      }
-      .btn-sm {
-        background: #8b5cf6;
-        color: #fff;
-        padding: 9px 18px;
-        border-radius: 8px;
-        border: none;
-        font-size: 0.84em;
-        font-weight: 700;
-        cursor: pointer;
-        width: 100%;
-      }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;display:flex;}
+        .sidebar{width:240px;min-height:100vh;background:linear-gradient(180deg,#0f0f1a,#1a1a2e);position:fixed;top:0;left:0;display:flex;flex-direction:column;z-index:100;}
+        .sidebar-logo{padding:22px 18px;border-bottom:1px solid rgba(139,92,246,.25);text-align:center;}
+        .sidebar-logo .brand{color:#fff;font-size:1em;font-weight:800;}
+        .sidebar-logo .sub{color:#8b5cf6;font-size:.7em;font-weight:600;margin-top:2px;}
+        .sidebar-badge{margin:10px 16px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;padding:7px 12px;border-radius:10px;font-size:.76em;font-weight:700;text-align:center;}
+        .nav-section{padding:10px 20px 4px;color:#444;font-size:.66em;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;}
+        .nav-item{display:flex;align-items:center;gap:12px;padding:11px 20px;color:#aaa;text-decoration:none;font-size:.86em;border-left:3px solid transparent;transition:.2s;}
+        .nav-item:hover,.nav-item.active{background:rgba(139,92,246,.12);color:#a78bfa;border-left-color:#8b5cf6;}
+        .nav-item i{width:16px;text-align:center;}
+        .logout-btn{margin:12px;margin-top:auto;display:flex;align-items:center;gap:10px;padding:11px 16px;background:rgba(220,53,69,.12);color:#ff6b6b;border-radius:10px;text-decoration:none;font-size:.83em;}
+        .main{margin-left:240px;min-height:100vh;width:calc(100% - 240px);}
+        .topbar{background:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.06);position:sticky;top:0;z-index:50;}
+        .topbar h1{font-size:1.2em;color:#1a1a2e;font-weight:700;}
+        .topbar-user{background:#f5f5f5;padding:7px 14px;border-radius:25px;font-size:.84em;font-weight:600;color:#333;}
+        .body{padding:24px 28px;}
+        .alert-success{background:#d4edda;border:1px solid #28a745;color:#155724;padding:11px 16px;border-radius:10px;margin-bottom:14px;font-size:.88em;}
+        .alert-warning{background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:11px 16px;border-radius:10px;margin-bottom:14px;font-size:.88em;}
+
+        /* STATS */
+        .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px;}
+        .stat-box{background:#fff;border-radius:12px;padding:18px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.06);}
+        .stat-box .val{font-size:1.6rem;font-weight:800;}
+        .stat-box .lbl{font-size:.78rem;color:#666;margin-top:4px;}
+
+        /* TABS */
+        .tab-nav{display:flex;gap:6px;margin-bottom:20px;border-bottom:2px solid #eee;padding-bottom:0;}
+        .tab-btn{padding:10px 20px;border:none;background:none;font-size:.88rem;font-weight:600;color:#888;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.2s;}
+        .tab-btn.active{color:#8b5cf6;border-bottom-color:#8b5cf6;}
+
+        /* CARD */
+        .card{background:#fff;border-radius:14px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);margin-bottom:22px;}
+        .card-title{font-size:.95em;font-weight:700;color:#1a1a2e;display:flex;align-items:center;gap:8px;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #f0f0f0;}
+        .card-title i{color:#8b5cf6;}
+        table{width:100%;border-collapse:collapse;}
+        th{text-align:left;padding:10px 13px;background:#f8f9fa;font-size:.74em;text-transform:uppercase;letter-spacing:.8px;color:#666;font-weight:700;border-bottom:1px solid #eee;}
+        td{padding:12px 13px;border-bottom:1px solid #f5f5f5;font-size:.86em;color:#333;vertical-align:middle;}
+        tr:hover td{background:#fafafa;}
+
+        /* BADGES */
+        .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.72em;font-weight:700;}
+        .badge-active{background:#d4edda;color:#155724;}
+        .badge-trial{background:#fff3cd;color:#856404;}
+        .badge-expired{background:#f8d7da;color:#721c24;}
+        .badge-cancelled{background:#e2e3e5;color:#383d41;}
+        .badge-paid{background:#d4edda;color:#155724;}
+        .badge-pending{background:#fff3cd;color:#856404;}
+        .badge-failed{background:#f8d7da;color:#721c24;}
+        .badge-basic{background:#e2e3e5;color:#383d41;}
+        .badge-standard{background:#cce5ff;color:#004085;}
+        .badge-premium{background:rgba(139,92,246,.15);color:#6d28d9;}
+
+        /* ACTION BUTTONS */
+        .btn-confirm{padding:5px 14px;background:#28a745;color:#fff;border:none;border-radius:7px;font-size:.78em;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;}
+        .btn-confirm:hover{background:#218838;}
+        .btn-reject{padding:5px 12px;background:#dc3545;color:#fff;border:none;border-radius:7px;font-size:.78em;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;margin-left:4px;}
+        .btn-reject:hover{background:#c82333;}
+        .btn-view{padding:5px 12px;background:#8b5cf6;color:#fff;border:none;border-radius:7px;font-size:.78em;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;}
+        .btn-view:hover{background:#7c3aed;}
+
+        /* PLAN FORM */
+        .plan-card{background:#f8f4ff;border:1px solid rgba(139,92,246,.15);border-radius:12px;padding:14px;margin-bottom:10px;}
+        .plan-card h4{font-size:.9em;font-weight:700;color:#7c3aed;margin-bottom:6px;}
+        .plan-price{font-size:1.05em;font-weight:800;color:#1a1a2e;}
+        .form-group{margin-bottom:10px;}
+        .form-group label{display:block;font-size:.78em;font-weight:700;color:#555;margin-bottom:4px;}
+        .form-group input,.form-group select{width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:7px;font-size:.86em;outline:none;}
+        .form-group input:focus,.form-group select:focus{border-color:#8b5cf6;}
+        .btn-sm{background:#8b5cf6;color:#fff;padding:9px 18px;border-radius:8px;border:none;font-size:.83em;font-weight:700;cursor:pointer;width:100%;}
+        .empty-state{text-align:center;padding:32px;color:#bbb;}
+        .empty-state i{font-size:2.5em;display:block;margin-bottom:10px;color:#ddd;}
+
+        /* HOSPITAL PAYMENT ROW */
+        .hosp-paid{background:#d4edda;color:#155724;padding:3px 10px;border-radius:10px;font-size:.75em;font-weight:700;}
+        .hosp-pending{background:#fff3cd;color:#856404;padding:3px 10px;border-radius:10px;font-size:.75em;font-weight:700;}
+        .hosp-none{background:#e2e3e5;color:#555;padding:3px 10px;border-radius:10px;font-size:.75em;font-weight:700;}
+
+        /* PENDING ALERT */
+        .pending-alert{background:linear-gradient(135deg,#fff3cd,#ffeaa7);border:1px solid #ffc107;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;}
+        .pending-alert .cnt{font-size:1.6rem;font-weight:800;color:#856404;}
+        .pending-alert .txt{font-size:.88rem;color:#856404;}
+
+        @media(max-width:900px){
+            .sidebar{position:fixed;left:-260px;transition:.3s;width:240px;}
+            .sidebar.open{left:0;}
+            .main{margin-left:0;width:100%;}
+            .body{padding:70px 16px 20px;}
+        }
+        .hamburger{display:none;position:fixed;top:12px;left:12px;z-index:200;background:#8b5cf6;border:none;border-radius:8px;width:38px;height:38px;cursor:pointer;align-items:center;justify-content:center;color:#fff;font-size:1rem;}
+        @media(max-width:900px){.hamburger{display:flex;}}
     </style>
-  </head>
-  <body>
-    <aside class="sidebar">
-      <div class="sidebar-logo">
+</head>
+<body>
+<button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')"><i class="fas fa-bars"></i></button>
+<aside class="sidebar">
+    <div class="sidebar-logo">
         <div class="brand">👑 SUPER ADMIN</div>
         <div class="sub">Platform Control Panel</div>
-      </div>
-      <div class="sidebar-badge">Platform Administrator</div>
-      <nav>
-        <div class="nav-section">Platform</div>
-        <a href="{% url 'super_admin_dashboard' %}" class="nav-item"
-          ><i class="fas fa-tachometer-alt"></i> Dashboard</a
-        >
-        <a href="{% url 'super_admin_hospitals' %}" class="nav-item"
-          ><i class="fas fa-hospital"></i> Hospitals</a
-        >
-        <a href="{% url 'super_admin_subscriptions' %}" class="nav-item active"
-          ><i class="fas fa-credit-card"></i> Subscriptions</a
-        >
-        <div class="nav-section">Reports</div>
-        <a href="{% url 'super_admin_analytics' %}" class="nav-item"
-          ><i class="fas fa-chart-bar"></i> Analytics</a
-        >
-        <div class="nav-section">Support</div>
-        <a href="{% url 'super_admin_support' %}" class="nav-item"
-          ><i class="fas fa-headset"></i> Support Tickets</a
-        >
-      </nav>
-      <a href="{% url 'logout' %}" class="logout-btn"
-        ><i class="fas fa-sign-out-alt"></i> Logout</a
-      >
-    </aside>
-
-    <div class="main">
-      <div class="topbar">
-        <h1>💳 Subscriptions & Plans</h1>
-        <div class="topbar-user">👑 {{ user.username }}</div>
-      </div>
-      <div class="body">
-        {% for m in messages %}
-        <div class="alert-success">{{ m }}</div>
-        {% endfor %}
-        <div class="row-2">
-          <div class="card">
-            <div class="card-title">
-              <i class="fas fa-hospital"></i> Hospital Subscriptions
-            </div>
-            {% if subscriptions %}
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Hospital</th>
-                  <th>Plan</th>
-                  <th>Status</th>
-                  <th>Started</th>
-                  <th>Expires</th>
-                  <th>Manage</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for s in subscriptions %}
-                <tr>
-                  <td>
-                    <strong>{{ s.hospital.name }}</strong><br /><small
-                      style="color: #888"
-                      >{{ s.hospital.city }}</small
-                    >
-                  </td>
-                  <td>
-                    {% if s.plan %}<span class="badge badge-{{ s.plan.name }}"
-                      >{{ s.plan.get_name_display }}</span
-                    >{% else %}<span style="color: #bbb">None</span>{% endif %}
-                  </td>
-                  <td>
-                    <span class="badge badge-{{ s.status }}"
-                      >{{ s.get_status_display }}</span
-                    >{% if s.is_expired %}
-                    <span class="badge badge-expired">Expired</span>{% endif %}
-                  </td>
-                  <td style="color: #888; font-size: 0.82em">
-                    {{ s.started_at|date:"M d, Y" }}
-                  </td>
-                  <td style="color: #888; font-size: 0.82em">
-                    {{ s.expires_at|date:"M d, Y"|default:"—" }}
-                  </td>
-                  <td>
-                    <a
-                      href="{% url 'super_admin_edit_hospital' s.hospital.id %}"
-                      style="
-                        color: #8b5cf6;
-                        font-size: 0.82em;
-                        font-weight: 600;
-                      "
-                      >Edit →</a
-                    >
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-            {% else %}
-            <div style="text-align: center; padding: 40px; color: #bbb">
-              <i
-                class="fas fa-credit-card"
-                style="
-                  font-size: 2.5em;
-                  display: block;
-                  margin-bottom: 12px;
-                  color: #ddd;
-                "
-              ></i>
-              <p>No subscriptions yet.</p>
-            </div>
-            {% endif %}
-          </div>
-
-          <div class="card">
-            <div class="card-title">
-              <i class="fas fa-boxes"></i> Plan Catalogue
-            </div>
-            {% for p in plans %}
-            <div class="plan-card">
-              <h4>{{ p.get_name_display }}</h4>
-              <div class="plan-price">₹{{ p.price_monthly }}/mo</div>
-              <p style="margin-top: 4px">
-                Max {{ p.max_staff }} staff · Max {{ p.max_patients }} patients
-              </p>
-              {% if p.features %}
-              <p style="margin-top: 4px; font-size: 0.78em; color: #999">
-                {{ p.features|truncatechars:80 }}
-              </p>
-              {% endif %}
-            </div>
-            {% empty %}
-            <div style="text-align: center; padding: 30px; color: #bbb">
-              <p>No plans created yet.</p>
-            </div>
-            {% endfor %}
-
-            <div
-              style="
-                margin-top: 16px;
-                padding-top: 14px;
-                border-top: 1px solid #f0f0f0;
-              "
-            >
-              <div
-                style="
-                  font-size: 0.88em;
-                  font-weight: 700;
-                  color: #555;
-                  margin-bottom: 12px;
-                "
-              >
-                Create New Plan
-              </div>
-              <form method="post">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="save_plan" />
-                <div class="form-group">
-                  <label>Plan Type</label>
-                  <select name="plan_name">
-                    <option value="basic">Basic</option>
-                    <option value="standard">Standard</option>
-                    <option value="premium">Premium</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Price / Month (₹)</label
-                  ><input
-                    type="number"
-                    name="price_monthly"
-                    placeholder="e.g. 999"
-                    step="0.01"
-                  />
-                </div>
-                <div class="form-group">
-                  <label>Max Staff</label
-                  ><input type="number" name="max_staff" value="5" />
-                </div>
-                <div class="form-group">
-                  <label>Max Patients</label
-                  ><input type="number" name="max_patients" value="500" />
-                </div>
-                <div class="form-group">
-                  <label>Features (one per line)</label
-                  ><input
-                    type="text"
-                    name="features"
-                    placeholder="e.g. Reports, Chat, Export"
-                  />
-                </div>
-                <button type="submit" class="btn-sm">+ Create Plan</button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-  </body>
+    <div class="sidebar-badge">Platform Administrator</div>
+    <nav>
+        <div class="nav-section">Platform</div>
+        <a href="{% url 'super_admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="{% url 'super_admin_hospitals' %}" class="nav-item"><i class="fas fa-hospital"></i> Hospitals</a>
+        <a href="{% url 'super_admin_subscriptions' %}" class="nav-item active"><i class="fas fa-credit-card"></i> Subscriptions</a>
+        <div class="nav-section">Reports</div>
+        <a href="{% url 'super_admin_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+        <div class="nav-section">Support</div>
+        <a href="{% url 'super_admin_support' %}" class="nav-item"><i class="fas fa-headset"></i> Support Tickets</a>
+    </nav>
+    <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</aside>
+
+<div class="main">
+    <div class="topbar">
+        <h1>💳 Subscriptions & Payments</h1>
+        <div class="topbar-user">👑 {{ user.username }}</div>
+    </div>
+    <div class="body">
+        {% for m in messages %}
+        <div class="alert-{% if 'confirmed' in m.message or '✅' in m.message %}success{% else %}warning{% endif %}">{{ m }}</div>
+        {% endfor %}
+
+        <!-- PENDING ALERT -->
+        {% if pending_payments %}
+        <div class="pending-alert">
+            <div class="cnt">{{ pending_payments|length }}</div>
+            <div class="txt"><strong>Payment{% if pending_payments|length > 1 %}s{% endif %} awaiting verification</strong><br>Review and confirm or reject below.</div>
+        </div>
+        {% endif %}
+
+        <!-- STATS -->
+        <div class="stats-row">
+            <div class="stat-box"><div class="val" style="color:#8b5cf6;">{{ subscriptions|length }}</div><div class="lbl">Total Clinics</div></div>
+            <div class="stat-box"><div class="val" style="color:#28a745;">{{ subscriptions|length }}</div><div class="lbl">Active Subs</div></div>
+            <div class="stat-box"><div class="val" style="color:#856404;">{{ pending_payments|length }}</div><div class="lbl">Pending Payments</div></div>
+            <div class="stat-box"><div class="val" style="color:#1a1a2e;">{{ plans|length }}</div><div class="lbl">Plan Types</div></div>
+        </div>
+
+        <!-- TABS -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="showTab('tab-pending',this)"><i class="fas fa-clock"></i> Pending Payments {% if pending_payments %}<span style="background:#dc3545;color:#fff;padding:1px 7px;border-radius:10px;font-size:.78em;margin-left:4px;">{{ pending_payments|length }}</span>{% endif %}</button>
+            <button class="tab-btn" onclick="showTab('tab-hospitals',this)"><i class="fas fa-hospital"></i> Clinic Status</button>
+            <button class="tab-btn" onclick="showTab('tab-subscriptions',this)"><i class="fas fa-list"></i> All Subscriptions</button>
+            <button class="tab-btn" onclick="showTab('tab-plans',this)"><i class="fas fa-boxes"></i> Manage Plans</button>
+        </div>
+
+        <!-- TAB: PENDING PAYMENTS -->
+        <div id="tab-pending">
+            <div class="card">
+                <div class="card-title"><i class="fas fa-clock"></i> Pending Verification</div>
+                {% if pending_payments %}
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr><th>Date & Time</th><th>Clinic / Hospital</th><th>Plan</th><th>Amount</th><th>Duration</th><th>Method</th><th>Txn ID</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for pay in pending_payments %}
+                            <tr>
+                                <td>
+                                    <div style="font-weight:600;">{{ pay.created_at|date:"d M Y" }}</div>
+                                    <div style="color:#888;font-size:.78rem;">{{ pay.created_at|time:"h:i A" }}</div>
+                                </td>
+                                <td><strong>{{ pay.hospital.name }}</strong><br><small style="color:#888;">{{ pay.hospital.city|default:"—" }}</small></td>
+                                <td>{% if pay.plan %}<span class="badge badge-{{ pay.plan.name }}">{{ pay.plan.get_name_display }}</span>{% else %}<span style="color:#bbb;">—</span>{% endif %}</td>
+                                <td><strong style="color:#1a1a2e;">₹{{ pay.amount }}</strong></td>
+                                <td>{{ pay.duration_months }} mo</td>
+                                <td>
+                                    {% if pay.method == 'upi' %}<i class="fas fa-qrcode" style="color:#00B900"></i> UPI
+                                    {% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color:#28a745"></i> Cash
+                                    {% elif pay.method == 'netbanking' %}<i class="fas fa-university" style="color:#1a73e8"></i> NEFT
+                                    {% else %}<i class="fab fa-stripe" style="color:#635BFF"></i> Card{% endif %}
+                                </td>
+                                <td style="font-family:monospace;font-size:.78rem;color:#666;">{{ pay.transaction_id|default:"—" }}</td>
+                                <td style="white-space:nowrap;">
+                                    <a href="{% url 'super_admin_confirm_sub_payment' pay.id %}" class="btn-confirm" onclick="return confirm('Confirm this payment and activate subscription?')">✅ Confirm</a>
+                                    <a href="{% url 'super_admin_reject_sub_payment' pay.id %}" class="btn-reject" onclick="return confirm('Reject this payment?')">❌ Reject</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state"><i class="fas fa-check-circle" style="color:#28a745;"></i><p>No pending payments. All clear!</p></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- TAB: CLINIC STATUS -->
+        <div id="tab-hospitals" style="display:none;">
+            <div class="card">
+                <div class="card-title"><i class="fas fa-hospital"></i> Clinic Payment Status by Clinic/Hospital</div>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr><th>Clinic / Hospital</th><th>Current Plan</th><th>Sub Status</th><th>Expires</th><th>Payment Status</th><th>Total Paid</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for sub in subscriptions %}
+                            {% with hid=sub.hospital.id %}
+                            <tr>
+                                <td><strong>{{ sub.hospital.name }}</strong><br><small style="color:#888;">{{ sub.hospital.city|default:"—" }}</small></td>
+                                <td>
+                                    {% if sub.plan %}
+                                    <span class="badge badge-{{ sub.plan.name }}">{{ sub.plan.get_name_display }}</span>
+                                    {% else %}<span style="color:#bbb;font-size:.82em;">No Plan</span>{% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ sub.status }}">{{ sub.get_status_display }}</span>
+                                    {% if sub.is_expired %}<br><span class="badge badge-expired" style="margin-top:4px;">Overdue</span>{% endif %}
+                                </td>
+                                <td style="font-size:.82em;color:#666;">{{ sub.expires_at|date:"d M Y"|default:"—" }}</td>
+                                <td>
+                                    {% if hospital_payment_summary|get_item:hid %}
+                                        {% with summary=hospital_payment_summary|get_item:hid %}
+                                        {% if summary.has_pending %}
+                                        <span class="hosp-pending">⏳ Payment Pending</span>
+                                        {% elif summary.total_paid > 0 %}
+                                        <span class="hosp-paid">✅ Paid</span>
+                                        {% else %}
+                                        <span class="hosp-none">No Payments</span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    {% else %}
+                                    <span class="hosp-none">No Payments</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if hospital_payment_summary|get_item:hid %}
+                                    <strong>₹{{ hospital_payment_summary|get_item:hid|get_item:'total_paid'|floatformat:0 }}</strong>
+                                    {% else %}<span style="color:#bbb;">₹0</span>{% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'super_admin_hospital_payments' sub.hospital.id %}" class="btn-view">📋 History</a>
+                                    <a href="{% url 'super_admin_edit_hospital' sub.hospital.id %}" style="color:#8b5cf6;font-size:.8em;font-weight:600;text-decoration:none;margin-left:8px;">Edit →</a>
+                                </td>
+                            </tr>
+                            {% endwith %}
+                            {% empty %}
+                            <tr><td colspan="7"><div class="empty-state"><i class="fas fa-hospital"></i><p>No subscriptions yet.</p></div></td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: ALL SUBSCRIPTIONS -->
+        <div id="tab-subscriptions" style="display:none;">
+            <div class="card">
+                <div class="card-title"><i class="fas fa-list"></i> All Hospital Subscriptions</div>
+                {% if subscriptions %}
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr><th>Hospital</th><th>Plan</th><th>Status</th><th>Started</th><th>Expires</th><th>Manage</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for s in subscriptions %}
+                            <tr>
+                                <td><strong>{{ s.hospital.name }}</strong><br><small style="color:#888;">{{ s.hospital.city }}</small></td>
+                                <td>{% if s.plan %}<span class="badge badge-{{ s.plan.name }}">{{ s.plan.get_name_display }}</span>{% else %}<span style="color:#bbb">None</span>{% endif %}</td>
+                                <td>
+                                    <span class="badge badge-{{ s.status }}">{{ s.get_status_display }}</span>
+                                    {% if s.is_expired %}<span class="badge badge-expired" style="margin-left:4px;">Expired</span>{% endif %}
+                                </td>
+                                <td style="color:#888;font-size:.82em;">{{ s.started_at|date:"d M Y" }}</td>
+                                <td style="color:#888;font-size:.82em;">{{ s.expires_at|date:"d M Y"|default:"—" }}</td>
+                                <td>
+                                    <a href="{% url 'super_admin_hospital_payments' s.hospital.id %}" class="btn-view">📋 Payments</a>
+                                    <a href="{% url 'super_admin_edit_hospital' s.hospital.id %}" style="color:#8b5cf6;font-size:.8em;font-weight:600;text-decoration:none;margin-left:8px;">Edit →</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state"><i class="fas fa-credit-card"></i><p>No subscriptions yet.</p></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- TAB: MANAGE PLANS -->
+        <div id="tab-plans" style="display:none;">
+            <div style="display:grid;grid-template-columns:3fr 2fr;gap:22px;align-items:start;">
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-boxes"></i> Current Plans</div>
+                    {% for p in plans %}
+                    <div class="plan-card">
+                        <h4>{{ p.get_name_display }} {% if not p.is_active %}<span style="color:#dc3545;font-size:.8em;">(Inactive)</span>{% endif %}</h4>
+                        <div class="plan-price">₹{{ p.price_monthly }}/mo</div>
+                        <p style="font-size:.8em;color:#666;margin-top:4px;">Max {{ p.max_staff }} staff · Max {% if p.max_patients > 10000 %}Unlimited{% else %}{{ p.max_patients }}{% endif %} patients</p>
+                        {% if p.features %}<p style="margin-top:4px;font-size:.78em;color:#999;">{{ p.features|truncatechars:100 }}</p>{% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="empty-state"><i class="fas fa-boxes"></i><p>No plans yet.</p></div>
+                    {% endfor %}
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-plus-circle"></i> Create / Update Plan</div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="save_plan">
+                        <div class="form-group">
+                            <label>Plan Type</label>
+                            <select name="plan_name">
+                                <option value="basic">Basic</option>
+                                <option value="standard">Standard</option>
+                                <option value="premium">Premium</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Price / Month (₹)</label>
+                            <input type="number" name="price_monthly" placeholder="e.g. 1200" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>Max Staff</label>
+                            <input type="number" name="max_staff" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label>Max Patients</label>
+                            <input type="number" name="max_patients" value="1000">
+                        </div>
+                        <div class="form-group">
+                            <label>Features (one per line)</label>
+                            <input type="text" name="features" placeholder="e.g. Reports, Chat, Analytics">
+                        </div>
+                        <button type="submit" class="btn-sm">💾 Save Plan</button>
+                    </form>
+                    <p style="font-size:.76em;color:#aaa;margin-top:10px;text-align:center;">Saving will create or update the plan with the same type.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+<script>
+function showTab(id, btn) {
+    document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).style.display = 'block';
+    btn.classList.add('active');
+}
+</script>
+</body>
 </html>

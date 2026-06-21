@@ -600,6 +600,38 @@ class PaymentRecord(models.Model):
         return f"{self.patient} — ₹{self.amount} via {self.method} [{self.status}]"
 
 
+class ClinicSubscriptionPayment(models.Model):
+    METHOD_CHOICES = [
+        ('upi',        'UPI / QR Code'),
+        ('cash',       'Cash'),
+        ('netbanking', 'Net Banking / NEFT'),
+        ('stripe',     'Card (Stripe)'),
+    ]
+    STATUS_CHOICES = [
+        ('pending',  'Pending Verification'),
+        ('paid',     'Paid / Active'),
+        ('failed',   'Failed'),
+        ('refunded', 'Refunded'),
+    ]
+    hospital         = models.ForeignKey('Hospital', on_delete=models.CASCADE, related_name='subscription_payments')
+    plan             = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True)
+    amount           = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    method           = models.CharField(max_length=20, choices=METHOD_CHOICES, default='upi')
+    status           = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    transaction_id   = models.CharField(max_length=200, blank=True)
+    duration_months  = models.IntegerField(default=1)
+    notes            = models.TextField(blank=True)
+    paid_at          = models.DateTimeField(null=True, blank=True)
+    created_at       = models.DateTimeField(auto_now_add=True)
+    updated_at       = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.hospital.name} — {self.plan} — {self.status}"
+
+
 class ClinicPromo(models.Model):
     title = models.CharField(max_length=200)
     message = models.TextField()

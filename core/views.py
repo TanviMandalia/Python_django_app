@@ -628,7 +628,7 @@ def mark_all_read(request):
 import stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY if hasattr(settings, 'STRIPE_SECRET_KEY') else ''
 
-from .models import PaymentRecord, ClinicPromo
+from .models import PaymentRecord, ClinicPromo, ClinicSubscriptionPayment
 
 @login_required
 def payments(request):
@@ -2842,8 +2842,22 @@ def super_admin_delete_hospital(request, hospital_id):
 
 @platform_superadmin_required
 def super_admin_subscriptions(request):
+    from django.db.models import Sum, Count
     subscriptions = HospitalSubscription.objects.select_related('hospital', 'plan').all()
     plans         = SubscriptionPlan.objects.all()
+    # Pending payments needing verification
+    pending_payments = ClinicSubscriptionPayment.objects.select_related('hospital', 'plan').filter(status='pending').order_by('-created_at')
+    # Per-hospital payment summary
+    hospital_payment_summary = {}
+    for csp in ClinicSubscriptionPayment.objects.select_related('hospital', 'plan').order_by('-created_at'):
+        hid = csp.hospital_id
+        if hid not in hospital_payment_summary:
+            hospital_payment_summary[hid] = {'hospital': csp.hospital, 'payments': [], 'total_paid': 0, 'has_pending': False}
+        hospital_payment_summary[hid]['payments'].append(csp)
+        if csp.status == 'paid':
+            hospital_payment_summary[hid]['total_paid'] += float(csp.amount)
+        if csp.status == 'pending':
+            hospital_payment_summary[hid]['has_pending'] = True
 
     # Save plan changes
     if request.method == 'POST':
@@ -2889,8 +2903,56 @@ def super_admin_subscriptions(request):
         return redirect('super_admin_subscriptions')
 
     return render(request, 'super_admin_subscriptions.html', {
-        'subscriptions': subscriptions,
-        'plans':         plans,
+        'subscriptions':          subscriptions,
+        'plans':                  plans,
+        'pending_payments':       pending_payments,
+        'hospital_payment_summary': hospital_payment_summary,
+    })
+
+
+@platform_superadmin_required
+def super_admin_confirm_sub_payment(request, payment_id):
+    payment = get_object_or_404(ClinicSubscriptionPayment, id=payment_id)
+    from dateutil.relativedelta import relativedelta
+    payment.status = 'paid'
+    payment.paid_at = timezone.now()
+    payment.save()
+    # Activate the hospital subscription
+    hospital = payment.hospital
+    try:
+        sub = hospital.subscription
+    except HospitalSubscription.DoesNotExist:
+        sub = HospitalSubscription(hospital=hospital)
+    sub.plan       = payment.plan
+    sub.status     = 'active'
+    sub.started_at = timezone.now().date()
+    sub.expires_at = timezone.now().date() + relativedelta(months=payment.duration_months)
+    sub.save()
+    messages.success(request, f'✅ Payment confirmed and {payment.hospital.name} subscription activated until {sub.expires_at}.')
+    return redirect('super_admin_subscriptions')
+
+
+@platform_superadmin_required
+def super_admin_reject_sub_payment(request, payment_id):
+    payment = get_object_or_404(ClinicSubscriptionPayment, id=payment_id)
+    payment.status = 'failed'
+    payment.save()
+    messages.warning(request, f'❌ Payment for {payment.hospital.name} marked as failed.')
+    return redirect('super_admin_subscriptions')
+
+
+@platform_superadmin_required
+def super_admin_hospital_payments(request, hospital_id):
+    hospital  = get_object_or_404(Hospital, id=hospital_id)
+    payments  = ClinicSubscriptionPayment.objects.filter(hospital=hospital).select_related('plan').order_by('-created_at')
+    try:
+        current_sub = hospital.subscription
+    except HospitalSubscription.DoesNotExist:
+        current_sub = None
+    return render(request, 'super_admin_hospital_payments.html', {
+        'hospital':    hospital,
+        'payments':    payments,
+        'current_sub': current_sub,
     })
 
 
@@ -2990,19 +3052,63 @@ def submit_support_ticket(request):
 def subscription_page(request):
     if not request.user.is_superuser:
         return redirect('client_dashboard')
-    plans = SubscriptionPlan.objects.filter(is_active=True)
+    plans = SubscriptionPlan.objects.filter(is_active=True).order_by('price_monthly')
     hospital = None
     current_sub = None
+    recent_payments = []
+    upi_id = getattr(settings, 'CLINIC_UPI_ID', 'dhvanipatalia@upi')
+
     if hasattr(request.user, 'clinic_admin_profile'):
         hospital = request.user.clinic_admin_profile.hospital
         try:
             current_sub = hospital.subscription
         except Exception:
             pass
+        recent_payments = ClinicSubscriptionPayment.objects.filter(hospital=hospital).order_by('-created_at')[:10]
+
+    if request.method == 'POST':
+        if not hospital:
+            messages.error(request, 'No clinic linked to your account.')
+            return redirect('subscription_page')
+        plan_id      = request.POST.get('plan_id')
+        method       = request.POST.get('method', 'upi')
+        txn_id       = request.POST.get('transaction_id', '').strip()
+        duration     = int(request.POST.get('duration_months', 1))
+        notes        = request.POST.get('notes', '').strip()
+        try:
+            plan = SubscriptionPlan.objects.get(id=plan_id)
+        except SubscriptionPlan.DoesNotExist:
+            messages.error(request, 'Invalid plan selected.')
+            return redirect('subscription_page')
+
+        amount = plan.price_monthly * duration
+        ClinicSubscriptionPayment.objects.create(
+            hospital=hospital,
+            plan=plan,
+            amount=amount,
+            method=method,
+            status='pending',
+            transaction_id=txn_id,
+            duration_months=duration,
+            notes=notes,
+        )
+        # Update the hospital subscription plan to the requested one
+        try:
+            sub = hospital.subscription
+            sub.plan = plan
+            sub.save()
+        except Exception:
+            HospitalSubscription.objects.create(hospital=hospital, plan=plan, status='trial')
+
+        messages.success(request, f'✅ Payment submitted for {plan.get_name_display()} plan! The platform admin will verify and activate your subscription shortly.')
+        return redirect('subscription_page')
+
     return render(request, 'subscription_page.html', {
-        'plans': plans,
-        'hospital': hospital,
-        'current_sub': current_sub,
+        'plans':           plans,
+        'hospital':        hospital,
+        'current_sub':     current_sub,
+        'recent_payments': recent_payments,
+        'upi_id':          upi_id,
     })
 
 
