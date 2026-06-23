@@ -10,9 +10,10 @@ from django.utils.text import slugify
 # DASHBOARD APPOINTMENT
 
 morning_clock_out = models.TimeField(null=True, blank=True)
-morning_hours     = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-evening_clock_in  = models.TimeField(null=True, blank=True)
-evening_hours     = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+morning_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+evening_clock_in = models.TimeField(null=True, blank=True)
+evening_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
 
 class Hospital(models.Model):
     name = models.CharField(max_length=200)
@@ -21,9 +22,17 @@ class Hospital(models.Model):
     city = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
-    logo = models.ImageField(upload_to='hospital_logos/', null=True, blank=True)
+    logo = models.ImageField(upload_to="hospital_logos/", null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    razorpay_key_id = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Doctor/Clinic Razorpay Key ID — patient payments go to this account",
+    )
+    razorpay_key_secret = models.CharField(
+        max_length=200, blank=True, help_text="Doctor/Clinic Razorpay Key Secret"
+    )
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -40,14 +49,14 @@ class Hospital(models.Model):
         return self.name
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
 
 class SubscriptionPlan(models.Model):
     PLAN_CHOICES = [
-        ('basic', 'Basic'),
-        ('standard', 'Standard'),
-        ('premium', 'Premium'),
+        ("basic", "Basic"),
+        ("standard", "Standard"),
+        ("premium", "Premium"),
     ]
     name = models.CharField(max_length=50, choices=PLAN_CHOICES, unique=True)
     price_monthly = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -62,14 +71,18 @@ class SubscriptionPlan(models.Model):
 
 class HospitalSubscription(models.Model):
     STATUS_CHOICES = [
-        ('trial', 'Trial'),
-        ('active', 'Active'),
-        ('expired', 'Expired'),
-        ('cancelled', 'Cancelled'),
+        ("trial", "Trial"),
+        ("active", "Active"),
+        ("expired", "Expired"),
+        ("cancelled", "Cancelled"),
     ]
-    hospital = models.OneToOneField('Hospital', on_delete=models.CASCADE, related_name='subscription')
-    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='trial')
+    hospital = models.OneToOneField(
+        "Hospital", on_delete=models.CASCADE, related_name="subscription"
+    )
+    plan = models.ForeignKey(
+        SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="trial")
     started_at = models.DateField(default=timezone.now)
     expires_at = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True)
@@ -86,83 +99,93 @@ class HospitalSubscription(models.Model):
 
 class SupportTicket(models.Model):
     STATUS_CHOICES = [
-        ('open', 'Open'),
-        ('in_progress', 'In Progress'),
-        ('resolved', 'Resolved'),
-        ('closed', 'Closed'),
+        ("open", "Open"),
+        ("in_progress", "In Progress"),
+        ("resolved", "Resolved"),
+        ("closed", "Closed"),
     ]
-    hospital = models.ForeignKey('Hospital', on_delete=models.CASCADE, related_name='support_tickets', null=True, blank=True)
-    submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    hospital = models.ForeignKey(
+        "Hospital",
+        on_delete=models.CASCADE,
+        related_name="support_tickets",
+        null=True,
+        blank=True,
+    )
+    submitted_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
     subject = models.CharField(max_length=200)
     message = models.TextField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.subject} [{self.status}]"
 
 
 class SupportReply(models.Model):
-    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name='replies')
+    ticket = models.ForeignKey(
+        SupportTicket, on_delete=models.CASCADE, related_name="replies"
+    )
     replier = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['created_at']
+        ordering = ["created_at"]
 
     def __str__(self):
         return f"Reply on {self.ticket.subject}"
 
 
 class Appointment(models.Model):
-
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('confirmed', 'Confirmed'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
+        ("pending", "Pending"),
+        ("confirmed", "Confirmed"),
+        ("completed", "Completed"),
+        ("cancelled", "Cancelled"),
     ]
 
     SERVICE_CHOICES = [
-        ('orthopedic', 'Orthopedic Therapy'),
-        ('neurological', 'Neurological Rehab'),
-        ('sports', 'Sports Rehabilitation'),
-        ('pediatric', 'Pediatric Therapy'),
-        ('womens', "Women's Health"),
-        ('home_visit', 'Home Visit'),
+        ("orthopedic", "Orthopedic Therapy"),
+        ("neurological", "Neurological Rehab"),
+        ("sports", "Sports Rehabilitation"),
+        ("pediatric", "Pediatric Therapy"),
+        ("womens", "Women's Health"),
+        ("home_visit", "Home Visit"),
     ]
 
     TIME_CHOICES = [
-        ('09:00', '9:00 AM'),
-        ('10:00', '10:00 AM'),
-        ('11:00', '11:00 AM'),
-        ('12:00', '12:00 PM'),
-        ('14:00', '2:00 PM'),
-        ('15:00', '3:00 PM'),
-        ('16:00', '4:00 PM'),
-        ('17:00', '5:00 PM'),
+        ("09:00", "9:00 AM"),
+        ("10:00", "10:00 AM"),
+        ("11:00", "11:00 AM"),
+        ("12:00", "12:00 PM"),
+        ("14:00", "2:00 PM"),
+        ("15:00", "3:00 PM"),
+        ("16:00", "4:00 PM"),
+        ("17:00", "5:00 PM"),
     ]
 
     # Clinic this appointment belongs to
     hospital = models.ForeignKey(
-        'Hospital',
+        "Hospital",
         on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name='appointments'
+        null=True,
+        blank=True,
+        related_name="appointments",
     )
 
     # Registered user (optional)
     patient = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='appointments',
+        related_name="appointments",
         null=True,
-        blank=True
+        blank=True,
     )
 
     # Public booking fields
@@ -170,54 +193,49 @@ class Appointment(models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=15)
 
-    service = models.CharField(
-        max_length=50,
-        choices=SERVICE_CHOICES
-    )
+    service = models.CharField(max_length=50, choices=SERVICE_CHOICES)
 
     date = models.DateField()
 
-    time = models.CharField(
-        max_length=10,
-        choices=TIME_CHOICES
-    )
+    time = models.CharField(max_length=10, choices=TIME_CHOICES)
 
-    notes = models.TextField(
-        blank=True,
-        null=True
-    )
+    notes = models.TextField(blank=True, null=True)
 
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='pending'
-    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
 
     consultation_fee = models.DecimalField(
-        max_digits=8, decimal_places=2,
-        null=True, blank=True,
-        help_text="Consultation / treatment fee in ₹"
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Consultation / treatment fee in ₹",
     )
 
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.name} - {self.service} - {self.date}"
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
 
 class StaffProfile(models.Model):
     ROLE_CHOICES = [
-        ('physiotherapist', 'Physiotherapist'),
-        ('receptionist', 'Receptionist'),
-        ('assistant', 'Assistant/Helper'),
+        ("physiotherapist", "Physiotherapist"),
+        ("receptionist", "Receptionist"),
+        ("assistant", "Assistant/Helper"),
     ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_profile')
-    hospital = models.ForeignKey('Hospital', on_delete=models.SET_NULL, null=True, blank=True, related_name='staff')
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="staff_profile"
+    )
+    hospital = models.ForeignKey(
+        "Hospital",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="staff",
+    )
     role = models.CharField(max_length=30, choices=ROLE_CHOICES)
     phone = models.CharField(max_length=15, blank=True)
     address = models.TextField(blank=True)
@@ -230,7 +248,9 @@ class StaffProfile(models.Model):
 
 
 class Attendance(models.Model):
-    staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances')
+    staff = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="attendances"
+    )
     date = models.DateField(default=timezone.now)
     clock_in = models.TimeField(null=True, blank=True)
     clock_out = models.TimeField(null=True, blank=True)
@@ -243,28 +263,28 @@ class Attendance(models.Model):
         return f"{self.staff.username} - {self.date}"
 
     class Meta:
-        unique_together = ['staff', 'date']
-        ordering = ['-date']
+        unique_together = ["staff", "date"]
+        ordering = ["-date"]
 
 
 class LeaveApplication(models.Model):
     LEAVE_TYPES = [
-        ('sick', 'Sick Leave'),
-        ('casual', 'Casual Leave'),
-        ('emergency', 'Emergency Leave'),
-        ('other', 'Other'),
+        ("sick", "Sick Leave"),
+        ("casual", "Casual Leave"),
+        ("emergency", "Emergency Leave"),
+        ("other", "Other"),
     ]
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
     ]
-    staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='leaves')
+    staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name="leaves")
     leave_type = models.CharField(max_length=20, choices=LEAVE_TYPES)
     from_date = models.DateField()
     to_date = models.DateField()
     reason = models.TextField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     admin_note = models.TextField(blank=True)
     applied_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
@@ -273,11 +293,13 @@ class LeaveApplication(models.Model):
         return f"{self.staff.username} - {self.leave_type} - {self.status}"
 
     class Meta:
-        ordering = ['-applied_on']
+        ordering = ["-applied_on"]
 
 
 class SalaryRecord(models.Model):
-    staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='salary_records')
+    staff = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="salary_records"
+    )
     month = models.CharField(max_length=20)
     year = models.IntegerField()
     basic_salary = models.DecimalField(max_digits=10, decimal_places=2)
@@ -292,13 +314,19 @@ class SalaryRecord(models.Model):
         return f"{self.staff.username} - {self.month} {self.year}"
 
     class Meta:
-        ordering = ['-year', '-month']
+        ordering = ["-year", "-month"]
 
 
 class SessionNote(models.Model):
-    staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='session_notes')
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_notes')
-    appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=True)
+    staff = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="session_notes"
+    )
+    patient = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="patient_notes"
+    )
+    appointment = models.ForeignKey(
+        Appointment, on_delete=models.SET_NULL, null=True, blank=True
+    )
     date = models.DateField(default=timezone.now)
     diagnosis = models.TextField()
     treatment = models.TextField()
@@ -309,26 +337,32 @@ class SessionNote(models.Model):
         return f"{self.patient.username} - {self.date}"
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
 
 class DailyTask(models.Model):
     PRIORITY_CHOICES = [
-        ('low', 'Low'),
-        ('medium', 'Medium'),
-        ('high', 'High'),
+        ("low", "Low"),
+        ("medium", "Medium"),
+        ("high", "High"),
     ]
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('in_progress', 'In Progress'),
-        ('completed', 'Completed'),
+        ("pending", "Pending"),
+        ("in_progress", "In Progress"),
+        ("completed", "Completed"),
     ]
-    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
-    assigned_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_tasks')
+    assigned_to = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="tasks"
+    )
+    assigned_by = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="assigned_tasks"
+    )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    priority = models.CharField(
+        max_length=10, choices=PRIORITY_CHOICES, default="medium"
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     due_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -337,10 +371,10 @@ class DailyTask(models.Model):
         return f"{self.title} - {self.assigned_to.username}"
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
+
 
 class Message(models.Model):
-
     STATUS_SENT = "sent"
     STATUS_DELIVERED = "delivered"
     STATUS_READ = "read"
@@ -352,15 +386,11 @@ class Message(models.Model):
     ]
 
     sender = models.ForeignKey(
-        User,
-        related_name='sent_messages',
-        on_delete=models.CASCADE
+        User, related_name="sent_messages", on_delete=models.CASCADE
     )
 
     receiver = models.ForeignKey(
-        User,
-        related_name='received_messages',
-        on_delete=models.CASCADE
+        User, related_name="received_messages", on_delete=models.CASCADE
     )
 
     content = models.TextField()
@@ -370,21 +400,15 @@ class Message(models.Model):
     is_read = models.BooleanField(default=False)
 
     status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default=STATUS_SENT
+        max_length=20, choices=STATUS_CHOICES, default=STATUS_SENT
     )
 
     def __str__(self):
         return f"{self.sender.username} -> {self.receiver.username}"
 
-class UserActivity(models.Model):
 
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        related_name="activity"
-    )
+class UserActivity(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="activity")
 
     last_seen = models.DateTimeField(default=timezone.now)
 
@@ -395,12 +419,13 @@ class UserActivity(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='typing_receivers'
+        related_name="typing_receivers",
     )
 
     def __str__(self):
         return self.user.username
-    
+
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
@@ -412,12 +437,8 @@ class Profile(models.Model):
     phone_number = models.CharField(max_length=15, blank=True)
     gender = models.CharField(
         max_length=10,
-        choices=[
-            ('Male', 'Male'),
-            ('Female', 'Female'),
-            ('Other', 'Other')
-        ],
-        blank=True
+        choices=[("Male", "Male"), ("Female", "Female"), ("Other", "Other")],
+        blank=True,
     )
     date_of_birth = models.DateField(null=True, blank=True)
 
@@ -429,14 +450,12 @@ class Profile(models.Model):
 
     # Profile Photo
     profile_photo = models.ImageField(
-        upload_to='profile_photos/',
-        blank=True,
-        null=True
+        upload_to="profile_photos/", blank=True, null=True
     )
 
     def __str__(self):
         return self.user.username
-    
+
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
@@ -452,46 +471,37 @@ class PasswordResetOTP(models.Model):
     def is_expired(self):
         return (timezone.now() - self.created_at).seconds > 300  # 5 minutes
 
+
 class Notification(models.Model):
-    recipient  = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
-    message    = models.TextField()
-    is_read    = models.BooleanField(default=False)
+    recipient = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="notifications"
+    )
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
-    link       = models.CharField(max_length=255, blank=True, null=True)
+    link = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"Notification → {self.recipient.username}: {self.message[:40]}"
-    
+
 
 class ClinicSettings(models.Model):
     clinic_name = models.CharField(max_length=200)
     tagline = models.CharField(max_length=300, blank=True)
 
-    logo = models.ImageField(
-        upload_to='clinic_logo/',
-        blank=True,
-        null=True
-    )
+    logo = models.ImageField(upload_to="clinic_logo/", blank=True, null=True)
 
     phone = models.CharField(max_length=20)
     email = models.EmailField()
 
     address = models.TextField()
 
-    appointment_fee = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=500
-    )
+    appointment_fee = models.DecimalField(max_digits=10, decimal_places=2, default=500)
 
-    followup_fee = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=300
-    )
+    followup_fee = models.DecimalField(max_digits=10, decimal_places=2, default=300)
 
     session_duration = models.IntegerField(default=45)
 
@@ -511,11 +521,15 @@ class ClinicSettings(models.Model):
 
     def __str__(self):
         return self.clinic_name
-    
+
 
 class ClinicAdmin(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='clinic_admin_profile')
-    hospital = models.ForeignKey('Hospital', on_delete=models.CASCADE, related_name='admins')
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="clinic_admin_profile"
+    )
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.CASCADE, related_name="admins"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -524,23 +538,37 @@ class ClinicAdmin(models.Model):
 
 class Blog(models.Model):
     CATEGORY_CHOICES = [
-        ('General', 'General'),
-        ('Orthopaedic', 'Orthopaedic'),
-        ('Neurological', 'Neurological'),
-        ('Sports', 'Sports Rehab'),
-        ('Pediatric', 'Pediatric'),
-        ('Posture', 'Posture & Spine'),
-        ('Recovery', 'Patient Recovery'),
+        ("General", "General"),
+        ("Orthopaedic", "Orthopaedic"),
+        ("Neurological", "Neurological"),
+        ("Sports", "Sports Rehab"),
+        ("Pediatric", "Pediatric"),
+        ("Posture", "Posture & Spine"),
+        ("Recovery", "Patient Recovery"),
     ]
-    hospital = models.ForeignKey('Hospital', on_delete=models.SET_NULL, null=True, blank=True, related_name='blogs')
+    hospital = models.ForeignKey(
+        "Hospital",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="blogs",
+    )
     title = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, blank=True)
-    excerpt = models.TextField(blank=True, help_text="Short summary shown on listing page")
+    excerpt = models.TextField(
+        blank=True, help_text="Short summary shown on listing page"
+    )
     content = models.TextField()
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='General')
-    image = models.ImageField(upload_to='blogs/', null=True, blank=True)
-    before_image = models.ImageField(upload_to='blogs/before_after/', null=True, blank=True)
-    after_image = models.ImageField(upload_to='blogs/before_after/', null=True, blank=True)
+    category = models.CharField(
+        max_length=50, choices=CATEGORY_CHOICES, default="General"
+    )
+    image = models.ImageField(upload_to="blogs/", null=True, blank=True)
+    before_image = models.ImageField(
+        upload_to="blogs/before_after/", null=True, blank=True
+    )
+    after_image = models.ImageField(
+        upload_to="blogs/before_after/", null=True, blank=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
@@ -551,8 +579,16 @@ class Blog(models.Model):
 
 class Review(models.Model):
     RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
-    hospital = models.ForeignKey('Hospital', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviews')
-    patient = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviews')
+    hospital = models.ForeignKey(
+        "Hospital",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviews",
+    )
+    patient = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviews"
+    )
     reviewer_name = models.CharField(max_length=100)
     reviewer_title = models.CharField(max_length=100, blank=True)
     rating = models.PositiveIntegerField(choices=RATING_CHOICES, default=5)
@@ -562,7 +598,7 @@ class Review(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.reviewer_name} — {self.rating}★"
@@ -570,31 +606,45 @@ class Review(models.Model):
 
 class PaymentRecord(models.Model):
     METHOD_CHOICES = [
-        ('cash', 'Cash'),
-        ('upi', 'UPI / QR Code'),
-        ('netbanking', 'Net Banking'),
-        ('stripe', 'Card (Stripe)'),
+        ("cash", "Cash"),
+        ("upi", "UPI / QR Code"),
+        ("netbanking", "Net Banking"),
+        ("razorpay", "Online (Razorpay)"),
+        ("wallet", "Wallet"),
     ]
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('paid', 'Paid'),
-        ('failed', 'Failed'),
-        ('refunded', 'Refunded'),
+        ("pending", "Pending"),
+        ("paid", "Paid"),
+        ("failed", "Failed"),
+        ("refunded", "Refunded"),
     ]
-    appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments')
-    patient = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='payment_records')
+    appointment = models.ForeignKey(
+        Appointment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments",
+    )
+    patient = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payment_records",
+    )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     method = models.CharField(max_length=20, choices=METHOD_CHOICES)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    stripe_payment_intent = models.CharField(max_length=200, blank=True)
-    stripe_session_id = models.CharField(max_length=200, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    razorpay_order_id = models.CharField(max_length=200, blank=True)
+    razorpay_payment_id = models.CharField(max_length=200, blank=True)
+    razorpay_signature = models.CharField(max_length=400, blank=True)
     transaction_id = models.CharField(max_length=200, blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.patient} — ₹{self.amount} via {self.method} [{self.status}]"
@@ -602,31 +652,35 @@ class PaymentRecord(models.Model):
 
 class ClinicSubscriptionPayment(models.Model):
     METHOD_CHOICES = [
-        ('upi',        'UPI / QR Code'),
-        ('cash',       'Cash'),
-        ('netbanking', 'Net Banking / NEFT'),
-        ('stripe',     'Card (Stripe)'),
+        ("upi", "UPI / QR Code"),
+        ("cash", "Cash"),
+        ("netbanking", "Net Banking / NEFT"),
+        ("razorpay", "Online (Razorpay)"),
     ]
     STATUS_CHOICES = [
-        ('pending',  'Pending Verification'),
-        ('paid',     'Paid / Active'),
-        ('failed',   'Failed'),
-        ('refunded', 'Refunded'),
+        ("pending", "Pending Verification"),
+        ("paid", "Paid / Active"),
+        ("failed", "Failed"),
+        ("refunded", "Refunded"),
     ]
-    hospital         = models.ForeignKey('Hospital', on_delete=models.CASCADE, related_name='subscription_payments')
-    plan             = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True)
-    amount           = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    method           = models.CharField(max_length=20, choices=METHOD_CHOICES, default='upi')
-    status           = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    transaction_id   = models.CharField(max_length=200, blank=True)
-    duration_months  = models.IntegerField(default=1)
-    notes            = models.TextField(blank=True)
-    paid_at          = models.DateTimeField(null=True, blank=True)
-    created_at       = models.DateTimeField(auto_now_add=True)
-    updated_at       = models.DateTimeField(auto_now=True)
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.CASCADE, related_name="subscription_payments"
+    )
+    plan = models.ForeignKey(
+        SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    method = models.CharField(max_length=20, choices=METHOD_CHOICES, default="upi")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    transaction_id = models.CharField(max_length=200, blank=True)
+    duration_months = models.IntegerField(default=1)
+    notes = models.TextField(blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.hospital.name} — {self.plan} — {self.status}"
@@ -641,7 +695,7 @@ class ClinicPromo(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
     def __str__(self):
         return self.title
@@ -654,4 +708,3 @@ class ClinicPromo(models.Model):
         if self.end_date and today > self.end_date:
             return False
         return today >= self.start_date
-

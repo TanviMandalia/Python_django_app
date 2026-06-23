@@ -156,12 +156,11 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/client-dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 # =========================
-# STRIPE CONFIG
+# RAZORPAY CONFIG (Super Admin / Platform account)
 # =========================
 import os
-STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
-STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
-STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
 
 # Clinic UPI ID for QR payments
 CLINIC_UPI_ID = os.environ.get('CLINIC_UPI_ID', 'dhvanipatalia@upi')

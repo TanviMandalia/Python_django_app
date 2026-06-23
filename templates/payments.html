@@ -6,13 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payments — PhysioRehab</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    {% if stripe_pub %}<script src="https://js.stripe.com/v3/"></script>{% endif %}
     <style>
         *{margin:0;padding:0;box-sizing:border-box;}
         body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;color:#222;}
         .layout{display:flex;min-height:100vh;}
-
-        /* SIDEBAR */
         .sidebar{width:260px;min-height:100vh;background:linear-gradient(180deg,#1a1a1a,#2c2c2c);flex-shrink:0;display:flex;flex-direction:column;}
         .sidebar-logo{padding:22px 20px;border-bottom:1px solid rgba(245,197,24,.15);text-align:center;}
         .sidebar-logo img{width:120px;border-radius:10px;}
@@ -27,35 +24,28 @@
         .sidebar-footer{margin-top:auto;padding:12px;}
         .logout-btn{display:flex;gap:10px;padding:11px 16px;background:rgba(220,53,69,.15);color:#ff6b6b;border-radius:10px;text-decoration:none;transition:.2s;}
         .logout-btn:hover{background:rgba(220,53,69,.3);}
-
-        /* MAIN */
         .main{flex:1;padding:28px;overflow-x:hidden;}
         .page-header{margin-bottom:24px;}
         .page-header h1{font-size:1.6rem;font-weight:700;}
         .page-header p{color:#666;font-size:.9rem;margin-top:4px;}
-
-        /* MESSAGES */
         .alert{padding:12px 16px;border-radius:10px;margin-bottom:18px;font-size:.9rem;}
         .alert-success{background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
         .alert-error{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
         .alert-warning{background:#fff3cd;color:#856404;border:1px solid #ffc107;}
-
-        /* CARDS */
         .card{background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.07);padding:24px;margin-bottom:22px;}
         .card-title{font-size:1.1rem;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
-
-        /* PAYMENT METHOD TABS */
         .method-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px;}
         .method-tab{padding:10px 20px;border-radius:50px;border:2px solid #e0e0e0;background:#fff;cursor:pointer;font-size:.88rem;font-weight:600;transition:.2s;display:flex;align-items:center;gap:6px;}
         .method-tab.active{border-color:#F5C518;background:#FFF9E6;color:#856404;}
         .method-tab:hover{border-color:#F5C518;}
-
         .method-panel{display:none;}
         .method-panel.active{display:block;}
 
-        /* STRIPE CARD */
-        .stripe-panel{text-align:center;padding:20px 0;}
-        .stripe-panel .pay-icon{font-size:3rem;margin-bottom:12px;}
+        /* RAZORPAY PANEL */
+        .rzp-panel{text-align:center;padding:20px 0;}
+        .rzp-panel .pay-icon{font-size:3rem;margin-bottom:12px;}
+        .rzp-features{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:14px 0 20px;}
+        .rzp-feature{background:#f8f9ff;border:1px solid #e8eeff;border-radius:8px;padding:8px 14px;font-size:.8rem;color:#555;display:flex;align-items:center;gap:6px;}
         .amount-input-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:16px 0;}
         .form-group{flex:1;min-width:140px;}
         .form-group label{display:block;font-size:.82rem;color:#555;margin-bottom:6px;font-weight:600;}
@@ -87,9 +77,16 @@
         .btn{padding:11px 22px;border:none;border-radius:10px;cursor:pointer;font-size:.92rem;font-weight:600;transition:.2s;display:inline-flex;align-items:center;gap:8px;text-decoration:none;}
         .btn-primary{background:#F5C518;color:#222;}
         .btn-primary:hover{background:#d4a800;}
-        .btn-stripe{background:#635BFF;color:#fff;}
-        .btn-stripe:hover{background:#4a44cc;}
+        .btn-rzp{background:#3395FF;color:#fff;}
+        .btn-rzp:hover{background:#1a7fd4;}
         .btn-sm{padding:7px 14px;font-size:.82rem;}
+
+        /* RAZORPAY MODAL OVERLAY */
+        .rzp-loading{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+        .rzp-loading.show{display:flex;}
+        .rzp-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#3395FF;border-radius:50%;animation:spin 1s linear infinite;}
+        @keyframes spin{to{transform:rotate(360deg);}}
+        .rzp-loading p{color:#fff;font-size:.95rem;}
 
         /* HISTORY TABLE */
         .table-wrap{overflow-x:auto;}
@@ -103,17 +100,11 @@
         .badge-failed{background:#f8d7da;color:#721c24;}
         .badge-refunded{background:#d1ecf1;color:#0c5460;}
         .method-icon{font-size:.82rem;color:#666;}
-
-        /* SUMMARY STATS */
         .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:22px;}
         .stat-box{background:#fff;border-radius:12px;padding:18px;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.06);}
         .stat-box .val{font-size:1.5rem;font-weight:800;color:#F5C518;}
         .stat-box .lbl{font-size:.78rem;color:#666;margin-top:4px;}
-
-        /* HAMBURGER */
         .hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;background:#F5C518;border:none;border-radius:8px;width:40px;height:40px;cursor:pointer;align-items:center;justify-content:center;font-size:1.1rem;}
-
-        /* RESPONSIVE */
         @media(max-width:768px){
             .hamburger{display:flex;}
             .layout{flex-direction:column;}
@@ -128,6 +119,12 @@
     </style>
 </head>
 <body>
+
+<!-- Razorpay Loading Overlay -->
+<div class="rzp-loading" id="rzpLoading">
+    <div class="rzp-spinner"></div>
+    <p>Opening secure payment gateway…</p>
+</div>
 
 <button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">
     <i class="fas fa-bars"></i>
@@ -174,13 +171,13 @@
 
         <div class="page-header">
             <h1>💳 Payments</h1>
-            <p>Pay for your consultations using any method that suits you</p>
+            <p>Pay securely for your consultations using any method</p>
         </div>
 
         <!-- STATS -->
         <div class="stats-row">
             <div class="stat-box">
-                <div class="val">₹{{ my_payments|length|default:"0" }}</div>
+                <div class="val">{{ my_payments|length }}</div>
                 <div class="lbl">Total Transactions</div>
             </div>
             <div class="stat-box">
@@ -195,43 +192,55 @@
 
             <!-- METHOD TABS -->
             <div class="method-tabs">
-                <button class="method-tab active" onclick="switchTab('stripe',this)"><i class="fab fa-stripe" style="color:#635BFF"></i> Card (Stripe)</button>
+                <button class="method-tab active" onclick="switchTab('razorpay',this)">
+                    <img src="https://razorpay.com/favicon.ico" style="width:16px;height:16px;object-fit:contain;" onerror="this.style.display='none'">
+                    Pay Online
+                </button>
                 <button class="method-tab" onclick="switchTab('upi',this)"><i class="fas fa-qrcode" style="color:#00B900"></i> UPI / QR Code</button>
                 <button class="method-tab" onclick="switchTab('cash',this)"><i class="fas fa-money-bill-wave" style="color:#28a745"></i> Cash</button>
                 <button class="method-tab" onclick="switchTab('netbanking',this)"><i class="fas fa-university" style="color:#1a73e8"></i> Net Banking</button>
             </div>
 
-            <!-- STRIPE PANEL -->
-            <div class="method-panel active" id="panel-stripe">
-                <div class="stripe-panel">
-                    <div class="pay-icon">💳</div>
-                    <p style="color:#555;margin-bottom:16px;">Secure card payment powered by Stripe. Supports Visa, Mastercard, RuPay & more.</p>
-                    <form method="POST" action="{% url 'stripe_checkout' %}">
-                        {% csrf_token %}
-                        <div class="amount-input-row">
-                            <div class="form-group">
-                                <label>Select Appointment</label>
-                                <select class="form-control" name="appointment_id">
-                                    <option value="">— General Payment —</option>
-                                    {% for appt in upcoming_appointments %}
-                                    <option value="{{ appt.id }}" {% if appt.consultation_fee %}data-fee="{{ appt.consultation_fee }}"{% endif %}>
-                                        {{ appt.date }} — {{ appt.get_service_display }}
-                                        {% if appt.consultation_fee %}(₹{{ appt.consultation_fee }}){% endif %}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Amount (₹)</label>
-                                <input type="number" class="form-control" name="amount" id="stripe-amount" value="500" min="50" step="50">
-                            </div>
+            <!-- RAZORPAY PANEL (Cards, UPI, Wallets, Netbanking all-in-one) -->
+            <div class="method-panel active" id="panel-razorpay">
+                <div class="rzp-panel">
+                    <div class="pay-icon">🔒</div>
+                    <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:8px;">Secure Payment Gateway</h3>
+                    <p style="color:#666;font-size:.88rem;margin-bottom:14px;">Pay using Card, UPI, Net Banking, Wallets & more — powered by Razorpay</p>
+                    <div class="rzp-features">
+                        <div class="rzp-feature"><i class="fas fa-credit-card" style="color:#3395FF"></i> Visa / Mastercard / RuPay</div>
+                        <div class="rzp-feature"><i class="fas fa-qrcode" style="color:#00B900"></i> UPI (GPay, PhonePe, Paytm)</div>
+                        <div class="rzp-feature"><i class="fas fa-university" style="color:#1a73e8"></i> Net Banking</div>
+                        <div class="rzp-feature"><i class="fas fa-wallet" style="color:#f7941d"></i> Wallets</div>
+                        <div class="rzp-feature"><i class="fas fa-shield-alt" style="color:#28a745"></i> 256-bit SSL Encrypted</div>
+                    </div>
+                    <div class="amount-input-row" style="justify-content:center;">
+                        <div class="form-group" style="max-width:220px;">
+                            <label>Select Appointment</label>
+                            <select class="form-control" id="rzp-appointment-select">
+                                <option value="">— General Payment —</option>
+                                {% for appt in upcoming_appointments %}
+                                <option value="{{ appt.id }}" {% if appt.consultation_fee %}data-fee="{{ appt.consultation_fee }}"{% endif %}>
+                                    {{ appt.date }} — {{ appt.get_service_display }}{% if appt.consultation_fee %} (₹{{ appt.consultation_fee }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        {% if stripe_pub %}
-                        <button type="submit" class="btn btn-stripe"><i class="fab fa-stripe"></i> Pay Securely via Stripe</button>
-                        {% else %}
-                        <div class="alert alert-warning" style="margin-top:12px;display:inline-block;">⚠️ Stripe keys not configured — contact admin to enable card payments.</div>
-                        {% endif %}
-                    </form>
+                        <div class="form-group" style="max-width:160px;">
+                            <label>Amount (₹)</label>
+                            <input type="number" class="form-control" id="rzp-amount" value="500" min="1" step="50">
+                        </div>
+                    </div>
+                    {% if razorpay_key_id %}
+                    <button class="btn btn-rzp" onclick="initiateRazorpay()">
+                        <i class="fas fa-lock"></i> Pay Securely Now
+                    </button>
+                    <p style="font-size:.75rem;color:#999;margin-top:10px;">Money goes directly to the clinic's account. Instant confirmation.</p>
+                    {% else %}
+                    <div class="alert alert-warning" style="margin-top:12px;display:inline-block;">
+                        ⚠️ Online payments not configured yet — use UPI or Cash below, or contact admin.
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -308,7 +317,7 @@
 
             <!-- NET BANKING PANEL -->
             <div class="method-panel" id="panel-netbanking">
-                <p style="color:#555;margin-bottom:16px;">Net banking payments are processed securely. Please use your bank's NEFT/RTGS to transfer funds to the clinic account and then notify us.</p>
+                <p style="color:#555;margin-bottom:16px;">Transfer via NEFT/RTGS to the clinic account and submit the UTR reference number below.</p>
                 <div class="bank-logos">
                     <div class="bank-logo" style="color:#1a73e8;">SBI</div>
                     <div class="bank-logo" style="color:#d9232d;">HDFC</div>
@@ -324,7 +333,7 @@
                         <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:.85rem;">Account No.</td><td style="font-weight:600;font-size:.85rem;">Contact clinic for details</td></tr>
                         <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:.85rem;">IFSC Code</td><td style="font-weight:600;font-size:.85rem;">Contact clinic for details</td></tr>
                     </table>
-                    <p style="margin-top:12px;font-size:.82rem;color:#666;">After transferring, submit the UTR number below or call us to confirm.</p>
+                    <p style="margin-top:12px;font-size:.82rem;color:#666;">After transferring, submit the UTR number below.</p>
                 </div>
                 <form method="POST" action="{% url 'record_upi_payment' %}">
                     {% csrf_token %}
@@ -364,9 +373,10 @@
                             <td>{% if pay.appointment %}{{ pay.appointment.date }} — {{ pay.appointment.get_service_display }}{% else %}<span style="color:#aaa;">General</span>{% endif %}</td>
                             <td><strong>₹{{ pay.amount }}</strong></td>
                             <td class="method-icon">
-                                {% if pay.method == 'stripe' %}<i class="fab fa-stripe" style="color:#635BFF"></i> Card
+                                {% if pay.method == 'razorpay' %}<i class="fas fa-lock" style="color:#3395FF"></i> Online
                                 {% elif pay.method == 'upi' %}<i class="fas fa-qrcode" style="color:#00B900"></i> UPI
                                 {% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color:#28a745"></i> Cash
+                                {% elif pay.method == 'wallet' %}<i class="fas fa-wallet" style="color:#f7941d"></i> Wallet
                                 {% else %}<i class="fas fa-university" style="color:#1a73e8"></i> Net Banking{% endif %}
                             </td>
                             <td style="font-family:monospace;font-size:.8rem;color:#666;">{{ pay.transaction_id|default:"—" }}</td>
@@ -386,8 +396,20 @@
     </main>
 </div>
 
+<!-- Hidden form to verify payment on server -->
+<form method="POST" action="{% url 'razorpay_verify_payment' %}" id="rzpVerifyForm" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="razorpay_order_id" id="rzp_order_id">
+    <input type="hidden" name="razorpay_payment_id" id="rzp_payment_id">
+    <input type="hidden" name="razorpay_signature" id="rzp_signature">
+    <input type="hidden" name="record_id" id="rzp_record_id">
+</form>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
+const CSRF_TOKEN = '{{ csrf_token }}';
+
 function switchTab(name, btn) {
     document.querySelectorAll('.method-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.method-tab').forEach(b => b.classList.remove('active'));
@@ -396,41 +418,93 @@ function switchTab(name, btn) {
     if (name === 'upi') generateQR();
 }
 
+/* ── Razorpay integration ── */
+function initiateRazorpay() {
+    const amount = document.getElementById('rzp-amount').value || '500';
+    const apptId = document.getElementById('rzp-appointment-select').value || '';
+
+    if (parseFloat(amount) < 1) { alert('Please enter a valid amount.'); return; }
+
+    document.getElementById('rzpLoading').classList.add('show');
+
+    const fd = new FormData();
+    fd.append('amount', amount);
+    fd.append('appointment_id', apptId);
+    fd.append('csrfmiddlewaretoken', CSRF_TOKEN);
+
+    fetch('{% url "razorpay_create_order" %}', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('rzpLoading').classList.remove('show');
+            if (data.error) { alert('Error: ' + data.error); return; }
+
+            const options = {
+                key: data.key_id,
+                amount: data.amount,
+                currency: data.currency,
+                name: 'PhysioRehab Clinic',
+                description: 'Consultation Payment',
+                image: '{% static "images/Dhvani_Patalia.jpeg" %}',
+                order_id: data.order_id,
+                prefill: {
+                    name: data.patient_name,
+                    email: data.patient_email,
+                },
+                theme: { color: '#F5C518' },
+                modal: {
+                    ondismiss: function() {
+                        console.log('Payment modal closed');
+                    }
+                },
+                handler: function(response) {
+                    document.getElementById('rzp_order_id').value = response.razorpay_order_id;
+                    document.getElementById('rzp_payment_id').value = response.razorpay_payment_id;
+                    document.getElementById('rzp_signature').value = response.razorpay_signature;
+                    document.getElementById('rzp_record_id').value = data.record_id;
+                    document.getElementById('rzpVerifyForm').submit();
+                }
+            };
+
+            const rzp = new Razorpay(options);
+            rzp.on('payment.failed', function(resp) {
+                alert('Payment failed: ' + resp.error.description + '\nIf money was deducted, contact the clinic with Error Code: ' + resp.error.code);
+            });
+            rzp.open();
+        })
+        .catch(err => {
+            document.getElementById('rzpLoading').classList.remove('show');
+            alert('Network error. Please try again.');
+            console.error(err);
+        });
+}
+
+/* Auto-fill amount from appointment selection */
+document.getElementById('rzp-appointment-select').addEventListener('change', function() {
+    const fee = this.options[this.selectedIndex].dataset.fee;
+    if (fee) document.getElementById('rzp-amount').value = fee;
+});
+
+/* ── UPI QR ── */
+let qrDone = false;
 function generateQR() {
+    if (qrDone) return;
+    qrDone = true;
     const canvas = document.getElementById('qr-canvas');
     const upiId = '{{ upi_id }}';
     const upiUrl = 'upi://pay?pa=' + upiId + '&pn=PhysioRehab&cu=INR';
-    if (canvas._qrDone) return;
-    canvas._qrDone = true;
     try {
-        new QRCode(canvas.parentElement, {
-            text: upiUrl,
-            width: 200,
-            height: 200,
-            colorDark: '#000',
-            colorLight: '#fff',
-            correctLevel: QRCode.CorrectLevel.M
-        });
-        canvas.style.display = 'none';
-    } catch(e) {
-        canvas.getContext('2d').fillText('QR: ' + upiId, 10, 100);
-    }
+        new QRCode(canvas, { text: upiUrl, width: 200, height: 200, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+    } catch(e) {}
 }
 
 function copyUPI() {
     const upi = document.getElementById('upi-id-display').textContent.trim();
     navigator.clipboard.writeText(upi).then(() => {
         const btn = document.querySelector('.copy-btn');
-        btn.textContent = '✅ Copied!';
+        btn.innerHTML = '✅ Copied!';
         setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i> Copy UPI ID'; }, 2000);
     });
 }
-
-document.querySelector('select[name="appointment_id"]')?.addEventListener('change', function() {
-    const opt = this.options[this.selectedIndex];
-    const fee = opt.getAttribute('data-fee');
-    if (fee) document.getElementById('stripe-amount').value = fee;
-});
 </script>
 </body>
 </html>

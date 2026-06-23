@@ -22,3 +22,4 @@ pillow==12.2.0
 reportlab==5.0.0
 requests==2.34.2
 stripe==15.2.1
+razorpay
