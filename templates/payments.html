@@ -406,8 +406,8 @@
 </form>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
+/* ── All functions defined BEFORE Razorpay checkout.js loads ── */
 const CSRF_TOKEN = '{{ csrf_token }}';
 
 function switchTab(name, btn) {
@@ -420,42 +420,41 @@ function switchTab(name, btn) {
 
 /* ── Razorpay integration ── */
 function initiateRazorpay() {
-    const amount = document.getElementById('rzp-amount').value || '500';
-    const apptId = document.getElementById('rzp-appointment-select').value || '';
+    if (typeof Razorpay === 'undefined') {
+        alert('Payment gateway is still loading. Please wait a moment and try again.');
+        return;
+    }
+    var amount = document.getElementById('rzp-amount').value || '500';
+    var apptId = document.getElementById('rzp-appointment-select').value || '';
 
     if (parseFloat(amount) < 1) { alert('Please enter a valid amount.'); return; }
 
     document.getElementById('rzpLoading').classList.add('show');
 
-    const fd = new FormData();
+    var fd = new FormData();
     fd.append('amount', amount);
     fd.append('appointment_id', apptId);
     fd.append('csrfmiddlewaretoken', CSRF_TOKEN);
 
     fetch('{% url "razorpay_create_order" %}', { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(data => {
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
             document.getElementById('rzpLoading').classList.remove('show');
             if (data.error) { alert('Error: ' + data.error); return; }
 
-            const options = {
+            var options = {
                 key: data.key_id,
                 amount: data.amount,
                 currency: data.currency,
                 name: 'PhysioRehab Clinic',
                 description: 'Consultation Payment',
-                image: '{% static "images/Dhvani_Patalia.jpeg" %}',
                 order_id: data.order_id,
                 prefill: {
                     name: data.patient_name,
-                    email: data.patient_email,
+                    email: data.patient_email
                 },
                 theme: { color: '#F5C518' },
-                modal: {
-                    ondismiss: function() {
-                        console.log('Payment modal closed');
-                    }
-                },
+                modal: { ondismiss: function() {} },
                 handler: function(response) {
                     document.getElementById('rzp_order_id').value = response.razorpay_order_id;
                     document.getElementById('rzp_payment_id').value = response.razorpay_payment_id;
@@ -465,46 +464,51 @@ function initiateRazorpay() {
                 }
             };
 
-            const rzp = new Razorpay(options);
+            var rzp = new Razorpay(options);
             rzp.on('payment.failed', function(resp) {
-                alert('Payment failed: ' + resp.error.description + '\nIf money was deducted, contact the clinic with Error Code: ' + resp.error.code);
+                alert('Payment failed: ' + resp.error.description);
             });
             rzp.open();
         })
-        .catch(err => {
+        .catch(function(err) {
             document.getElementById('rzpLoading').classList.remove('show');
             alert('Network error. Please try again.');
             console.error(err);
         });
 }
 
-/* Auto-fill amount from appointment selection */
-document.getElementById('rzp-appointment-select').addEventListener('change', function() {
-    const fee = this.options[this.selectedIndex].dataset.fee;
-    if (fee) document.getElementById('rzp-amount').value = fee;
-});
+/* Auto-fill amount from appointment */
+var apptSelect = document.getElementById('rzp-appointment-select');
+if (apptSelect) {
+    apptSelect.addEventListener('change', function() {
+        var fee = this.options[this.selectedIndex].dataset.fee;
+        if (fee) document.getElementById('rzp-amount').value = fee;
+    });
+}
 
 /* ── UPI QR ── */
-let qrDone = false;
+var qrDone = false;
 function generateQR() {
     if (qrDone) return;
     qrDone = true;
-    const canvas = document.getElementById('qr-canvas');
-    const upiId = '{{ upi_id }}';
-    const upiUrl = 'upi://pay?pa=' + upiId + '&pn=PhysioRehab&cu=INR';
+    var canvas = document.getElementById('qr-canvas');
+    var upiId = '{{ upi_id }}';
+    var upiUrl = 'upi://pay?pa=' + upiId + '&pn=PhysioRehab&cu=INR';
     try {
         new QRCode(canvas, { text: upiUrl, width: 200, height: 200, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
     } catch(e) {}
 }
 
 function copyUPI() {
-    const upi = document.getElementById('upi-id-display').textContent.trim();
-    navigator.clipboard.writeText(upi).then(() => {
-        const btn = document.querySelector('.copy-btn');
-        btn.innerHTML = '✅ Copied!';
-        setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i> Copy UPI ID'; }, 2000);
+    var upi = document.getElementById('upi-id-display').textContent.trim();
+    navigator.clipboard.writeText(upi).then(function() {
+        var btn = document.querySelector('.copy-btn');
+        btn.innerHTML = '&#10003; Copied!';
+        setTimeout(function() { btn.innerHTML = '<i class="fas fa-copy"></i> Copy UPI ID'; }, 2000);
     });
 }
 </script>
+<!-- Razorpay checkout loaded AFTER all function definitions so it never blocks them -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </body>
 </html>
