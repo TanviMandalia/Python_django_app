@@ -582,6 +582,42 @@
 
           <!-- RIGHT COLUMN -->
           <div style="display:flex; flex-direction:column; gap:16px;">
+            <!-- RECENT PAYMENTS -->
+            <div class="card">
+              <div class="card-header" style="margin-bottom:12px;">
+                <div class="card-title"><i class="fas fa-credit-card"></i> Recent Payments</div>
+                <a href="{% url 'admin_payments' %}" class="view-all">View All →</a>
+              </div>
+              <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+                <div style="flex:1;background:linear-gradient(135deg,#d4edda,#c3e6cb);border-radius:10px;padding:10px 14px;min-width:100px;">
+                  <div style="font-size:1.1em;font-weight:800;color:#155724;">₹{{ total_paid }}</div>
+                  <div style="font-size:0.72em;color:#1e7e34;font-weight:600;">Total Collected</div>
+                </div>
+                {% if pending_payments_count %}<div style="flex:1;background:linear-gradient(135deg,#fff3cd,#ffeeba);border-radius:10px;padding:10px 14px;min-width:80px;">
+                  <div style="font-size:1.1em;font-weight:800;color:#856404;">{{ pending_payments_count }}</div>
+                  <div style="font-size:0.72em;color:#856404;font-weight:600;">Pending</div>
+                </div>{% endif %}
+              </div>
+              {% if recent_payments %}
+              {% for pay in recent_payments %}
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:0.83em;">
+                <div>
+                  <div style="font-weight:600;color:#1f2937;">{% if pay.patient %}{{ pay.patient.get_full_name|default:pay.patient.username }}{% else %}—{% endif %}</div>
+                  <div style="color:#888;font-size:0.78em;">{{ pay.created_at|date:"d M" }} · {% if pay.method == 'razorpay' %}<i class="fas fa-bolt" style="color:#f5c518;"></i> Razorpay{% elif pay.method == 'upi' %}<i class="fas fa-qrcode" style="color:#00b900;"></i> UPI{% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color:#28a745;"></i> Cash{% else %}{{ pay.get_method_display }}{% endif %}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-weight:700;color:#1f2937;">₹{{ pay.amount }}</div>
+                  {% if pay.status == 'paid' %}<span style="background:#d4edda;color:#155724;padding:1px 7px;border-radius:8px;font-size:0.72em;font-weight:700;">Paid</span>
+                  {% elif pay.status == 'pending' %}<span style="background:#fff3cd;color:#856404;padding:1px 7px;border-radius:8px;font-size:0.72em;font-weight:700;">Pending</span>
+                  {% else %}<span style="background:#f8d7da;color:#721c24;padding:1px 7px;border-radius:8px;font-size:0.72em;font-weight:700;">{{ pay.get_status_display }}</span>{% endif %}
+                </div>
+              </div>
+              {% endfor %}
+              {% else %}
+              <div style="text-align:center;padding:16px;color:#bbb;font-size:0.83em;"><i class="fas fa-credit-card" style="display:block;font-size:1.8em;margin-bottom:6px;"></i>No payments yet.</div>
+              {% endif %}
+            </div>
+
             <!-- QUICK ACTIONS -->
             <div class="card">
               <div class="card-header" style="margin-bottom:14px;">

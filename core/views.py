@@ -919,9 +919,10 @@ def client_dashboard(request):
     completed = appointments.filter(status="completed")
     recent_notifs = Notification.objects.filter(recipient=request.user)[:5]
     has_reviewed = Review.objects.filter(patient=request.user).exists()
-    approved_reviews = Review.objects.filter(is_approved=True).order_by("-created_at")[
-        :6
-    ]
+    approved_reviews = Review.objects.filter(is_approved=True).order_by("-created_at")[:6]
+    my_payments = PaymentRecord.objects.filter(patient=request.user).order_by("-created_at")[:5]
+    upcoming_appointments = upcoming.order_by("date")
+    _, razorpay_key_id, _ = _get_patient_razorpay(request.user)
     return render(
         request,
         "client_dashboard.html",
@@ -935,6 +936,9 @@ def client_dashboard(request):
             "recent_notifs": recent_notifs,
             "has_reviewed": has_reviewed,
             "approved_reviews": approved_reviews,
+            "my_payments": my_payments,
+            "upcoming_appointments": upcoming_appointments,
+            "razorpay_key_id": razorpay_key_id,
         },
     )
 
@@ -962,6 +966,10 @@ def admin_dashboard(request):
         for p in ClinicPromo.objects.filter(is_active=True)
         if p.is_live and str(p.id) not in dismissed
     ]
+    from django.db.models import Sum
+    recent_payments = PaymentRecord.objects.order_by("-created_at")[:6]
+    total_paid = PaymentRecord.objects.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
+    pending_payments_count = PaymentRecord.objects.filter(status="pending").count()
     return render(
         request,
         "admin_dashboard.html",
@@ -978,6 +986,9 @@ def admin_dashboard(request):
             "pending_reviews": pending_reviews,
             "recent_reviews": recent_reviews,
             "active_promos": active_promos,
+            "recent_payments": recent_payments,
+            "total_paid": total_paid,
+            "pending_payments_count": pending_payments_count,
         },
     )
 

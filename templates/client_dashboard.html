@@ -917,6 +917,55 @@
                     </div>
                 </div>
 
+                <!-- RAZORPAY QUICK PAY + RECENT PAYMENTS -->
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-bolt" style="color:#f5c518;"></i> Quick Pay</div>
+                        <a href="{% url 'payments' %}" class="view-all">All Options →</a>
+                    </div>
+                    {% if razorpay_key_id %}
+                    <div style="background:linear-gradient(135deg,rgba(245,197,24,0.08),rgba(245,197,24,0.03));border:1px solid rgba(245,197,24,0.25);border-radius:12px;padding:16px;margin-bottom:16px;">
+                        <p style="font-size:0.82rem;color:#666;margin-bottom:12px;"><i class="fas fa-lock" style="color:#f5c518;"></i> Secure payment directly to the clinic via Razorpay</p>
+                        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:120px;">
+                                <label style="font-size:0.78rem;color:#555;font-weight:600;display:block;margin-bottom:4px;">Appointment</label>
+                                <select id="dash-appt-select" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;font-family:inherit;">
+                                    <option value="">— General —</option>
+                                    {% for appt in upcoming_appointments %}<option value="{{ appt.id }}" {% if appt.consultation_fee %}data-fee="{{ appt.consultation_fee }}"{% endif %}>{{ appt.date|date:"d M" }} — {{ appt.get_service_display }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div style="width:110px;">
+                                <label style="font-size:0.78rem;color:#555;font-weight:600;display:block;margin-bottom:4px;">Amount (₹)</label>
+                                <input type="number" id="dash-amount" value="500" min="1" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;font-family:inherit;">
+                            </div>
+                            <button onclick="dashInitiateRazorpay()" style="background:linear-gradient(135deg,#f5c518,#e6a800);color:#1a1a1a;border:none;padding:9px 20px;border-radius:8px;font-weight:700;font-size:0.85rem;cursor:pointer;white-space:nowrap;"><i class="fas fa-bolt"></i> Pay Now</button>
+                        </div>
+                        <div id="dashRzpLoading" style="display:none;text-align:center;padding:10px;color:#f5c518;font-size:0.82rem;"><i class="fas fa-spinner fa-spin"></i> Opening payment...</div>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:16px;color:#888;font-size:0.85rem;">
+                        <i class="fas fa-credit-card" style="font-size:1.8em;color:#ddd;display:block;margin-bottom:8px;"></i>
+                        Online payments not yet configured. <a href="{% url 'payments' %}" style="color:#f5c518;">Other payment options →</a>
+                    </div>
+                    {% endif %}
+                    {% if my_payments %}
+                    <div style="margin-top:4px;">
+                        <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:#999;font-weight:700;margin-bottom:8px;">Recent Payments</div>
+                        {% for pay in my_payments %}
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5;">
+                            <div>
+                                <div style="font-size:0.84rem;font-weight:600;color:#2c2c2c;">₹{{ pay.amount }}</div>
+                                <div style="font-size:0.74rem;color:#999;">{{ pay.created_at|date:"d M Y" }} · {{ pay.get_method_display }}</div>
+                            </div>
+                            {% if pay.status == 'paid' %}<span style="background:#d4edda;color:#155724;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;">Paid</span>
+                            {% elif pay.status == 'pending' %}<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;">Pending</span>
+                            {% else %}<span style="background:#f8d7da;color:#721c24;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;">{{ pay.get_status_display }}</span>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
                 <!-- PATIENT REVIEWS SECTION -->
                 <div class="card">
                     <div class="card-header">
@@ -1289,5 +1338,72 @@
                 </div>
             </div>
         </div>
+
+    <!-- Hidden Razorpay verification form -->
+    <form id="dashRzpVerifyForm" method="POST" action="{% url 'razorpay_verify_payment' %}" style="display:none;">
+        {% csrf_token %}
+        <input type="hidden" name="razorpay_order_id" id="dash_rzp_order_id">
+        <input type="hidden" name="razorpay_payment_id" id="dash_rzp_payment_id">
+        <input type="hidden" name="razorpay_signature" id="dash_rzp_signature">
+        <input type="hidden" name="record_id" id="dash_rzp_record_id">
+    </form>
+
+    <script>
+    var DASH_CSRF = '{{ csrf_token }}';
+    function dashInitiateRazorpay() {
+        if (typeof Razorpay === 'undefined') {
+            alert('Payment gateway is still loading. Please wait a moment and try again.');
+            return;
+        }
+        var amount = document.getElementById('dash-amount').value || '500';
+        var apptId = document.getElementById('dash-appt-select').value || '';
+        if (parseFloat(amount) < 1) { alert('Please enter a valid amount.'); return; }
+        document.getElementById('dashRzpLoading').style.display = 'block';
+        var fd = new FormData();
+        fd.append('amount', amount);
+        fd.append('appointment_id', apptId);
+        fd.append('csrfmiddlewaretoken', DASH_CSRF);
+        fetch('{% url "razorpay_create_order" %}', { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                document.getElementById('dashRzpLoading').style.display = 'none';
+                if (data.error) { alert('Error: ' + data.error); return; }
+                var options = {
+                    key: data.key_id,
+                    amount: data.amount,
+                    currency: data.currency,
+                    name: 'PhysioRehab Clinic',
+                    description: 'Consultation Payment',
+                    order_id: data.order_id,
+                    prefill: { name: data.patient_name, email: data.patient_email },
+                    theme: { color: '#F5C518' },
+                    modal: { ondismiss: function() {} },
+                    handler: function(response) {
+                        document.getElementById('dash_rzp_order_id').value = response.razorpay_order_id;
+                        document.getElementById('dash_rzp_payment_id').value = response.razorpay_payment_id;
+                        document.getElementById('dash_rzp_signature').value = response.razorpay_signature;
+                        document.getElementById('dash_rzp_record_id').value = data.record_id;
+                        document.getElementById('dashRzpVerifyForm').submit();
+                    }
+                };
+                var rzp = new Razorpay(options);
+                rzp.on('payment.failed', function(resp) { alert('Payment failed: ' + resp.error.description); });
+                rzp.open();
+            })
+            .catch(function(err) {
+                document.getElementById('dashRzpLoading').style.display = 'none';
+                alert('Network error. Please try again.');
+                console.error(err);
+            });
+    }
+    var dashApptSel = document.getElementById('dash-appt-select');
+    if (dashApptSel) {
+        dashApptSel.addEventListener('change', function() {
+            var fee = this.options[this.selectedIndex].dataset.fee;
+            if (fee) document.getElementById('dash-amount').value = fee;
+        });
+    }
+    </script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     </body>
 </html>

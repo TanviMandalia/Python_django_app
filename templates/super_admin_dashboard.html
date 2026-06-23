@@ -553,10 +553,12 @@
                   <td style="padding:11px 12px;font-size:.86em;">{% if pay.patient %}{{ pay.patient.get_full_name|default:pay.patient.username }}{% else %}<span style="color:#bbb;">—</span>{% endif %}</td>
                   <td style="padding:11px 12px;font-size:.86em;"><strong>₹{{ pay.amount }}</strong></td>
                   <td style="padding:11px 12px;font-size:.86em;">
-                    {% if pay.method == 'stripe' %}<i class="fab fa-stripe" style="color:#635BFF"></i> Card
+                    {% if pay.method == 'razorpay' %}<i class="fas fa-bolt" style="color:#F5C518"></i> Razorpay
                     {% elif pay.method == 'upi' %}<i class="fas fa-qrcode" style="color:#00B900"></i> UPI
                     {% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color:#28a745"></i> Cash
-                    {% else %}<i class="fas fa-university" style="color:#1a73e8"></i> Net Banking{% endif %}
+                    {% elif pay.method == 'netbanking' %}<i class="fas fa-university" style="color:#1a73e8"></i> Net Banking
+                    {% elif pay.method == 'wallet' %}<i class="fas fa-wallet" style="color:#9c27b0"></i> Wallet
+                    {% else %}<i class="fas fa-credit-card" style="color:#555"></i> {{ pay.get_method_display }}{% endif %}
                   </td>
                   <td style="padding:11px 12px;font-family:monospace;font-size:.78em;color:#666;">{{ pay.transaction_id|default:"—" }}</td>
                   <td style="padding:11px 12px;">
