@@ -44,6 +44,8 @@ urlpatterns = [
     path("payments/record-cash/", views.record_cash_payment, name="record_cash_payment"),
     path("payments/record-upi/", views.record_upi_payment, name="record_upi_payment"),
     path("payments/admin/", views.admin_payments, name="admin_payments"),
+    path("payments/confirm/<int:payment_id>/", views.confirm_payment, name="confirm_payment"),
+    path("payments/reject/<int:payment_id>/", views.reject_payment, name="reject_payment"),
     # ── Subscription ──────────────────────────────────────────
     path("subscription/", views.subscription_page, name="subscription_page"),
     # ── Promo Management ──────────────────────────────────────

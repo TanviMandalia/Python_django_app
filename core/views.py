@@ -879,11 +879,11 @@ def record_upi_payment(request):
         appointment_id=appt_id if appt_id else None,
         amount=float(amount) if amount else 0,
         method="upi",
-        status="paid" if txn_id else "pending",
+        status="pending",
         transaction_id=txn_id,
         notes=f"UPI Ref: {txn_id}",
     )
-    messages.success(request, "✅ UPI payment recorded. Admin will verify shortly.")
+    messages.success(request, "✅ UPI payment submitted. The doctor will verify and confirm it shortly.")
     return redirect("payments")
 
 
@@ -896,6 +896,7 @@ def admin_payments(request):
     ).order_by("-created_at")
     total_paid = all_payments.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
     pending_count = all_payments.filter(status="pending").count()
+    pending_payments = all_payments.filter(status="pending")
     return render(
         request,
         "admin_payments.html",
@@ -903,8 +904,35 @@ def admin_payments(request):
             "payments": all_payments,
             "total_paid": total_paid,
             "pending_count": pending_count,
+            "pending_payments": pending_payments,
         },
     )
+
+
+@login_required
+@require_POST
+def confirm_payment(request, payment_id):
+    if not request.user.is_superuser:
+        return redirect("client_dashboard")
+    pay = get_object_or_404(PaymentRecord, id=payment_id)
+    pay.status = "paid"
+    if not pay.transaction_id:
+        pay.transaction_id = f"CONF-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+    pay.save()
+    messages.success(request, f"✅ Payment of ₹{pay.amount} confirmed for {pay.patient.get_full_name() or pay.patient.username}.")
+    return redirect("admin_payments")
+
+
+@login_required
+@require_POST
+def reject_payment(request, payment_id):
+    if not request.user.is_superuser:
+        return redirect("client_dashboard")
+    pay = get_object_or_404(PaymentRecord, id=payment_id)
+    pay.status = "failed"
+    pay.save()
+    messages.warning(request, f"❌ Payment of ₹{pay.amount} rejected for {pay.patient.get_full_name() or pay.patient.username}.")
+    return redirect("admin_payments")
 
 
 # ─── CLIENT DASHBOARD ────────────────────────────────────────
