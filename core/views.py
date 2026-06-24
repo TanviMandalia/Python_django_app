@@ -919,6 +919,11 @@ def confirm_payment(request, payment_id):
     if not pay.transaction_id:
         pay.transaction_id = f"CONF-{timezone.now().strftime('%Y%m%d%H%M%S')}"
     pay.save()
+    Notification.objects.create(
+        recipient=pay.patient,
+        message=f"✅ Your payment of ₹{pay.amount} has been confirmed by the clinic. Thank you!",
+        link="/payments/",
+    )
     messages.success(request, f"✅ Payment of ₹{pay.amount} confirmed for {pay.patient.get_full_name() or pay.patient.username}.")
     return redirect("admin_payments")
 
@@ -931,6 +936,11 @@ def reject_payment(request, payment_id):
     pay = get_object_or_404(PaymentRecord, id=payment_id)
     pay.status = "failed"
     pay.save()
+    Notification.objects.create(
+        recipient=pay.patient,
+        message=f"❌ Your payment of ₹{pay.amount} could not be verified. Please contact the clinic or try again.",
+        link="/payments/",
+    )
     messages.warning(request, f"❌ Payment of ₹{pay.amount} rejected for {pay.patient.get_full_name() or pay.patient.username}.")
     return redirect("admin_payments")
 
@@ -3704,10 +3714,42 @@ def submit_support_ticket(request):
 # ─── SUBSCRIPTION PAGE ────────────────────────────────────────
 
 
+@platform_superadmin_required
+def super_admin_all_payments(request):
+    from django.db.models import Sum
+    status_filter = request.GET.get("status", "")
+    method_filter = request.GET.get("method", "")
+    all_payments = PaymentRecord.objects.select_related("patient", "appointment").order_by("-created_at")
+    if status_filter:
+        all_payments = all_payments.filter(status=status_filter)
+    if method_filter:
+        all_payments = all_payments.filter(method=method_filter)
+    total_paid = PaymentRecord.objects.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
+    total_pending = PaymentRecord.objects.filter(status="pending").aggregate(t=Sum("amount"))["t"] or 0
+    pending_count = PaymentRecord.objects.filter(status="pending").count()
+    paid_count = PaymentRecord.objects.filter(status="paid").count()
+    failed_count = PaymentRecord.objects.filter(status="failed").count()
+    return render(request, "super_admin_all_payments.html", {
+        "payments": all_payments,
+        "status_filter": status_filter,
+        "method_filter": method_filter,
+        "total_paid": total_paid,
+        "total_pending": total_pending,
+        "pending_count": pending_count,
+        "paid_count": paid_count,
+        "failed_count": failed_count,
+    })
+
+
 @login_required
 def subscription_page(request):
     if not request.user.is_superuser:
         return redirect("client_dashboard")
+    reason = request.GET.get("reason", "")
+    if reason == "expired":
+        messages.error(request, "❌ Your subscription has expired. Please renew your plan to restore full access.")
+    elif reason == "trial":
+        messages.warning(request, "🔒 This feature is locked on the trial plan. Upgrade to unlock all premium features.")
     plans = SubscriptionPlan.objects.filter(is_active=True).order_by("price_monthly")
     hospital = None
     current_sub = None

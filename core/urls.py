@@ -284,6 +284,7 @@ urlpatterns = [
         views.super_admin_analytics,
         name="super_admin_analytics",
     ),
+    path("super-admin/all-payments/", views.super_admin_all_payments, name="super_admin_all_payments"),
     path("super-admin/support/", views.super_admin_support, name="super_admin_support"),
     path(
         "super-admin/support/reply/<int:ticket_id>/",
