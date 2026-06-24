@@ -97,6 +97,7 @@ class LoginAttemptMiddleware:
 class SubscriptionGateMiddleware:
     """
     Block expired clinic-admin access. Redirect to subscription page.
+    Trial admins may only access basic features; premium features are blocked.
     Platform superadmins are always allowed.
     """
     EXEMPT = [
@@ -104,6 +105,23 @@ class SubscriptionGateMiddleware:
         '/verify-otp/', '/reset-password/', '/resend-otp/',
         '/subscription/', '/super-admin/', '/support/submit/',
         '/static/', '/media/', '/__mockup__/',
+    ]
+
+    PREMIUM_PATHS = [
+        '/analytics/',
+        '/export/',
+        '/admin-salary/',
+        '/admin-attendance/',
+        '/admin-tasks/',
+        '/admin-blog/',
+        '/admin-session-notes/',
+        '/admin-leaves/',
+        '/admin-reviews/',
+        '/admin-promos/',
+        '/admin-staff/',
+        '/add-staff/',
+        '/progress/',
+        '/admin-settings/',
     ]
 
     def __init__(self, get_response):
@@ -130,8 +148,11 @@ class SubscriptionGateMiddleware:
                 from .models import HospitalSubscription
                 sub = user.clinic_admin_profile.hospital.subscription
                 if sub.status == 'expired' or sub.is_expired:
-                    if not path.startswith('/subscription/') and not path.startswith('/support/'):
-                        return redirect('/subscription/')
+                    return redirect('/subscription/?reason=expired')
+                if sub.status == 'trial':
+                    for premium in self.PREMIUM_PATHS:
+                        if path.startswith(premium):
+                            return redirect('/subscription/?reason=trial')
             except Exception:
                 pass
 

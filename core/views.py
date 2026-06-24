@@ -919,6 +919,11 @@ def confirm_payment(request, payment_id):
     if not pay.transaction_id:
         pay.transaction_id = f"CONF-{timezone.now().strftime('%Y%m%d%H%M%S')}"
     pay.save()
+    Notification.objects.create(
+        recipient=pay.patient,
+        message=f"✅ Your payment of ₹{pay.amount} has been confirmed by the clinic. Thank you!",
+        link="/payments/",
+    )
     messages.success(request, f"✅ Payment of ₹{pay.amount} confirmed for {pay.patient.get_full_name() or pay.patient.username}.")
     return redirect("admin_payments")
 
@@ -931,6 +936,11 @@ def reject_payment(request, payment_id):
     pay = get_object_or_404(PaymentRecord, id=payment_id)
     pay.status = "failed"
     pay.save()
+    Notification.objects.create(
+        recipient=pay.patient,
+        message=f"❌ Your payment of ₹{pay.amount} could not be verified. Please contact the clinic or try again.",
+        link="/payments/",
+    )
     messages.warning(request, f"❌ Payment of ₹{pay.amount} rejected for {pay.patient.get_full_name() or pay.patient.username}.")
     return redirect("admin_payments")
 
@@ -3522,6 +3532,14 @@ def super_admin_subscriptions(request):
                     )
         return redirect("super_admin_subscriptions")
 
+    unpaid_clinics = []
+    for sub in subscriptions:
+        if sub.status in ("trial", "expired") or sub.is_expired:
+            hid = sub.hospital_id
+            summary = hospital_payment_summary.get(hid, {})
+            if not summary.get("total_paid", 0):
+                unpaid_clinics.append(sub.hospital)
+
     return render(
         request,
         "super_admin_subscriptions.html",
@@ -3530,6 +3548,7 @@ def super_admin_subscriptions(request):
             "plans": plans,
             "pending_payments": pending_payments,
             "hospital_payment_summary": hospital_payment_summary,
+            "unpaid_clinics": unpaid_clinics,
         },
     )
 
@@ -3704,10 +3723,191 @@ def submit_support_ticket(request):
 # ─── SUBSCRIPTION PAGE ────────────────────────────────────────
 
 
+@platform_superadmin_required
+def super_admin_all_payments(request):
+    from django.db.models import Sum
+    status_filter = request.GET.get("status", "")
+    method_filter = request.GET.get("method", "")
+    all_payments = PaymentRecord.objects.select_related("patient", "appointment").order_by("-created_at")
+    if status_filter:
+        all_payments = all_payments.filter(status=status_filter)
+    if method_filter:
+        all_payments = all_payments.filter(method=method_filter)
+    total_paid = PaymentRecord.objects.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
+    total_pending = PaymentRecord.objects.filter(status="pending").aggregate(t=Sum("amount"))["t"] or 0
+    pending_count = PaymentRecord.objects.filter(status="pending").count()
+    paid_count = PaymentRecord.objects.filter(status="paid").count()
+    failed_count = PaymentRecord.objects.filter(status="failed").count()
+    return render(request, "super_admin_all_payments.html", {
+        "payments": all_payments,
+        "status_filter": status_filter,
+        "method_filter": method_filter,
+        "total_paid": total_paid,
+        "total_pending": total_pending,
+        "pending_count": pending_count,
+        "paid_count": paid_count,
+        "failed_count": failed_count,
+    })
+
+
+@platform_superadmin_required
+def export_payments_excel(request):
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from django.http import HttpResponse
+    status_filter = request.GET.get("status", "")
+    method_filter = request.GET.get("method", "")
+    qs = PaymentRecord.objects.select_related("patient", "appointment").order_by("-created_at")
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    if method_filter:
+        qs = qs.filter(method=method_filter)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Patient Payments"
+
+    hdr_font = Font(bold=True, color="FFFFFF", size=11)
+    hdr_fill = PatternFill("solid", fgColor="1a1a2e")
+    hdr_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    thin = Side(style="thin", color="CCCCCC")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    headers = ["#", "Date", "Time", "Patient Name", "Patient Email", "Appointment Date", "Amount (₹)", "Method", "Transaction ID / Ref", "Notes", "Status"]
+    ws.append(headers)
+    for col_idx, cell in enumerate(ws[1], 1):
+        cell.font = hdr_font
+        cell.fill = hdr_fill
+        cell.alignment = hdr_align
+        cell.border = border
+
+    col_widths = [5, 14, 10, 22, 28, 16, 14, 14, 26, 30, 12]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
+    ws.row_dimensions[1].height = 30
+
+    alt_fill = PatternFill("solid", fgColor="F5F5FF")
+    for i, pay in enumerate(qs, 1):
+        row = [
+            i,
+            pay.created_at.strftime("%d %b %Y"),
+            pay.created_at.strftime("%I:%M %p"),
+            pay.patient.get_full_name() or pay.patient.username,
+            pay.patient.email or "—",
+            str(pay.appointment.date) if pay.appointment else "General",
+            float(pay.amount),
+            pay.get_method_display(),
+            pay.transaction_id or "—",
+            pay.notes or "—",
+            pay.get_status_display(),
+        ]
+        ws.append(row)
+        if i % 2 == 0:
+            for cell in ws[i + 1]:
+                cell.fill = alt_fill
+        for cell in ws[i + 1]:
+            cell.border = border
+            cell.alignment = Alignment(vertical="center", wrap_text=True)
+
+    resp = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    resp["Content-Disposition"] = 'attachment; filename="all_payments.xlsx"'
+    wb.save(resp)
+    return resp
+
+
+@platform_superadmin_required
+def export_payments_pdf(request):
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER
+    from django.http import HttpResponse
+    from django.utils import timezone as tz
+
+    status_filter = request.GET.get("status", "")
+    method_filter = request.GET.get("method", "")
+    qs = PaymentRecord.objects.select_related("patient", "appointment").order_by("-created_at")
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    if method_filter:
+        qs = qs.filter(method=method_filter)
+
+    resp = HttpResponse(content_type="application/pdf")
+    resp["Content-Disposition"] = 'attachment; filename="all_payments.pdf"'
+    doc = SimpleDocTemplate(resp, pagesize=landscape(A4), leftMargin=1.5*cm, rightMargin=1.5*cm, topMargin=1.5*cm, bottomMargin=1.5*cm)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    title_style = ParagraphStyle("title", fontSize=16, fontName="Helvetica-Bold", textColor=colors.HexColor("#1a1a2e"), spaceAfter=4, alignment=TA_CENTER)
+    sub_style = ParagraphStyle("sub", fontSize=9, fontName="Helvetica", textColor=colors.grey, spaceAfter=12, alignment=TA_CENTER)
+    elements.append(Paragraph("Patient Payment Transactions", title_style))
+    elements.append(Paragraph(f"Generated: {tz.now().strftime('%d %b %Y, %I:%M %p')}   |   Records: {qs.count()}", sub_style))
+
+    headers = ["#", "Date", "Patient", "Amount", "Method", "Txn / Ref", "Status"]
+    data = [headers]
+    for i, pay in enumerate(qs, 1):
+        data.append([
+            str(i),
+            pay.created_at.strftime("%d %b %Y"),
+            (pay.patient.get_full_name() or pay.patient.username)[:22],
+            f"Rs.{pay.amount}",
+            pay.get_method_display(),
+            (pay.transaction_id or "—")[:20],
+            pay.get_status_display(),
+        ])
+
+    col_widths_pdf = [1.0*cm, 2.8*cm, 5.5*cm, 2.5*cm, 2.8*cm, 5.0*cm, 2.5*cm]
+    tbl = Table(data, colWidths=col_widths_pdf, repeatRows=1)
+    tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a1a2e")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 9),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 1), (-1, -1), 8),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F5F5FF")]),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#CCCCCC")),
+        ("ROWHEIGHT", (0, 0), (-1, 0), 20),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(tbl)
+    doc.build(elements)
+    return resp
+
+
+@platform_superadmin_required
+@require_POST
+def send_subscription_reminder(request, hospital_id):
+    from .models import ClinicAdmin as ClinicAdminModel
+    hospital = get_object_or_404(Hospital, id=hospital_id)
+    admin_users = list(ClinicAdminModel.objects.filter(hospital=hospital).select_related("user"))
+    if not admin_users:
+        messages.warning(request, f"No admin found for {hospital.name}.")
+        return redirect("super_admin_subscriptions")
+    for ca in admin_users:
+        Notification.objects.create(
+            recipient=ca.user,
+            message=f"⚠️ Reminder: Your clinic subscription is due. Please visit the subscription page to renew or upgrade your plan to continue using all features.",
+            link="/subscription/",
+        )
+    messages.success(request, f"✅ Subscription reminder sent to {len(admin_users)} admin(s) of {hospital.name}.")
+    return redirect("super_admin_subscriptions")
+
+
 @login_required
 def subscription_page(request):
     if not request.user.is_superuser:
         return redirect("client_dashboard")
+    reason = request.GET.get("reason", "")
+    if reason == "expired":
+        messages.error(request, "❌ Your subscription has expired. Please renew your plan to restore full access.")
+    elif reason == "trial":
+        messages.warning(request, "🔒 This feature is locked on the trial plan. Upgrade to unlock all premium features.")
     plans = SubscriptionPlan.objects.filter(is_active=True).order_by("price_monthly")
     hospital = None
     current_sub = None

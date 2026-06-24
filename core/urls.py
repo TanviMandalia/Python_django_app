@@ -284,6 +284,10 @@ urlpatterns = [
         views.super_admin_analytics,
         name="super_admin_analytics",
     ),
+    path("super-admin/all-payments/", views.super_admin_all_payments, name="super_admin_all_payments"),
+    path("super-admin/all-payments/export/excel/", views.export_payments_excel, name="export_payments_excel"),
+    path("super-admin/all-payments/export/pdf/", views.export_payments_pdf, name="export_payments_pdf"),
+    path("super-admin/subscriptions/remind/<int:hospital_id>/", views.send_subscription_reminder, name="send_subscription_reminder"),
     path("super-admin/support/", views.super_admin_support, name="super_admin_support"),
     path(
         "super-admin/support/reply/<int:ticket_id>/",
