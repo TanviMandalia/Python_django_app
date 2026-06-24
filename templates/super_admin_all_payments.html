@@ -147,6 +147,10 @@
             </select>
             <button type="submit"><i class="fas fa-filter"></i> Filter</button>
             {% if status_filter or method_filter %}<a href="{% url 'super_admin_all_payments' %}" class="clear-link">✕ Clear</a>{% endif %}
+            <div style="margin-left:auto;display:flex;gap:8px;">
+                <a href="{% url 'export_payments_excel' %}{% if status_filter or method_filter %}?status={{ status_filter }}&method={{ method_filter }}{% endif %}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1e7e34;color:#fff;border-radius:8px;font-size:.84em;font-weight:700;text-decoration:none;"><i class="fas fa-file-excel"></i> Excel</a>
+                <a href="{% url 'export_payments_pdf' %}{% if status_filter or method_filter %}?status={{ status_filter }}&method={{ method_filter }}{% endif %}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#c0392b;color:#fff;border-radius:8px;font-size:.84em;font-weight:700;text-decoration:none;"><i class="fas fa-file-pdf"></i> PDF</a>
+            </div>
         </form>
 
         <!-- TABLE -->
