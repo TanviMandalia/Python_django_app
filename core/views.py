@@ -692,7 +692,7 @@ def _get_patient_hospital(user):
     appt = Appointment.objects.filter(patient=user).select_related("hospital").order_by("-date").first()
     if appt and hasattr(appt, "hospital") and appt.hospital:
         return appt.hospital
-    return Hospital.objects.first()
+    return None
 
 
 def _get_patient_razorpay(user):
