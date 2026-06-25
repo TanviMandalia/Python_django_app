@@ -1,0 +1,4 @@
+- [Template tag formatting](template-tag-formatting.md) — Django template tags broken across lines by code formatter; must always be single-line.
+- [Razorpay integration](razorpay-integration.md) — Stripe fully replaced by Razorpay (migration 0028); keys in secrets (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET); per-doctor keys on Hospital model; PaymentRecord has razorpay_order_id/payment_id/signature fields.
+- [Subscription gate](subscription-gate.md) — SubscriptionGateMiddleware + SubscriptionExpiryNotifierMiddleware in core/middleware.py; added to MIDDLEWARE in settings.py after existing middleware.
+- [Promo popup system](promo-popup.md) — ClinicPromo model (migration 0026); admin_dashboard view passes active_promos; JS popup on admin_dashboard.html dismisses via /api/promos/dismiss/ POST.

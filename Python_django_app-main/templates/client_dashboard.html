@@ -1,0 +1,1409 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Client Dashboard - Physio Rehab</title>
+        <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: "Segoe UI", sans-serif;
+                background: #f5f5f5;
+            }
+
+            /* ── SIDEBAR ── */
+            .sidebar {
+                width: 260px;
+                height: 100vh;
+                position: fixed;
+                left: 0;
+                top: 0;
+                background: linear-gradient(180deg, #1a1a1a, #2c2c2c);
+                overflow-y: auto;
+                scrollbar-width: none;
+                display: flex;
+                flex-direction: column;
+            }
+            .sidebar::-webkit-scrollbar {
+                display: none;
+            }
+
+            .sidebar-logo {
+                padding: 22px 20px;
+                border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+                text-align: center;
+            }
+            .sidebar-logo img {
+                width: 130px;
+                border-radius: 10px;
+            }
+
+            .sidebar-user {
+                padding: 18px 20px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .user-avatar {
+                width: 45px;
+                height: 45px;
+                background: #f5c518;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 800;
+                color: #2c2c2c;
+                font-size: 1em;
+                flex-shrink: 0;
+            }
+            .user-info h4 {
+                color: white;
+                font-size: 0.9em;
+                font-weight: 600;
+            }
+            .user-info span {
+                color: #f5c518;
+                font-size: 0.75em;
+            }
+
+            .nav-section {
+                padding: 12px 22px 5px;
+                color: #555;
+                font-size: 0.7em;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+                font-weight: 700;
+            }
+            .nav-item {
+                display: flex;
+                align-items: center;
+                gap: 13px;
+                padding: 12px 22px;
+                color: #ccc;
+                text-decoration: none;
+                font-size: 0.9em;
+                transition: all 0.3s;
+                border-left: 3px solid transparent;
+            }
+            .nav-item:hover,
+            .nav-item.active {
+                background: rgba(245, 197, 24, 0.1);
+                color: #f5c518;
+                border-left-color: #f5c518;
+            }
+            .nav-item i {
+                width: 18px;
+                text-align: center;
+            }
+
+            .logout-btn {
+                margin: 15px;
+                margin-top: auto;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 12px 18px;
+                background: rgba(220, 53, 69, 0.15);
+                color: #ff6b6b;
+                border-radius: 10px;
+                text-decoration: none;
+                font-size: 0.86em;
+                transition: all 0.3s;
+            }
+            .logout-btn:hover {
+                background: rgba(220, 53, 69, 0.3);
+            }
+
+            /* ── MAIN ── */
+            .main-content {
+                margin-left: 260px;
+                min-height: 100vh;
+            }
+
+            .topbar {
+                background: white;
+                padding: 18px 30px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+                position: sticky;
+                top: 0;
+                z-index: 50;
+            }
+            .topbar h1 {
+                font-size: 1.3em;
+                color: #2c2c2c;
+                font-weight: 700;
+            }
+
+            .topbar-right {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .notification-bell {
+                position: relative;
+                display: inline-block;
+                font-size: 22px;
+                color: #333;
+                text-decoration: none;
+            }
+            .notification-count {
+                position: absolute;
+                top: -6px;
+                right: -8px;
+                min-width: 18px;
+                height: 18px;
+                background: #ff3b30;
+                color: white;
+                border-radius: 50%;
+                font-size: 10px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 2px;
+            }
+
+            .topbar-user {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                background: #f5f5f5;
+                padding: 8px 15px;
+                border-radius: 25px;
+            }
+            .topbar-user span {
+                font-size: 0.88em;
+                font-weight: 600;
+                color: #2c2c2c;
+            }
+
+            .dashboard-body {
+                padding: 28px 30px;
+            }
+
+            /* ── ALERTS ── */
+            .alert-success {
+                background: #d4edda;
+                border: 1px solid #28a745;
+                color: #155724;
+                padding: 12px 18px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                font-size: 0.9em;
+            }
+
+            /* ── WELCOME ── */
+            .welcome-card {
+                background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
+                border-radius: 18px;
+                padding: 30px 35px;
+                margin-bottom: 25px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .welcome-card h2 {
+                color: white;
+                font-size: 1.6em;
+                font-weight: 700;
+                margin-bottom: 8px;
+            }
+            .welcome-card h2 span {
+                color: #f5c518;
+            }
+            .welcome-card p {
+                color: #aaa;
+                font-size: 0.95em;
+                margin-bottom: 20px;
+            }
+            .welcome-icon {
+                font-size: 5em;
+                color: rgba(245, 197, 24, 0.3);
+            }
+
+            .btn-book {
+                background: #f5c518;
+                color: #2c2c2c;
+                padding: 12px 28px;
+                border-radius: 25px;
+                font-weight: 700;
+                text-decoration: none;
+                font-size: 0.95em;
+                display: inline-block;
+                transition: all 0.3s;
+            }
+            .btn-book:hover {
+                background: #e6b800;
+                transform: translateY(-2px);
+            }
+
+            /* ── STATS ── */
+            .stat-cards {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+                margin-bottom: 25px;
+            }
+            .stat-card {
+                background: white;
+                border-radius: 15px;
+                padding: 22px;
+                box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                transition: transform 0.3s;
+            }
+            .stat-card:hover {
+                transform: translateY(-3px);
+            }
+
+            .stat-icon {
+                width: 55px;
+                height: 55px;
+                border-radius: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.4em;
+            }
+            .yellow {
+                background: rgba(245, 197, 24, 0.15);
+                color: #f5c518;
+            }
+            .green {
+                background: rgba(40, 167, 69, 0.15);
+                color: #28a745;
+            }
+            .blue {
+                background: rgba(0, 123, 255, 0.15);
+                color: #007bff;
+            }
+            .red {
+                background: rgba(220, 53, 69, 0.15);
+                color: #dc3545;
+            }
+
+            .stat-info h3 {
+                font-size: 1.7em;
+                font-weight: 800;
+                color: #2c2c2c;
+            }
+            .stat-info p {
+                color: #888;
+                font-size: 0.82em;
+                margin-top: 2px;
+            }
+
+            /* ── CONTENT GRID ── */
+            .content-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                margin-bottom: 25px;
+            }
+            .card {
+                background: white;
+                border-radius: 15px;
+                padding: 25px;
+                box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+            }
+            .card-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 20px;
+            }
+            .card-title {
+                font-size: 1em;
+                font-weight: 700;
+                color: #2c2c2c;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .card-title i {
+                color: #f5c518;
+            }
+            .view-all {
+                color: #f5c518;
+                font-size: 0.8em;
+                text-decoration: none;
+                font-weight: 600;
+            }
+            .view-all:hover {
+                text-decoration: underline;
+            }
+
+            /* ── APPOINTMENT ITEMS ── */
+            .appt-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 0;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .appt-item:last-child {
+                border-bottom: none;
+            }
+
+            .appt-date {
+                background: #f5c518;
+                color: #2c2c2c;
+                border-radius: 10px;
+                padding: 8px 12px;
+                text-align: center;
+                min-width: 55px;
+                flex-shrink: 0;
+            }
+            .appt-date .day {
+                font-size: 1.3em;
+                font-weight: 800;
+                line-height: 1;
+            }
+            .appt-date .month {
+                font-size: 0.7em;
+                font-weight: 600;
+            }
+
+            .appt-info h4 {
+                font-size: 0.9em;
+                font-weight: 600;
+                color: #2c2c2c;
+            }
+            .appt-info p {
+                font-size: 0.8em;
+                color: #888;
+                margin-top: 2px;
+            }
+
+            .badge {
+                margin-left: auto;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 0.75em;
+                font-weight: 600;
+                flex-shrink: 0;
+            }
+            .badge-confirmed {
+                background: #d4edda;
+                color: #155724;
+            }
+            .badge-pending {
+                background: #fff3cd;
+                color: #856404;
+            }
+            .badge-completed {
+                background: #e2e3e5;
+                color: #383d41;
+            }
+            .badge-cancelled {
+                background: #f8d7da;
+                color: #721c24;
+            }
+
+            /* ── QUICK ACTIONS ── */
+            .quick-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            .action-btn {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 15px;
+                border-radius: 12px;
+                text-decoration: none;
+                font-size: 0.88em;
+                font-weight: 600;
+                transition: all 0.3s;
+            }
+            .action-btn.gold {
+                background: rgba(245, 197, 24, 0.12);
+                color: #2c2c2c;
+                border: 1px solid rgba(245, 197, 24, 0.3);
+            }
+            .action-btn.dark {
+                background: rgba(44, 44, 44, 0.08);
+                color: #2c2c2c;
+                border: 1px solid rgba(44, 44, 44, 0.15);
+            }
+            .action-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            }
+
+            .action-btn .icon {
+                width: 35px;
+                height: 35px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1em;
+                flex-shrink: 0;
+            }
+            .action-btn.gold .icon {
+                background: #f5c518;
+                color: #2c2c2c;
+            }
+            .action-btn.dark .icon {
+                background: #2c2c2c;
+                color: white;
+            }
+
+            /* ── RECENT NOTIFICATIONS ── */
+            .notif-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 12px 0;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .notif-item:last-child {
+                border-bottom: none;
+            }
+            .notif-dot {
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                background: rgba(245, 197, 24, 0.15);
+                color: #f5c518;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.85em;
+                flex-shrink: 0;
+            }
+            .notif-dot.unread {
+                background: rgba(245, 197, 24, 0.3);
+            }
+            .notif-info h4 {
+                font-size: 0.84em;
+                font-weight: 600;
+                color: #2c2c2c;
+            }
+            .notif-info p {
+                font-size: 0.76em;
+                color: #aaa;
+                margin-top: 2px;
+            }
+
+            /* ── HEALTH TIPS ── */
+            .tips-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 12px;
+            }
+
+            .tip-item {
+                display: flex;
+                gap: 12px;
+                padding: 14px;
+                background: #f9f9f9;
+                border-radius: 12px;
+                align-items: flex-start;
+            }
+            .tip-icon {
+                width: 38px;
+                height: 38px;
+                background: rgba(245, 197, 24, 0.15);
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #f5c518;
+                flex-shrink: 0;
+                font-size: 1em;
+            }
+            .tip-info h4 {
+                font-size: 0.88em;
+                font-weight: 600;
+                color: #2c2c2c;
+            }
+            .tip-info p {
+                font-size: 0.78em;
+                color: #888;
+                margin-top: 3px;
+                line-height: 1.5;
+            }
+
+            /* ── EMPTY STATE ── */
+            .empty-state {
+                text-align: center;
+                padding: 30px;
+                color: #aaa;
+            }
+            .empty-state i {
+                font-size: 2.5em;
+                color: #ddd;
+                margin-bottom: 10px;
+                display: block;
+            }
+            .empty-state p {
+                font-size: 0.9em;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- ══ SIDEBAR ══ -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img
+                    src="{% static 'images/Dhvani_Patalia.jpeg' %}"
+                    alt="Logo"
+                />
+            </div>
+            <div class="sidebar-user">
+                <div class="user-avatar">
+                    {{ user.first_name|first|upper }}{{
+                    user.last_name|first|upper }}
+                </div>
+                <div class="user-info">
+                    <h4>{{ user.get_full_name|default:user.username }}</h4>
+                    <span>🟢 Patient</span>
+                </div>
+            </div>
+            <nav>
+                <div class="nav-section">Main Menu</div>
+                <a href="{% url 'client_dashboard' %}" class="nav-item active"
+                    ><i class="fas fa-home"></i> Dashboard</a
+                >
+                <a href="{% url 'book_appointment' %}" class="nav-item"
+                    ><i class="fas fa-calendar-plus"></i> Book Appointment</a
+                >
+                <a href="{% url 'my_appointments' %}" class="nav-item"
+                    ><i class="fas fa-calendar-check"></i> My Appointments</a
+                >
+                <a href="{% url 'my_appointments' %}" class="nav-item"
+                    ><i class="fas fa-history"></i> Session History</a
+                >
+
+                <div class="nav-section">Communication</div>
+                <a href="{% url 'client_chat' %}" class="nav-item"
+                    ><i class="fas fa-comments"></i> Chat with Doctor</a
+                >
+                <a href="{% url 'notifications' %}" class="nav-item"
+                    ><i class="fas fa-bell"></i> Notifications</a
+                >
+
+                <div class="nav-section">Account</div>
+                <a href="{% url 'profile' %}" class="nav-item"
+                    ><i class="fas fa-user"></i> My Profile</a
+                >
+                <a href="{% url 'payments' %}" class="nav-item"
+                    ><i class="fas fa-credit-card"></i> Payments</a
+                >
+
+                <div class="nav-section">Quick Links</div>
+                <a href="{% url 'home' %}" class="nav-item"
+                    ><i class="fas fa-globe"></i> Visit Website</a
+                >
+            </nav>
+            <a href="{% url 'logout' %}" class="logout-btn"
+                ><i class="fas fa-sign-out-alt"></i> Logout</a
+            >
+        </aside>
+
+        <!-- ══ MAIN ══ -->
+        <div class="main-content">
+            <div class="topbar">
+                <h1>
+                    👋 Welcome back, {{ user.first_name|default:user.username
+                    }}!
+                </h1>
+                <div class="topbar-right">
+                    <a
+                        href="{% url 'notifications' %}"
+                        class="notification-bell"
+                    >
+                        <i class="fas fa-bell"></i>
+                        {% with unread=recent_notifs|length %}{% if unread > 0 %}<span class="notification-count">{{ unread }}</span>{% endif %}{% endwith %}
+                    </a>
+                    <div class="topbar-user">
+                        <i
+                            class="fas fa-user-circle"
+                            style="color: #f5c518"
+                        ></i>
+                        <span>{{ user.username }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-body">
+                {% if messages %} {% for message in messages %}
+                <div class="alert-success">{{ message }}</div>
+                {% endfor %} {% endif %}
+
+                <!-- WELCOME BANNER -->
+                <div class="welcome-card">
+                    <div>
+                        <h2>
+                            Hello,
+                            <span
+                                >{{ user.first_name|default:user.username
+                                }}!</span
+                            >
+                            👋
+                        </h2>
+                        <p>
+                            Ready to continue your recovery journey? Book your
+                            next appointment today.
+                        </p>
+                        <a href="{% url 'book_appointment' %}" class="btn-book"
+                            >📅 Book Appointment</a
+                        >
+                    </div>
+                    <div class="welcome-icon">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                </div>
+
+                <!-- STATS -->
+                <div class="stat-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>{{ total }}</h3>
+                            <p>Total Appointments</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>{{ completed_count }}</h3>
+                            <p>Completed Sessions</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>{{ upcoming_count }}</h3>
+                            <p>Upcoming Sessions</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">
+                            <i class="fas fa-rupee-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>₹0</h3>
+                            <p>Total Paid</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- APPOINTMENTS + QUICK ACTIONS -->
+                <div class="content-grid">
+                    <!-- UPCOMING APPOINTMENTS -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-calendar"></i> Upcoming
+                                Appointments
+                            </div>
+                            <a
+                                href="{% url 'my_appointments' %}"
+                                class="view-all"
+                                >View All →</a
+                            >
+                        </div>
+                        {% if upcoming %} {% for appt in upcoming|slice:":4" %}
+                        <div class="appt-item">
+                            <div class="appt-date">
+                                <div class="day">{{ appt.date|date:"d" }}</div>
+                                <div class="month">
+                                    {{ appt.date|date:"M" }}
+                                </div>
+                            </div>
+                            <div class="appt-info">
+                                <h4>{{ appt.get_service_display }}</h4>
+                                <p>🕐 {{ appt.time }}</p>
+                            </div>
+                            <span class="badge badge-{{ appt.status }}">{% if appt.status == 'pending' %}⏳ Pending{% elif appt.status == 'confirmed' %}✅ Confirmed{% else %}{{ appt.status|title }}{% endif %}</span>
+                        </div>
+                        {% endfor %} {% if upcoming_count > 4 %}
+                        <div style="text-align: center; padding: 12px 0 4px">
+                            <a
+                                href="{% url 'my_appointments' %}"
+                                style="
+                                    display: inline-block;
+                                    background: rgba(245, 197, 24, 0.12);
+                                    color: #2c2c2c;
+                                    border: 1px solid rgba(245, 197, 24, 0.4);
+                                    padding: 8px 22px;
+                                    border-radius: 20px;
+                                    font-size: 0.82em;
+                                    font-weight: 700;
+                                    text-decoration: none;
+                                "
+                            >
+                                <i
+                                    class="fas fa-list"
+                                    style="color: #f5c518; margin-right: 6px"
+                                ></i
+                                >View All {{ upcoming_count }} Appointments →
+                            </a>
+                        </div>
+                        {% endif %} {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times"></i>
+                            <p>
+                                No upcoming appointments.<br />Book your first
+                                session!
+                            </p>
+                            <a
+                                href="{% url 'book_appointment' %}"
+                                class="btn-book"
+                                style="margin-top: 15px; font-size: 0.85em"
+                                >Book Now</a
+                            >
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- QUICK ACTIONS -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-bolt"></i> Quick Actions
+                            </div>
+                        </div>
+                        <div class="quick-actions">
+                            <a
+                                href="{% url 'book_appointment' %}"
+                                class="action-btn gold"
+                            >
+                                <div class="icon">
+                                    <i class="fas fa-calendar-plus"></i>
+                                </div>
+                                <span>Book Appointment</span>
+                            </a>
+                            <a
+                                href="{% url 'client_chat' %}"
+                                class="action-btn dark"
+                            >
+                                <div class="icon">
+                                    <i class="fas fa-comments"></i>
+                                </div>
+                                <span>Chat with Doctor</span>
+                            </a>
+                            <a
+                                href="{% url 'my_appointments' %}"
+                                class="action-btn gold"
+                            >
+                                <div class="icon">
+                                    <i class="fas fa-history"></i>
+                                </div>
+                                <span>View History</span>
+                            </a>
+                            <a
+                                href="{% url 'payments' %}"
+                                class="action-btn dark"
+                            >
+                                <div class="icon">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+                                <span>Make Payment</span>
+                            </a>
+                            <a
+                                href="{% url 'edit_profile' %}"
+                                class="action-btn gold"
+                            >
+                                <div class="icon">
+                                    <i class="fas fa-user-edit"></i>
+                                </div>
+                                <span>Edit Profile</span>
+                            </a>
+                            <a href="{% url 'home' %}" class="action-btn dark">
+                                <div class="icon">
+                                    <i class="fas fa-globe"></i>
+                                </div>
+                                <span>Visit Website</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RECENT NOTIFICATIONS + COMPLETED SESSIONS -->
+                <div class="content-grid">
+                    <!-- RECENT NOTIFICATIONS -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-bell"></i> Recent Notifications
+                            </div>
+                            <a href="{% url 'notifications' %}" class="view-all"
+                                >View All →</a
+                            >
+                        </div>
+                        {% if recent_notifs %} {% for notif in recent_notifs %}
+                        <div class="notif-item">
+                            <div
+                                class="notif-dot {% if not notif.is_read %}unread{% endif %}"
+                            >
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <div class="notif-info">
+                                <h4>{{ notif.message|truncatechars:60 }}</h4>
+                                <p>{{ notif.created_at|timesince }} ago</p>
+                            </div>
+                        </div>
+                        {% endfor %} {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-bell-slash"></i>
+                            <p>No notifications yet.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- COMPLETED SESSIONS -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-check-circle"></i> Completed
+                                Sessions
+                            </div>
+                            <a
+                                href="{% url 'my_appointments' %}"
+                                class="view-all"
+                                >View All →</a
+                            >
+                        </div>
+                        {% if completed %}
+                            {% for appt in completed|slice:":5" %}
+                            <div class="appt-item">
+                                <div class="appt-date">
+                                    <div class="day">{{ appt.date|date:"d" }}</div>
+                                    <div class="month">{{ appt.date|date:"M" }}</div>
+                                </div>
+                                <div class="appt-info">
+                                    <h4>{{ appt.get_service_display }}</h4>
+                                    <p>🕐 {{ appt.time }}</p>
+                                </div>
+                                <span class="badge badge-completed">✅ Done</span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-check-circle"></i>
+                                <p>No completed sessions yet.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- RAZORPAY QUICK PAY + RECENT PAYMENTS -->
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-bolt" style="color:#f5c518;"></i> Quick Pay</div>
+                        <a href="{% url 'payments' %}" class="view-all">All Options →</a>
+                    </div>
+                    {% if razorpay_key_id %}
+                    <div style="background:linear-gradient(135deg,rgba(245,197,24,0.08),rgba(245,197,24,0.03));border:1px solid rgba(245,197,24,0.25);border-radius:12px;padding:16px;margin-bottom:16px;">
+                        <p style="font-size:0.82rem;color:#666;margin-bottom:12px;"><i class="fas fa-lock" style="color:#f5c518;"></i> Secure payment directly to the clinic via Razorpay</p>
+                        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:120px;">
+                                <label style="font-size:0.78rem;color:#555;font-weight:600;display:block;margin-bottom:4px;">Appointment</label>
+                                <select id="dash-appt-select" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;font-family:inherit;">
+                                    <option value="">— General —</option>
+                                    {% for appt in upcoming_appointments %}<option value="{{ appt.id }}" {% if appt.consultation_fee %}data-fee="{{ appt.consultation_fee }}"{% endif %}>{{ appt.date|date:"d M" }} — {{ appt.get_service_display }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div style="width:110px;">
+                                <label style="font-size:0.78rem;color:#555;font-weight:600;display:block;margin-bottom:4px;">Amount (₹)</label>
+                                <input type="number" id="dash-amount" value="500" min="1" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;font-family:inherit;">
+                            </div>
+                            <button onclick="dashInitiateRazorpay()" style="background:linear-gradient(135deg,#f5c518,#e6a800);color:#1a1a1a;border:none;padding:9px 20px;border-radius:8px;font-weight:700;font-size:0.85rem;cursor:pointer;white-space:nowrap;"><i class="fas fa-bolt"></i> Pay Now</button>
+                        </div>
+                        <div id="dashRzpLoading" style="display:none;text-align:center;padding:10px;color:#f5c518;font-size:0.82rem;"><i class="fas fa-spinner fa-spin"></i> Opening payment...</div>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:16px;color:#888;font-size:0.85rem;">
+                        <i class="fas fa-credit-card" style="font-size:1.8em;color:#ddd;display:block;margin-bottom:8px;"></i>
+                        Online payments not yet configured. <a href="{% url 'payments' %}" style="color:#f5c518;">Other payment options →</a>
+                    </div>
+                    {% endif %}
+                    {% if my_payments %}
+                    <div style="margin-top:4px;">
+                        <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:#999;font-weight:700;margin-bottom:8px;">Recent Payments</div>
+                        {% for pay in my_payments %}
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5;">
+                            <div>
+                                <div style="font-size:0.84rem;font-weight:600;color:#2c2c2c;">₹{{ pay.amount }}</div>
+                                <div style="font-size:0.74rem;color:#999;">{{ pay.created_at|date:"d M Y" }} · {{ pay.get_method_display }}</div>
+                            </div>
+                            {% if pay.status == 'paid' %}<span style="background:#d4edda;color:#155724;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;">Paid</span>
+                            {% elif pay.status == 'pending' %}<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;">Pending</span>
+                            {% else %}<span style="background:#f8d7da;color:#721c24;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;">{{ pay.get_status_display }}</span>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- PATIENT REVIEWS SECTION -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-star" style="color: #f5c518"></i>
+                            Patient Reviews
+                        </div>
+                    </div>
+
+                    {% if not has_reviewed %}
+                    <!-- SUBMIT REVIEW FORM -->
+                    <div
+                        style="
+                            background: linear-gradient(
+                                135deg,
+                                rgba(245, 197, 24, 0.08),
+                                rgba(245, 197, 24, 0.03)
+                            );
+                            border: 1px solid rgba(245, 197, 24, 0.2);
+                            border-radius: 14px;
+                            padding: 20px;
+                            margin-bottom: 20px;
+                        "
+                    >
+                        <h4 style="color: #2c2c2c; margin-bottom: 6px">
+                            <i class="fas fa-pen" style="color: #f5c518"></i>
+                            Share Your Experience
+                        </h4>
+                        <p
+                            style="
+                                color: #888;
+                                font-size: 0.85rem;
+                                margin-bottom: 16px;
+                            "
+                        >
+                            Your feedback helps other patients. Submitted
+                            reviews are approved before going public.
+                        </p>
+                        <form method="POST" action="{% url 'submit_review' %}">
+                            {% csrf_token %}
+                            <div
+                                style="
+                                    display: grid;
+                                    grid-template-columns: 1fr 1fr;
+                                    gap: 12px;
+                                    margin-bottom: 12px;
+                                "
+                            >
+                                <div>
+                                    <label
+                                        style="
+                                            font-size: 0.82rem;
+                                            font-weight: 600;
+                                            color: #555;
+                                            display: block;
+                                            margin-bottom: 4px;
+                                        "
+                                        >Your Name</label
+                                    >
+                                    <input
+                                        type="text"
+                                        name="reviewer_name"
+                                        value="{{ request.user.get_full_name|default:request.user.username }}"
+                                        style="
+                                            width: 100%;
+                                            padding: 10px 14px;
+                                            border: 1px solid #ddd;
+                                            border-radius: 8px;
+                                            font-size: 0.88rem;
+                                            font-family: inherit;
+                                        "
+                                    />
+                                </div>
+                                <div>
+                                    <label
+                                        style="
+                                            font-size: 0.82rem;
+                                            font-weight: 600;
+                                            color: #555;
+                                            display: block;
+                                            margin-bottom: 4px;
+                                        "
+                                        >Description
+                                        <small style="color: #aaa"
+                                            >(optional)</small
+                                        ></label
+                                    >
+                                    <input
+                                        type="text"
+                                        name="reviewer_title"
+                                        placeholder="e.g. Knee Pain Patient"
+                                        style="
+                                            width: 100%;
+                                            padding: 10px 14px;
+                                            border: 1px solid #ddd;
+                                            border-radius: 8px;
+                                            font-size: 0.88rem;
+                                            font-family: inherit;
+                                        "
+                                    />
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 12px">
+                                <label
+                                    style="
+                                        font-size: 0.82rem;
+                                        font-weight: 600;
+                                        color: #555;
+                                        display: block;
+                                        margin-bottom: 4px;
+                                    "
+                                    >Rating</label
+                                >
+                                <select
+                                    name="rating"
+                                    style="
+                                        padding: 10px 14px;
+                                        border: 1px solid #ddd;
+                                        border-radius: 8px;
+                                        font-size: 0.88rem;
+                                        font-family: inherit;
+                                    "
+                                >
+                                    <option value="5">
+                                        ★★★★★ Excellent (5)
+                                    </option>
+                                    <option value="4">
+                                        ★★★★☆ Very Good (4)
+                                    </option>
+                                    <option value="3">★★★☆☆ Good (3)</option>
+                                    <option value="2">★★☆☆☆ Fair (2)</option>
+                                    <option value="1">★☆☆☆☆ Poor (1)</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom: 14px">
+                                <label
+                                    style="
+                                        font-size: 0.82rem;
+                                        font-weight: 600;
+                                        color: #555;
+                                        display: block;
+                                        margin-bottom: 4px;
+                                    "
+                                    >Your Review
+                                    <span style="color: #c0392b">*</span></label
+                                >
+                                <textarea
+                                    name="message"
+                                    required
+                                    placeholder="Tell us about your experience with Dr. Dhvani Patalia..."
+                                    style="
+                                        width: 100%;
+                                        padding: 10px 14px;
+                                        border: 1px solid #ddd;
+                                        border-radius: 8px;
+                                        font-size: 0.88rem;
+                                        min-height: 90px;
+                                        resize: vertical;
+                                        font-family: inherit;
+                                    "
+                                ></textarea>
+                            </div>
+                            <button
+                                type="submit"
+                                style="
+                                    background: #f5c518;
+                                    color: #2c2c2c;
+                                    border: none;
+                                    padding: 11px 24px;
+                                    border-radius: 9px;
+                                    font-weight: 700;
+                                    cursor: pointer;
+                                    font-size: 0.9rem;
+                                "
+                            >
+                                <i class="fas fa-paper-plane"></i> Submit Review
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div
+                        style="
+                            background: rgba(39, 174, 96, 0.08);
+                            border: 1px solid rgba(39, 174, 96, 0.2);
+                            border-radius: 12px;
+                            padding: 16px;
+                            margin-bottom: 20px;
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                        "
+                    >
+                        <i
+                            class="fas fa-check-circle"
+                            style="color: #27ae60; font-size: 1.5rem"
+                        ></i>
+                        <div>
+                            <h4 style="color: #27ae60; margin-bottom: 3px">
+                                Review Submitted!
+                            </h4>
+                            <p style="color: #888; font-size: 0.85rem">
+                                Thank you for your feedback. It will appear
+                                publicly once approved.
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- APPROVED REVIEWS LIST -->
+                    {% if approved_reviews %}
+                    <div
+                        style="display: flex; flex-direction: column; gap: 12px"
+                    >
+                        {% for review in approved_reviews|slice:":3" %}
+                        <div
+                            style="
+                                background: #fafafa;
+                                border-radius: 12px;
+                                padding: 15px;
+                                border-left: 4px solid #f5c518;
+                            "
+                        >
+                            <div
+                                style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                    margin-bottom: 8px;
+                                "
+                            >
+                                <div>
+                                    <span
+                                        style="
+                                            font-weight: 700;
+                                            color: #2c2c2c;
+                                            font-size: 0.9rem;
+                                        "
+                                        >{{ review.reviewer_name }}</span
+                                    >
+                                    {% if review.reviewer_title %}
+                                    <span
+                                        style="
+                                            color: #aaa;
+                                            font-size: 0.78rem;
+                                            margin-left: 8px;
+                                        "
+                                        >— {{ review.reviewer_title }}</span
+                                    >
+                                    {% endif %}
+                                </div>
+                                <span style="color: #f5c518; font-size: 0.9rem">{% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
+                            </div>
+                            <p
+                                style="
+                                    color: #555;
+                                    font-size: 0.85rem;
+                                    line-height: 1.6;
+                                "
+                            >
+                                {{ review.message|truncatechars:140 }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div style="text-align: center; margin-top: 14px">
+                        <a
+                            href="{% url 'home' %}#reviews"
+                            style="
+                                display: inline-block;
+                                background: rgba(245, 197, 24, 0.1);
+                                color: #2c2c2c;
+                                border: 1px solid rgba(245, 197, 24, 0.35);
+                                padding: 8px 22px;
+                                border-radius: 20px;
+                                font-size: 0.82em;
+                                font-weight: 700;
+                                text-decoration: none;
+                            "
+                        >
+                            <i
+                                class="fas fa-star"
+                                style="color: #f5c518; margin-right: 6px"
+                            ></i
+                            >See All Reviews →
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- HEALTH TIPS -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-lightbulb"></i> Health Tips from
+                            Dr. Dhvani
+                        </div>
+                    </div>
+                    <div class="tips-grid">
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-walking"></i>
+                            </div>
+                            <div class="tip-info">
+                                <h4>Stay Active</h4>
+                                <p>
+                                    Walk at least 30 minutes daily for better
+                                    joint health.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-tint"></i>
+                            </div>
+                            <div class="tip-info">
+                                <h4>Stay Hydrated</h4>
+                                <p>
+                                    Drink 8 glasses of water daily to support
+                                    muscle recovery.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-bed"></i>
+                            </div>
+                            <div class="tip-info">
+                                <h4>Rest Well</h4>
+                                <p>
+                                    7-8 hours of sleep is essential for healing.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-apple-alt"></i>
+                            </div>
+                            <div class="tip-info">
+                                <h4>Eat Healthy</h4>
+                                <p>
+                                    Include protein and calcium in your daily
+                                    diet.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-smoking-ban"></i>
+                            </div>
+                            <div class="tip-info">
+                                <h4>Avoid Smoking</h4>
+                                <p>
+                                    Smoking slows down bone and tissue healing.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-smile"></i>
+                            </div>
+                            <div class="tip-info">
+                                <h4>Stay Positive</h4>
+                                <p>
+                                    A positive mindset accelerates recovery
+                                    significantly.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- Hidden Razorpay verification form -->
+    <form id="dashRzpVerifyForm" method="POST" action="{% url 'razorpay_verify_payment' %}" style="display:none;">
+        {% csrf_token %}
+        <input type="hidden" name="razorpay_order_id" id="dash_rzp_order_id">
+        <input type="hidden" name="razorpay_payment_id" id="dash_rzp_payment_id">
+        <input type="hidden" name="razorpay_signature" id="dash_rzp_signature">
+        <input type="hidden" name="record_id" id="dash_rzp_record_id">
+    </form>
+
+    <script>
+    var DASH_CSRF = '{{ csrf_token }}';
+    function dashInitiateRazorpay() {
+        if (typeof Razorpay === 'undefined') {
+            alert('Payment gateway is still loading. Please wait a moment and try again.');
+            return;
+        }
+        var amount = document.getElementById('dash-amount').value || '500';
+        var apptId = document.getElementById('dash-appt-select').value || '';
+        if (parseFloat(amount) < 1) { alert('Please enter a valid amount.'); return; }
+        document.getElementById('dashRzpLoading').style.display = 'block';
+        var fd = new FormData();
+        fd.append('amount', amount);
+        fd.append('appointment_id', apptId);
+        fd.append('csrfmiddlewaretoken', DASH_CSRF);
+        fetch('{% url "razorpay_create_order" %}', { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                document.getElementById('dashRzpLoading').style.display = 'none';
+                if (data.error) { alert('Error: ' + data.error); return; }
+                var options = {
+                    key: data.key_id,
+                    amount: data.amount,
+                    currency: data.currency,
+                    name: 'PhysioRehab Clinic',
+                    description: 'Consultation Payment',
+                    order_id: data.order_id,
+                    prefill: { name: data.patient_name, email: data.patient_email },
+                    theme: { color: '#F5C518' },
+                    modal: { ondismiss: function() {} },
+                    handler: function(response) {
+                        document.getElementById('dash_rzp_order_id').value = response.razorpay_order_id;
+                        document.getElementById('dash_rzp_payment_id').value = response.razorpay_payment_id;
+                        document.getElementById('dash_rzp_signature').value = response.razorpay_signature;
+                        document.getElementById('dash_rzp_record_id').value = data.record_id;
+                        document.getElementById('dashRzpVerifyForm').submit();
+                    }
+                };
+                var rzp = new Razorpay(options);
+                rzp.on('payment.failed', function(resp) { alert('Payment failed: ' + resp.error.description); });
+                rzp.open();
+            })
+            .catch(function(err) {
+                document.getElementById('dashRzpLoading').style.display = 'none';
+                alert('Network error. Please try again.');
+                console.error(err);
+            });
+    }
+    var dashApptSel = document.getElementById('dash-appt-select');
+    if (dashApptSel) {
+        dashApptSel.addEventListener('change', function() {
+            var fee = this.options[this.selectedIndex].dataset.fee;
+            if (fee) document.getElementById('dash-amount').value = fee;
+        });
+    }
+    </script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    </body>
+</html>

@@ -1,0 +1,437 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Promo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .form-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, .1);
+            padding: 36px;
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .form-card h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .form-card p {
+            color: #666;
+            font-size: .88rem;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: .85rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #ddd;
+            border-radius: 10px;
+            font-size: .93rem;
+            outline: none;
+            transition: .2s;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            border-color: #F5C518;
+        }
+
+        .date-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+        }
+
+        .btn {
+            padding: 12px 22px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: .92rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: .2s;
+        }
+
+        .btn-primary {
+            background: #F5C518;
+            color: #222;
+        }
+
+        .btn-primary:hover {
+            background: #d4a800;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #555;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .tips {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 20px;
+            font-size: .83rem;
+            color: #666;
+        }
+
+        .tips strong {
+            color: #444;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .tips ul {
+            padding-left: 16px;
+            line-height: 1.8;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+        }
+
+        .page-header {
+            background: #fff;
+            padding: 16px 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .form-wrapper {
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .form-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, .08);
+            padding: 36px;
+            width: 100%;
+            max-width: 650px;
+        }
+
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 38px;
+            height: 38px;
+            background: #F5C518;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            gap: 4px;
+        }
+
+        .hamburger span {
+            width: 18px;
+            height: 2px;
+            background: #222;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .55);
+            z-index: 199;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+
+            .hamburger {
+                display: flex;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 260px;
+                height: 100vh;
+                transform: translateX(-100%);
+                transition: .3s ease;
+                z-index: 200;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .page-header {
+                padding: 14px;
+            }
+
+            .form-wrapper {
+                padding: 15px;
+            }
+
+            .form-card {
+                padding: 24px;
+            }
+
+            .date-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+
+            .form-card {
+                padding: 18px;
+                border-radius: 12px;
+            }
+
+            .form-card h1 {
+                font-size: 1.15rem;
+            }
+
+            .btn-row {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 360px) {
+
+            .form-card {
+                padding: 14px;
+            }
+
+            .form-control {
+                padding: 10px 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <!-- ════ SIDEBAR ════ -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
+                <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
+            </div>
+
+            <div class="sidebar-user">
+                <div class="user-avatar">{{ user.username|first|upper }}</div>
+                <div class="user-info">
+                    <h4>{{ user.username }}</h4>
+                    <span><span class="online-dot"></span>Super Admin</span>
+                </div>
+            </div>
+
+            <div class="nav-scroll">
+                <nav>
+                    <div class="nav-section">Overview</div>
+                    <a href="{% url 'admin_dashboard' %}" class="nav-item active"><i class="fas fa-tachometer-alt"></i>
+                        Dashboard</a>
+
+                    <div class="nav-section">Management</div>
+                    <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage
+                        Patients</a>
+                    <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+                    <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All
+                        Appointments</a>
+                    <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+
+                    <div class="nav-section">Staff Tools</div>
+                    <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave
+                        Requests</a>
+                    <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+                    <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+                    <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i>
+                        Session
+                        Notes</a>
+
+                    <div class="nav-section">Communication</div>
+                    <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient
+                        Messages</a>
+
+                    <div class="nav-section">Content</div>
+                    <a href="{% url 'admin_payments' %}" class="nav-item"><i class="fas fa-credit-card"></i>
+                        Payments</a>
+                    <a href="{% url 'admin_promos' %}" class="nav-item"><i class="fas fa-bullhorn"></i> Promo
+                        Notifications</a>
+                    <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
+                    <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
+
+                    <div class="nav-section">Reports</div>
+                    <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress
+                        Tracking</a>
+                    <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i>
+                        Analytics</a>
+
+                    <div class="nav-section">System</div>
+                    <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+                    <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+                    <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+                </nav>
+            </div>
+
+            <div class="sidebar-footer">
+                <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </aside>
+
+        <div class="main-content">
+
+            <div class="page-header">
+                <button class="hamburger" id="hamburgerBtn">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <h1>🎁 Add Promo Code</h1>
+            </div>
+
+            <div class="form-wrapper">
+
+                <div class="form-card">
+                    ...
+                    Existing Form
+                    ...
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="form-card">
+        <h1>📢 Create New Promo</h1>
+        <p>This will appear as a popup notification on the doctor's dashboard</p>
+        <div class="tips">
+            <strong>💡 Promo Ideas:</strong>
+            <ul>
+                <li>Diwali Special — 20% off on all consultations</li>
+                <li>New Year Health Check Package</li>
+                <li>Summer Exercise Camp Registration Open</li>
+                <li>Independence Day free physiotherapy camp</li>
+            </ul>
+        </div>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Promo Title</label>
+                <input type="text" class="form-control" name="title" placeholder="e.g. Diwali Special Offer 🪔" required
+                    maxlength="200">
+            </div>
+            <div class="form-group">
+                <label>Message / Description</label>
+                <textarea class="form-control" name="message" rows="4"
+                    placeholder="Describe the offer or announcement in detail..." required></textarea>
+            </div>
+            <div class="date-row">
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" class="form-control" name="start_date" id="start-date">
+                </div>
+                <div class="form-group">
+                    <label>End Date (optional)</label>
+                    <input type="date" class="form-control" name="end_date">
+                </div>
+            </div>
+            <div class="btn-row">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Create Promo</button>
+                <a href="{% url 'admin_promos' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i>
+                    Cancel</a>
+            </div>
+        </form>
+    </div>
+    <script>
+        const sidebar = document.querySelector('.sidebar');
+        const hamburger = document.getElementById('hamburgerBtn');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        hamburger?.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        });
+
+        overlay?.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        });
+        document.getElementById('start-date').value = new Date().toISOString().split('T')[0];
+    </script>
+</body>
+
+</html>
