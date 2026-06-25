@@ -1,0 +1,1021 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Subscription Plans — PhysioRehab</title>
+        <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: "Segoe UI", sans-serif;
+                background: linear-gradient(135deg, #1a1a2e, #16213e);
+                min-height: 100vh;
+                color: #fff;
+                padding: 24px 16px;
+            }
+            .container {
+                max-width: 1100px;
+                margin: 0 auto;
+            }
+            .back-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 9px 18px;
+                background: rgba(255, 255, 255, 0.1);
+                color: #fff;
+                border-radius: 10px;
+                text-decoration: none;
+                margin-bottom: 24px;
+                font-size: 0.88rem;
+                transition: 0.2s;
+            }
+            .back-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+            .page-title {
+                text-align: center;
+                margin-bottom: 32px;
+            }
+            .page-title h1 {
+                font-size: 2rem;
+                font-weight: 800;
+            }
+            .page-title p {
+                color: #aaa;
+                margin-top: 8px;
+                font-size: 0.95rem;
+            }
+
+            .current-sub {
+                background: rgba(245, 197, 24, 0.1);
+                border: 1.5px solid rgba(245, 197, 24, 0.4);
+                border-radius: 14px;
+                padding: 16px 22px;
+                margin-bottom: 28px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+            .current-sub .label {
+                color: #f5c518;
+                font-weight: 700;
+                font-size: 1rem;
+            }
+            .current-sub .detail {
+                color: #ccc;
+                font-size: 0.84rem;
+                margin-top: 3px;
+            }
+            .sub-status-active {
+                color: #28a745;
+                font-weight: 700;
+            }
+            .sub-status-trial {
+                color: #ffc107;
+                font-weight: 700;
+            }
+            .sub-status-expired {
+                color: #dc3545;
+                font-weight: 700;
+            }
+
+            .alert {
+                padding: 13px 18px;
+                border-radius: 10px;
+                margin-bottom: 18px;
+                font-size: 0.9rem;
+            }
+            .alert-success {
+                background: rgba(40, 167, 69, 0.15);
+                border: 1px solid rgba(40, 167, 69, 0.4);
+                color: #7fd49a;
+            }
+            .alert-error {
+                background: rgba(220, 53, 69, 0.15);
+                border: 1px solid rgba(220, 53, 69, 0.4);
+                color: #f5a3ad;
+            }
+
+            /* PLAN CARDS */
+            .plans-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+                gap: 20px;
+                margin-bottom: 36px;
+            }
+            .plan-card {
+                background: rgba(255, 255, 255, 0.06);
+                border: 1.5px solid rgba(255, 255, 255, 0.1);
+                border-radius: 18px;
+                padding: 26px 22px;
+                position: relative;
+                transition: 0.3s;
+                cursor: pointer;
+            }
+            .plan-card:hover {
+                border-color: rgba(245, 197, 24, 0.5);
+                transform: translateY(-4px);
+            }
+            .plan-card.selected {
+                border-color: #f5c518;
+                background: rgba(245, 197, 24, 0.1);
+                box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.25);
+            }
+            .plan-card.featured::before {
+                content: "⭐ Most Popular";
+                position: absolute;
+                top: -13px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #f5c518;
+                color: #222;
+                padding: 3px 14px;
+                border-radius: 20px;
+                font-size: 0.73rem;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+            .plan-card.current-plan {
+                border-color: #28a745;
+                background: rgba(40, 167, 69, 0.07);
+            }
+            .plan-card.current-plan::before {
+                content: "✅ Current Plan";
+                position: absolute;
+                top: -13px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #28a745;
+                color: #fff;
+                padding: 3px 14px;
+                border-radius: 20px;
+                font-size: 0.73rem;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+            .plan-name {
+                font-size: 1.15rem;
+                font-weight: 700;
+                margin-bottom: 6px;
+            }
+            .plan-price {
+                font-size: 2.1rem;
+                font-weight: 800;
+                color: #f5c518;
+                margin: 10px 0 4px;
+            }
+            .plan-price span {
+                font-size: 0.88rem;
+                color: #aaa;
+                font-weight: 400;
+            }
+            .plan-features {
+                list-style: none;
+                margin: 16px 0;
+            }
+            .plan-features li {
+                padding: 6px 0;
+                font-size: 0.86rem;
+                color: #ccc;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .plan-features li i {
+                color: #f5c518;
+                width: 14px;
+            }
+            .plan-select-btn {
+                width: 100%;
+                padding: 12px;
+                background: rgba(245, 197, 24, 0.15);
+                color: #f5c518;
+                border: 1.5px solid rgba(245, 197, 24, 0.4);
+                border-radius: 10px;
+                font-size: 0.9rem;
+                font-weight: 700;
+                cursor: pointer;
+                margin-top: 14px;
+                transition: 0.2s;
+            }
+            .plan-select-btn:hover,
+            .plan-card.selected .plan-select-btn {
+                background: #f5c518;
+                color: #222;
+            }
+            .plan-badge-premium {
+                border-color: rgba(139, 92, 246, 0.6);
+            }
+            .plan-badge-premium .plan-price {
+                color: #a78bfa;
+            }
+            .plan-badge-premium .plan-select-btn {
+                background: rgba(139, 92, 246, 0.15);
+                color: #a78bfa;
+                border-color: rgba(139, 92, 246, 0.4);
+            }
+            .plan-badge-premium:hover,
+            .plan-badge-premium.selected {
+                border-color: #8b5cf6;
+                background: rgba(139, 92, 246, 0.1);
+            }
+            .plan-badge-premium.selected .plan-select-btn,
+            .plan-badge-premium:hover .plan-select-btn {
+                background: #8b5cf6;
+                color: #fff;
+            }
+
+            /* PAYMENT MODAL */
+            .modal-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.75);
+                z-index: 500;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+            .modal-overlay.open {
+                display: flex;
+            }
+            .modal {
+                background: #1e2035;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 18px;
+                padding: 30px;
+                max-width: 520px;
+                width: 100%;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            .modal-title {
+                font-size: 1.15rem;
+                font-weight: 700;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .modal-close {
+                background: none;
+                border: none;
+                color: #aaa;
+                font-size: 1.4rem;
+                cursor: pointer;
+                line-height: 1;
+            }
+            .modal-close:hover {
+                color: #fff;
+            }
+            .plan-summary {
+                background: rgba(245, 197, 24, 0.08);
+                border: 1px solid rgba(245, 197, 24, 0.2);
+                border-radius: 10px;
+                padding: 14px;
+                margin-bottom: 20px;
+            }
+            .plan-summary .ps-name {
+                font-weight: 700;
+                font-size: 1rem;
+                color: #f5c518;
+            }
+            .plan-summary .ps-amount {
+                font-size: 1.4rem;
+                font-weight: 800;
+                margin-top: 4px;
+            }
+            .form-group {
+                margin-bottom: 16px;
+            }
+            .form-group label {
+                display: block;
+                font-size: 0.82rem;
+                font-weight: 600;
+                color: #ccc;
+                margin-bottom: 6px;
+            }
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                width: 100%;
+                padding: 10px 13px;
+                background: rgba(255, 255, 255, 0.07);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 8px;
+                color: #fff;
+                font-size: 0.9rem;
+                outline: none;
+            }
+            .form-group input:focus,
+            .form-group select:focus {
+                border-color: #f5c518;
+            }
+            .form-group select option {
+                background: #1e2035;
+                color: #fff;
+            }
+            .method-tabs {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                margin-bottom: 16px;
+            }
+            .method-tab {
+                padding: 9px 16px;
+                border-radius: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                background: rgba(255, 255, 255, 0.05);
+                cursor: pointer;
+                font-size: 0.84rem;
+                font-weight: 600;
+                color: #ccc;
+                transition: 0.2s;
+            }
+            .method-tab.active {
+                border-color: #f5c518;
+                background: rgba(245, 197, 24, 0.12);
+                color: #f5c518;
+            }
+            .method-panel {
+                display: none;
+            }
+            .method-panel.active {
+                display: block;
+            }
+            .upi-box {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                padding: 16px;
+                text-align: center;
+                margin-bottom: 12px;
+            }
+            .upi-id {
+                font-family: monospace;
+                font-size: 1.1rem;
+                color: #f5c518;
+                font-weight: 700;
+                letter-spacing: 1px;
+            }
+            .copy-btn {
+                margin-top: 8px;
+                padding: 6px 16px;
+                background: rgba(245, 197, 24, 0.15);
+                color: #f5c518;
+                border: 1px solid rgba(245, 197, 24, 0.3);
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 0.8rem;
+            }
+            .bank-details p {
+                padding: 6px 0;
+                font-size: 0.86rem;
+                color: #ccc;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            }
+            .bank-details strong {
+                color: #fff;
+            }
+            .submit-btn {
+                width: 100%;
+                padding: 14px;
+                background: #f5c518;
+                color: #222;
+                border: none;
+                border-radius: 10px;
+                font-size: 0.98rem;
+                font-weight: 800;
+                cursor: pointer;
+                margin-top: 4px;
+                transition: 0.2s;
+            }
+            .submit-btn:hover {
+                background: #d4a800;
+            }
+            .submit-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            /* PAYMENT HISTORY */
+            .history-card {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 14px;
+                padding: 22px;
+                margin-top: 32px;
+            }
+            .history-title {
+                font-size: 1rem;
+                font-weight: 700;
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: #f5c518;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th {
+                text-align: left;
+                padding: 10px 12px;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
+                color: #888;
+                font-weight: 700;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            td {
+                padding: 11px 12px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                font-size: 0.85rem;
+                color: #ccc;
+            }
+            .badge {
+                display: inline-block;
+                padding: 3px 10px;
+                border-radius: 12px;
+                font-size: 0.72rem;
+                font-weight: 700;
+            }
+            .badge-paid {
+                background: rgba(40, 167, 69, 0.2);
+                color: #7fd49a;
+            }
+            .badge-pending {
+                background: rgba(255, 193, 7, 0.15);
+                color: #ffc107;
+            }
+            .badge-failed {
+                background: rgba(220, 53, 69, 0.2);
+                color: #f5a3ad;
+            }
+            @media (max-width: 600px) {
+                .plans-grid {
+                    grid-template-columns: 1fr;
+                }
+                .page-title h1 {
+                    font-size: 1.5rem;
+                }
+                .plan-price {
+                    font-size: 1.7rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <a href="{% url 'admin_dashboard' %}" class="back-btn"
+                ><i class="fas fa-arrow-left"></i> Back to Dashboard</a
+            >
+
+            <div class="page-title">
+                <h1>💳 Choose Your Plan</h1>
+                <p>Unlock the full power of PhysioRehab Clinic Management</p>
+            </div>
+
+            {% for m in messages %}
+            <div
+                class="alert {% if 'successfully' in m.message or '✅' in m.message %}alert-success{% else %}alert-error{% endif %}"
+            >
+                {{ m }}
+            </div>
+            {% endfor %} {% if current_sub %}
+            <div class="current-sub">
+                <i
+                    class="fas fa-clinic-medical"
+                    style="color: #f5c518; font-size: 1.8rem"
+                ></i>
+                <div>
+                    <div class="label">
+                        {{ hospital.name }} — {{
+                        current_sub.plan.get_name_display|default:"No Plan" }}
+                        Plan
+                    </div>
+                    <div class="detail">
+                        Status:
+                        <span class="sub-status-{{ current_sub.status }}"
+                            >{{ current_sub.get_status_display }}</span
+                        >
+                        {% if current_sub.expires_at %} &nbsp;|&nbsp; Expires:
+                        <strong
+                            >{{ current_sub.expires_at|date:"d M Y" }}</strong
+                        >{% endif %} {% if current_sub.is_expired %} &nbsp;<span
+                            style="
+                                background: rgba(220, 53, 69, 0.2);
+                                color: #f77;
+                                padding: 2px 8px;
+                                border-radius: 8px;
+                                font-size: 0.75rem;
+                            "
+                            >EXPIRED</span
+                        >{% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- PLAN CARDS -->
+            <div class="plans-grid">
+                {% for plan in plans %}
+                <div
+                    class="plan-card {% if plan.name == 'standard' %}featured{% endif %} {% if plan.name == 'premium' %}plan-badge-premium{% endif %} {% if current_sub and current_sub.plan == plan %}current-plan{% endif %}"
+                    onclick="selectPlan({{ plan.id }}, '{{ plan.get_name_display }}', {{ plan.price_monthly }})"
+                >
+                    <div class="plan-name">
+                        {% if plan.name == 'basic' %}🏥 {{ plan.get_name_display
+                        }} {% elif plan.name == 'standard' %}⭐ {{
+                        plan.get_name_display }} {% else %}👑 {{
+                        plan.get_name_display }}{% endif %}
+                    </div>
+                    <div class="plan-price">
+                        ₹{{ plan.price_monthly }}<span>/month</span>
+                    </div>
+                    <ul class="plan-features">
+                        <li>
+                            <i class="fas fa-users"></i> Up to {{ plan.max_staff
+                            }} staff members
+                        </li>
+                        <li>
+                            <i class="fas fa-user-injured"></i> {% if
+                            plan.max_patients > 10000 %}Unlimited{% else %}Up to
+                            {{ plan.max_patients }}{% endif %} patients
+                        </li>
+                        {% for feat in plan.features.splitlines %}{% if feat %}
+                        <li><i class="fas fa-check"></i> {{ feat }}</li>
+                        {% endif %}{% endfor %}
+                    </ul>
+                    <button
+                        class="plan-select-btn"
+                        onclick="event.stopPropagation();selectPlan({{ plan.id }}, '{{ plan.get_name_display }}', {{ plan.price_monthly }})"
+                    >
+                        {% if current_sub and current_sub.plan == plan %}✅
+                        Current Plan — Renew{% else %}Subscribe Now{% endif %}
+                    </button>
+                </div>
+                {% empty %}
+                <div
+                    style="
+                        grid-column: 1/-1;
+                        text-align: center;
+                        padding: 40px;
+                        color: #aaa;
+                    "
+                >
+                    <i
+                        class="fas fa-exclamation-circle"
+                        style="
+                            font-size: 2rem;
+                            margin-bottom: 12px;
+                            display: block;
+                        "
+                    ></i>
+                    No plans configured yet. Contact platform admin.
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- PAYMENT HISTORY -->
+            {% if recent_payments %}
+            <div class="history-card">
+                <div class="history-title">
+                    <i class="fas fa-history"></i> My Subscription Payment
+                    History
+                </div>
+                <div style="overflow-x: auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Plan</th>
+                                <th>Amount</th>
+                                <th>Duration</th>
+                                <th>Method</th>
+                                <th>Txn ID</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pay in recent_payments %}
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 600; color: #fff">
+                                        {{ pay.created_at|date:"d M Y" }}
+                                    </div>
+                                    <div
+                                        style="font-size: 0.78rem; color: #888"
+                                    >
+                                        {{ pay.created_at|time:"h:i A" }}
+                                    </div>
+                                </td>
+                                <td>
+                                    {{ pay.plan.get_name_display|default:"—" }}
+                                </td>
+                                <td>
+                                    <strong style="color: #f5c518"
+                                        >₹{{ pay.amount }}</strong
+                                    >
+                                </td>
+                                <td>
+                                    {{ pay.duration_months }} month{% if
+                                    pay.duration_months > 1 %}s{% endif %}
+                                </td>
+                                <td>
+                                    {% if pay.method == 'upi' %}<i
+                                        class="fas fa-qrcode"
+                                        style="color: #00b900"
+                                    ></i>
+                                    UPI {% elif pay.method == 'cash' %}<i
+                                        class="fas fa-money-bill-wave"
+                                        style="color: #28a745"
+                                    ></i>
+                                    Cash {% elif pay.method == 'netbanking' %}<i
+                                        class="fas fa-university"
+                                        style="color: #1a73e8"
+                                    ></i>
+                                    Net Banking {% elif pay.method == 'razorpay' %}<i
+                                        class="fas fa-lock"
+                                        style="color: #3395ff"
+                                    ></i>
+                                    Online{% else %}<i
+                                        class="fas fa-university"
+                                        style="color: #1a73e8"
+                                    ></i>
+                                    Net Banking{% endif %}
+                                </td>
+                                <td
+                                    style="
+                                        font-family: monospace;
+                                        font-size: 0.78rem;
+                                        color: #888;
+                                    "
+                                >
+                                    {{ pay.transaction_id|default:"—" }}
+                                </td>
+                                <td>
+                                    {% if pay.status == 'paid' %}<span
+                                        class="badge badge-paid"
+                                        >✅ Paid</span
+                                    >
+                                    {% elif pay.status == 'pending' %}<span
+                                        class="badge badge-pending"
+                                        >⏳ Pending</span
+                                    >
+                                    {% elif pay.status == 'failed' %}<span
+                                        class="badge badge-failed"
+                                        >❌ Failed</span
+                                    >
+                                    {% else %}<span
+                                        class="badge"
+                                        style="
+                                            background: rgba(
+                                                255,
+                                                255,
+                                                255,
+                                                0.1
+                                            );
+                                            color: #aaa;
+                                        "
+                                        >{{ pay.get_status_display }}</span
+                                    >{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- PAYMENT MODAL -->
+        <div class="modal-overlay" id="payModal">
+            <div class="modal">
+                <div class="modal-title">
+                    <span
+                        ><i class="fas fa-credit-card"></i> Complete
+                        Payment</span
+                    >
+                    <button class="modal-close" onclick="closeModal()">
+                        ×
+                    </button>
+                </div>
+                <div class="plan-summary">
+                    <div class="ps-name" id="modal-plan-name">—</div>
+                    <div class="ps-amount" id="modal-plan-amount">₹0</div>
+                </div>
+                <form method="post" id="payForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="plan_id" id="modal-plan-id" />
+                    <div class="form-group">
+                        <label>Duration</label>
+                        <select
+                            name="duration_months"
+                            id="modal-duration"
+                            onchange="updateAmount()"
+                        >
+                            <option value="1">1 Month</option>
+                            <option value="3">3 Months (5% off)</option>
+                            <option value="6">6 Months (10% off)</option>
+                            <option value="12">12 Months (15% off)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Method</label>
+                        <div class="method-tabs">
+                            <div
+                                class="method-tab active"
+                                onclick="switchMethod('upi',this)"
+                            >
+                                <i class="fas fa-qrcode"></i> UPI
+                            </div>
+                            <div
+                                class="method-tab"
+                                onclick="switchMethod('cash',this)"
+                            >
+                                <i class="fas fa-money-bill-wave"></i> Cash
+                            </div>
+                            <div
+                                class="method-tab"
+                                onclick="switchMethod('netbanking',this)"
+                            >
+                                <i class="fas fa-university"></i> Net Banking
+                            </div>
+                        </div>
+                        <input
+                            type="hidden"
+                            name="method"
+                            id="modal-method"
+                            value="upi"
+                        />
+                    </div>
+
+                    <!-- UPI PANEL -->
+                    <div class="method-panel active" id="panel-upi">
+                        <div class="upi-box">
+                            <div
+                                style="
+                                    font-size: 0.8rem;
+                                    color: #aaa;
+                                    margin-bottom: 6px;
+                                "
+                            >
+                                Scan QR or pay to UPI ID
+                            </div>
+                            <div
+                                id="qr-container"
+                                style="
+                                    margin: 12px auto;
+                                    display: inline-block;
+                                    background: #fff;
+                                    padding: 10px;
+                                    border-radius: 8px;
+                                "
+                            ></div>
+                            <div class="upi-id" id="upi-display">
+                                {{ upi_id }}
+                            </div>
+                            <button
+                                type="button"
+                                class="copy-btn"
+                                onclick="copyUPI()"
+                            >
+                                <i class="fas fa-copy"></i> Copy UPI ID
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label>UPI Transaction ID (UTR) *</label>
+                            <input
+                                type="text"
+                                id="txn-upi"
+                                placeholder="e.g. 123456789012"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- CASH PANEL -->
+                    <div class="method-panel" id="panel-cash">
+                        <div
+                            style="
+                                background: rgba(40, 167, 69, 0.08);
+                                border: 1px solid rgba(40, 167, 69, 0.2);
+                                border-radius: 10px;
+                                padding: 14px;
+                                margin-bottom: 14px;
+                                font-size: 0.86rem;
+                                color: #7fd49a;
+                            "
+                        >
+                            <i class="fas fa-info-circle"></i> Visit the clinic
+                            and pay cash to the admin. Enter any reference note
+                            below.
+                        </div>
+                        <div class="form-group">
+                            <label>Reference / Receipt Note</label>
+                            <input
+                                type="text"
+                                id="txn-cash"
+                                placeholder="e.g. Paid on 21 Jun 2026"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- NET BANKING PANEL -->
+                    <div class="method-panel" id="panel-netbanking">
+                        <div
+                            class="bank-details"
+                            style="
+                                background: rgba(255, 255, 255, 0.04);
+                                border: 1px solid rgba(255, 255, 255, 0.08);
+                                border-radius: 10px;
+                                padding: 14px;
+                                margin-bottom: 14px;
+                            "
+                        >
+                            <p><strong>Bank Name:</strong> HDFC Bank</p>
+                            <p>
+                                <strong>Account Name:</strong> Dr. Dhvani
+                                Patalia PhysioRehab
+                            </p>
+                            <p><strong>Account No:</strong> 0000123456789</p>
+                            <p><strong>IFSC:</strong> HDFC0001234</p>
+                        </div>
+                        <div class="form-group">
+                            <label>UTR / Reference Number *</label>
+                            <input
+                                type="text"
+                                id="txn-net"
+                                placeholder="e.g. HDFCN1234567890"
+                            />
+                        </div>
+                    </div>
+
+                    <input
+                        type="hidden"
+                        name="transaction_id"
+                        id="final-txn-id"
+                    />
+                    <div class="form-group">
+                        <label>Additional Notes (optional)</label>
+                        <input
+                            type="text"
+                            name="notes"
+                            placeholder="Any notes for the admin..."
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        class="submit-btn"
+                        id="pay-submit-btn"
+                        onclick="return prepareSubmit()"
+                    >
+                        <i class="fas fa-paper-plane"></i> Submit Payment for
+                        Verification
+                    </button>
+                </form>
+                <p
+                    style="
+                        text-align: center;
+                        color: #666;
+                        font-size: 0.78rem;
+                        margin-top: 14px;
+                    "
+                >
+                    The platform admin will verify and activate your
+                    subscription. You will be notified.
+                </p>
+            </div>
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+        <script>
+            let selectedPlanId = null;
+            let selectedPlanPrice = 0;
+            let selectedPlanName = "";
+            let qrGenerated = false;
+
+            function selectPlan(id, name, price) {
+                selectedPlanId = id;
+                selectedPlanPrice = parseFloat(price);
+                selectedPlanName = name;
+                document.getElementById("modal-plan-id").value = id;
+                document.getElementById("modal-plan-name").textContent =
+                    name + " Plan";
+                document.getElementById("modal-plan-amount").textContent =
+                    "₹" + price.toLocaleString() + "/month";
+                document.getElementById("payModal").classList.add("open");
+                if (!qrGenerated) generateQR();
+            }
+
+            function closeModal() {
+                document.getElementById("payModal").classList.remove("open");
+            }
+
+            function generateQR() {
+                const upiId = "{{ upi_id }}";
+                const upiUrl =
+                    "upi://pay?pa=" + upiId + "&pn=PhysioRehab&cu=INR";
+                const container = document.getElementById("qr-container");
+                if (container.children.length > 0) return;
+                try {
+                    new QRCode(container, {
+                        text: upiUrl,
+                        width: 160,
+                        height: 160,
+                        colorDark: "#000",
+                        colorLight: "#fff",
+                        correctLevel: QRCode.CorrectLevel.M,
+                    });
+                    qrGenerated = true;
+                } catch (e) {}
+            }
+
+            function switchMethod(name, btn) {
+                document
+                    .querySelectorAll(".method-panel")
+                    .forEach((p) => p.classList.remove("active"));
+                document
+                    .querySelectorAll(".method-tab")
+                    .forEach((b) => b.classList.remove("active"));
+                document
+                    .getElementById("panel-" + name)
+                    .classList.add("active");
+                btn.classList.add("active");
+                document.getElementById("modal-method").value = name;
+            }
+
+            function updateAmount() {
+                const dur = parseInt(
+                    document.getElementById("modal-duration").value,
+                );
+                let disc = 0;
+                if (dur === 3) disc = 0.05;
+                else if (dur === 6) disc = 0.1;
+                else if (dur === 12) disc = 0.15;
+                const total = selectedPlanPrice * dur * (1 - disc);
+                document.getElementById("modal-plan-amount").textContent =
+                    "₹" +
+                    total.toLocaleString() +
+                    (disc > 0 ? " (" + disc * 100 + "% off)" : "");
+            }
+
+            function copyUPI() {
+                const upi = document
+                    .getElementById("upi-display")
+                    .textContent.trim();
+                navigator.clipboard.writeText(upi).then(() => {
+                    const btn = document.querySelector(".copy-btn");
+                    btn.innerHTML = "✅ Copied!";
+                    setTimeout(() => {
+                        btn.innerHTML =
+                            '<i class="fas fa-copy"></i> Copy UPI ID';
+                    }, 2000);
+                });
+            }
+
+            function prepareSubmit() {
+                const method = document.getElementById("modal-method").value;
+                let txn = "";
+                if (method === "upi")
+                    txn = document.getElementById("txn-upi").value.trim();
+                else if (method === "cash")
+                    txn = document.getElementById("txn-cash").value.trim();
+                else txn = document.getElementById("txn-net").value.trim();
+                document.getElementById("final-txn-id").value = txn;
+                // Update duration-based amount
+                const dur = parseInt(
+                    document.getElementById("modal-duration").value,
+                );
+                let disc = 0;
+                if (dur === 3) disc = 0.05;
+                else if (dur === 6) disc = 0.1;
+                else if (dur === 12) disc = 0.15;
+                return true;
+            }
+
+            document
+                .getElementById("payModal")
+                .addEventListener("click", function (e) {
+                    if (e.target === this) closeModal();
+                });
+        </script>
+    </body>
+</html>

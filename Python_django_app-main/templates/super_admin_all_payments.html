@@ -1,0 +1,226 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Super Admin — All Patient Payments</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;display:flex;}
+        .sidebar{width:240px;min-height:100vh;background:linear-gradient(180deg,#0f0f1a,#1a1a2e);position:fixed;top:0;left:0;display:flex;flex-direction:column;z-index:100;}
+        .sidebar-logo{padding:22px 18px;border-bottom:1px solid rgba(139,92,246,.25);text-align:center;}
+        .sidebar-logo .brand{color:#fff;font-size:1em;font-weight:800;}
+        .sidebar-logo .sub{color:#8b5cf6;font-size:.7em;font-weight:600;margin-top:2px;}
+        .sidebar-badge{margin:10px 16px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;padding:7px 12px;border-radius:10px;font-size:.76em;font-weight:700;text-align:center;}
+        .nav-section{padding:10px 20px 4px;color:#444;font-size:.66em;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;}
+        .nav-item{display:flex;align-items:center;gap:12px;padding:11px 20px;color:#aaa;text-decoration:none;font-size:.86em;border-left:3px solid transparent;transition:.2s;}
+        .nav-item:hover,.nav-item.active{background:rgba(139,92,246,.12);color:#a78bfa;border-left-color:#8b5cf6;}
+        .nav-item i{width:16px;text-align:center;}
+        .logout-btn{margin:12px;margin-top:auto;display:flex;align-items:center;gap:10px;padding:11px 16px;background:rgba(220,53,69,.12);color:#ff6b6b;border-radius:10px;text-decoration:none;font-size:.83em;}
+        .main{margin-left:240px;min-height:100vh;width:calc(100% - 240px);}
+        .topbar{background:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.06);position:sticky;top:0;z-index:50;}
+        .topbar h1{font-size:1.2em;color:#1a1a2e;font-weight:700;}
+        .topbar-user{background:#f5f5f5;padding:7px 14px;border-radius:25px;font-size:.84em;font-weight:600;color:#333;}
+        .body{padding:24px 28px;}
+
+        .msg{padding:12px 18px;border-radius:10px;margin-bottom:14px;font-size:.88em;font-weight:600;}
+        .msg-success{background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
+        .msg-warning{background:#fff3cd;color:#856404;border:1px solid #ffeeba;}
+        .msg-error{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
+
+        .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px;}
+        .stat-box{background:#fff;border-radius:14px;padding:20px;text-align:center;box-shadow:0 3px 12px rgba(0,0,0,.06);}
+        .stat-box .val{font-size:1.7rem;font-weight:800;}
+        .stat-box .lbl{font-size:.76rem;color:#666;margin-top:4px;}
+        .val-green{color:#28a745;}
+        .val-amber{color:#d97706;}
+        .val-red{color:#dc3545;}
+        .val-purple{color:#8b5cf6;}
+
+        .filter-bar{background:#fff;border-radius:12px;padding:16px 20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.05);display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+        .filter-bar label{font-size:.82em;font-weight:700;color:#555;}
+        .filter-bar select{padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:.84em;background:#fafafa;cursor:pointer;}
+        .filter-bar button{padding:8px 18px;background:#8b5cf6;color:#fff;border:none;border-radius:8px;font-size:.84em;font-weight:700;cursor:pointer;}
+        .filter-bar button:hover{background:#7c3aed;}
+        .clear-link{font-size:.82em;color:#8b5cf6;text-decoration:none;padding:8px 12px;}
+        .clear-link:hover{text-decoration:underline;}
+
+        .card{background:#fff;border-radius:14px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);margin-bottom:22px;}
+        .card-title{font-size:.95em;font-weight:700;color:#1a1a2e;display:flex;align-items:center;gap:8px;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #f0f0f0;}
+        .card-title i{color:#8b5cf6;}
+        .table-wrap{overflow-x:auto;}
+        table{width:100%;border-collapse:collapse;min-width:700px;}
+        th{text-align:left;padding:11px 13px;background:#f8f9fa;font-size:.73em;text-transform:uppercase;letter-spacing:.8px;color:#666;font-weight:700;border-bottom:2px solid #eee;}
+        td{padding:12px 13px;border-bottom:1px solid #f5f5f5;font-size:.86em;color:#333;vertical-align:middle;}
+        tr:hover td{background:#fafafa;}
+        .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.72em;font-weight:700;}
+        .badge-paid{background:#d4edda;color:#155724;}
+        .badge-pending{background:#fff3cd;color:#856404;}
+        .badge-failed{background:#f8d7da;color:#721c24;}
+        .badge-refunded{background:#d1ecf1;color:#0c5460;}
+        .empty-state{text-align:center;padding:48px;color:#aaa;}
+        .empty-state i{font-size:2.5em;display:block;margin-bottom:12px;color:#ddd;}
+    </style>
+</head>
+<body>
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="brand">⚡ PhysioReha</div>
+        <div class="sub">Platform Super Admin</div>
+    </div>
+    <div class="sidebar-badge">🔐 Super Admin</div>
+    <nav>
+        <div class="nav-section">Platform</div>
+        <a href="{% url 'super_admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="{% url 'super_admin_hospitals' %}" class="nav-item"><i class="fas fa-hospital"></i> Hospitals</a>
+        <a href="{% url 'super_admin_subscriptions' %}" class="nav-item"><i class="fas fa-file-invoice-dollar"></i> Subscriptions</a>
+        <div class="nav-section">Finance</div>
+        <a href="{% url 'super_admin_all_payments' %}" class="nav-item active"><i class="fas fa-credit-card"></i> All Payments</a>
+        <div class="nav-section">Reports</div>
+        <a href="{% url 'super_admin_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+        <div class="nav-section">Support</div>
+        <a href="{% url 'super_admin_support' %}" class="nav-item"><i class="fas fa-headset"></i> Support Tickets</a>
+    </nav>
+    <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</aside>
+
+<div class="main">
+    <div class="topbar">
+        <h1>💳 All Patient Payments</h1>
+        <span class="topbar-user">{{ user.get_full_name|default:user.username }}</span>
+    </div>
+    <div class="body">
+        {% if messages %}
+        {% for msg in messages %}
+        <div class="msg {% if msg.tags == 'success' %}msg-success{% elif msg.tags == 'warning' %}msg-warning{% else %}msg-error{% endif %}">{{ msg }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <!-- STATS -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="val val-green">₹{{ total_paid }}</div>
+                <div class="lbl">Total Collected</div>
+            </div>
+            <div class="stat-box">
+                <div class="val val-amber">₹{{ total_pending }}</div>
+                <div class="lbl">Pending Amount</div>
+            </div>
+            <div class="stat-box">
+                <div class="val val-purple">{{ paid_count }}</div>
+                <div class="lbl">Confirmed Payments</div>
+            </div>
+            <div class="stat-box">
+                <div class="val val-amber">{{ pending_count }}</div>
+                <div class="lbl">Pending Verification</div>
+            </div>
+            <div class="stat-box">
+                <div class="val val-red">{{ failed_count }}</div>
+                <div class="lbl">Rejected</div>
+            </div>
+            <div class="stat-box">
+                <div class="val" style="color:#1a1a2e;">{{ payments|length }}</div>
+                <div class="lbl">Filtered Results</div>
+            </div>
+        </div>
+
+        <!-- FILTER BAR -->
+        <form method="GET" class="filter-bar">
+            <label>Status:</label>
+            <select name="status">
+                <option value="">All Statuses</option>
+                <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>✅ Paid</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>⏳ Pending</option>
+                <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>❌ Failed</option>
+                <option value="refunded" {% if status_filter == 'refunded' %}selected{% endif %}>↩ Refunded</option>
+            </select>
+            <label>Method:</label>
+            <select name="method">
+                <option value="">All Methods</option>
+                <option value="razorpay" {% if method_filter == 'razorpay' %}selected{% endif %}>Razorpay</option>
+                <option value="upi" {% if method_filter == 'upi' %}selected{% endif %}>UPI</option>
+                <option value="cash" {% if method_filter == 'cash' %}selected{% endif %}>Cash</option>
+                <option value="netbanking" {% if method_filter == 'netbanking' %}selected{% endif %}>Net Banking</option>
+                <option value="wallet" {% if method_filter == 'wallet' %}selected{% endif %}>Wallet</option>
+            </select>
+            <button type="submit"><i class="fas fa-filter"></i> Filter</button>
+            {% if status_filter or method_filter %}<a href="{% url 'super_admin_all_payments' %}" class="clear-link">✕ Clear</a>{% endif %}
+            <div style="margin-left:auto;display:flex;gap:8px;">
+                <a href="{% url 'export_payments_excel' %}{% if status_filter or method_filter %}?status={{ status_filter }}&method={{ method_filter }}{% endif %}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1e7e34;color:#fff;border-radius:8px;font-size:.84em;font-weight:700;text-decoration:none;"><i class="fas fa-file-excel"></i> Excel</a>
+                <a href="{% url 'export_payments_pdf' %}{% if status_filter or method_filter %}?status={{ status_filter }}&method={{ method_filter }}{% endif %}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#c0392b;color:#fff;border-radius:8px;font-size:.84em;font-weight:700;text-decoration:none;"><i class="fas fa-file-pdf"></i> PDF</a>
+            </div>
+        </form>
+
+        <!-- TABLE -->
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-list"></i> All Transactions
+                <span style="font-size:.82em;font-weight:500;color:#888;margin-left:auto;">{{ payments|length }} record(s)</span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Patient</th>
+                            <th>Appointment</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Txn / Reference</th>
+                            <th>Notes</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pay in payments %}
+                        <tr>
+                            <td>
+                                <div style="font-weight:600;font-size:.84em;">{{ pay.created_at|date:"d M Y" }}</div>
+                                <div style="color:#999;font-size:.76em;">{{ pay.created_at|time:"h:i A" }}</div>
+                            </td>
+                            <td>
+                                <div style="font-weight:600;">{{ pay.patient.get_full_name|default:pay.patient.username }}</div>
+                                <div style="color:#999;font-size:.76em;">{{ pay.patient.email }}</div>
+                            </td>
+                            <td>
+                                {% if pay.appointment %}
+                                    <span style="font-size:.83em;">{{ pay.appointment.date|date:"d M Y" }}</span>
+                                {% else %}
+                                    <span style="color:#ccc;">General</span>
+                                {% endif %}
+                            </td>
+                            <td><strong style="font-size:1.05em;">₹{{ pay.amount }}</strong></td>
+                            <td>
+                                {% if pay.method == 'razorpay' %}<i class="fas fa-bolt" style="color:#f5c518;"></i> Razorpay
+                                {% elif pay.method == 'upi' %}<i class="fas fa-qrcode" style="color:#00b900;"></i> UPI
+                                {% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color:#28a745;"></i> Cash
+                                {% elif pay.method == 'netbanking' %}<i class="fas fa-university" style="color:#1a73e8;"></i> Net Banking
+                                {% elif pay.method == 'wallet' %}<i class="fas fa-wallet" style="color:#9c27b0;"></i> Wallet
+                                {% else %}<i class="fas fa-credit-card"></i> {{ pay.get_method_display }}{% endif %}
+                            </td>
+                            <td style="font-family:monospace;font-size:.78em;color:#666;max-width:140px;word-break:break-all;">
+                                {{ pay.transaction_id|default:"—" }}
+                            </td>
+                            <td style="font-size:.8em;color:#777;max-width:160px;">{{ pay.notes|default:"—"|truncatechars:50 }}</td>
+                            <td><span class="badge badge-{{ pay.status }}">{{ pay.get_status_display }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <i class="fas fa-credit-card"></i>
+                                    No payment records found{% if status_filter or method_filter %} for the selected filters{% endif %}.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

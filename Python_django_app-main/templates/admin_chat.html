@@ -1,0 +1,609 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Patient Messages - Admin</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .sidebar-logo {
+            padding: 22px 20px;
+            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+            text-align: center;
+        }
+
+        .sidebar-logo img {
+            width: 130px;
+            border-radius: 10px;
+        }
+
+        .sidebar-logo p {
+            color: #F5C518;
+            font-size: 0.75em;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .sidebar-user {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            background: #F5C518;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #2C2C2C;
+        }
+
+        .user-info h4 {
+            color: white;
+            font-size: 0.88em;
+        }
+
+        .user-info span {
+            color: #F5C518;
+            font-size: 0.72em;
+        }
+
+        .nav-section {
+            padding: 12px 22px 5px;
+            color: #555;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 22px;
+            color: #bbb;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(245, 197, 24, 0.1);
+            color: #F5C518;
+            border-left-color: #F5C518;
+        }
+
+        .nav-item i {
+            width: 18px;
+            text-align: center;
+        }
+
+        .logout-btn {
+            margin: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 18px;
+            background: rgba(220, 53, 69, 0.15);
+            color: #ff6b6b;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 0.86em;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+        }
+
+        .topbar {
+            background: white;
+            padding: 16px 28px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .topbar h1 {
+            font-size: 1.2em;
+            color: #2C2C2C;
+            font-weight: 700;
+        }
+
+        .dashboard-body {
+            padding: 25px;
+        }
+
+        .chat-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-item {
+            background: white;
+            border-radius: 14px;
+            padding: 18px 22px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+            text-decoration: none;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .chat-item:hover {
+            border-left-color: #F5C518;
+            transform: translateX(4px);
+        }
+
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            background: #F5C518;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #2C2C2C;
+            font-size: 1.1em;
+            flex-shrink: 0;
+        }
+
+        .chat-info {
+            flex: 1;
+        }
+
+        .chat-info h3 {
+            font-size: 1em;
+            font-weight: 700;
+            color: #2C2C2C;
+            margin-bottom: 4px;
+        }
+
+        .chat-info p {
+            font-size: 0.83em;
+            color: #888;
+        }
+
+        .chat-meta {
+            text-align: right;
+        }
+
+        .chat-time {
+            font-size: 0.78em;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .unread-badge {
+            background: #F5C518;
+            color: #2C2C2C;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: 800;
+            margin-left: auto;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 18px;
+            color: #aaa;
+        }
+
+        .empty-state i {
+            font-size: 3em;
+            color: #F5C518;
+            margin-bottom: 15px;
+        }
+
+        /* SEARCH */
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            background: #1f2430;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .search-input:focus {
+            border-color: #f1c40f;
+            box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.15);
+            background: #252b38;
+        }
+
+        /* =========================
+   COLLAPSIBLE SIDEBAR
+========================= */
+
+        .menu-toggle {
+            display: none;
+            width: 42px;
+            height: 42px;
+            border: none;
+            border-radius: 10px;
+            background: #f5c518;
+            color: #2c2c2c;
+            cursor: pointer;
+            font-size: 18px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+            opacity: 0;
+            visibility: hidden;
+            transition: .3s;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Desktop Collapse */
+
+        .sidebar {
+            transition: all .3s ease;
+        }
+
+        .main-content {
+            transition: all .3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar.collapsed .sidebar-user,
+        .sidebar.collapsed .sidebar-logo p,
+        .sidebar.collapsed .nav-section,
+        .sidebar.collapsed .user-info,
+        .sidebar.collapsed .logout-btn span {
+            display: none;
+        }
+
+        .sidebar.collapsed .nav-item {
+            justify-content: center;
+            padding: 14px;
+        }
+
+        .sidebar.collapsed .nav-item i {
+            margin: 0;
+        }
+
+        .sidebar.collapsed+.main-content {
+            margin-left: 80px;
+        }
+
+        /* Responsive */
+
+        @media (max-width: 991px) {
+
+            .menu-toggle {
+                display: flex;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 999;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .topbar {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .dashboard-body {
+                padding: 15px;
+            }
+
+            .chat-item {
+                padding: 15px;
+            }
+
+            .chat-avatar {
+                width: 45px;
+                height: 45px;
+                font-size: 1rem;
+            }
+
+            .chat-info h3 {
+                font-size: 0.95rem;
+            }
+
+            .chat-info p {
+                font-size: 0.8rem;
+            }
+
+            .chat-time {
+                font-size: 0.72rem;
+            }
+
+            .unread-badge {
+                width: 20px;
+                height: 20px;
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            .chat-item {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .chat-meta {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 5px;
+            }
+
+            .search-input {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 576px) {
+
+            .topbar h1 {
+                font-size: 1rem;
+            }
+
+            .dashboard-body {
+                padding: 12px;
+            }
+
+            .chat-item {
+                padding: 12px;
+            }
+
+            .chat-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 0.9rem;
+            }
+
+            .chat-info h3 {
+                font-size: 0.9rem;
+            }
+
+            .chat-info p {
+                font-size: 0.75rem;
+            }
+
+            .chat-time {
+                font-size: 0.7rem;
+            }
+
+            .search-input {
+                padding: 10px 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
+            <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
+        </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.username|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.username }}</h4>
+                <span><span class="online-dot"></span>Super Admin</span>
+            </div>
+        </div>
+        <div class="nav-scroll">
+            <nav>
+                <div class="nav-section">Overview</div>
+                <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i>
+                    Dashboard</a>
+                <div class="nav-section">Management</div>
+                <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+                <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+                <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All
+                    Appointments</a>
+                <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+                <div class="nav-section">Staff Tools</div>
+                <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave
+                    Requests</a>
+                <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+                <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+                <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session
+                    Notes</a>
+                <div class="nav-section">Communication</div>
+                <a href="{% url 'admin_chat' %}" class="nav-item active"><i class="fas fa-comments"></i> Patient
+                    Messages</a>
+                <div class="nav-section">Content</div>
+                <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
+                <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
+                <div class="nav-section">Reports</div>
+                <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress
+                    Tracking</a>
+                <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+                <div class="nav-section">System</div>
+                <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+                <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+                <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+            </nav>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="main-content">
+
+        <div class="topbar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1>💬 Patient Messages</h1>
+        </div>
+        <div class="dashboard-body">
+            <!-- SEARCH CHAT -->
+            <input type="text" id="chatSearch" placeholder="Search Patient..." class="search-input">
+            {% if patient_chats %}
+            <div class="chat-list">
+                {% for chat in patient_chats %}
+                <a href="{% url 'admin_chat_detail' chat.patient.id %}" class="chat-item patient-item">
+                    <div class="chat-avatar">
+                        {{ chat.patient.first_name|first|upper }}{{ chat.patient.last_name|first|upper }}
+                    </div>
+                    <div class="chat-info">
+                        <h3>{{ chat.patient.get_full_name|default:chat.patient.username }}</h3>
+                        <p>{% if chat.last_msg %}{{ chat.last_msg.content|truncatechars:50 }}{% else %}No messages
+                            yet —
+                            click to start chat{% endif %}</p>
+                    </div>
+                    <div class="chat-meta">
+
+                        {% if chat.last_msg %}
+                        <div class="chat-time">
+                            {{ chat.last_msg.created_at|date:"d M, h\:i A" }}
+                        </div>
+                        {% endif %}
+
+                        {% if chat.unread_count > 0 %}
+                        <div class="unread-badge">
+                            {{ chat.unread_count }}
+                        </div>
+                        {% endif %}
+
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-comments"></i>
+                <p>No patient messages yet</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        menuToggle.addEventListener('click', () => {
+
+            if (window.innerWidth <= 991) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            } else {
+                sidebar.classList.toggle('collapsed');
+            }
+
+        });
+
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        });
+
+        window.addEventListener('resize', () => {
+
+            if (window.innerWidth > 991) {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            }
+
+        });
+
+        document
+            .getElementById("chatSearch")
+            .addEventListener("keyup", function () {
+
+                let value = this.value.toLowerCase();
+
+                document
+                    .querySelectorAll(".patient-item")
+                    .forEach(function (item) {
+
+                        item.style.display =
+                            item.innerText.toLowerCase().includes(value)
+                                ? ""
+                                : "none";
+                    });
+            });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,815 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Services - Dr. Dhvani Patalia Physio Rehab</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #fafaf9;
+            color: #2C2C2C;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            padding: 120px 24px 80px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            align-items: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 999px;
+            background: rgba(245, 245, 244, 0.7);
+            border: 1px solid #e7e5e4;
+            color: #57534e;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 28px;
+        }
+
+        .hero-badge-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #F5C518;
+            flex-shrink: 0;
+        }
+
+        .hero-headline {
+            font-size: clamp(2.8rem, 5vw, 4.2rem);
+            font-weight: 800;
+            line-height: 1.1;
+            color: #2C2C2C;
+            letter-spacing: -0.02em;
+            margin-bottom: 24px;
+        }
+
+        .hero-headline .accent {
+            color: #F5C518;
+            font-style: italic;
+        }
+
+        .hero-desc {
+            font-size: 1.1rem;
+            color: #78716c;
+            line-height: 1.7;
+            max-width: 460px;
+            margin-bottom: 36px;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn-dark {
+            padding: 14px 28px;
+            background: #2C2C2C;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            box-shadow: 0 4px 20px rgba(44,44,44,0.15);
+        }
+
+        .btn-dark:hover { background: #1a1a1a; }
+
+        .btn-outline {
+            padding: 14px 28px;
+            background: #fff;
+            color: #2C2C2C;
+            border: 2px solid #e7e5e4;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .btn-outline:hover { border-color: #F5C518; }
+
+        /* Hero stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .stat-card {
+            border-radius: 24px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            aspect-ratio: 1;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover { transform: translateY(-4px); }
+
+        .stat-card.white {
+            background: #fff;
+            border: 1px solid #f5f5f4;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        .stat-card.dark {
+            background: #2C2C2C;
+            color: #fff;
+            margin-top: 32px;
+        }
+
+        .stat-card.gold {
+            background: #F5C518;
+        }
+
+        .stat-card.white2 {
+            background: #fff;
+            border: 1px solid #f5f5f4;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            margin-top: 32px;
+        }
+
+        .stat-icon {
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+        }
+
+        .stat-icon.orange  { background: #ffedd5; color: #f97316; }
+        .stat-icon.dark700 { background: #404040; color: #F5C518; }
+        .stat-icon.transparent { background: rgba(255,255,255,0.25); color: #2C2C2C; }
+        .stat-icon.emerald { background: #d1fae5; color: #10b981; }
+
+        .stat-number {
+            font-size: 2.4rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.82rem;
+            font-weight: 500;
+        }
+
+        .stat-card.white  .stat-label { color: #a8a29e; }
+        .stat-card.dark   .stat-label { color: #a8a29e; }
+        .stat-card.gold   .stat-label { color: #44403c; }
+        .stat-card.white2 .stat-label { color: #a8a29e; }
+        .stat-card.gold   .stat-number { color: #1c1917; }
+
+        /* ── SERVICES GRID ── */
+        .services-section {
+            padding: 96px 24px;
+            background: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .services-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(to right, #f5f5f4 1px, transparent 1px),
+                linear-gradient(to bottom, #f5f5f4 1px, transparent 1px);
+            background-size: 64px 64px;
+            -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+            mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .services-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 64px;
+        }
+
+        .section-header h2 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #2C2C2C;
+            margin-bottom: 16px;
+            letter-spacing: -0.01em;
+        }
+
+        .section-header p {
+            font-size: 1.05rem;
+            color: #78716c;
+            line-height: 1.7;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            align-items: start;
+        }
+
+        .service-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 32px;
+            border: 1px solid #f5f5f4;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            transition: box-shadow 0.3s, border-color 0.3s, transform 0.3s;
+        }
+
+        .service-card:hover {
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            border-color: #e7e5e4;
+        }
+
+        .service-card:nth-child(3n+2) { margin-top: 48px; }
+        .service-card:nth-child(3n+3) { margin-top: 24px; }
+
+        .card-icon {
+            width: 56px; height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+
+        .service-card:hover .card-icon { transform: scale(1.1); }
+
+        .card-icon.amber  { background: #fef3c7; color: #f59e0b; }
+        .card-icon.blue   { background: #dbeafe; color: #3b82f6; }
+        .card-icon.teal   { background: #ccfbf1; color: #14b8a6; }
+        .card-icon.orange { background: #ffedd5; color: #f97316; }
+        .card-icon.purple { background: #ede9fe; color: #8b5cf6; }
+        .card-icon.pink   { background: #fce7f3; color: #ec4899; }
+        .card-icon.yellow { background: #fef9c3; color: #ca8a04; }
+        .card-icon.indigo { background: #e0e7ff; color: #6366f1; }
+        .card-icon.emerald{ background: #d1fae5; color: #10b981; }
+
+        .service-card h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #2C2C2C;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+
+        .pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pill {
+            padding: 6px 12px;
+            background: #fafaf9;
+            border: 1px solid #f5f5f4;
+            color: #57534e;
+            font-size: 0.82rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: default;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .pill:hover { background: #f5f5f4; color: #1c1917; }
+
+        /* ── HOW IT WORKS ── */
+        .how-section {
+            padding: 96px 24px;
+            background: #fafaf9;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .how-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .steps-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 32px;
+            position: relative;
+        }
+
+        .steps-line {
+            position: absolute;
+            top: 48px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: linear-gradient(to right, #e7e5e4, #F5C518, #e7e5e4);
+            pointer-events: none;
+        }
+
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-circle {
+            width: 96px; height: 96px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            border: 4px solid #fafaf9;
+            margin-bottom: 24px;
+            font-size: 1.8rem;
+            color: #2C2C2C;
+            transition: border-color 0.3s;
+        }
+
+        .step-item:hover .step-circle { border-color: #F5C518; }
+
+        .step-num {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #F5C518;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .step-item h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2C2C2C;
+            margin-bottom: 12px;
+        }
+
+        .step-item p {
+            font-size: 0.9rem;
+            color: #78716c;
+            line-height: 1.6;
+        }
+
+        /* ── CTA ── */
+        .cta-section {
+            padding: 80px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .cta-box {
+            background: linear-gradient(135deg, #2C2C2C 0%, #1a1a1a 100%);
+            border-radius: 24px;
+            padding: 80px 64px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+        }
+
+        .cta-glow {
+            position: absolute;
+            top: -200px; right: -150px;
+            width: 600px; height: 600px;
+            background: rgba(245, 197, 24, 0.1);
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+        }
+
+        .cta-inner {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 48px;
+        }
+
+        .cta-text { max-width: 580px; }
+
+        .cta-text h2 {
+            font-size: clamp(1.8rem, 3vw, 2.6rem);
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.2;
+            margin-bottom: 20px;
+        }
+
+        .cta-text p {
+            font-size: 1.05rem;
+            color: #a8a29e;
+            line-height: 1.7;
+            margin-bottom: 32px;
+        }
+
+        .cta-btns { display: flex; gap: 16px; flex-wrap: wrap; }
+
+        .btn-gold {
+            padding: 14px 28px;
+            background: #F5C518;
+            color: #1c1917;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            box-shadow: 0 0 40px rgba(245,197,24,0.3);
+        }
+
+        .btn-gold:hover { background: #fbbf24; }
+
+        .btn-ghost {
+            padding: 14px 28px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            backdrop-filter: blur(8px);
+        }
+
+        .btn-ghost:hover { background: rgba(255,255,255,0.18); color: #fff; }
+
+        .cta-emblem {
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .cta-emblem::before {
+            content: '';
+            position: absolute;
+            inset: 16px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .cta-emblem-inner {
+            position: absolute;
+            inset: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            color: #F5C518;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 1024px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .service-card:nth-child(3n+2),
+            .service-card:nth-child(3n+3) { margin-top: 0; }
+            .steps-line { display: none; }
+            .steps-row { grid-template-columns: repeat(2, 1fr); }
+            .cta-emblem { display: none; }
+            .cta-box { padding: 60px 40px; }
+        }
+
+        @media (max-width: 768px) {
+            .hero-grid { grid-template-columns: 1fr; gap: 48px; }
+            .stats-grid { gap: 12px; }
+            .stat-card { padding: 20px; aspect-ratio: unset; min-height: 140px; }
+            .stat-card.dark, .stat-card.white2 { margin-top: 0; }
+            .cards-grid { grid-template-columns: 1fr; }
+            .steps-row { grid-template-columns: 1fr; }
+            .hero { padding: 100px 20px 60px; }
+            .cta-box { padding: 48px 28px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    {% include 'navbar.html' %}
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-grid">
+
+            <!-- Left: Text -->
+            <div>
+                <div class="hero-badge">
+                    <span class="hero-badge-dot"></span>
+                    Comprehensive Physiotherapy
+                </div>
+                <h1 class="hero-headline">
+                    Restore your<br>
+                    <span class="accent">mobility,</span><br>
+                    reclaim your life.
+                </h1>
+                <p class="hero-desc">
+                    Dr. Dhvani Patalia Physio-Rehab provides advanced, evidence-based treatments tailored to your unique recovery journey in Jamnagar.
+                </p>
+                <div class="hero-btns">
+                    <a href="{% url 'book_appointment' %}" class="btn-dark">
+                        Book Appointment <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="#services" class="btn-outline">
+                        View All Services
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right: Stat cards -->
+            <div class="stats-grid">
+                <div class="stat-card white">
+                    <div class="stat-icon orange"><i class="fas fa-brain"></i></div>
+                    <div>
+                        <div class="stat-number">10+</div>
+                        <div class="stat-label">Years Experience</div>
+                    </div>
+                </div>
+                <div class="stat-card dark">
+                    <div class="stat-icon dark700"><i class="fas fa-smile"></i></div>
+                    <div>
+                        <div class="stat-number">5k+</div>
+                        <div class="stat-label">Happy Patients</div>
+                    </div>
+                </div>
+                <div class="stat-card gold">
+                    <div class="stat-icon transparent"><i class="fas fa-heartbeat"></i></div>
+                    <div>
+                        <div class="stat-number">98%</div>
+                        <div class="stat-label">Recovery Rate</div>
+                    </div>
+                </div>
+                <div class="stat-card white2">
+                    <div class="stat-icon emerald"><i class="fas fa-stethoscope"></i></div>
+                    <div>
+                        <div class="stat-number">15+</div>
+                        <div class="stat-label">Advanced Therapies</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- SERVICES GRID -->
+    <section class="services-section" id="services">
+        <div class="services-inner">
+            <div class="section-header">
+                <h2>Comprehensive Care</h2>
+                <p>We offer a wide range of specialized physiotherapy services to address your specific conditions and help you achieve optimal physical health.</p>
+            </div>
+
+            <div class="cards-grid">
+
+                <!-- Pain Management -->
+                <div class="service-card">
+                    <div class="card-icon amber"><i class="fas fa-shield-alt"></i></div>
+                    <h3>Pain Management</h3>
+                    <div class="pills">
+                        <span class="pill">Neck Pain</span>
+                        <span class="pill">Back Pain</span>
+                        <span class="pill">Slip Disc</span>
+                        <span class="pill">Sciatica</span>
+                        <span class="pill">Shoulder Pain</span>
+                        <span class="pill">Knee Pain</span>
+                        <span class="pill">Joint Pain</span>
+                        <span class="pill">Muscle Spasm</span>
+                    </div>
+                </div>
+
+                <!-- Frozen Shoulder -->
+                <div class="service-card">
+                    <div class="card-icon blue"><i class="fas fa-bone"></i></div>
+                    <h3>Frozen Shoulder &amp; Shoulder Rehab</h3>
+                    <div class="pills">
+                        <span class="pill">Frozen Shoulder</span>
+                        <span class="pill">Shoulder Stiffness</span>
+                        <span class="pill">Rotator Cuff</span>
+                        <span class="pill">Hydrodilatation Rehab</span>
+                    </div>
+                </div>
+
+                <!-- Spine & Nerve -->
+                <div class="service-card">
+                    <div class="card-icon teal"><i class="fas fa-heartbeat"></i></div>
+                    <h3>Spine &amp; Nerve Conditions</h3>
+                    <div class="pills">
+                        <span class="pill">Cervical Spondylosis</span>
+                        <span class="pill">Lumbar Spondylosis</span>
+                        <span class="pill">Sciatica</span>
+                        <span class="pill">Nerve Compression</span>
+                        <span class="pill">Posture Correction</span>
+                    </div>
+                </div>
+
+                <!-- Sports -->
+                <div class="service-card">
+                    <div class="card-icon orange"><i class="fas fa-dumbbell"></i></div>
+                    <h3>Sports &amp; Orthopaedic Rehabilitation</h3>
+                    <div class="pills">
+                        <span class="pill">Sports Injury</span>
+                        <span class="pill">ACL Rehab</span>
+                        <span class="pill">Meniscus Injury</span>
+                        <span class="pill">Fracture Rehab</span>
+                        <span class="pill">Ligament Injury</span>
+                        <span class="pill">Post-Surgery Physio</span>
+                    </div>
+                </div>
+
+                <!-- Neurological -->
+                <div class="service-card">
+                    <div class="card-icon purple"><i class="fas fa-brain"></i></div>
+                    <h3>Neurological Physiotherapy</h3>
+                    <div class="pills">
+                        <span class="pill">Stroke Rehab</span>
+                        <span class="pill">Paralysis Physio</span>
+                        <span class="pill">Parkinson's</span>
+                        <span class="pill">Balance &amp; Gait Training</span>
+                    </div>
+                </div>
+
+                <!-- Women's Health -->
+                <div class="service-card">
+                    <div class="card-icon pink"><i class="fas fa-heart"></i></div>
+                    <h3>Women's Health Physiotherapy</h3>
+                    <div class="pills">
+                        <span class="pill">Pregnancy Physio</span>
+                        <span class="pill">Postpartum Recovery</span>
+                        <span class="pill">Pelvic Floor</span>
+                    </div>
+                </div>
+
+                <!-- Advanced Treatments -->
+                <div class="service-card">
+                    <div class="card-icon yellow"><i class="fas fa-bolt"></i></div>
+                    <h3>Advanced Physiotherapy Treatments</h3>
+                    <div class="pills">
+                        <span class="pill">Dry Needling</span>
+                        <span class="pill">Cupping Therapy</span>
+                        <span class="pill">Kinesiology Taping</span>
+                        <span class="pill">Electrotherapy</span>
+                        <span class="pill">IFT / TENS</span>
+                        <span class="pill">Ultrasound Therapy</span>
+                        <span class="pill">Manual Therapy</span>
+                        <span class="pill">Myofascial Release</span>
+                    </div>
+                </div>
+
+                <!-- Mobility & Fitness -->
+                <div class="service-card">
+                    <div class="card-icon indigo"><i class="fas fa-running"></i></div>
+                    <h3>Mobility &amp; Fitness</h3>
+                    <div class="pills">
+                        <span class="pill">Strengthening</span>
+                        <span class="pill">Flexibility Training</span>
+                        <span class="pill">Posture Correction</span>
+                        <span class="pill">Ergonomic Advice</span>
+                        <span class="pill">Functional Rehab</span>
+                    </div>
+                </div>
+
+                <!-- Home Care -->
+                <div class="service-card">
+                    <div class="card-icon emerald"><i class="fas fa-home"></i></div>
+                    <h3>Home Care Services</h3>
+                    <div class="pills">
+                        <span class="pill">Home Visit Physio</span>
+                        <span class="pill">Elderly Home Physio</span>
+                        <span class="pill">Post-Surgery Home Rehab</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how-section">
+        <div class="how-inner">
+            <div class="section-header">
+                <h2>Your Journey to Recovery</h2>
+                <p>A clear, structured approach to getting you back to your best self.</p>
+            </div>
+
+            <div class="steps-row">
+                <div class="steps-line"></div>
+
+                <div class="step-item">
+                    <div class="step-circle"><i class="fas fa-stethoscope"></i></div>
+                    <div class="step-num">Step 01</div>
+                    <h4>Consultation</h4>
+                    <p>Initial assessment to understand your pain, history, and goals.</p>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-circle"><i class="fas fa-clipboard-list"></i></div>
+                    <div class="step-num">Step 02</div>
+                    <h4>Custom Plan</h4>
+                    <p>A tailored rehabilitation program designed specifically for your needs.</p>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-circle"><i class="fas fa-heartbeat"></i></div>
+                    <div class="step-num">Step 03</div>
+                    <h4>Active Therapy</h4>
+                    <p>Hands-on treatment and guided exercises to restore mobility and strength.</p>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-circle"><i class="fas fa-smile"></i></div>
+                    <div class="step-num">Step 04</div>
+                    <h4>Recovery &amp; Beyond</h4>
+                    <p>Ongoing support, education, and maintenance to prevent future injuries.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="cta-box">
+            <div class="cta-glow"></div>
+            <div class="cta-inner">
+                <div class="cta-text">
+                    <h2>Ready to take the first step towards a pain-free life?</h2>
+                    <p>Schedule your consultation today and let us create a personalized treatment plan for you.</p>
+                    <div class="cta-btns">
+                        <a href="{% url 'book_appointment' %}" class="btn-gold">
+                            <i class="fas fa-calendar-alt"></i> Schedule Visit
+                        </a>
+                        <a href="https://wa.me/919409510501" target="_blank" class="btn-ghost">
+                            <i class="fab fa-whatsapp"></i> WhatsApp Us
+                        </a>
+                    </div>
+                </div>
+                <div class="cta-emblem">
+                    <div class="cta-emblem-inner">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {% include 'footer.html' %}
+
+</body>
+</html>

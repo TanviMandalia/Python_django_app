@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Page</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+    {% load static %}
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #fff;
+        }
+
+        .page-hero {
+            background: linear-gradient(135deg, #1a1a1a, #2C2C2C);
+            padding: 70px 25px;
+            text-align: center;
+        }
+
+        .page-hero h1 {
+            color: white;
+            font-size: 2.5em;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .page-hero h1 span {
+            color: #F5C518;
+        }
+
+        .page-hero p {
+            color: #aaa;
+        }
+
+        .breadcrumb {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+            font-size: 0.85em;
+        }
+
+        .breadcrumb a {
+            color: #F5C518;
+            text-decoration: none;
+        }
+
+        section {
+            padding: 70px 25px;
+        }
+
+        .container {
+            max-width: 1150px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-title h2 {
+            font-size: 2.2em;
+            font-weight: 800;
+            color: #2C2C2C;
+        }
+
+        .section-title h2 span {
+            color: #F5C518;
+        }
+
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+
+        .blog-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+            transition: 0.3s;
+        }
+
+        .blog-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .blog-img {
+            height: 180px;
+            background: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .blog-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .blog-body {
+            padding: 22px;
+        }
+
+        .blog-meta {
+            font-size: 0.8em;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .blog-body h3 {
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .blog-body p {
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .read-more {
+            display: inline-block;
+            margin-top: 12px;
+            color: #F5C518;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .tips-section {
+            background: #f9f9f9;
+        }
+
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .tip-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .tip-icon {
+            width: 45px;
+            height: 45px;
+            background: rgba(245, 197, 24, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+        }
+
+        .tip-icon i {
+            color: #F5C518;
+        }
+
+        @media (max-width: 768px) {
+
+            .blog-grid,
+            .tips-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    {% include 'navbar.html' %}
+
+    <div class="page-hero">
+        <h1>Our <span>Blog</span></h1>
+        <p>Health tips, recovery guides and physiotherapy insights</p>
+
+        <div class="breadcrumb">
+            <a href="{% url 'home' %}">Home</a>
+            <span>›</span>
+            <span style="color:white;">Blog</span>
+        </div>
+    </div>
+
+    <section>
+        <div class="container">
+
+            <div class="section-title">
+                <h2>Latest <span>Articles</span></h2>
+                <p>Expert health tips and physiotherapy guides</p>
+            </div>
+
+            <!-- CATEGORY FILTERS -->
+            <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:40px;">
+                <a href="{% url 'blog_list' %}" style="padding:9px 20px;border-radius:30px;text-decoration:none;font-weight:700;font-size:0.85rem;{% if not active_category %}background:#F5C518;color:#2c2c2c;{% else %}background:white;color:#888;border:1px solid #ddd;{% endif %}">All</a>
+                {% for val, label in categories %}
+                <a href="{% url 'blog_list' %}?category={{ val }}" style="padding:9px 20px;border-radius:30px;text-decoration:none;font-weight:700;font-size:0.85rem;{% if active_category == val %}background:#F5C518;color:#2c2c2c;{% else %}background:white;color:#888;border:1px solid #ddd;{% endif %}">{{ label }}</a>
+                {% endfor %}
+            </div>
+
+            <div class="blog-grid">
+                {% for blog in blogs %}
+                <div class="blog-card">
+                    <div class="blog-img">
+                        {% if blog.image %}
+                        <img src="{{ blog.image.url }}" alt="{{ blog.title }}">
+                        {% else %}
+                        <div style="width:100%;height:100%;background:linear-gradient(135deg,#2c2c2c,#1a1a1a);display:flex;align-items:center;justify-content:center;font-size:2.5rem;">🏥</div>
+                        {% endif %}
+                    </div>
+                    <div class="blog-body">
+                        <div class="blog-meta" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <span><i class="fas fa-calendar" style="margin-right:4px;"></i>{{ blog.created_at|date:"d M Y" }}</span>
+                            <span style="background:rgba(245,197,24,0.15);color:#b8960c;padding:3px 10px;border-radius:12px;font-size:0.75em;font-weight:700;">{{ blog.category }}</span>
+                        </div>
+                        <h3>{{ blog.title }}</h3>
+                        <p>
+                            {% if blog.excerpt %}{{ blog.excerpt|truncatechars:110 }}{% else %}{{ blog.content|truncatechars:110 }}{% endif %}
+                        </p>
+                        {% if blog.before_image and blog.after_image %}
+                        <div style="font-size:0.78rem;color:#27ae60;font-weight:700;margin-top:8px;"><i class="fas fa-images"></i> Before &amp; After included</div>
+                        {% endif %}
+                        <a href="{% url 'blog_detail' blog.slug %}" class="read-more">Read More →</a>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="text-align:center;padding:60px;color:#aaa;grid-column:1/-1;">
+                    <i class="fas fa-blog" style="font-size:3rem;margin-bottom:15px;display:block;"></i>
+                    <p>No articles found in this category.</p>
+                    <a href="{% url 'blog_list' %}" style="color:#F5C518;font-weight:700;">View all articles →</a>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </section>
+
+    <!-- HEALTH TIPS -->
+    <section class="tips-section">
+        <div class="container">
+
+            <div class="section-title">
+                <h2>Quick Health <span>Tips</span></h2>
+                <p>Simple tips for a healthier life</p>
+            </div>
+
+            <div class="tips-grid">
+
+                <div class="tip-card">
+                    <div class="tip-icon"><i class="fas fa-walking"></i></div>
+                    <div>
+                        <h4>Walk Daily</h4>
+                        <p>Improves joint health and circulation.</p>
+                    </div>
+                </div>
+
+                <div class="tip-card">
+                    <div class="tip-icon"><i class="fas fa-tint"></i></div>
+                    <div>
+                        <h4>Stay Hydrated</h4>
+                        <p>Helps muscle recovery and joint lubrication.</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    {% include 'footer.html' %}
+</body>
+
+</html>

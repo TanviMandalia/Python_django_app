@@ -1,0 +1,365 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta charset="UTF-8" />
+        <title>Edit Session Note - Admin</title>
+        <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: "Segoe UI", sans-serif;
+                background: #f5f5f5;
+                display: flex;
+                min-height: 100vh;
+            }
+            .sidebar {
+                width: 260px;
+                height: 100vh;
+                position: fixed;
+                left: 0;
+                top: 0;
+                background: linear-gradient(180deg, #1a1a1a, #2c2c2c);
+                overflow-y: auto;
+                scrollbar-width: none;
+            }
+            .sidebar-logo {
+                padding: 22px 20px;
+                border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+                text-align: center;
+            }
+            .sidebar-logo img {
+                width: 130px;
+                border-radius: 10px;
+            }
+            .sidebar-logo p {
+                color: #f5c518;
+                font-size: 0.75em;
+                margin-top: 8px;
+                font-weight: 600;
+            }
+            .sidebar-user {
+                padding: 18px 20px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .user-avatar {
+                width: 42px;
+                height: 42px;
+                background: #f5c518;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 800;
+                color: #2c2c2c;
+            }
+            .user-info h4 {
+                color: white;
+                font-size: 0.88em;
+            }
+            .user-info span {
+                color: #f5c518;
+                font-size: 0.72em;
+            }
+            .nav-section {
+                padding: 12px 22px 5px;
+                color: #555;
+                font-size: 0.7em;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+                font-weight: 700;
+            }
+            .nav-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 22px;
+                color: #bbb;
+                text-decoration: none;
+                font-size: 0.9em;
+                transition: all 0.3s;
+                border-left: 3px solid transparent;
+            }
+            .nav-item:hover,
+            .nav-item.active {
+                background: rgba(245, 197, 24, 0.1);
+                color: #f5c518;
+                border-left-color: #f5c518;
+            }
+            .nav-item i {
+                width: 18px;
+                text-align: center;
+            }
+            .logout-btn {
+                margin: 15px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 11px 18px;
+                background: rgba(220, 53, 69, 0.15);
+                color: #ff6b6b;
+                border-radius: 10px;
+                text-decoration: none;
+                font-size: 0.86em;
+            }
+            .main-content {
+                margin-left: 260px;
+                flex: 1;
+            }
+            .topbar {
+                background: white;
+                padding: 16px 28px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+                position: sticky;
+                top: 0;
+                z-index: 50;
+            }
+            .topbar h1 {
+                font-size: 1.2em;
+                color: #2c2c2c;
+                font-weight: 700;
+            }
+            .btn-back {
+                background: #f0f0f0;
+                color: #555;
+                padding: 9px 20px;
+                border-radius: 20px;
+                font-weight: 700;
+                text-decoration: none;
+                font-size: 0.88em;
+            }
+            .dashboard-body {
+                padding: 25px;
+                max-width: 700px;
+            }
+            .form-card {
+                background: white;
+                border-radius: 16px;
+                padding: 30px;
+                box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+            }
+            .form-card h2 {
+                font-size: 1em;
+                font-weight: 700;
+                color: #2c2c2c;
+                margin-bottom: 5px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .form-card h2 i {
+                color: #f5c518;
+            }
+            .form-card > p {
+                color: #888;
+                font-size: 0.85em;
+                margin-bottom: 22px;
+            }
+            .form-group {
+                margin-bottom: 16px;
+            }
+            .form-group label {
+                display: block;
+                font-weight: 600;
+                color: #2c2c2c;
+                margin-bottom: 6px;
+                font-size: 0.85em;
+            }
+            .input-box {
+                position: relative;
+            }
+            .input-box i {
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #aaa;
+                font-size: 0.88em;
+            }
+            .input-box input,
+            .input-box select,
+            .input-box textarea {
+                width: 100%;
+                padding: 11px 11px 11px 36px;
+                border: 2px solid #eee;
+                border-radius: 10px;
+                font-size: 0.88em;
+                outline: none;
+                transition: all 0.3s;
+                font-family: "Segoe UI", sans-serif;
+            }
+            .input-box textarea {
+                padding-top: 11px;
+                resize: vertical;
+                min-height: 90px;
+            }
+            .input-box input:focus,
+            .input-box select:focus,
+            .input-box textarea:focus {
+                border-color: #f5c518;
+            }
+            .btn-submit {
+                width: 100%;
+                padding: 13px;
+                background: #f5c518;
+                color: #2c2c2c;
+                border: none;
+                border-radius: 10px;
+                font-size: 0.95em;
+                font-weight: 700;
+                cursor: pointer;
+                transition: all 0.3s;
+                margin-top: 8px;
+            }
+            .btn-submit:hover {
+                background: #e6b800;
+                transform: translateY(-1px);
+            }
+        </style>
+    </head>
+    <body>
+            <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
+            <p>👨‍⚕️ STAFF PANEL</p>
+        </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <span>🟢 {% if user.staff_profile %}{{ user.staff_profile.get_role_display }}{% else %}Staff{% endif %}</span>
+            </div>
+        </div>
+        <nav>
+            <div class="nav-section">Main</div>
+            <a href="{% url 'staff_dashboard' %}" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <div class="nav-section">Attendance</div>
+            <a href="{% url 'staff_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> My Attendance</a>
+            <div class="nav-section">Leave</div>
+            <a href="{% url 'staff_leave' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
+            <div class="nav-section">Work</div>
+            <a href="{% url 'staff_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> My Tasks</a>
+            <a href="{% url 'staff_session_notes' %}" class="nav-item active"><i class="fas fa-notes-medical"></i> Session Notes</a>
+            <a href="{% url 'add_session_note' %}" class="nav-item"><i class="fas fa-plus-circle"></i> Add Session Note</a>
+            <div class="nav-section">Payroll</div>
+            <a href="{% url 'staff_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
+            <div class="nav-section">Quick Links</div>
+            <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+        </nav>
+        <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+
+        <div class="main-content">
+            <div class="topbar">
+                <h1>✏️ Edit Session Note</h1>
+                <a href="{% url 'admin_session_notes' %}" class="btn-back"
+                    >← Back</a
+                >
+            </div>
+            <div class="dashboard-body">
+                <div class="form-card">
+                    <h2>
+                        <i class="fas fa-notes-medical"></i> Edit Session Note
+                    </h2>
+                    <p>
+                        Update clinical session information — recorded {{
+                        note.date|date:"d M Y" }}
+                    </p>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label>Treating Staff</label>
+                            <div class="input-box">
+                                <i class="fas fa-user-md"></i>
+                                <select name="staff_id" required>
+                                    {% for s in staff_list %}
+                                    <option
+                                        value="{{ s.user.id }}"
+                                        {%
+                                        if
+                                        note.staff.id=""
+                                        ="s.user.id"
+                                        %}selected{%
+                                        endif
+                                        %}
+                                    >
+                                        {{
+                                        s.user.get_full_name|default:s.user.username
+                                        }} ({{ s.get_role_display }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Patient</label>
+                            <div class="input-box">
+                                <i class="fas fa-user"></i>
+                                <select name="patient_id" required>
+                                    {% for p in patients %}
+                                    <option
+                                        value="{{ p.id }}"
+                                        {%
+                                        if
+                                        note.patient.id=""
+                                        ="p.id"
+                                        %}selected{%
+                                        endif
+                                        %}
+                                    >
+                                        {{ p.get_full_name|default:p.username }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Diagnosis</label>
+                            <div class="input-box">
+                                <i class="fas fa-search"></i>
+                                <textarea name="diagnosis" required>
+{{ note.diagnosis }}</textarea
+                                >
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Treatment Given</label>
+                            <div class="input-box">
+                                <i class="fas fa-syringe"></i>
+                                <textarea name="treatment" required>
+{{ note.treatment }}</textarea
+                                >
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Next Session Notes</label>
+                            <div class="input-box">
+                                <i class="fas fa-calendar-check"></i>
+                                <textarea name="next_session">
+{{ note.next_session }}</textarea
+                                >
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
