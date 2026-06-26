@@ -1,313 +1,796 @@
 {% load static %}
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <title>Add Attendance - Admin</title>
-        <link
-            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-            rel="stylesheet"
-        />
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Add Attendance - Admin</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #f5c518;
+            --primary-dark: #e2b400;
+            --dark: #1f1f1f;
+            --dark2: #2b2b2b;
+            --bg: #f5f6fa;
+            --white: #fff;
+            --text: #2c2c2c;
+            --gray: #777;
+            --border: #ececec;
+            --shadow: 0 10px 30px rgba(0, 0, 0, .08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: "Segoe UI", sans-serif;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /*==========================
+SIDEBAR
+==========================*/
+
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: linear-gradient(180deg, #181818, #2b2b2b);
+            overflow-y: auto;
+            z-index: 1000;
+            transition: .35s;
+            scrollbar-width: none;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .sidebar-logo {
+            padding: 22px 18px;
+            text-align: center;
+            border-bottom: 1px solid rgba(245, 197, 24, .15);
+        }
+
+        .sidebar-logo img {
+            width: 130px;
+            max-width: 100%;
+            border-radius: 10px;
+        }
+
+        .sidebar-logo p {
+            margin-top: 8px;
+            color: var(--primary);
+            font-size: .74rem;
+            font-weight: 600;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+        }
+
+        /* ==========================
+   COLLAPSIBLE SIDEBAR
+========================== */
+
+        .sidebar {
+            transition: width .35s ease, transform .35s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar.collapsed .sidebar-logo p,
+        .sidebar.collapsed .user-info,
+        .sidebar.collapsed .nav-section,
+        .sidebar.collapsed .nav-item span,
+        .sidebar.collapsed .logout-btn span {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-logo {
+            padding: 20px 10px;
+        }
+
+        .sidebar.collapsed .sidebar-logo img {
+            width: 50px;
+        }
+
+        .sidebar.collapsed .sidebar-user {
+            justify-content: center;
+        }
+
+        .sidebar.collapsed .nav-item {
+            justify-content: center;
+            padding: 14px 0;
+        }
+
+        .sidebar.collapsed .nav-item i {
+            margin: 0;
+            font-size: 18px;
+            width: auto;
+        }
+
+        .sidebar.collapsed .logout-btn {
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .95rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            overflow: hidden;
+        }
+
+        .user-info h4 {
+            color: #fff;
+            font-size: .88rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-info span {
+            color: var(--primary);
+            font-size: .72rem;
+        }
+
+        .nav-section {
+            padding: 14px 22px 6px;
+            color: #666;
+            font-size: .68rem;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+            font-weight: 700;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 22px;
+            text-decoration: none;
+            color: #bbb;
+            font-size: .88rem;
+            transition: .3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(245, 197, 24, .12);
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+
+        .nav-item i {
+            width: 18px;
+            text-align: center;
+        }
+
+        .logout-btn {
+            margin: 18px;
+            padding: 11px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 10px;
+            background: rgba(220, 53, 69, .15);
+            color: #ff6b6b;
+            text-decoration: none;
+            transition: .3s;
+        }
+
+        .logout-btn:hover {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        /*==========================
+MAIN CONTENT
+==========================*/
+
+        .main-content {
+            margin-left: 260px;
+            width: calc(100% - 260px);
+            min-height: 100vh;
+            transition: .35s ease;
+        }
+
+        .sidebar.collapsed+.main-content {
+            margin-left: 80px;
+            width: calc(100% - 80px);
+        }
+
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .45);
+            opacity: 0;
+            visibility: hidden;
+            transition: .3s;
+            z-index: 998;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 68px;
+            background: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .05);
+        }
+
+        .form-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 30px;
+            border: 1px solid #ececec;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
+            animation: fadeUp .45s ease;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
             }
-            body {
-                font-family: "Segoe UI", sans-serif;
-                background: #f5f5f5;
-                display: flex;
-                min-height: 100vh;
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
-            .sidebar {
-                width: 260px;
-                height: 100vh;
-                position: fixed;
-                left: 0;
-                top: 0;
-                background: linear-gradient(180deg, #1a1a1a, #2c2c2c);
-                overflow-y: auto;
-                scrollbar-width: none;
-            }
-            .sidebar-logo {
-                padding: 22px 20px;
-                border-bottom: 1px solid rgba(245, 197, 24, 0.2);
-                text-align: center;
-            }
-            .sidebar-logo img {
-                width: 130px;
-                border-radius: 10px;
-            }
-            .sidebar-logo p {
-                color: #f5c518;
-                font-size: 0.75em;
-                margin-top: 8px;
-                font-weight: 600;
-            }
-            .sidebar-user {
-                padding: 18px 20px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            .user-avatar {
-                width: 42px;
-                height: 42px;
-                background: #f5c518;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 800;
-                color: #2c2c2c;
-            }
-            .user-info h4 {
-                color: white;
-                font-size: 0.88em;
-            }
-            .user-info span {
-                color: #f5c518;
-                font-size: 0.72em;
-            }
-            .nav-section {
-                padding: 12px 22px 5px;
-                color: #555;
-                font-size: 0.7em;
-                text-transform: uppercase;
-                letter-spacing: 1.5px;
-                font-weight: 700;
-            }
-            .nav-item {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px 22px;
-                color: #bbb;
-                text-decoration: none;
-                font-size: 0.9em;
-                transition: all 0.3s;
-                border-left: 3px solid transparent;
-            }
-            .nav-item:hover,
-            .nav-item.active {
-                background: rgba(245, 197, 24, 0.1);
-                color: #f5c518;
-                border-left-color: #f5c518;
-            }
-            .nav-item i {
-                width: 18px;
-                text-align: center;
-            }
-            .logout-btn {
-                margin: 15px;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                padding: 11px 18px;
-                background: rgba(220, 53, 69, 0.15);
-                color: #ff6b6b;
-                border-radius: 10px;
-                text-decoration: none;
-                font-size: 0.86em;
-            }
-            .main-content {
-                margin-left: 260px;
-                flex: 1;
-            }
-            .topbar {
-                background: white;
-                padding: 16px 28px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-                position: sticky;
-                top: 0;
-                z-index: 50;
-            }
-            .topbar h1 {
-                font-size: 1.2em;
-                color: #2c2c2c;
-                font-weight: 700;
-            }
-            .btn-back {
-                background: #f0f0f0;
-                color: #555;
-                padding: 9px 20px;
-                border-radius: 20px;
-                font-weight: 700;
-                text-decoration: none;
-                font-size: 0.88em;
-            }
+        }
+
+        .form-card h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.25rem;
+            color: #222;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .form-card h2 i {
+            color: #f5c518;
+            font-size: 1.15rem;
+        }
+
+        .form-card>p {
+            color: #777;
+            font-size: .9rem;
+            margin-bottom: 24px;
+        }
+
+        .info-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 15px 18px;
+            margin-bottom: 24px;
+            border-left: 4px solid #f5c518;
+            background: #eef8ff;
+            border-radius: 12px;
+            color: #0c5460;
+            line-height: 1.6;
+            font-size: .85rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: .88rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .input-box {
+            position: relative;
+        }
+
+        .input-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: .9rem;
+            z-index: 2;
+        }
+
+        .input-box input,
+        .input-box select,
+        .input-box textarea {
+            width: 100%;
+            border: 2px solid #ececec;
+            border-radius: 12px;
+            background: #fff;
+            font-size: .9rem;
+            font-family: "Segoe UI", sans-serif;
+            padding: 13px 14px 13px 42px;
+            transition: .25s;
+            outline: none;
+        }
+
+        .input-box textarea {
+            min-height: 110px;
+            resize: vertical;
+            padding-top: 14px;
+        }
+
+        .input-box input:hover,
+        .input-box select:hover,
+        .input-box textarea:hover {
+            border-color: #d5d5d5;
+        }
+
+        .input-box input:focus,
+        .input-box select:focus,
+        .input-box textarea:focus {
+            border-color: #f5c518;
+            box-shadow: 0 0 0 4px rgba(245, 197, 24, .15);
+        }
+
+        .btn-submit {
+            width: 100%;
+            margin-top: 10px;
+            height: 52px;
+            border: none;
+            border-radius: 12px;
+            background: #f5c518;
+            color: #222;
+            font-size: .95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .3s;
+        }
+
+        .btn-submit:hover {
+            background: #e4b000;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(245, 197, 24, .35);
+        }
+
+        .btn-submit:active {
+            transform: scale(.98);
+        }
+
+        .menu-toggle,
+        .sidebar-toggle {
+            width: 42px;
+            height: 42px;
+            border: none;
+            border-radius: 10px;
+            background: #f5f5f5;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: .3s;
+        }
+
+        .menu-toggle:hover,
+        .sidebar-toggle:hover {
+            background: var(--primary);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-toggle {
+            display: none;
+        }
+
+        /* ===========================================
+   LARGE SCREENS
+=========================================== */
+
+        @media (min-width:1400px) {
+
             .dashboard-body {
-                padding: 25px;
-                max-width: 700px;
+                max-width: 1100px;
             }
+
             .form-card {
-                background: white;
-                border-radius: 16px;
-                padding: 30px;
-                box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+                padding: 40px;
             }
+
+        }
+
+
+        /* ===========================================
+   TABLET
+=========================================== */
+
+        @media (max-width:992px) {
+
+            .dashboard-body {
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            .form-card {
+                padding: 24px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .topbar {
+                padding: 0 18px;
+            }
+
+            .topbar h1 {
+                font-size: 1rem;
+            }
+
+        }
+
+
+        /* ===========================================
+   MOBILE
+=========================================== */
+
+        @media (max-width:768px) {
+
+            body {
+                overflow-x: hidden;
+            }
+
+            .main-content {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .dashboard-body {
+                padding: 15px;
+            }
+
+            .form-card {
+                padding: 18px;
+                border-radius: 14px;
+            }
+
             .form-card h2 {
-                font-size: 1em;
-                font-weight: 700;
-                color: #2c2c2c;
-                margin-bottom: 5px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
+                font-size: 1.05rem;
             }
-            .form-card h2 i {
-                color: #f5c518;
+
+            .form-card>p {
+                font-size: .82rem;
+                margin-bottom: 18px;
             }
-            .form-card > p {
-                color: #888;
-                font-size: 0.85em;
-                margin-bottom: 22px;
+
+            .info-note {
+                font-size: .8rem;
+                padding: 12px;
+                line-height: 1.5;
             }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
             .form-group {
                 margin-bottom: 16px;
             }
-            .form-group label {
-                display: block;
-                font-weight: 600;
-                color: #2c2c2c;
-                margin-bottom: 6px;
-                font-size: 0.85em;
-            }
-            .input-box {
-                position: relative;
-            }
-            .input-box i {
-                position: absolute;
-                left: 12px;
-                top: 50%;
-                transform: translateY(-50%);
-                color: #aaa;
-                font-size: 0.88em;
-            }
+
             .input-box input,
             .input-box select,
             .input-box textarea {
-                width: 100%;
-                padding: 11px 11px 11px 36px;
-                border: 2px solid #eee;
-                border-radius: 10px;
-                font-size: 0.88em;
-                outline: none;
-                transition: all 0.3s;
-                font-family: "Segoe UI", sans-serif;
+                font-size: .86rem;
             }
-            .input-box textarea {
-                padding-top: 11px;
-                resize: vertical;
-                min-height: 70px;
-            }
-            .input-box input:focus,
-            .input-box select:focus,
-            .input-box textarea:focus {
-                border-color: #f5c518;
-            }
-            .form-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 14px;
-            }
+
             .btn-submit {
+                height: 48px;
+                font-size: .9rem;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
                 width: 100%;
-                padding: 13px;
-                background: #f5c518;
-                color: #2c2c2c;
-                border: none;
-                border-radius: 10px;
-                font-size: 0.95em;
-                font-weight: 700;
-                cursor: pointer;
-                transition: all 0.3s;
-                margin-top: 8px;
             }
-            .btn-submit:hover {
-                background: #e6b800;
-                transform: translateY(-1px);
+
+            .menu-toggle {
+                display: flex;
             }
-            .info-note {
-                background: #e8f4fd;
+
+            .sidebar-toggle {
+                display: none;
+            }
+
+            .menu-toggle {
+                display: flex;
+            }
+
+            .sidebar-toggle {
+                display: none;
+            }
+
+        }
+
+
+        /* ===========================================
+   SMALL MOBILE
+=========================================== */
+
+        @media (max-width:480px) {
+
+            .topbar {
+                height: 60px;
+                padding: 0 12px;
+            }
+
+            .topbar h1 {
+                font-size: .88rem;
+                max-width: 170px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .btn-back {
+                padding: 7px 12px;
+                font-size: .72rem;
                 border-radius: 8px;
-                padding: 10px 14px;
-                font-size: 0.82em;
-                color: #0c5460;
-                margin-bottom: 20px;
             }
-        </style>
-    </head>
-    <body>
-            <aside class="sidebar">
-      <div class="sidebar-logo">
-        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
-        <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
-      </div>
-      <div class="sidebar-user">
-        <div class="user-avatar">{{ user.username|first|upper }}</div>
-        <div class="user-info">
-          <h4>{{ user.username }}</h4>
-          <span><span class="online-dot"></span>Super Admin</span>
+
+            .dashboard-body {
+                padding: 10px;
+            }
+
+            .form-card {
+                padding: 15px;
+                border-radius: 12px;
+            }
+
+            .form-card h2 {
+                font-size: .95rem;
+            }
+
+            .form-card>p {
+                font-size: .78rem;
+            }
+
+            .form-group label {
+                font-size: .8rem;
+            }
+
+            .input-box i {
+                left: 12px;
+                font-size: .82rem;
+            }
+
+            .input-box input,
+            .input-box select {
+                height: 44px;
+                padding-left: 38px;
+                font-size: .82rem;
+            }
+
+            .input-box textarea {
+                min-height: 90px;
+                padding-left: 38px;
+                font-size: .82rem;
+            }
+
+            .btn-submit {
+                height: 46px;
+                font-size: .85rem;
+            }
+
+        }
+
+
+        /* ===========================================
+   EXTRA SMALL DEVICES
+=========================================== */
+
+        @media (max-width:360px) {
+
+            .dashboard-body {
+                padding: 8px;
+            }
+
+            .form-card {
+                padding: 12px;
+            }
+
+            .topbar h1 {
+                font-size: .8rem;
+            }
+
+            .btn-back {
+                padding: 6px 9px;
+                font-size: .68rem;
+            }
+
+            .form-card h2 {
+                font-size: .9rem;
+            }
+
+            .form-card>p {
+                font-size: .75rem;
+            }
+
+            .info-note {
+                font-size: .74rem;
+                padding: 10px;
+            }
+
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar collapsed">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
+            <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
         </div>
-      </div>
-      <div class="nav-scroll">
-        <nav>
-          <div class="nav-section">Overview</div>
-          <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-          <div class="nav-section">Management</div>
-          <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
-          <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
-          <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
-          <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
-          <div class="nav-section">Staff Tools</div>
-          <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
-          <a href="{% url 'admin_attendance' %}" class="nav-item active"><i class="fas fa-clock"></i> Attendance</a>
-          <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
-          <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-          <div class="nav-section">Communication</div>
-          <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
-          <div class="nav-section">Content</div>
-          <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
-          <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
-          <div class="nav-section">Reports</div>
-          <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress Tracking</a>
-          <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
-          <div class="nav-section">System</div>
-          <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
-          <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
-          <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
-        </nav>
-      </div>
-      <div class="sidebar-footer">
-        <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-      </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.username|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.username }}</h4>
+                <span><span class="online-dot"></span>Super Admin</span>
+            </div>
+        </div>
+        <div class="nav-scroll">
+            <nav>
+                <div class="nav-section">Overview</div>
+                <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i>
+                    Dashboard</a>
+                <div class="nav-section">Management</div>
+                <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+                <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+                <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All
+                    Appointments</a>
+                <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+                <div class="nav-section">Staff Tools</div>
+                <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave
+                    Requests</a>
+                <a href="{% url 'admin_attendance' %}" class="nav-item active"><i class="fas fa-clock"></i>
+                    Attendance</a>
+                <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+                <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session
+                    Notes</a>
+                <div class="nav-section">Communication</div>
+                <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+                <div class="nav-section">Content</div>
+                <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
+                <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
+                <div class="nav-section">Reports</div>
+                <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress
+                    Tracking</a>
+                <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+                <div class="nav-section">System</div>
+                <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+                <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+                <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+            </nav>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
     </aside>
 
-        <div class="main-content">
-            <div class="topbar">
+    <div class="main-content">
+
+        <!-- TOPBAR -->
+        <div class="topbar">
+
+            <div class="topbar-left">
+
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <button class="sidebar-toggle" id="collapseSidebar">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+
                 <h1>🕐 Add Attendance Record</h1>
-                <a href="{% url 'admin_attendance' %}" class="btn-back"
-                    >← Back</a
-                >
+
             </div>
-            <div class="dashboard-body">
-                <div class="form-card">
-                    <h2>
-                        <i class="fas fa-plus-circle"></i> New Attendance Entry
-                    </h2>
-                    <p>Manually add an attendance record for a staff member</p>
-                    <div class="info-note">
-                        ℹ️ If a record already exists for the selected staff +
-                        date, it will be updated.
+
+            <a href="{% url 'admin_attendance' %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+
+        </div>
+
+        <!-- BODY -->
+        <div class="dashboard-body">
+
+            <div class="form-card">
+
+                <h2>
+                    <i class="fas fa-plus-circle"></i>
+                    New Attendance Entry
+                </h2>
+
+                <p>
+                    Manually add an attendance record for a staff member
+                </p>
+
+                <div class="info-note">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        If an attendance record already exists for the selected staff member
+                        and date, it will automatically be updated.
                     </div>
-                    <form method="POST">
-                        {% csrf_token %}
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <!-- ROW 1 -->
+                    <div class="form-row">
+
                         <div class="form-group">
                             <label>Staff Member</label>
                             <div class="input-box">
@@ -316,66 +799,109 @@
                                     <option value="">-- Select Staff --</option>
                                     {% for s in staff_list %}
                                     <option value="{{ s.user.id }}">
-                                        {{
-                                        s.user.get_full_name|default:s.user.username
-                                        }} ({{ s.get_role_display }})
+                                        {{ s.user.get_full_name|default:s.user.username }}
+                                        ({{ s.get_role_display }})
                                     </option>
                                     {% endfor %}
                                 </select>
                             </div>
                         </div>
+
                         <div class="form-group">
                             <label>Date</label>
                             <div class="input-box">
                                 <i class="fas fa-calendar"></i>
-                                <input type="date" name="date" required />
+                                <input type="date" name="date" required>
                             </div>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Clock In</label>
-                                <div class="input-box">
-                                    <i class="fas fa-sign-in-alt"></i>
-                                    <input type="time" name="clock_in" />
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Clock Out</label>
-                                <div class="input-box">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                    <input type="time" name="clock_out" />
-                                </div>
+
+                    </div>
+
+                    <!-- ROW 2 -->
+                    <div class="form-row">
+
+                        <div class="form-group">
+                            <label>Clock In</label>
+                            <div class="input-box">
+                                <i class="fas fa-sign-in-alt"></i>
+                                <input type="time" name="clock_in">
                             </div>
                         </div>
+
+                        <div class="form-group">
+                            <label>Clock Out</label>
+                            <div class="input-box">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <input type="time" name="clock_out">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ROW 3 (FULL WIDTH BALANCE FIX) -->
+                    <div class="form-row">
+
                         <div class="form-group">
                             <label>Total Hours</label>
                             <div class="input-box">
                                 <i class="fas fa-hourglass-half"></i>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    name="total_hours"
-                                    placeholder="e.g. 7.5"
-                                    value="0"
-                                />
+                                <input type="number" step="0.01" name="total_hours" value="0">
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label>Notes</label>
-                            <div class="input-box">
-                                <i class="fas fa-sticky-note"></i>
-                                <textarea
-                                    name="notes"
-                                    placeholder="Any notes (late arrival, early leave, etc.)"
-                                ></textarea>
-                            </div>
+
+                        <div></div>
+
+                    </div>
+
+                    <!-- NOTES -->
+                    <div class="form-group">
+
+                        <label>Notes</label>
+
+                        <div class="input-box">
+                            <i class="fas fa-sticky-note"></i>
+                            <textarea name="notes" placeholder="Any notes (late arrival, early leave, etc.)"></textarea>
                         </div>
-                        <button type="submit" class="btn-submit">
-                            <i class="fas fa-save"></i> Save Attendance
-                        </button>
-                    </form>
-                </div>
+
+                    </div>
+
+                    <!-- SUBMIT -->
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-save"></i>
+                        Save Attendance
+                    </button>
+
+                </form>
+
             </div>
+
         </div>
-    </body>
+
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <script>
+        const sidebar = document.querySelector(".sidebar");
+        const menu = document.getElementById("menuToggle");
+        const collapse = document.getElementById("collapseSidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+
+        menu?.addEventListener("click", () => {
+            sidebar.classList.toggle("show");
+            overlay.classList.toggle("show");
+        });
+
+        overlay?.addEventListener("click", () => {
+            sidebar.classList.remove("show");
+            overlay.classList.remove("show");
+        });
+
+        collapse?.addEventListener("click", () => {
+            sidebar.classList.toggle("collapsed");
+        });
+    </script>
+
+</body>
+
 </html>

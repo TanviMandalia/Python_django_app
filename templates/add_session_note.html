@@ -8,6 +8,7 @@
     <title>Add Session Note - Staff</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* ================= BASE ================= */
         * {
             margin: 0;
             padding: 0;
@@ -17,10 +18,11 @@
         body {
             font-family: 'Segoe UI', sans-serif;
             background: #f5f5f5;
-            display: flex;
             min-height: 100vh;
+            display: flex;
         }
 
+        /* ================= SIDEBAR ================= */
         .sidebar {
             width: 260px;
             height: 100vh;
@@ -32,105 +34,18 @@
             scrollbar-width: none;
         }
 
-        .sidebar-logo {
-            padding: 22px 20px;
-            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
-            text-align: center;
+        .sidebar::-webkit-scrollbar {
+            display: none;
         }
 
-        .sidebar-logo img {
-            width: 130px;
-            border-radius: 10px;
-        }
-
-        .sidebar-logo p {
-            color: #F5C518;
-            font-size: 0.75em;
-            margin-top: 8px;
-            font-weight: 600;
-        }
-
-        .sidebar-user {
-            padding: 18px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .user-avatar {
-            width: 42px;
-            height: 42px;
-            background: #F5C518;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: #2C2C2C;
-        }
-
-        .user-info h4 {
-            color: white;
-            font-size: 0.88em;
-        }
-
-        .user-info span {
-            color: #F5C518;
-            font-size: 0.72em;
-        }
-
-        .nav-section {
-            padding: 12px 22px 5px;
-            color: #555;
-            font-size: 0.7em;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 700;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 22px;
-            color: #bbb;
-            text-decoration: none;
-            font-size: 0.9em;
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
-
-        .nav-item:hover,
-        .nav-item.active {
-            background: rgba(245, 197, 24, 0.1);
-            color: #F5C518;
-            border-left-color: #F5C518;
-        }
-
-        .nav-item i {
-            width: 18px;
-            text-align: center;
-        }
-
-        .logout-btn {
-            margin: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 11px 18px;
-            background: rgba(220, 53, 69, 0.15);
-            color: #ff6b6b;
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 0.86em;
-        }
-
+        /* ================= MAIN ================= */
         .main-content {
             margin-left: 260px;
             flex: 1;
+            min-width: 0;
         }
 
+        /* ================= TOPBAR ================= */
         .topbar {
             background: white;
             padding: 16px 28px;
@@ -138,26 +53,23 @@
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .topbar h1 {
             font-size: 1.2em;
             color: #2C2C2C;
-            font-weight: 700;
         }
 
-        .back-btn {
-            color: #F5C518;
-            text-decoration: none;
-            font-size: 0.88em;
-            font-weight: 600;
-        }
-
+        /* ================= BODY ================= */
         .dashboard-body {
             padding: 25px;
             max-width: 750px;
+            width: 100%;
         }
 
+        /* ================= CARD ================= */
         .form-card {
             background: white;
             border-radius: 18px;
@@ -165,19 +77,7 @@
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
         }
 
-        .form-card h2 {
-            font-size: 1.2em;
-            font-weight: 700;
-            color: #2C2C2C;
-            margin-bottom: 5px;
-        }
-
-        .form-card p {
-            color: #888;
-            font-size: 0.88em;
-            margin-bottom: 25px;
-        }
-
+        /* ================= FORM ================= */
         .form-group {
             margin-bottom: 20px;
         }
@@ -185,13 +85,8 @@
         .form-group label {
             display: block;
             font-weight: 700;
-            color: #2C2C2C;
             margin-bottom: 8px;
             font-size: 0.88em;
-        }
-
-        .form-group label span {
-            color: #dc3545;
         }
 
         .input-box {
@@ -201,11 +96,12 @@
         .input-box i {
             position: absolute;
             left: 13px;
-            top: 14px;
+            top: 50%;
+            transform: translateY(-50%);
             color: #aaa;
-            font-size: 0.9em;
         }
 
+        /* unified input fix */
         .input-box select,
         .input-box textarea {
             width: 100%;
@@ -213,14 +109,15 @@
             border: 2px solid #eee;
             border-radius: 12px;
             font-size: 0.9em;
-            outline: none;
-            transition: all 0.3s;
             font-family: 'Segoe UI', sans-serif;
+            outline: none;
+            transition: 0.3s;
         }
 
         .input-box textarea {
             height: 110px;
-            resize: none;
+            resize: vertical;
+            padding-top: 12px;
         }
 
         .input-box select:focus,
@@ -229,18 +126,17 @@
             box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.1);
         }
 
+        /* ================= BUTTON ================= */
         .btn-submit {
             width: 100%;
             padding: 14px;
             background: #F5C518;
-            color: #2C2C2C;
             border: none;
             border-radius: 12px;
             font-size: 1em;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 5px;
+            transition: 0.3s;
         }
 
         .btn-submit:hover {
@@ -248,6 +144,7 @@
             transform: translateY(-1px);
         }
 
+        /* ================= ALERT ================= */
         .alert-success {
             background: #d4edda;
             border: 1px solid #28a745;
@@ -255,13 +152,102 @@
             padding: 12px 18px;
             border-radius: 10px;
             margin-bottom: 18px;
-            font-size: 0.9em;
+        }
+
+        /* ================= RESPONSIVE ================= */
+
+        /* TABLET */
+        @media (max-width: 992px) {
+            .dashboard-body {
+                padding: 18px;
+                max-width: 100%;
+            }
+
+            .form-card {
+                padding: 25px;
+            }
+        }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                position: fixed;
+                transform: translateX(-100%);
+                transition: 0.3s ease;
+                z-index: 1000;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .topbar {
+                padding: 14px 16px;
+            }
+
+            .topbar h1 {
+                font-size: 1rem;
+            }
+
+            .dashboard-body {
+                padding: 15px;
+            }
+
+            .form-card {
+                padding: 20px;
+                border-radius: 14px;
+            }
+
+            .input-box select,
+            .input-box textarea {
+                font-size: 0.85em;
+            }
+
+            .btn-submit {
+                font-size: 0.95em;
+            }
+        }
+
+        /* SMALL MOBILE */
+        @media (max-width: 480px) {
+
+            .topbar h1 {
+                font-size: 0.9rem;
+            }
+
+            .form-card {
+                padding: 16px;
+            }
+
+            .form-group label {
+                font-size: 0.8em;
+            }
+
+            .input-box select,
+            .input-box textarea {
+                font-size: 0.82em;
+                padding-left: 36px;
+            }
+
+            .btn-submit {
+                padding: 12px;
+            }
         }
     </style>
 </head>
 
 <body>
-        <aside class="sidebar">
+    <aside class="sidebar">
         <div class="sidebar-logo">
             <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo">
             <p>👨‍⚕️ STAFF PANEL</p>
@@ -270,7 +256,8 @@
             <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
             <div class="user-info">
                 <h4>{{ user.get_full_name|default:user.username }}</h4>
-                <span>🟢 {% if user.staff_profile %}{{ user.staff_profile.get_role_display }}{% else %}Staff{% endif %}</span>
+                <span>🟢 {% if user.staff_profile %}{{ user.staff_profile.get_role_display }}{% else %}Staff{% endif
+                    %}</span>
             </div>
         </div>
         <nav>
@@ -282,8 +269,10 @@
             <a href="{% url 'staff_leave' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Apply Leave</a>
             <div class="nav-section">Work</div>
             <a href="{% url 'staff_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> My Tasks</a>
-            <a href="{% url 'staff_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-            <a href="{% url 'add_session_note' %}" class="nav-item active"><i class="fas fa-plus-circle"></i> Add Session Note</a>
+            <a href="{% url 'staff_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session
+                Notes</a>
+            <a href="{% url 'add_session_note' %}" class="nav-item active"><i class="fas fa-plus-circle"></i> Add
+                Session Note</a>
             <div class="nav-section">Payroll</div>
             <a href="{% url 'staff_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> My Salary</a>
             <div class="nav-section">Quick Links</div>
