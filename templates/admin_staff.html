@@ -258,60 +258,438 @@
             color: #F5C518;
             margin-bottom: 15px;
         }
+
+        /* ===================================================
+   GLOBAL RESPONSIVE SETTINGS
+=================================================== */
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        /* Better focus accessibility */
+
+        a:focus,
+        button:focus,
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: 3px solid #F5C518;
+            outline-offset: 2px;
+        }
+
+        /* ===================================================
+   SIDEBAR
+=================================================== */
+
+        .sidebar {
+            transition: .35s ease;
+            z-index: 1000;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hidden on mobile */
+
+        @media (max-width:991px) {
+
+            .sidebar {
+                transform: translateX(-100%);
+                width: 270px;
+                box-shadow: 0 0 30px rgba(0, 0, 0, .25);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+        }
+
+        /* ===================================================
+   OVERLAY
+=================================================== */
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .45);
+            opacity: 0;
+            visibility: hidden;
+            transition: .3s;
+            z-index: 999;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* ===================================================
+   MAIN CONTENT
+=================================================== */
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            min-width: 0;
+            transition: .3s;
+        }
+
+        @media(max-width:991px) {
+
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+
+        }
+
+        /* ===================================================
+   TOPBAR
+=================================================== */
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .menu-btn {
+            display: none;
+            width: 42px;
+            height: 42px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: #F5C518;
+            color: #2C2C2C;
+            font-size: 20px;
+        }
+
+        @media(max-width:991px) {
+
+            .menu-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .topbar {
+                padding: 15px;
+            }
+
+            .topbar h1 {
+                font-size: 18px;
+            }
+
+        }
+
+        /* ===================================================
+   DASHBOARD BODY
+=================================================== */
+
+        .dashboard-body {
+            padding: 25px;
+        }
+
+        @media(max-width:991px) {
+
+            .dashboard-body {
+                padding: 18px;
+            }
+
+        }
+
+        @media(max-width:576px) {
+
+            .dashboard-body {
+                padding: 15px;
+            }
+
+        }
+
+        /* ===================================================
+   STAFF GRID
+=================================================== */
+
+        .staff-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        @media(max-width:1200px) {
+
+            .staff-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+        }
+
+        @media(max-width:768px) {
+
+            .staff-grid {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+        /* ===================================================
+   STAFF CARD
+=================================================== */
+
+        .staff-card {
+            transition: .3s;
+        }
+
+        .staff-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, .08);
+        }
+
+        /* ===================================================
+   RESPONSIVE TABLES
+=================================================== */
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 12px;
+            background: #fff;
+        }
+
+        .table-responsive table {
+            min-width: 800px;
+        }
+
+        .table-responsive::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 20px;
+        }
+
+        /* ===================================================
+   RESPONSIVE FORMS
+=================================================== */
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .form-group {
+            width: 100%;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+        }
+
+        @media(max-width:768px) {
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+        /* ===================================================
+   BUTTONS
+=================================================== */
+
+        .btn-add,
+        button,
+        .btn {
+            transition: .3s;
+        }
+
+        .btn-add:hover,
+        button:hover,
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* ===================================================
+   RESPONSIVE TYPOGRAPHY
+=================================================== */
+
+        @media(max-width:768px) {
+
+            body {
+                font-size: 15px;
+            }
+
+            .topbar h1 {
+                font-size: 18px;
+            }
+
+            .staff-card {
+                padding: 18px;
+            }
+
+            .sidebar-logo img {
+                width: 110px;
+            }
+
+        }
+
+        /* ===================================================
+   EXTRA SMALL DEVICES
+=================================================== */
+
+        @media(max-width:480px) {
+
+            .topbar {
+                padding: 12px;
+            }
+
+            .btn-add {
+                width: 100%;
+                text-align: center;
+            }
+
+            .staff-avatar {
+                width: 60px;
+                height: 60px;
+            }
+
+            .staff-card {
+                border-radius: 14px;
+            }
+
+        }
+
+        /* ===================================================
+   ANIMATIONS
+=================================================== */
+
+        .nav-item,
+        .logout-btn,
+        .staff-card,
+        .btn-add {
+            transition: all .3s ease;
+        }
+
+        .nav-item:hover {
+            padding-left: 28px;
+        }
+
+        /* ===================================================
+   REDUCE MOTION
+=================================================== */
+
+        @media(prefers-reduced-motion:reduce) {
+
+            * {
+                transition: none !important;
+                animation: none !important;
+                scroll-behavior: auto;
+            }
+
+        }
     </style>
 </head>
 
 <body>
-        <aside class="sidebar">
-      <div class="sidebar-logo">
-        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
-        <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
-      </div>
-      <div class="sidebar-user">
-        <div class="user-avatar">{{ user.username|first|upper }}</div>
-        <div class="user-info">
-          <h4>{{ user.username }}</h4>
-          <span><span class="online-dot"></span>Super Admin</span>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
+            <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
         </div>
-      </div>
-      <div class="nav-scroll">
-        <nav>
-          <div class="nav-section">Overview</div>
-          <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-          <div class="nav-section">Management</div>
-          <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
-          <a href="{% url 'admin_staff' %}" class="nav-item active"><i class="fas fa-user-md"></i> Manage Staff</a>
-          <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
-          <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
-          <div class="nav-section">Staff Tools</div>
-          <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
-          <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
-          <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
-          <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-          <div class="nav-section">Communication</div>
-          <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
-          <div class="nav-section">Content</div>
-          <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
-          <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
-          <div class="nav-section">Reports</div>
-          <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress Tracking</a>
-          <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
-          <div class="nav-section">System</div>
-          <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
-          <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
-          <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
-        </nav>
-      </div>
-      <div class="sidebar-footer">
-        <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-      </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.username|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.username }}</h4>
+                <span><span class="online-dot"></span>Super Admin</span>
+            </div>
+        </div>
+        <div class="nav-scroll">
+            <nav>
+                <div class="nav-section">Overview</div>
+                <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i>
+                    Dashboard</a>
+                <div class="nav-section">Management</div>
+                <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+                <a href="{% url 'admin_staff' %}" class="nav-item active"><i class="fas fa-user-md"></i> Manage
+                    Staff</a>
+                <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All
+                    Appointments</a>
+                <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+                <div class="nav-section">Staff Tools</div>
+                <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave
+                    Requests</a>
+                <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+                <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+                <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session
+                    Notes</a>
+                <div class="nav-section">Communication</div>
+                <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+                <div class="nav-section">Content</div>
+                <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
+                <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
+                <div class="nav-section">Reports</div>
+                <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress
+                    Tracking</a>
+                <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+                <div class="nav-section">System</div>
+                <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+                <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+                <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+            </nav>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
     </aside>
 
     <div class="main-content">
         <div class="topbar">
-            <h1>👨‍⚕️ Manage Staff</h1>
+            <div class="topbar-left">
+                <button class="menu-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>👨‍⚕️ Manage Staff</h1>
+            </div>
             <a href="/add-staff" class="btn-add">+ Add Staff</a>
         </div>
+
         <div class="dashboard-body">
             {% if staff_list %}
             <div class="staff-grid">
@@ -329,11 +707,16 @@
                         </div>
                         <div class="detail-item"><i class="fas fa-phone"></i> {{ staff.phone|default:"—" }}</div>
                         <div class="detail-item"><i class="fas fa-rupee-sign"></i> ₹{{ staff.salary }}/month</div>
-                        <div class="detail-item"><i class="fas fa-calendar"></i> Joined: {{ staff.joining_date|date:"d M Y" }}</div>
+                        <div class="detail-item"><i class="fas fa-calendar"></i> Joined: {{ staff.joining_date|date:"d M
+                            Y" }}</div>
                     </div>
                     <div style="display:flex;gap:8px;margin-top:14px;justify-content:center;">
-                        <a href="{% url 'edit_staff' staff.id %}" style="background:#F5C518;color:#2C2C2C;padding:7px 16px;border-radius:10px;font-size:0.82em;font-weight:700;text-decoration:none;">✏️ Edit</a>
-                        <a href="{% url 'delete_staff' staff.id %}" style="background:#C0392B;color:#fff;padding:7px 16px;border-radius:10px;font-size:0.82em;font-weight:700;text-decoration:none;">🗑️ Delete</a>
+                        <a href="{% url 'edit_staff' staff.id %}"
+                            style="background:#F5C518;color:#2C2C2C;padding:7px 16px;border-radius:10px;font-size:0.82em;font-weight:700;text-decoration:none;">✏️
+                            Edit</a>
+                        <a href="{% url 'delete_staff' staff.id %}"
+                            style="background:#C0392B;color:#fff;padding:7px 16px;border-radius:10px;font-size:0.82em;font-weight:700;text-decoration:none;">🗑️
+                            Delete</a>
                     </div>
                 </div>
                 {% endfor %}
@@ -349,6 +732,29 @@
             {% endif %}
         </div>
     </div>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <script>
+        function toggleSidebar() {
+
+            const sidebar = document.querySelector(".sidebar");
+            const overlay = document.querySelector(".sidebar-overlay");
+
+            sidebar.classList.toggle("show");
+            overlay.classList.toggle("show");
+
+        }
+
+        window.addEventListener("resize", function () {
+
+            if (window.innerWidth > 991) {
+
+                document.querySelector(".sidebar").classList.remove("show");
+                document.querySelector(".sidebar-overlay").classList.remove("show");
+
+            }
+
+        });
+    </script>
 </body>
 
 </html>

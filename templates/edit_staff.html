@@ -227,9 +227,125 @@
                 background: #e6b800;
                 transform: translateY(-1px);
             }
+
+            /* =========================
+   RESPONSIVE CORE
+========================= */
+
+/* Hamburger button (hidden on desktop) */
+.menu-toggle {
+    display: none;
+    background: #f5c518;
+    border: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+/* Smooth transitions */
+.sidebar,
+.main-content {
+    transition: all 0.3s ease;
+}
+
+
+
+/* =========================
+   TABLET (<= 992px)
+========================= */
+@media (max-width: 992px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-body {
+        max-width: 100%;
+    }
+}
+
+/* =========================
+   MOBILE (<= 768px)
+========================= */
+@media (max-width: 768px) {
+
+    body {
+        flex-direction: column;
+    }
+
+    /* Sidebar becomes off-canvas */
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        z-index: 1000;
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+
+    /* Main content full width */
+    .main-content {
+        margin-left: 0;
+    }
+
+    /* Show hamburger */
+    .menu-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Topbar spacing */
+    .topbar {
+        padding: 14px 16px;
+    }
+
+    .topbar h1 {
+        font-size: 1em;
+    }
+
+    /* Better touch spacing */
+    .nav-item {
+        padding: 14px 20px;
+    }
+
+    .form-card {
+        padding: 20px;
+        border-radius: 12px;
+    }
+}
+
+/* =========================
+   SMALL MOBILE (<= 480px)
+========================= */
+@media (max-width: 480px) {
+
+    .sidebar-logo img {
+        width: 100px;
+    }
+
+    .user-info h4 {
+        font-size: 0.8em;
+    }
+
+    .btn-submit {
+        font-size: 0.9em;
+        padding: 12px;
+    }
+
+    .input-box input,
+    .input-box select {
+        font-size: 0.85em;
+    }
+}
         </style>
     </head>
     <body>
+        <button class="menu-toggle" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+</button>
             <aside class="sidebar">
       <div class="sidebar-logo">
         <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
@@ -401,5 +517,11 @@
                 </div>
             </div>
         </div>
+        <script>
+function toggleSidebar() {
+    const sidebar = document.querySelector(".sidebar");
+    sidebar.classList.toggle("active");
+}
+</script>
     </body>
 </html>

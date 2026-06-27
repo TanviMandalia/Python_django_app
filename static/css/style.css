@@ -112,3 +112,450 @@ body {
         transform: translateX(120%);
     }
 }
+
+/* ==========================
+RESET
+========================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f5f6fa;
+    color: #2c2c2c;
+    overflow-x: hidden;
+}
+
+/* ==========================
+ROOT COLORS
+========================== */
+
+:root {
+
+    --primary: #F5C518;
+    --primary-dark: #e2b400;
+
+    --dark: #2C2C2C;
+    --dark2: #3b3b3b;
+
+    --white: #fff;
+
+    --bg: #f5f6fa;
+
+    --border: #ececec;
+
+    --shadow: 0 8px 25px rgba(0, 0, 0, .08);
+
+    --radius: 14px;
+
+}
+
+
+/* ==========================
+LAYOUT
+========================== */
+
+.layout {
+
+    display: flex;
+
+    min-height: 100vh;
+
+}
+
+.main-wrapper {
+
+    margin-left: 260px;
+
+    width: calc(100% - 260px);
+
+    display: flex;
+
+    flex-direction: column;
+
+    min-height: 100vh;
+
+    transition: .3s;
+
+}
+
+.dashboard-body {
+
+    flex: 1;
+
+    padding: 30px;
+
+}
+
+
+/* ==========================
+TOPBAR
+========================== */
+
+.topbar {
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 100;
+
+    background: white;
+
+    padding: 15px 25px;
+
+    border-bottom: 1px solid var(--border);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+}
+
+
+/* ==========================
+FOOTER
+========================== */
+
+.footer {
+
+    margin-top: auto;
+
+    background: #2c2c2c;
+
+    color: white;
+
+    padding: 20px;
+
+    text-align: center;
+
+}
+
+
+/* ==========================
+CARDS
+========================== */
+
+.card {
+
+    border: none;
+
+    border-radius: var(--radius);
+
+    box-shadow: var(--shadow);
+
+    transition: .25s;
+
+}
+
+.card:hover {
+
+    transform: translateY(-4px);
+
+}
+
+
+/* ==========================
+TABLES
+========================== */
+
+.table-responsive {
+
+    overflow-x: auto;
+
+    border-radius: 12px;
+
+}
+
+table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+    white-space: nowrap;
+
+}
+
+th {
+
+    background: #2c2c2c;
+
+    color: white;
+
+}
+
+th,
+td {
+
+    padding: 14px;
+
+}
+
+
+/* ==========================
+FORMS
+========================== */
+
+input,
+
+select,
+
+textarea {
+
+    width: 100%;
+
+    padding: 12px;
+
+    border: 1px solid #ddd;
+
+    border-radius: 10px;
+
+    transition: .2s;
+
+}
+
+input:focus,
+
+select:focus,
+
+textarea:focus {
+
+    outline: none;
+
+    border-color: var(--primary);
+
+    box-shadow: 0 0 0 3px rgba(245, 197, 24, .2);
+
+}
+
+
+/* ==========================
+BUTTONS
+========================== */
+
+.btn {
+
+    border-radius: 10px;
+
+    transition: .25s;
+
+}
+
+.btn:hover {
+
+    transform: translateY(-2px);
+
+}
+
+
+/* ==========================
+IMAGES
+========================== */
+
+img {
+
+    max-width: 100%;
+
+    height: auto;
+
+    display: block;
+
+}
+
+
+/* ==========================
+ACCESSIBILITY
+========================== */
+
+button:focus,
+
+a:focus,
+
+input:focus {
+
+    outline: 3px solid rgba(245, 197, 24, .5);
+
+    outline-offset: 2px;
+
+}
+
+
+/* ==========================
+ANIMATIONS
+========================== */
+
+* {
+
+    transition:
+
+        background .2s,
+
+        color .2s,
+
+        border .2s,
+
+        transform .2s;
+
+}
+
+.sidebar {
+
+    position: fixed;
+
+    left: 0;
+
+    top: 0;
+
+    width: 260px;
+
+    height: 100vh;
+
+    background: #2C2C2C;
+
+    transition: .3s;
+
+    z-index: 999;
+
+    overflow-y: auto;
+
+}
+
+.sidebar.collapsed {
+
+    width: 80px;
+
+}
+
+.sidebar.collapsed+.main-wrapper {
+
+    margin-left: 80px;
+
+    width: calc(100% - 80px);
+
+}
+
+#sidebarOverlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0, 0, 0, .4);
+
+    visibility: hidden;
+
+    opacity: 0;
+
+    transition: .3s;
+
+    z-index: 998;
+
+}
+
+#sidebarOverlay.show {
+
+    visibility: visible;
+
+    opacity: 1;
+
+}
+
+
+/* Mobile */
+
+@media(max-width:992px) {
+
+    .sidebar {
+
+        left: -270px;
+
+    }
+
+    .sidebar.show {
+
+        left: 0;
+
+    }
+
+    .main-wrapper {
+
+        margin-left: 0;
+
+        width: 100%;
+
+    }
+
+    .dashboard-body {
+
+        padding: 20px;
+
+    }
+
+}
+
+
+/* Mobile */
+
+@media(max-width:768px) {
+
+    .dashboard-body {
+
+        padding: 15px;
+
+    }
+
+    .topbar {
+
+        padding: 12px 15px;
+
+    }
+
+    table {
+
+        font-size: 14px;
+
+    }
+
+    .card {
+
+        border-radius: 12px;
+
+    }
+
+}
+
+
+/* Small Mobile */
+
+@media(max-width:480px) {
+
+    .dashboard-body {
+
+        padding: 10px;
+
+    }
+
+    .topbar {
+
+        padding: 10px;
+
+    }
+
+    .btn {
+
+        width: 100%;
+
+    }
+
+}

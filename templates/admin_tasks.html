@@ -1,205 +1,757 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <title>Manage Tasks - Admin</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; display: flex; min-height: 100vh; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
         /* ── SIDEBAR ── */
-        .sidebar { width: 260px; height: 100vh; position: fixed; left: 0; top: 0; background: linear-gradient(180deg, #1a1a1a, #2C2C2C); overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; }
-        .sidebar::-webkit-scrollbar { display: none; }
-        .sidebar-logo { padding: 22px 20px; border-bottom: 1px solid rgba(245,197,24,0.2); text-align: center; }
-        .sidebar-logo img { width: 130px; border-radius: 10px; }
-        .sidebar-logo p { color: #F5C518; font-size: 0.75em; margin-top: 8px; font-weight: 600; }
-        .sidebar-user { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; }
-        .user-avatar { width: 42px; height: 42px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2C2C2C; flex-shrink: 0; }
-        .user-info h4 { color: white; font-size: 0.88em; }
-        .user-info span { color: #F5C518; font-size: 0.72em; }
-        .nav-section { padding: 12px 22px 5px; color: #555; font-size: 0.7em; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 22px; color: #bbb; text-decoration: none; font-size: 0.9em; transition: all 0.3s; border-left: 3px solid transparent; }
-        .nav-item:hover, .nav-item.active { background: rgba(245,197,24,0.1); color: #F5C518; border-left-color: #F5C518; }
-        .nav-item i { width: 18px; text-align: center; }
-        .logout-btn { margin: 15px; margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 11px 18px; background: rgba(220,53,69,0.15); color: #ff6b6b; border-radius: 10px; text-decoration: none; font-size: 0.86em; }
-        .logout-btn:hover { background: rgba(220,53,69,0.3); }
+        .sidebar {
+            width: 260px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a1a, #2c2c2c);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 1200;
+            transition: .35s ease;
+            scrollbar-width: none;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .sidebar-logo {
+            padding: 22px 20px;
+            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+            text-align: center;
+        }
+
+        .sidebar-logo img {
+            width: 130px;
+            border-radius: 10px;
+        }
+
+        .sidebar-logo p {
+            color: #F5C518;
+            font-size: 0.75em;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .sidebar-user {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            background: #F5C518;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #2C2C2C;
+            flex-shrink: 0;
+        }
+
+        .user-info h4 {
+            color: white;
+            font-size: 0.88em;
+        }
+
+        .user-info span {
+            color: #F5C518;
+            font-size: 0.72em;
+        }
+
+        .nav-section {
+            padding: 12px 22px 5px;
+            color: #555;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 22px;
+            color: #bbb;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(245, 197, 24, 0.1);
+            color: #F5C518;
+            border-left-color: #F5C518;
+        }
+
+        .nav-item i {
+            width: 18px;
+            text-align: center;
+        }
+
+        .logout-btn {
+            margin: 15px;
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 18px;
+            background: rgba(220, 53, 69, 0.15);
+            color: #ff6b6b;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 0.86em;
+        }
+
+        .logout-btn:hover {
+            background: rgba(220, 53, 69, 0.3);
+        }
 
         /* ── MAIN ── */
-        .main-content { margin-left: 260px; flex: 1; }
-        .topbar { background: white; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 50; }
-        .topbar h1 { font-size: 1.2em; color: #2C2C2C; font-weight: 700; }
-        .btn-add { background: #F5C518; color: #2C2C2C; padding: 9px 20px; border-radius: 20px; font-weight: 700; text-decoration: none; font-size: 0.88em; transition: all 0.3s; }
-        .btn-add:hover { background: #e6b800; transform: translateY(-1px); }
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            width: calc(100% - 260px);
+            transition: .3s;
+        }
 
-        .dashboard-body { padding: 25px; }
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: #fff;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .topbar h1 {
+            font-size: 1.2em;
+            color: #2C2C2C;
+            font-weight: 700;
+        }
+
+        .btn-add {
+            background: #F5C518;
+            color: #2C2C2C;
+            padding: 9px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 0.88em;
+            transition: all 0.3s;
+        }
+
+        .btn-add:hover {
+            background: #e6b800;
+            transform: translateY(-1px);
+        }
+
+        .dashboard-body {
+            padding: 24px;
+        }
 
         /* ── ALERTS ── */
-        .alert-success { background: #d4edda; border: 1px solid #28a745; color: #155724; padding: 12px 18px; border-radius: 10px; margin-bottom: 18px; font-size: 0.9em; }
-        .alert-error   { background: #f8d7da; border: 1px solid #dc3545; color: #721c24; padding: 12px 18px; border-radius: 10px; margin-bottom: 18px; font-size: 0.9em; }
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 0.9em;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+            color: #721c24;
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 0.9em;
+        }
 
         /* ── TASK CARDS ── */
-        .tasks-list { display: flex; flex-direction: column; gap: 12px; }
+        .tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-        .task-card { background: white; border-radius: 14px; padding: 20px 24px; box-shadow: 0 3px 12px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 18px; border-left: 4px solid #eee; transition: all 0.3s; }
-        .task-card:hover { transform: translateX(4px); }
-        .task-card.high   { border-left-color: #dc3545; }
-        .task-card.medium { border-left-color: #F5C518; }
-        .task-card.low    { border-left-color: #28a745; }
+        .task-card {
 
-        .priority-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-        .dot-high   { background: #dc3545; }
-        .dot-medium { background: #F5C518; }
-        .dot-low    { background: #28a745; }
+            background: #fff;
 
-        .task-info { flex: 1; }
-        .task-info h3 { font-size: 0.95em; font-weight: 700; color: #2C2C2C; margin-bottom: 4px; }
-        .task-info p  { font-size: 0.82em; color: #888; margin-bottom: 6px; }
+            border-radius: 15px;
 
-        .task-meta { display: flex; gap: 15px; flex-wrap: wrap; }
-        .task-meta span { font-size: 0.78em; color: #aaa; display: flex; align-items: center; gap: 4px; }
-        .task-meta i { color: #F5C518; }
+            padding: 18px;
+
+            display: flex;
+            align-items: center;
+            gap: 18px;
+
+            box-shadow: 0 3px 10px rgba(0, 0, 0, .08);
+
+            transition: .3s;
+
+            border-left: 4px solid #eee;
+
+        }
+
+        .task-card:hover {
+
+            transform: translateY(-3px);
+
+        }
+
+        .task-card.high {
+            border-left-color: #dc3545;
+        }
+
+        .task-card.medium {
+            border-left-color: #F5C518;
+        }
+
+        .task-card.low {
+            border-left-color: #28a745;
+        }
+
+        .priority-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dot-high {
+            background: #dc3545;
+        }
+
+        .dot-medium {
+            background: #F5C518;
+        }
+
+        .dot-low {
+            background: #28a745;
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-info h3 {
+            font-size: 0.95em;
+            font-weight: 700;
+            color: #2C2C2C;
+            margin-bottom: 4px;
+        }
+
+        .task-info p {
+            font-size: 0.82em;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .task-meta span {
+            font-size: 0.78em;
+            color: #aaa;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .task-meta i {
+            color: #F5C518;
+        }
 
         /* ── STAFF CHIP ── */
-        .task-right { text-align: right; flex-shrink: 0; }
-        .staff-chip { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-bottom: 10px; }
-        .staff-name { font-size: 0.85em; font-weight: 600; color: #2C2C2C; }
+        .task-right {
+            text-align: right;
+            flex-shrink: 0;
+        }
 
-        .mini-avatar { width: 32px; height: 32px; background: #F5C518; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #2C2C2C; font-size: 0.78em; flex-shrink: 0; }
+        .staff-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+
+        .staff-name {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #2C2C2C;
+        }
+
+        .mini-avatar {
+            width: 32px;
+            height: 32px;
+            background: #F5C518;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #2C2C2C;
+            font-size: 0.78em;
+            flex-shrink: 0;
+        }
 
         /* ── BADGES ── */
-        .badge { padding: 4px 12px; border-radius: 15px; font-size: 0.75em; font-weight: 700; }
-        .badge-pending     { background: #fff3cd; color: #856404; }
-        .badge-in_progress { background: #cce5ff; color: #004085; }
-        .badge-completed   { background: #d4edda; color: #155724; }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            font-weight: 700;
+        }
+
+        .badge-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-in_progress {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .badge-completed {
+            background: #d4edda;
+            color: #155724;
+        }
 
         /* ── EMPTY STATE ── */
-        .empty-state { text-align: center; padding: 60px; background: white; border-radius: 18px; color: #aaa; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
-        .empty-state i { font-size: 3em; color: #F5C518; margin-bottom: 15px; display: block; }
-        .empty-state p { margin-bottom: 15px; }
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 18px;
+            color: #aaa;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .empty-state i {
+            font-size: 3em;
+            color: #F5C518;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .empty-state p {
+            margin-bottom: 15px;
+        }
+
+        .menu-btn {
+
+            display: none;
+
+            width: 42px;
+            height: 42px;
+
+            border: none;
+            border-radius: 10px;
+
+            background: #F5C518;
+
+            cursor: pointer;
+
+            font-size: 18px;
+        }
+
+        .sidebar-overlay {
+
+            position: fixed;
+
+            left: 0;
+            top: 0;
+
+            width: 100%;
+            height: 100%;
+
+            background: rgba(0, 0, 0, .45);
+
+            opacity: 0;
+            visibility: hidden;
+
+            transition: .3s;
+
+            z-index: 1100;
+
+        }
+
+        .sidebar-overlay.active {
+
+            opacity: 1;
+            visibility: visible;
+
+        }
+
+        .task-meta {
+
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+
+        }
+
+        .task-meta span {
+
+            font-size: .8rem;
+
+        }
+
+        img {
+
+            max-width: 100%;
+            height: auto;
+
+            display: block;
+
+        }
+
+        .form-row {
+
+            display: flex;
+            gap: 20px;
+
+        }
+
+        .form-group {
+
+            flex: 1;
+
+        }
+
+        input,
+        select,
+        textarea {
+
+            width: 100%;
+            padding: 12px;
+
+            border-radius: 10px;
+
+            border: 1px solid #ddd;
+
+            font-size: 15px;
+
+        }
+
+        .btn-add {
+
+            display: inline-flex;
+
+            align-items: center;
+            justify-content: center;
+
+            padding: 10px 20px;
+
+            border-radius: 25px;
+
+            transition: .3s;
+
+        }
+
+        * {
+
+            transition:
+                background .3s,
+                color .3s,
+                border-color .3s,
+                transform .3s,
+                box-shadow .3s;
+
+        }
+
+        a,
+        button {
+
+            outline: none;
+
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+
+            outline: 3px solid #F5C518;
+            outline-offset: 3px;
+
+        }
+
+        @media(max-width:576px) {
+
+            .btn-add {
+
+                width: 100%;
+
+            }
+
+        }
+
+        @media(max-width:768px) {
+
+            .form-row {
+
+                flex-direction: column;
+
+            }
+
+        }
+
+        /* Mobile hidden */
+        @media(max-width:991px) {
+            .main-content {
+                width: 100%;
+                margin-left: 0;
+            }
+
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .menu-btn {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+        }
+
+        @media(max-width:768px) {
+
+            .dashboard-body {
+                padding: 15px;
+            }
+
+            .task-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .task-right {
+                width: 100%;
+                text-align: left;
+            }
+
+            .staff-chip {
+                justify-content: flex-start;
+            }
+        }
     </style>
 </head>
+
 <body>
 
-<!-- ══ SIDEBAR ══ -->
+    <!-- ══ SIDEBAR ══ -->
     <aside class="sidebar">
-      <div class="sidebar-logo">
-        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
-        <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
-      </div>
-      <div class="sidebar-user">
-        <div class="user-avatar">{{ user.username|first|upper }}</div>
-        <div class="user-info">
-          <h4>{{ user.username }}</h4>
-          <span><span class="online-dot"></span>Super Admin</span>
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
+            <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
         </div>
-      </div>
-      <div class="nav-scroll">
-        <nav>
-          <div class="nav-section">Overview</div>
-          <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-          <div class="nav-section">Management</div>
-          <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
-          <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
-          <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
-          <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
-          <div class="nav-section">Staff Tools</div>
-          <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
-          <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
-          <a href="{% url 'admin_tasks' %}" class="nav-item active"><i class="fas fa-tasks"></i> Tasks</a>
-          <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-          <div class="nav-section">Communication</div>
-          <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
-          <div class="nav-section">Content</div>
-          <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
-          <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
-          <div class="nav-section">Reports</div>
-          <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress Tracking</a>
-          <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
-          <div class="nav-section">System</div>
-          <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
-          <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
-          <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
-        </nav>
-      </div>
-      <div class="sidebar-footer">
-        <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-      </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.username|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.username }}</h4>
+                <span><span class="online-dot"></span>Super Admin</span>
+            </div>
+        </div>
+        <div class="nav-scroll">
+            <nav>
+                <div class="nav-section">Overview</div>
+                <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i>
+                    Dashboard</a>
+                <div class="nav-section">Management</div>
+                <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+                <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+                <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All
+                    Appointments</a>
+                <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
+                <div class="nav-section">Staff Tools</div>
+                <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave
+                    Requests</a>
+                <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+                <a href="{% url 'admin_tasks' %}" class="nav-item active"><i class="fas fa-tasks"></i> Tasks</a>
+                <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session
+                    Notes</a>
+                <div class="nav-section">Communication</div>
+                <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+                <div class="nav-section">Content</div>
+                <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
+                <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
+                <div class="nav-section">Reports</div>
+                <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress
+                    Tracking</a>
+                <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+                <div class="nav-section">System</div>
+                <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+                <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+                <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+            </nav>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
     </aside>
 
-<!-- ══ MAIN ══ -->
-<div class="main-content">
-    <div class="topbar">
-        <h1>✅ Manage Tasks</h1>
-        <a href="{% url 'add_task' %}" class="btn-add">+ Assign Task</a>
-    </div>
+    <!-- ══ MAIN ══ -->
+    <div class="main-content">
+        <div class="topbar">
+            <button class="menu-btn" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1>✅ Manage Tasks</h1>
+            <a href="{% url 'add_task' %}" class="btn-add">+ Assign Task</a>
+        </div>
 
-    <div class="dashboard-body">
+        <div class="dashboard-body">
 
-        {% for message in messages %}
+            {% for message in messages %}
             {% if message.tags == 'error' %}
-                <div class="alert-error">{{ message }}</div>
+            <div class="alert-error">{{ message }}</div>
             {% else %}
-                <div class="alert-success">{{ message }}</div>
+            <div class="alert-success">{{ message }}</div>
             {% endif %}
-        {% endfor %}
-
-        {% if tasks %}
-        <div class="tasks-list">
-            {% for task in tasks %}
-            <div class="task-card {{ task.priority }}">
-
-                <!-- Priority dot -->
-                <div class="priority-dot dot-{{ task.priority }}"></div>
-
-                <!-- Task info -->
-                <div class="task-info">
-                    <h3>{{ task.title }}</h3>
-                    {% if task.description %}
-                        <p>{{ task.description }}</p>
-                    {% endif %}
-                    <div class="task-meta">
-                        <span><i class="fas fa-flag"></i> {{ task.get_priority_display }}</span>
-                        {% if task.due_date %}
-                            <span><i class="fas fa-calendar"></i> Due: {{ task.due_date|date:"d M Y" }}</span>
-                        {% endif %}
-                        <span><i class="fas fa-clock"></i> Created: {{ task.created_at|date:"d M Y" }}</span>
-                        {% if task.completed_at %}
-                            <span><i class="fas fa-check"></i> Done: {{ task.completed_at|date:"d M Y" }}</span>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Staff + status -->
-                <div class="task-right">
-                    <div class="staff-chip">
-                        <div class="mini-avatar">{{ task.assigned_to.first_name|first|upper }}</div>
-                        <span class="staff-name">{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</span>
-                    </div>
-                    <span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
-                    <div style="display:flex;gap:6px;margin-top:8px;">
-                        <a href="{% url 'edit_task_admin' task.id %}" style="background:#F5C518;color:#2C2C2C;padding:5px 11px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;">✏️ Edit</a>
-                        <a href="{% url 'delete_task_admin' task.id %}" style="background:#C0392B;color:#fff;padding:5px 11px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;">🗑️ Del</a>
-                    </div>
-                </div>
-
-            </div>
             {% endfor %}
-        </div>
 
-        {% else %}
-        <div class="empty-state">
-            <i class="fas fa-tasks"></i>
-            <p>No tasks assigned yet.<br>Click "Assign Task" to get started!</p>
-            <a href="{% url 'add_task' %}" style="background:#F5C518;color:#2C2C2C;padding:10px 22px;border-radius:20px;font-weight:700;text-decoration:none;display:inline-block;">+ Assign First Task</a>
-        </div>
-        {% endif %}
+            {% if tasks %}
+            <div class="tasks-list">
+                {% for task in tasks %}
+                <div class="task-card {{ task.priority }}">
 
+                    <!-- Priority dot -->
+                    <div class="priority-dot dot-{{ task.priority }}"></div>
+
+                    <!-- Task info -->
+                    <div class="task-info">
+                        <h3>{{ task.title }}</h3>
+                        {% if task.description %}
+                        <p>{{ task.description }}</p>
+                        {% endif %}
+                        <div class="task-meta">
+                            <span><i class="fas fa-flag"></i> {{ task.get_priority_display }}</span>
+                            {% if task.due_date %}
+                            <span><i class="fas fa-calendar"></i> Due: {{ task.due_date|date:"d M Y" }}</span>
+                            {% endif %}
+                            <span><i class="fas fa-clock"></i> Created: {{ task.created_at|date:"d M Y" }}</span>
+                            {% if task.completed_at %}
+                            <span><i class="fas fa-check"></i> Done: {{ task.completed_at|date:"d M Y" }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Staff + status -->
+                    <div class="task-right">
+                        <div class="staff-chip">
+                            <div class="mini-avatar">{{ task.assigned_to.first_name|first|upper }}</div>
+                            <span class="staff-name">{{ task.assigned_to.get_full_name|default:task.assigned_to.username
+                                }}</span>
+                        </div>
+                        <span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
+                        <div style="display:flex;gap:6px;margin-top:8px;">
+                            <a href="{% url 'edit_task_admin' task.id %}"
+                                style="background:#F5C518;color:#2C2C2C;padding:5px 11px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;">✏️
+                                Edit</a>
+                            <a href="{% url 'delete_task_admin' task.id %}"
+                                style="background:#C0392B;color:#fff;padding:5px 11px;border-radius:8px;font-size:0.78em;font-weight:700;text-decoration:none;">🗑️
+                                Del</a>
+                        </div>
+                    </div>
+
+                </div>
+                {% endfor %}
+            </div>
+
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-tasks"></i>
+                <p>No tasks assigned yet.<br>Click "Assign Task" to get started!</p>
+                <a href="{% url 'add_task' %}"
+                    style="background:#F5C518;color:#2C2C2C;padding:10px 22px;border-radius:20px;font-weight:700;text-decoration:none;display:inline-block;">+
+                    Assign First Task</a>
+            </div>
+            {% endif %}
+
+        </div>
     </div>
-</div>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <script>
+        function toggleSidebar() {
 
+            const sidebar = document.querySelector(".sidebar");
+            const overlay = document.querySelector(".sidebar-overlay");
+
+            sidebar.classList.toggle("active");
+            overlay.classList.toggle("active");
+
+        }
+
+        window.addEventListener("resize", function () {
+
+            if (window.innerWidth > 991) {
+
+                document.querySelector(".sidebar").classList.remove("active");
+                document.querySelector(".sidebar-overlay").classList.remove("active");
+
+            }
+
+        });
+    </script>
 </body>
+
 </html>

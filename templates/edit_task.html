@@ -233,6 +233,101 @@
                 background: #e6b800;
                 transform: translateY(-1px);
             }
+
+            /* =========================
+   RESPONSIVE SYSTEM
+========================= */
+
+/* Smooth transitions */
+.sidebar,
+.main-content {
+    transition: all 0.3s ease;
+}
+
+/* Hamburger button */
+.menu-toggle {
+    display: none;
+    background: #f5c518;
+    border: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+/* =========================
+   TABLET & MOBILE
+========================= */
+@media (max-width: 992px) {
+    .main-content {
+        margin-left: 0;
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+        position: fixed;
+        z-index: 1000;
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+
+    .topbar {
+        justify-content: space-between;
+    }
+
+    .dashboard-body {
+        padding: 18px;
+        max-width: 100%;
+    }
+
+    .form-card {
+        padding: 20px;
+    }
+}
+
+/* =========================
+   MOBILE SMALL DEVICES
+========================= */
+@media (max-width: 576px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .topbar h1 {
+        font-size: 1rem;
+    }
+
+    .btn-back {
+        padding: 7px 14px;
+        font-size: 0.8em;
+    }
+
+    .sidebar {
+        width: 240px;
+    }
+}
+
+/* =========================
+   ACCESSIBILITY IMPROVEMENTS
+========================= */
+.nav-item,
+.btn-submit,
+.menu-toggle {
+    cursor: pointer;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: 2px solid rgba(245, 197, 24, 0.4);
+    outline-offset: 2px;
+}
         </style>
     </head>
     <body>
@@ -283,6 +378,9 @@
 
         <div class="main-content">
             <div class="topbar">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+</button>
                 <h1>✏️ Edit Task</h1>
                 <a href="{% url 'admin_tasks' %}" class="btn-back">← Back</a>
             </div>
@@ -445,5 +543,15 @@
                 </div>
             </div>
         </div>
+        <script>
+document.addEventListener("click", function (e) {
+    const sidebar = document.querySelector(".sidebar");
+    const toggle = document.querySelector(".menu-toggle");
+
+    if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+        sidebar.classList.remove("active");
+    }
+});
+</script>
     </body>
 </html>

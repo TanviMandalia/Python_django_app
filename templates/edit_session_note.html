@@ -229,6 +229,131 @@
                 background: #e6b800;
                 transform: translateY(-1px);
             }
+            button, a {
+    outline: none;
+}
+
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: 2px solid #f5c518;
+    outline-offset: 2px;
+}
+
+            /* =========================
+   MOBILE RESPONSIVE SYSTEM
+========================= */
+
+/* Smooth transitions */
+.sidebar,
+.main-content {
+    transition: all 0.3s ease;
+}
+
+/* Hide toggle on desktop */
+.menu-toggle {
+    display: none;
+    background: #f0f0f0;
+    border: none;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* -------------------------
+   TABLET (≤ 992px)
+-------------------------- */
+@media (max-width: 992px) {
+    .sidebar {
+        width: 240px;
+    }
+
+    .main-content {
+        margin-left: 240px;
+    }
+}
+
+/* -------------------------
+   MOBILE (≤ 768px)
+-------------------------- */
+@media (max-width: 768px) {
+
+    /* Sidebar becomes overlay */
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        height: 100vh;
+        z-index: 1000;
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+
+    /* Full width content */
+    .main-content {
+        margin-left: 0;
+    }
+
+    /* Show hamburger */
+    .menu-toggle {
+        display: block;
+    }
+
+    /* Topbar spacing */
+    .topbar {
+        padding: 14px 16px;
+    }
+
+    .topbar h1 {
+        font-size: 1em;
+    }
+
+    /* Form responsive padding */
+    .dashboard-body {
+        padding: 15px;
+    }
+
+    .form-card {
+        padding: 20px;
+        border-radius: 12px;
+    }
+
+    /* Inputs bigger touch targets */
+    .input-box input,
+    .input-box select,
+    .input-box textarea {
+        font-size: 1em;
+        padding: 12px 12px 12px 38px;
+    }
+}
+
+/* -------------------------
+   SMALL MOBILE (≤ 480px)
+-------------------------- */
+@media (max-width: 480px) {
+
+    .sidebar {
+        width: 100%;
+    }
+
+    .form-card h2 {
+        font-size: 0.95em;
+    }
+
+    .btn-submit {
+        font-size: 0.9em;
+        padding: 12px;
+    }
+
+    .user-info h4 {
+        font-size: 0.8em;
+    }
+}
         </style>
     </head>
     <body>
@@ -265,6 +390,9 @@
 
         <div class="main-content">
             <div class="topbar">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+</button>
                 <h1>✏️ Edit Session Note</h1>
                 <a href="{% url 'admin_session_notes' %}" class="btn-back"
                     >← Back</a
@@ -361,5 +489,11 @@
                 </div>
             </div>
         </div>
+        <script>
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.toggle('active');
+}
+</script>
     </body>
 </html>

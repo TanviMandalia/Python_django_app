@@ -284,6 +284,106 @@
             margin-bottom: 20px;
             font-size: 0.9em;
         }
+
+        /* =========================
+   MOBILE-FIRST RESPONSIVE
+========================= */
+
+/* Hamburger button */
+.menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.4em;
+    cursor: pointer;
+    color: #2C2C2C;
+}
+
+/* Smooth transitions */
+.sidebar,
+.main-content {
+    transition: all 0.3s ease;
+}
+
+/* Sticky topbar */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+/* Responsive grid fallback */
+.appt-grid {
+    grid-template-columns: 1fr;
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1500;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* Tablet */
+@media (max-width: 992px) {
+    .appt-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+        position: fixed;
+        z-index: 2000;
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+    .appt-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .appt-meta {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .topbar {
+        padding: 14px 16px;
+    }
+
+    .dashboard-body {
+        padding: 16px;
+    }
+
+    .btn-book {
+        width: 100%;
+        text-align: center;
+    }
+
+    .sidebar-logo img {
+        width: 100px;
+    }
+}
     </style>
 </head>
 
@@ -321,6 +421,9 @@
 
     <div class="main-content">
         <div class="topbar">
+            <button class="menu-toggle" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+</button>
             <h1>📋 My Appointments</h1>
             <a href="{% url "book_appointment" %}" class="btn-book">+ Book New</a>
         </div>
@@ -371,7 +474,23 @@
 
         </div>
     </div>
+<script>
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    let overlay = document.querySelector('.sidebar-overlay');
 
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        document.body.appendChild(overlay);
+
+        overlay.onclick = toggleSidebar;
+    }
+
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+</script>
 </body>
 
 </html>

@@ -4,7 +4,7 @@
 <html lang="en">
 
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="UTF-8" />
   <title>Chat - Physio Rehab</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
@@ -417,46 +417,337 @@
       background: #e6b800;
       transform: scale(1.05);
     }
+
+    /* ==========================================
+   RESPONSIVE IMPROVEMENTS
+========================================== */
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    *:focus-visible {
+      outline: 3px solid #f5c518;
+      outline-offset: 2px;
+    }
+
+    /* Smooth animations */
+
+    .sidebar,
+    .main-content,
+    .chat-area,
+    .msg-bubble,
+    .nav-item,
+    .send-btn,
+    input {
+      transition: .3s ease;
+    }
+
+    /* Sticky Header */
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 900;
+    }
+
+    /* Better spacing */
+
+    .chat-input {
+      padding: 15px;
+    }
+
+    .input-row {
+      gap: 12px;
+    }
+
+    /* ==========================================
+   HAMBURGER BUTTON
+========================================== */
+
+    .menu-toggle {
+      display: none;
+      width: 42px;
+      height: 42px;
+      border: none;
+      background: #f5c518;
+      color: #2c2c2c;
+      border-radius: 10px;
+      font-size: 20px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ==========================================
+   TABLE RESPONSIVE
+========================================== */
+
+    .table-responsive table {
+      min-width: 700px;
+    }
+
+    /* ==========================================
+   LAPTOP
+========================================== */
+
+    @media(max-width:1200px) {
+
+      .sidebar {
+        width: 240px;
+      }
+
+      .main-content {
+        margin-left: 240px;
+      }
+
+      .msg-bubble {
+        max-width: 72%;
+      }
+
+    }
+
+    /* ==========================================
+   TABLET
+========================================== */
+
+    @media(max-width:992px) {
+
+      .sidebar {
+        transform: translateX(-100%);
+        transition: .35s;
+        z-index: 1200;
+        box-shadow: 5px 0 25px rgba(0, 0, 0, .15);
+      }
+
+      .sidebar.show {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        margin-left: 0;
+      }
+
+      .menu-toggle {
+        display: flex;
+      }
+
+      .topbar {
+        padding: 14px 16px;
+      }
+
+      .chat-area {
+        padding: 18px;
+      }
+
+      .msg-bubble {
+        max-width: 82%;
+      }
+
+    }
+
+    /* ==========================================
+   MOBILE
+========================================== */
+
+    @media(max-width:768px) {
+
+      body {
+        overflow-x: hidden;
+      }
+
+      .topbar {
+        padding: 12px;
+      }
+
+      .doctor-avatar {
+        width: 40px;
+        height: 40px;
+      }
+
+      .doctor-info h3 {
+        font-size: .95rem;
+      }
+
+      .chat-area {
+        padding: 12px;
+      }
+
+      .chat-input {
+        padding: 12px;
+      }
+
+      .input-row {
+        gap: 8px;
+      }
+
+      .input-row input {
+        font-size: 15px;
+        padding: 11px 15px;
+      }
+
+      .send-btn {
+        width: 44px;
+        height: 44px;
+      }
+
+      .msg-bubble {
+        font-size: .88rem;
+        max-width: 88%;
+      }
+
+      .msg-avatar {
+        width: 28px;
+        height: 28px;
+      }
+
+      #scrollBtn {
+        right: 15px;
+        bottom: 85px;
+      }
+
+    }
+
+    /* ==========================================
+   SMALL MOBILE
+========================================== */
+
+    @media(max-width:480px) {
+
+      .sidebar {
+        width: 260px;
+      }
+
+      .topbar {
+        gap: 10px;
+      }
+
+      .doctor-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: .85rem;
+      }
+
+      .doctor-info h3 {
+        font-size: .9rem;
+      }
+
+      .doctor-info span {
+        font-size: .7rem;
+      }
+
+      .chat-area {
+        padding: 10px;
+      }
+
+      .msg-bubble {
+        max-width: 94%;
+        font-size: .85rem;
+        padding: 10px;
+      }
+
+      .msg-time {
+        font-size: .65rem;
+      }
+
+      .input-row input {
+        padding: 10px 14px;
+      }
+
+      .send-btn {
+        width: 42px;
+        height: 42px;
+      }
+
+    }
+
+    /* ==========================================
+   SIDEBAR OVERLAY
+========================================== */
+
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      z-index: 1100;
+      opacity: 0;
+      visibility: hidden;
+      transition: .3s;
+    }
+
+    .sidebar-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
   </style>
 </head>
 
 <body>
 
   <!-- SIDEBAR -->
-            <aside class="sidebar">
-            <div class="sidebar-logo">
-                <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
-            </div>
-            <div class="sidebar-user">
-                <div class="user-avatar">
-                    {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
-                </div>
-                <div class="user-info">
-                    <h4>{{ user.get_full_name|default:user.username }}</h4>
-                    <span>🟢 Patient</span>
-                </div>
-            </div>
-            <nav>
-                <div class="nav-section">Main Menu</div>
-                <a href="{% url 'client_dashboard' %}" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-                <a href="{% url 'book_appointment' %}" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
-                <a href="{% url 'my_appointments' %}" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
-                <div class="nav-section">Communication</div>
-                <a href="{% url 'client_chat' %}" class="nav-item active"><i class="fas fa-comments"></i> Chat with Doctor</a>
-                <a href="{% url 'notifications' %}" class="nav-item"><i class="fas fa-bell"></i> Notifications</a>
-                <div class="nav-section">Account</div>
-                <a href="{% url 'profile' %}" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
-                <a href="{% url 'payments' %}" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
-                <div class="nav-section">Quick Links</div>
-                <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
-            </nav>
-            <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-        </aside>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar">
+        {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+      </div>
+      <div class="user-info">
+        <h4>{{ user.get_full_name|default:user.username }}</h4>
+        <span>🟢 Patient</span>
+      </div>
+    </div>
+    <nav>
+      <div class="nav-section">Main Menu</div>
+      <a href="{% url 'client_dashboard' %}" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+      <a href="{% url 'book_appointment' %}" class="nav-item"><i class="fas fa-calendar-plus"></i> Book Appointment</a>
+      <a href="{% url 'my_appointments' %}" class="nav-item"><i class="fas fa-calendar-check"></i> My Appointments</a>
+      <div class="nav-section">Communication</div>
+      <a href="{% url 'client_chat' %}" class="nav-item active"><i class="fas fa-comments"></i> Chat with Doctor</a>
+      <a href="{% url 'notifications' %}" class="nav-item"><i class="fas fa-bell"></i> Notifications</a>
+      <div class="nav-section">Account</div>
+      <a href="{% url 'profile' %}" class="nav-item"><i class="fas fa-user"></i> My Profile</a>
+      <a href="{% url 'payments' %}" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
+      <div class="nav-section">Quick Links</div>
+      <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+    </nav>
+    <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </aside>
 
   <!-- ══ MAIN CONTENT ══ -->
   <div class="main-content">
     <!-- TOPBAR -->
     <div class="topbar">
+      <button class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+      </button>
       <div class="doctor-avatar">
         DR{% if admin_online %}
         <span class="online-dot"></span>
@@ -598,8 +889,30 @@
       </form>
     </div>
   </div>
-
+  <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
   <script>
+
+    function toggleSidebar() {
+
+      const sidebar = document.querySelector(".sidebar");
+      const overlay = document.querySelector(".sidebar-overlay");
+
+      sidebar.classList.toggle("show");
+      overlay.classList.toggle("show");
+
+    }
+
+    window.addEventListener("resize", function () {
+
+      if (window.innerWidth > 992) {
+
+        document.querySelector(".sidebar").classList.remove("show");
+        document.querySelector(".sidebar-overlay").classList.remove("show");
+
+      }
+
+    });
+
     const csrfToken = '{{ csrf_token }}'
     let typingTimer
     const typingTimeout = 800

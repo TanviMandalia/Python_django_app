@@ -8,132 +8,208 @@
     <title>Salary Management - Admin</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* =========================
+   GLOBAL RESET
+========================= */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html,
+        body {
+            overflow-x: hidden;
+            width: 100%;
+        }
+
         body {
             font-family: 'Segoe UI', sans-serif;
             background: #f5f5f5;
-            display: flex;
             min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
         }
 
+        /* ── SIDEBAR ── */
         .sidebar {
             width: 260px;
             height: 100vh;
             position: fixed;
             left: 0;
             top: 0;
-            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
+            background: linear-gradient(180deg, #111827, #1f2937);
             overflow-y: auto;
             scrollbar-width: none;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            display: none;
         }
 
         .sidebar-logo {
-            padding: 22px 20px;
-            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+            padding: 24px 20px 18px;
+            border-bottom: 1px solid rgba(245, 197, 24, 0.15);
             text-align: center;
         }
 
         .sidebar-logo img {
-            width: 130px;
+            width: 120px;
             border-radius: 10px;
         }
 
-        .sidebar-logo p {
-            color: #F5C518;
-            font-size: 0.75em;
-            margin-top: 8px;
-            font-weight: 600;
+        .sidebar-logo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(245, 197, 24, 0.12);
+            color: #f5c518;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.72em;
+            font-weight: 700;
+            margin-top: 10px;
+            letter-spacing: 0.5px;
         }
 
         .sidebar-user {
-            padding: 18px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .user-avatar {
-            width: 42px;
-            height: 42px;
-            background: #F5C518;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #f5c518, #e6a800);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            color: #2C2C2C;
+            color: #111;
+            font-size: 0.95em;
+            flex-shrink: 0;
         }
 
         .user-info h4 {
-            color: white;
-            font-size: 0.88em;
+            color: #fff;
+            font-size: 0.87em;
+            font-weight: 600;
         }
 
         .user-info span {
-            color: #F5C518;
+            color: #6b7280;
             font-size: 0.72em;
         }
 
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        .nav-scroll {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-width: none;
+            padding-bottom: 10px;
+        }
+
+        .nav-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
         .nav-section {
-            padding: 12px 22px 5px;
-            color: #555;
-            font-size: 0.7em;
+            padding: 16px 20px 5px;
+            color: #4b5563;
+            font-size: 0.67em;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 1.8px;
             font-weight: 700;
         }
 
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 22px;
-            color: #bbb;
+            gap: 10px;
+            padding: 10px 20px;
+            color: #9ca3af;
             text-decoration: none;
-            font-size: 0.9em;
-            transition: all 0.3s;
+            font-size: 0.88em;
+            transition: all 0.2s;
             border-left: 3px solid transparent;
+            border-radius: 0 8px 8px 0;
+            margin-right: 8px;
         }
 
-        .nav-item:hover,
+        .nav-item:hover {
+            background: rgba(245, 197, 24, 0.08);
+            color: #f5c518;
+            border-left-color: rgba(245, 197, 24, 0.4);
+        }
+
         .nav-item.active {
-            background: rgba(245, 197, 24, 0.1);
-            color: #F5C518;
-            border-left-color: #F5C518;
+            background: rgba(245, 197, 24, 0.12);
+            color: #f5c518;
+            border-left-color: #f5c518;
+            font-weight: 600;
         }
 
         .nav-item i {
-            width: 18px;
+            width: 16px;
             text-align: center;
+            font-size: 0.9em;
+        }
+
+        .sidebar-footer {
+            padding: 12px 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .logout-btn {
-            margin: 15px;
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 11px 18px;
-            background: rgba(220, 53, 69, 0.15);
-            color: #ff6b6b;
+            padding: 10px 14px;
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
             border-radius: 10px;
             text-decoration: none;
             font-size: 0.86em;
+            font-weight: 600;
+            transition: all 0.2s;
+            width: 100%;
         }
 
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* =========================
+   MAIN LAYOUT
+========================= */
         .main-content {
-            margin-left: 260px;
             flex: 1;
+            margin-left: 260px;
+            width: calc(100% - 260px);
+            min-width: 0;
         }
 
+        /* =========================
+   TOPBAR (STICKY)
+========================= */
         .topbar {
             background: white;
-            padding: 16px 28px;
+            padding: 16px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -144,68 +220,73 @@
         }
 
         .topbar h1 {
-            font-size: 1.2em;
+            font-size: 1.1rem;
             color: #2C2C2C;
             font-weight: 700;
         }
 
+        /* =========================
+   DASHBOARD BODY
+========================= */
         .dashboard-body {
-            padding: 25px;
+            padding: 20px;
+            width: 100%;
+            overflow-x: hidden;
         }
 
+        /* =========================
+   ALERT
+========================= */
         .alert-success {
             background: #d4edda;
             border: 1px solid #28a745;
             color: #155724;
-            padding: 12px 18px;
+            padding: 12px;
             border-radius: 10px;
-            margin-bottom: 18px;
-            font-size: 0.9em;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
         }
 
+        /* =========================
+   GRID (RESPONSIVE)
+========================= */
         .grid {
             display: grid;
             grid-template-columns: 1fr 1.5fr;
-            gap: 22px;
+            gap: 20px;
         }
 
+        /* =========================
+   CARDS
+========================= */
         .card {
-            background: white;
+            width: 100%;
+            background: #fff;
             border-radius: 16px;
-            padding: 25px;
+            padding: 20px;
+            overflow: hidden;
             box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .card h2 {
-            font-size: 1em;
-            font-weight: 700;
-            color: #2C2C2C;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
         }
 
-        .card h2 i {
-            color: #F5C518;
-        }
-
-        .card p {
-            color: #888;
-            font-size: 0.85em;
-            margin-bottom: 20px;
-        }
-
+        /* =========================
+   FORMS
+========================= */
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
         .form-group label {
             display: block;
             font-weight: 600;
-            color: #2C2C2C;
             margin-bottom: 6px;
-            font-size: 0.85em;
+            font-size: 0.85rem;
+            color: #2C2C2C;
         }
 
         .input-box {
@@ -218,19 +299,19 @@
             top: 50%;
             transform: translateY(-50%);
             color: #aaa;
-            font-size: 0.88em;
         }
 
         .input-box input,
         .input-box select {
             width: 100%;
-            padding: 11px 11px 11px 36px;
+            padding: 10px 10px 10px 38px;
             border: 2px solid #eee;
             border-radius: 10px;
-            font-size: 0.88em;
+            font-size: 0.9rem;
             outline: none;
-            transition: all 0.3s;
-            font-family: 'Segoe UI', sans-serif;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            transition: 0.3s;
         }
 
         .input-box input:focus,
@@ -238,12 +319,18 @@
             border-color: #F5C518;
         }
 
+        /* =========================
+   FORM ROW
+========================= */
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
         }
 
+        /* =========================
+   BUTTON
+========================= */
         .btn-submit {
             width: 100%;
             padding: 12px;
@@ -251,115 +338,321 @@
             color: #2C2C2C;
             border: none;
             border-radius: 10px;
-            font-size: 0.95em;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 5px;
+            transition: 0.3s;
         }
 
         .btn-submit:hover {
             background: #e6b800;
+            transform: translateY(-1px);
         }
 
+        /* =========================
+   TABLE (RESPONSIVE WRAPPER)
+========================= */
         table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 700px;
         }
 
         th {
             background: #f9f9f9;
-            padding: 10px 12px;
+            padding: 10px;
+            font-size: 0.75rem;
             text-align: left;
-            font-size: 0.75em;
-            color: #888;
-            font-weight: 700;
             text-transform: uppercase;
-            border-bottom: 2px solid #f0f0f0;
+            color: #888;
         }
 
         td {
-            padding: 11px 12px;
-            font-size: 0.84em;
-            color: #333;
+            padding: 11px;
+            font-size: 0.85rem;
             border-bottom: 1px solid #f5f5f5;
         }
 
-        tr:last-child td {
-            border-bottom: none;
+        /* Wrap table on small screens */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
+        /* =========================
+   BADGE
+========================= */
         .badge-paid {
             background: #d4edda;
             color: #155724;
             padding: 3px 10px;
             border-radius: 12px;
-            font-size: 0.75em;
+            font-size: 0.75rem;
             font-weight: 700;
         }
 
+        /* =========================
+   EMPTY STATE
+========================= */
         .empty-state {
             text-align: center;
             padding: 30px;
             color: #aaa;
         }
 
-        .empty-state i {
-            font-size: 2em;
-            color: #ddd;
-            margin-bottom: 10px;
+        /* =========================
+   HAMBURGER BUTTON
+========================= */
+        .menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #2C2C2C;
+        }
+
+        /* =========================
+   OVERLAY FOR MOBILE SIDEBAR
+========================= */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.3s ease;
+            z-index: 999;
+        }
+
+        /* =========================
+   MOBILE SIDEBAR OPEN STATE
+========================= */
+        body.sidebar-open::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        body.sidebar-open .sidebar {
+            transform: translateX(0);
+        }
+
+        .menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #2C2C2C;
+            transition: transform 0.3s ease;
+        }
+
+        /* animate icon */
+        .menu-toggle i {
+            transition: transform 0.3s ease;
+        }
+
+        body.sidebar-open .menu-toggle i {
+            transform: rotate(180deg);
+        }
+
+        /* overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.3s ease;
+            z-index: 999;
+        }
+
+        /* show overlay */
+        body.sidebar-open::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* sidebar animation */
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+
+
+
+        /* =========================
+   RESPONSIVE DESIGN
+========================= */
+
+        /* TABLET */
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content {
+                margin-left: 260px;
+            }
+        }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+
+            /* Sidebar becomes overlay */
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+            }
+
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-body {
+                padding: 15px;
+            }
+
+
+            .card {
+                padding: 16px;
+            }
+
+            table {
+                min-width: 600px;
+            }
+        }
+
+        /* SMALL MOBILE */
+        @media (max-width: 480px) {
+            .topbar {
+                width: 100%;
+                padding: 12px 16px;
+            }
+
+            .topbar h1 {
+                font-size: 1rem;
+            }
+
+            .input-box input,
+            .input-box select {
+                font-size: 0.85rem;
+            }
+
+            .btn-submit {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* =========================
+   ACCESSIBILITY IMPROVEMENTS
+========================= */
+        button,
+        a {
+            transition: 0.2s ease;
+        }
+
+        a:focus,
+        button:focus,
+        input:focus,
+        select:focus {
+            outline: 2px solid rgba(245, 197, 24, 0.6);
+            outline-offset: 2px;
+        }
+
+
+        @media (max-width: 1024px) {
+            .menu-toggle {
+                display: block;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 1000;
+            }
+
+            body.sidebar-open .sidebar {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                width: 100%;
+                margin-left: 0;
+            }
         }
     </style>
 </head>
 
 <body>
-        <aside class="sidebar">
-      <div class="sidebar-logo">
-        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
-        <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
-      </div>
-      <div class="sidebar-user">
-        <div class="user-avatar">{{ user.username|first|upper }}</div>
-        <div class="user-info">
-          <h4>{{ user.username }}</h4>
-          <span><span class="online-dot"></span>Super Admin</span>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
+            <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
         </div>
-      </div>
-      <div class="nav-scroll">
-        <nav>
-          <div class="nav-section">Overview</div>
-          <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-          <div class="nav-section">Management</div>
-          <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
-          <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
-          <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
-          <a href="{% url 'admin_salary' %}" class="nav-item active"><i class="fas fa-rupee-sign"></i> Salary</a>
-          <div class="nav-section">Staff Tools</div>
-          <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
-          <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
-          <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
-          <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-          <div class="nav-section">Communication</div>
-          <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
-          <div class="nav-section">Content</div>
-          <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
-          <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
-          <div class="nav-section">Reports</div>
-          <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress Tracking</a>
-          <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
-          <div class="nav-section">System</div>
-          <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
-          <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
-          <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
-        </nav>
-      </div>
-      <div class="sidebar-footer">
-        <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-      </div>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.username|first|upper }}</div>
+            <div class="user-info">
+                <h4>{{ user.username }}</h4>
+                <span><span class="online-dot"></span>Super Admin</span>
+            </div>
+        </div>
+        <div class="nav-scroll">
+            <nav>
+                <div class="nav-section">Overview</div>
+                <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i>
+                    Dashboard</a>
+                <div class="nav-section">Management</div>
+                <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
+                <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
+                <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All
+                    Appointments</a>
+                <a href="{% url 'admin_salary' %}" class="nav-item active"><i class="fas fa-rupee-sign"></i> Salary</a>
+                <div class="nav-section">Staff Tools</div>
+                <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave
+                    Requests</a>
+                <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
+                <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
+                <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session
+                    Notes</a>
+                <div class="nav-section">Communication</div>
+                <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
+                <div class="nav-section">Content</div>
+                <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
+                <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
+                <div class="nav-section">Reports</div>
+                <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress
+                    Tracking</a>
+                <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+                <div class="nav-section">System</div>
+                <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+                <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
+                <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
+            </nav>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
     </aside>
 
     <div class="main-content">
         <div class="topbar">
+            <button class="menu-toggle" onclick="toggleSidebar(this)">
+                <i class="fas fa-bars"></i>
+            </button>
             <h1>💰 Salary Management</h1>
         </div>
         <div class="dashboard-body">
@@ -383,7 +676,8 @@
                                     <option value="">-- Select Staff --</option>
                                     {% for staff in staff_list %}
                                     <option value="{{ staff.user.id }}">
-                                        {{ staff.user.get_full_name|default:staff.user.username }} ({{ staff.get_role_display }})
+                                        {{ staff.user.get_full_name|default:staff.user.username }} ({{
+                                        staff.get_role_display }})
                                     </option>
                                     {% endfor %}
                                 </select>
@@ -452,35 +746,41 @@
                     <h2><i class="fas fa-list"></i> All Salary Records</h2>
                     <p>Complete salary payment history</p>
                     {% if salary_records %}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Staff</th>
-                                <th>Month</th>
-                                <th>Basic</th>
-                                <th>Net</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for record in salary_records %}
-                            <tr>
-                                <td>{{ record.staff.get_full_name|default:record.staff.username }}</td>
-                                <td>{{ record.month }} {{ record.year }}</td>
-                                <td>₹{{ record.basic_salary }}</td>
-                                <td><strong>₹{{ record.net_salary }}</strong></td>
-                                <td><span class="badge-paid">✅ Paid</span></td>
-                                <td>
-                                    <div style="display:flex;gap:5px;">
-                                        <a href="{% url 'edit_salary' record.id %}" style="background:#F5C518;color:#2C2C2C;padding:5px 10px;border-radius:8px;font-size:0.76em;font-weight:700;text-decoration:none;">✏️ Edit</a>
-                                        <a href="{% url 'delete_salary' record.id %}" style="background:#C0392B;color:#fff;padding:5px 10px;border-radius:8px;font-size:0.76em;font-weight:700;text-decoration:none;">🗑️ Del</a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Staff</th>
+                                    <th>Month</th>
+                                    <th>Basic</th>
+                                    <th>Net</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in salary_records %}
+                                <tr>
+                                    <td>{{ record.staff.get_full_name|default:record.staff.username }}</td>
+                                    <td>{{ record.month }} {{ record.year }}</td>
+                                    <td>₹{{ record.basic_salary }}</td>
+                                    <td><strong>₹{{ record.net_salary }}</strong></td>
+                                    <td><span class="badge-paid">✅ Paid</span></td>
+                                    <td>
+                                        <div style="display:flex;gap:5px;">
+                                            <a href="{% url 'edit_salary' record.id %}"
+                                                style="background:#F5C518;color:#2C2C2C;padding:5px 10px;border-radius:8px;font-size:0.76em;font-weight:700;text-decoration:none;">✏️
+                                                Edit</a>
+                                            <a href="{% url 'delete_salary' record.id %}"
+                                                style="background:#C0392B;color:#fff;padding:5px 10px;border-radius:8px;font-size:0.76em;font-weight:700;text-decoration:none;">🗑️
+                                                Del</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {% else %}
                     <div class="empty-state">
                         <i class="fas fa-rupee-sign"></i>
@@ -491,6 +791,41 @@
             </div>
         </div>
     </div>
+    <script>
+        function toggleSidebar(btn) {
+            document.body.classList.toggle("sidebar-open");
+
+            // icon switch (bars ↔ times)
+            const icon = btn.querySelector("i");
+
+            if (document.body.classList.contains("sidebar-open")) {
+                icon.classList.remove("fa-bars");
+                icon.classList.add("fa-times");
+            } else {
+                icon.classList.remove("fa-times");
+                icon.classList.add("fa-bars");
+            }
+        }
+
+        // click outside sidebar closes it
+        document.addEventListener("click", function (e) {
+            const sidebar = document.querySelector(".sidebar");
+            const btn = document.querySelector(".menu-toggle");
+
+            if (!sidebar || !btn) return;
+
+            const isClickInsideSidebar = sidebar.contains(e.target);
+            const isClickButton = btn.contains(e.target);
+
+            if (!isClickInsideSidebar && !isClickButton && document.body.classList.contains("sidebar-open")) {
+                document.body.classList.remove("sidebar-open");
+
+                const icon = btn.querySelector("i");
+                icon.classList.remove("fa-times");
+                icon.classList.add("fa-bars");
+            }
+        });
+    </script>
 </body>
 
 </html>
