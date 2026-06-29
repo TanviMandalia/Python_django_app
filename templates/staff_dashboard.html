@@ -545,6 +545,324 @@
             margin-top: 2px;
             line-height: 1.4;
         }
+
+        /* ===================================================
+   RESPONSIVE UPGRADE - PART 1
+   Add this AFTER your existing CSS
+===================================================*/
+
+/* ---------- Global ---------- */
+
+html{
+    scroll-behavior:smooth;
+}
+
+img{
+    max-width:100%;
+    height:auto;
+    display:block;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+input,
+select,
+textarea,
+button{
+    font:inherit;
+}
+
+button{
+    cursor:pointer;
+}
+
+*{
+    -webkit-tap-highlight-color:transparent;
+}
+
+/* Better focus */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible{
+    outline:3px solid #F5C518;
+    outline-offset:3px;
+}
+
+/* Smooth animation */
+
+.sidebar,
+.main-content,
+.nav-item,
+.quick-btn,
+.stat-card,
+.card,
+.btn-gold,
+.logout-btn{
+    transition:all .3s ease;
+}
+
+/* ===================================================
+   HAMBURGER BUTTON
+===================================================*/
+
+.menu-toggle{
+    display:none;
+    width:45px;
+    height:45px;
+    border:none;
+    border-radius:10px;
+    background:#F5C518;
+    color:#2C2C2C;
+    font-size:20px;
+    font-weight:bold;
+    align-items:center;
+    justify-content:center;
+}
+
+/* ===================================================
+   SIDEBAR
+===================================================*/
+
+.sidebar{
+    width:260px;
+    height:100vh;
+    position:fixed;
+    left:0;
+    top:0;
+    background:linear-gradient(180deg,#1a1a1a,#2C2C2C);
+    overflow-y:auto;
+    scrollbar-width:none;
+    transition:left .35s ease;
+    z-index:1000;
+}
+
+.sidebar::-webkit-scrollbar{
+    display:none;
+}
+
+/* overlay */
+
+.sidebar-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    opacity:0;
+    visibility:hidden;
+    transition:.3s;
+    z-index:999;
+}
+
+.sidebar-overlay.active{
+    opacity:1;
+    visibility:visible;
+}
+
+/* ===================================================
+   TOPBAR
+===================================================*/
+
+.topbar{
+    gap:20px;
+    /* flex-wrap:wrap; */
+}
+
+.topbar-left{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+.topbar-right{
+    display:flex;
+    align-items:center;
+    gap:15px;
+    flex-wrap:wrap;
+}
+
+.menu-toggle{
+    display:none;
+    width:45px;
+    height:45px;
+    border:none;
+    background:#F5C518;
+    color:#2C2C2C;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:20px;
+    align-items:center;
+    justify-content:center;
+}
+
+.menu-toggle:hover{
+    background:#e3b80d;
+}
+
+/* ===================================================
+   LARGE SCREEN
+===================================================*/
+
+@media (min-width:1200px){
+
+.dashboard-body{
+    padding:30px;
+}
+
+}
+
+/* ===================================================
+   LAPTOP
+===================================================*/
+
+@media (max-width:1199px){
+
+.stat-cards{
+    grid-template-columns:repeat(2,1fr);
+}
+
+.attendance-grid{
+    grid-template-columns:repeat(2,1fr);
+}
+
+.tips-grid{
+    grid-template-columns:repeat(2,1fr);
+}
+
+.content-grid{
+    grid-template-columns:1fr;
+}
+
+}
+
+/* ===================================================
+   TABLET
+===================================================*/
+
+@media (max-width:992px){
+
+.menu-toggle{
+    display:flex;
+}
+
+.sidebar{
+
+    left:-270px;
+    transition:.35s;
+}
+
+.sidebar.active{
+    left:0;
+}
+
+.main-content{
+    margin-left:0;
+}
+
+.dashboard-body{
+    padding:20px;
+}
+
+.topbar{
+    padding:15px 20px;
+}
+
+.welcome-card{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:20px;
+}
+
+.welcome-icon{
+    align-self:flex-end;
+}
+
+}
+
+/* ===================================================
+   MOBILE
+===================================================*/
+
+@media (max-width:768px){
+
+.topbar{
+    padding:15px;
+}
+
+.topbar h1{
+    font-size:18px;
+}
+
+.date-badge{
+    font-size:13px;
+}
+
+.dashboard-body{
+    padding:15px;
+}
+
+.stat-cards{
+    grid-template-columns:1fr;
+}
+
+.content-grid{
+    grid-template-columns:1fr;
+}
+
+.attendance-grid{
+    grid-template-columns:1fr 1fr;
+}
+
+.quick-grid{
+    grid-template-columns:1fr;
+}
+
+.tips-grid{
+    grid-template-columns:1fr;
+}
+
+.card,
+.attendance-card{
+    padding:18px;
+}
+
+.welcome-card{
+    padding:22px;
+}
+
+.welcome-card h2{
+    font-size:24px;
+}
+
+.welcome-icon{
+    font-size:55px;
+}
+
+}
+
+@media (max-width:992px){
+
+.menu-toggle{
+    display:flex;
+}
+
+.sidebar{
+    left:-260px;
+}
+
+.sidebar.active{
+    left:0;
+}
+
+.main-content{
+    margin-left:0;
+}
+
+}
     </style>
 </head>
 
@@ -586,6 +904,9 @@
     <!-- MAIN -->
     <div class="main-content">
         <div class="topbar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
             <h1>👨‍⚕️ Staff Dashboard</h1>
             <span class="date-badge">📅 {{ today }}</span>
         </div>
@@ -780,7 +1101,52 @@
 
         </div>
     </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+    <script>
+
+const menuToggle = document.getElementById("menuToggle");
+const sidebar = document.querySelector(".sidebar");
+const overlay = document.getElementById("sidebarOverlay");
+
+menuToggle.addEventListener("click", function () {
+    sidebar.classList.toggle("active");
+    overlay.classList.toggle("active");
+});
+
+overlay.addEventListener("click", function () {
+    sidebar.classList.remove("active");
+    overlay.classList.remove("active");
+});
+
+window.addEventListener("resize", function () {
+
+    if(window.innerWidth > 992){
+
+        sidebar.classList.remove("active");
+        overlay.classList.remove("active");
+
+    }
+
+});
+
+document.querySelectorAll(".nav-item").forEach(item => {
+
+    item.addEventListener("click", function(){
+
+        if(window.innerWidth <= 992){
+
+            sidebar.classList.remove("active");
+            overlay.classList.remove("active");
+
+        }
+
+    });
+
+});
+
+
+</script>
 </body>
 
 </html>

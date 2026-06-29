@@ -284,6 +284,82 @@
         border-radius: 8px;
         font-weight: 600;
       }
+
+      /* =========================
+   RESPONSIVE LAYOUT
+========================= */
+
+/* Smooth transitions */
+.sidebar,
+.main {
+  transition: all 0.3s ease;
+}
+
+/* Hamburger button */
+.menu-toggle {
+  display: none;
+  font-size: 1.4rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1a1a2e;
+}
+
+/* TABLE RESPONSIVE */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  min-width: 700px;
+}
+
+/* MOBILE VIEW */
+@media (max-width: 992px) {
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    height: 100%;
+    z-index: 999;
+  }
+
+  .sidebar.show {
+    left: 0;
+  }
+
+  .main {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+}
+
+/* SMALL MOBILE */
+@media (max-width: 576px) {
+  .topbar {
+    padding: 14px 16px;
+  }
+
+  .body {
+    padding: 18px 14px;
+  }
+
+  .btn-primary {
+    padding: 8px 14px;
+    font-size: 0.8em;
+  }
+}
+
+/* Accessibility focus */
+button:focus,
+a:focus {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
     </style>
   </head>
   <body>
@@ -310,6 +386,9 @@
 
     <div class="main">
       <div class="topbar">
+        <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle Menu">
+  ☰
+</button>
         <h1>🏥 All Hospitals</h1>
         <div class="topbar-right">
           <a href="{% url 'super_admin_add_hospital' %}" class="btn-primary"><i class="fas fa-plus"></i> Add Hospital</a>
@@ -327,6 +406,7 @@
 
         <div class="card">
           {% if hospitals %}
+          <div class="table-wrapper">
             <table class="table">
               <thead>
                 <tr>
@@ -403,6 +483,7 @@
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           {% else %}
             <div class="empty">
               <i class="fas fa-hospital"></i>
@@ -419,5 +500,25 @@
         </div>
       </div>
     </div>
+    <script>
+  function toggleSidebar() {
+    document.querySelector('.sidebar').classList.toggle('show');
+  }
+
+  // Optional: close sidebar when clicking outside (mobile UX improvement)
+  document.addEventListener('click', function (e) {
+    const sidebar = document.querySelector('.sidebar');
+    const toggleBtn = document.querySelector('.menu-toggle');
+
+    if (
+      window.innerWidth <= 992 &&
+      sidebar.classList.contains('show') &&
+      !sidebar.contains(e.target) &&
+      !toggleBtn.contains(e.target)
+    ) {
+      sidebar.classList.remove('show');
+    }
+  });
+</script>
   </body>
 </html>

@@ -7,258 +7,345 @@
     <meta charset="UTF-8">
     <title>My Salary - Staff</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <style>
+/* =========================
+   RESET + BASE
+========================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f5f5f5;
-            display: flex;
-            min-height: 100vh;
-        }
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f5f5f5;
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
 
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
-            overflow-y: auto;
-            scrollbar-width: none;
-        }
+/* =========================
+   SIDEBAR
+========================= */
+.sidebar {
+    width: 260px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
+    overflow-y: auto;
+    scrollbar-width: none;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
 
-        .sidebar-logo {
-            padding: 22px 20px;
-            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
-            text-align: center;
-        }
+.sidebar::-webkit-scrollbar {
+    display: none;
+}
 
-        .sidebar-logo img {
-            width: 130px;
-            border-radius: 10px;
-        }
+/* COLLAPSED SIDEBAR */
+.sidebar.collapsed {
+    width: 70px;
+}
 
-        .sidebar-logo p {
-            color: #F5C518;
-            font-size: 0.75em;
-            margin-top: 8px;
-            font-weight: 600;
-        }
+.sidebar.collapsed .sidebar-logo p,
+.sidebar.collapsed .user-info,
+.sidebar.collapsed .nav-section,
+.sidebar.collapsed .nav-item span {
+    display: none;
+}
 
-        .sidebar-user {
-            padding: 18px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+.sidebar.collapsed .nav-item {
+    justify-content: center;
+}
 
-        .user-avatar {
-            width: 42px;
-            height: 42px;
-            background: #F5C518;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: #2C2C2C;
-        }
+/* =========================
+   LOGO + USER
+========================= */
+.sidebar-logo {
+    padding: 22px 20px;
+    border-bottom: 1px solid rgba(245, 197, 24, 0.2);
+    text-align: center;
+}
 
-        .user-info h4 {
-            color: white;
-            font-size: 0.88em;
-        }
+.sidebar-logo img {
+    width: 130px;
+    border-radius: 10px;
+    max-width: 100%;
+}
 
-        .user-info span {
-            color: #F5C518;
-            font-size: 0.72em;
-        }
+.sidebar-logo p {
+    color: #F5C518;
+    font-size: 0.75em;
+    margin-top: 8px;
+    font-weight: 600;
+}
 
-        .nav-section {
-            padding: 12px 22px 5px;
-            color: #555;
-            font-size: 0.7em;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 700;
-        }
+.sidebar-user {
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
 
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 22px;
-            color: #bbb;
-            text-decoration: none;
-            font-size: 0.9em;
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
+.user-avatar {
+    width: 42px;
+    height: 42px;
+    background: #F5C518;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #2C2C2C;
+}
 
-        .nav-item:hover,
-        .nav-item.active {
-            background: rgba(245, 197, 24, 0.1);
-            color: #F5C518;
-            border-left-color: #F5C518;
-        }
+.user-info h4 {
+    color: white;
+    font-size: 0.88em;
+}
 
-        .nav-item i {
-            width: 18px;
-            text-align: center;
-        }
+.user-info span {
+    color: #F5C518;
+    font-size: 0.72em;
+}
 
-        .logout-btn {
-            margin: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 11px 18px;
-            background: rgba(220, 53, 69, 0.15);
-            color: #ff6b6b;
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 0.86em;
-        }
+/* =========================
+   NAVIGATION
+========================= */
+.nav-section {
+    padding: 12px 22px 5px;
+    color: #555;
+    font-size: 0.7em;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+}
 
-        .main-content {
-            margin-left: 260px;
-            flex: 1;
-        }
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 22px;
+    color: #bbb;
+    text-decoration: none;
+    font-size: 0.9em;
+    transition: all 0.25s ease;
+    border-left: 3px solid transparent;
+}
 
-        .topbar {
-            background: white;
-            padding: 16px 28px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-        }
+.nav-item:hover,
+.nav-item.active {
+    background: rgba(245, 197, 24, 0.1);
+    color: #F5C518;
+    border-left-color: #F5C518;
+    transform: translateX(2px);
+}
 
-        .topbar h1 {
-            font-size: 1.2em;
-            color: #2C2C2C;
-            font-weight: 700;
-        }
+.nav-item i {
+    width: 18px;
+    text-align: center;
+}
 
-        .dashboard-body {
-            padding: 25px;
-        }
+/* LOGOUT */
+.logout-btn {
+    margin: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 18px;
+    background: rgba(220, 53, 69, 0.15);
+    color: #ff6b6b;
+    border-radius: 10px;
+    text-decoration: none;
+}
 
-        .total-card {
-            background: linear-gradient(135deg, #1a1a1a, #2C2C2C);
-            border-radius: 18px;
-            padding: 28px;
-            margin-bottom: 22px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+/* =========================
+   MAIN CONTENT
+========================= */
+.main-content {
+    margin-left: 260px;
+    flex: 1;
+    transition: all 0.3s ease;
+}
 
-        .total-card h2 {
-            color: white;
-            font-size: 1.3em;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
+/* when sidebar collapsed */
+.sidebar.collapsed ~ .main-content {
+    margin-left: 70px;
+}
 
-        .total-card h1 {
-            color: #F5C518;
-            font-size: 2.5em;
-            font-weight: 900;
-        }
+/* =========================
+   TOPBAR (STICKY)
+========================= */
+.topbar {
+    background: white;
+    padding: 16px 28px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
 
-        .total-card p {
-            color: #aaa;
-            font-size: 0.85em;
-            margin-top: 5px;
-        }
+.topbar h1 {
+    font-size: 1.2em;
+    color: #2C2C2C;
+    font-weight: 700;
+}
 
-        .total-icon {
-            font-size: 4em;
-            color: rgba(245, 197, 24, 0.2);
-        }
+/* HAMBURGER BUTTON */
+.menu-toggle {
+    display: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+}
 
-        .table-card {
-            background: white;
-            border-radius: 14px;
-            padding: 22px;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
-        }
+/* =========================
+   DASHBOARD BODY
+========================= */
+.dashboard-body {
+    padding: 25px;
+}
 
-        .table-title {
-            font-size: 0.95em;
-            font-weight: 700;
-            color: #2C2C2C;
-            margin-bottom: 18px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+/* =========================
+   CARDS
+========================= */
+.total-card {
+    background: linear-gradient(135deg, #1a1a1a, #2C2C2C);
+    border-radius: 18px;
+    padding: 28px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
 
-        .table-title i {
-            color: #F5C518;
-        }
+.total-card h2 {
+    color: white;
+    font-size: 1.3em;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+.total-card h1 {
+    color: #F5C518;
+    font-size: 2.5em;
+}
 
-        th {
-            background: #f9f9f9;
-            padding: 11px 14px;
-            text-align: left;
-            font-size: 0.78em;
-            color: #888;
-            font-weight: 700;
-            text-transform: uppercase;
-            border-bottom: 2px solid #f0f0f0;
-        }
+.total-card p {
+    color: #aaa;
+}
 
-        td {
-            padding: 13px 14px;
-            font-size: 0.86em;
-            color: #333;
-            border-bottom: 1px solid #f5f5f5;
-        }
+/* =========================
+   TABLE CARD
+========================= */
+.table-card {
+    background: white;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+    overflow-x: auto;
+}
 
-        tr:last-child td {
-            border-bottom: none;
-        }
+/* TABLE RESPONSIVE */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
 
-        .badge-paid {
-            background: #d4edda;
-            color: #155724;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 0.75em;
-            font-weight: 700;
-        }
+th {
+    background: #f9f9f9;
+    padding: 11px 14px;
+    text-align: left;
+    font-size: 0.78em;
+    color: #888;
+    text-transform: uppercase;
+}
 
-        .badge-unpaid {
-            background: #fff3cd;
-            color: #856404;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 0.75em;
-            font-weight: 700;
-        }
+td {
+    padding: 13px 14px;
+    font-size: 0.86em;
+    color: #333;
+    border-bottom: 1px solid #f5f5f5;
+}
 
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #aaa;
-        }
+/* BADGES */
+.badge-paid {
+    background: #d4edda;
+    color: #155724;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75em;
+}
 
-        .empty-state i {
-            font-size: 3em;
-            color: #F5C518;
-            margin-bottom: 10px;
-        }
-    </style>
+.badge-unpaid {
+    background: #fff3cd;
+    color: #856404;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75em;
+}
+
+/* =========================
+   EMPTY STATE
+========================= */
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #aaa;
+}
+
+/* =========================
+   ACCESSIBILITY + FOCUS
+========================= */
+a, button {
+    outline: none;
+}
+
+a:focus, button:focus {
+    outline: 2px solid #F5C518;
+    outline-offset: 2px;
+}
+
+/* =========================
+   RESPONSIVE DESIGN
+========================= */
+@media (max-width: 992px) {
+    .menu-toggle {
+        display: block;
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 576px) {
+    .total-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .dashboard-body {
+        padding: 15px;
+    }
+}
+</style>
 </head>
 
 <body>
@@ -295,6 +382,7 @@
 
     <div class="main-content">
         <div class="topbar">
+            <button class="menu-toggle" onclick="openMobileSidebar()">☰</button>
             <h1>💰 My Salary Records</h1>
         </div>
         <div class="dashboard-body">
@@ -352,6 +440,34 @@
             </div>
         </div>
     </div>
+<script>
+const sidebar = document.querySelector('.sidebar');
+
+/* Desktop collapse */
+function toggleSidebar() {
+    sidebar.classList.toggle('collapsed');
+}
+
+/* Mobile open */
+function openMobileSidebar() {
+    sidebar.classList.add('open');
+}
+
+/* Mobile close (important) */
+function closeMobileSidebar() {
+    sidebar.classList.remove('open');
+}
+
+/* Click outside sidebar to close (mobile UX) */
+document.addEventListener('click', function (e) {
+    const isClickInsideSidebar = sidebar.contains(e.target);
+    const isMenuButton = e.target.classList.contains('menu-toggle');
+
+    if (!isClickInsideSidebar && !isMenuButton && window.innerWidth <= 992) {
+        sidebar.classList.remove('open');
+    }
+});
+</script>
 </body>
 
 </html>

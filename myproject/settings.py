@@ -40,18 +40,23 @@ INSTALLED_APPS = [
 # =========================
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'core.middleware.UpdateLastSeenMiddleware',
-    'core.middleware.SessionTimeoutMiddleware',
-    'core.middleware.LoginAttemptMiddleware',
-    'core.middleware.SubscriptionGateMiddleware',
-    'core.middleware.SubscriptionExpiryNotifierMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+
+    # ── Your custom middleware (ORDER MATTERS) ──
+    "core.middleware.NoCacheMiddleware",  # ✅ ADD THIS (important)
+    "core.middleware.PreventBackAfterLogoutMiddleware",  # ✅ ADD THIS
+
+    "core.middleware.UpdateLastSeenMiddleware",
+    "core.middleware.SessionTimeoutMiddleware",
+    "core.middleware.LoginAttemptMiddleware",
+    "core.middleware.SubscriptionGateMiddleware",
+    "core.middleware.SubscriptionExpiryNotifierMiddleware",
 ]
 
 ROOT_URLCONF = 'myproject.urls'
@@ -136,20 +141,26 @@ SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
 
-# =========================
-# EMAIL CONFIG (DEV)
-# =========================
+# ==========================================
+# EMAIL CONFIGURATION
+# ==========================================
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+# Gmail account
+EMAIL_HOST_USER = "mandaliatanvi1504@gmail.com"
 
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# Gmail App Password (16 characters)
+EMAIL_HOST_PASSWORD = "kulpbyryscfufzdd"
+
+DEFAULT_FROM_EMAIL = f"PhysioRehab Clinic <{EMAIL_HOST_USER}>"
+
+SERVER_EMAIL = EMAIL_HOST_USER
 
 
 LOGIN_URL = '/login/'

@@ -1,67 +1,485 @@
 {% load static %}
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>{{ hospital.name }} — Payment History</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        *{margin:0;padding:0;box-sizing:border-box;}
-        body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;}
-        .sidebar{width:240px;min-height:100vh;background:linear-gradient(180deg,#0f0f1a,#1a1a2e);position:fixed;top:0;left:0;display:flex;flex-direction:column;z-index:100;}
-        .sidebar-logo{padding:22px 18px;border-bottom:1px solid rgba(139,92,246,.25);text-align:center;}
-        .sidebar-logo .brand{color:#fff;font-size:1em;font-weight:800;}
-        .sidebar-logo .sub{color:#8b5cf6;font-size:.7em;font-weight:600;margin-top:2px;}
-        .sidebar-badge{margin:10px 16px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;padding:7px 12px;border-radius:10px;font-size:.76em;font-weight:700;text-align:center;}
-        .nav-section{padding:10px 20px 4px;color:#444;font-size:.66em;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;}
-        .nav-item{display:flex;align-items:center;gap:12px;padding:11px 20px;color:#aaa;text-decoration:none;font-size:.86em;border-left:3px solid transparent;transition:.2s;}
-        .nav-item:hover,.nav-item.active{background:rgba(139,92,246,.12);color:#a78bfa;border-left-color:#8b5cf6;}
-        .nav-item i{width:16px;text-align:center;}
-        .logout-btn{margin:12px;margin-top:auto;display:flex;align-items:center;gap:10px;padding:11px 16px;background:rgba(220,53,69,.12);color:#ff6b6b;border-radius:10px;text-decoration:none;font-size:.83em;}
-        .main{margin-left:240px;min-height:100vh;}
-        .topbar{background:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.06);position:sticky;top:0;z-index:50;}
-        .topbar h1{font-size:1.15em;color:#1a1a2e;font-weight:700;}
-        .topbar-back{display:flex;align-items:center;gap:8px;padding:8px 16px;background:#f5f5f5;border-radius:10px;text-decoration:none;font-size:.84em;color:#333;font-weight:600;}
-        .topbar-back:hover{background:#eee;}
-        .body{padding:24px 28px;}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-        .clinic-header{background:#fff;border-radius:14px;padding:22px;margin-bottom:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
-        .clinic-icon{width:60px;height:60px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#fff;flex-shrink:0;}
-        .clinic-info h2{font-size:1.2rem;font-weight:700;color:#1a1a2e;}
-        .clinic-info p{color:#888;font-size:.85rem;margin-top:3px;}
-        .sub-pill{padding:5px 14px;border-radius:20px;font-size:.8rem;font-weight:700;}
-        .sub-active{background:#d4edda;color:#155724;}
-        .sub-trial{background:#fff3cd;color:#856404;}
-        .sub-expired{background:#f8d7da;color:#721c24;}
-        .sub-none{background:#e2e3e5;color:#555;}
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+        }
 
-        .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px;}
-        .stat-box{background:#fff;border-radius:12px;padding:18px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.06);}
-        .stat-box .val{font-size:1.6rem;font-weight:800;}
-        .stat-box .lbl{font-size:.78rem;color:#666;margin-top:4px;}
+        .sidebar {
+            width: 240px;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #0f0f1a, #1a1a2e);
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
 
-        .card{background:#fff;border-radius:14px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.06);margin-bottom:22px;}
-        .card-title{font-size:.95em;font-weight:700;color:#1a1a2e;display:flex;align-items:center;gap:8px;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #f0f0f0;}
-        .card-title i{color:#8b5cf6;}
-        table{width:100%;border-collapse:collapse;}
-        th{text-align:left;padding:10px 13px;background:#f8f9fa;font-size:.74em;text-transform:uppercase;letter-spacing:.8px;color:#666;font-weight:700;border-bottom:1px solid #eee;}
-        td{padding:12px 13px;border-bottom:1px solid #f5f5f5;font-size:.86em;color:#333;vertical-align:middle;}
-        tr:hover td{background:#fafafa;}
-        .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.72em;font-weight:700;}
-        .badge-paid{background:#d4edda;color:#155724;}
-        .badge-pending{background:#fff3cd;color:#856404;}
-        .badge-failed{background:#f8d7da;color:#721c24;}
-        .badge-basic{background:#e2e3e5;color:#383d41;}
-        .badge-standard{background:#cce5ff;color:#004085;}
-        .badge-premium{background:rgba(139,92,246,.15);color:#6d28d9;}
-        .btn-confirm{padding:5px 14px;background:#28a745;color:#fff;border:none;border-radius:7px;font-size:.78em;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;}
-        .btn-reject{padding:5px 12px;background:#dc3545;color:#fff;border:none;border-radius:7px;font-size:.78em;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;margin-left:4px;}
-        .empty-state{text-align:center;padding:40px;color:#bbb;}
-        .empty-state i{font-size:2.5em;display:block;margin-bottom:10px;color:#ddd;}
-        @media(max-width:768px){.main{margin-left:0;}.body{padding:70px 16px 20px;}.sidebar{position:fixed;left:-260px;transition:.3s;}.sidebar.open{left:0;}}
-        .hamburger{display:none;position:fixed;top:12px;left:12px;z-index:200;background:#8b5cf6;border:none;border-radius:8px;width:38px;height:38px;cursor:pointer;align-items:center;justify-content:center;color:#fff;font-size:1rem;}
-        @media(max-width:768px){.hamburger{display:flex;}}
+        .sidebar-logo {
+            padding: 22px 18px;
+            border-bottom: 1px solid rgba(139, 92, 246, .25);
+            text-align: center;
+        }
+
+        .sidebar-logo .brand {
+            color: #fff;
+            font-size: 1em;
+            font-weight: 800;
+        }
+
+        .sidebar-logo .sub {
+            color: #8b5cf6;
+            font-size: .7em;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .sidebar-badge {
+            margin: 10px 16px;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: #fff;
+            padding: 7px 12px;
+            border-radius: 10px;
+            font-size: .76em;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .nav-section {
+            padding: 10px 20px 4px;
+            color: #444;
+            font-size: .66em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 20px;
+            color: #aaa;
+            text-decoration: none;
+            font-size: .86em;
+            border-left: 3px solid transparent;
+            transition: .2s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(139, 92, 246, .12);
+            color: #a78bfa;
+            border-left-color: #8b5cf6;
+        }
+
+        .nav-item i {
+            width: 16px;
+            text-align: center;
+        }
+
+        .logout-btn {
+            margin: 12px;
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 16px;
+            background: rgba(220, 53, 69, .12);
+            color: #ff6b6b;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: .83em;
+        }
+
+        .main {
+            margin-left: 240px;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            background: #fff;
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .topbar h1 {
+            font-size: 1.15em;
+            color: #1a1a2e;
+            font-weight: 700;
+        }
+
+        .topbar-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: .84em;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .topbar-back:hover {
+            background: #eee;
+        }
+
+        .body {
+            padding: 24px 28px;
+        }
+
+        .clinic-header {
+            background: #fff;
+            border-radius: 14px;
+            padding: 22px;
+            margin-bottom: 22px;
+            box-shadow: 0 3px 14px rgba(0, 0, 0, .06);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .clinic-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .clinic-info h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .clinic-info p {
+            color: #888;
+            font-size: .85rem;
+            margin-top: 3px;
+        }
+
+        .sub-pill {
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .sub-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .sub-trial {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .sub-expired {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .sub-none {
+            background: #e2e3e5;
+            color: #555;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+
+        .stat-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+        }
+
+        .stat-box .val {
+            font-size: 1.6rem;
+            font-weight: 800;
+        }
+
+        .stat-box .lbl {
+            font-size: .78rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 3px 14px rgba(0, 0, 0, .06);
+            margin-bottom: 22px;
+        }
+
+        .card-title {
+            font-size: .95em;
+            font-weight: 700;
+            color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .card-title i {
+            color: #8b5cf6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px 13px;
+            background: #f8f9fa;
+            font-size: .74em;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            color: #666;
+            font-weight: 700;
+            border-bottom: 1px solid #eee;
+        }
+
+        td {
+            padding: 12px 13px;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: .86em;
+            color: #333;
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background: #fafafa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: .72em;
+            font-weight: 700;
+        }
+
+        .badge-paid {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-basic {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .badge-standard {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .badge-premium {
+            background: rgba(139, 92, 246, .15);
+            color: #6d28d9;
+        }
+
+        .btn-confirm {
+            padding: 5px 14px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-size: .78em;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-reject {
+            padding: 5px 12px;
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-size: .78em;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-left: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #bbb;
+        }
+
+        .empty-state i {
+            font-size: 2.5em;
+            display: block;
+            margin-bottom: 10px;
+            color: #ddd;
+        }
+
+        @media(max-width:768px) {
+            .main {
+                margin-left: 0;
+            }
+
+            .body {
+                padding: 70px 16px 20px;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: -260px;
+                transition: .3s;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+        }
+
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 200;
+            background: #8b5cf6;
+            border: none;
+            border-radius: 8px;
+            width: 38px;
+            height: 38px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        @media(max-width:768px) {
+            .hamburger {
+                display: flex;
+            }
+        }
+
+        /* Smooth sidebar transition */
+        .sidebar {
+            transition: left 0.3s ease;
+        }
+
+        /* Mobile hidden state */
+        @media(max-width:768px) {
+            .sidebar {
+                left: -260px;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+        }
+
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.3s ease;
+            z-index: 90;
+        }
+
+        .overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Hamburger */
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 200;
+            background: #8b5cf6;
+            border: none;
+            border-radius: 8px;
+            width: 38px;
+            height: 38px;
+            cursor: pointer;
+            color: #fff;
+            font-size: 18px;
+        }
+
+        @media(max-width:768px) {
+            .hamburger {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        /* Main shift fix */
+        @media(max-width:768px) {
+            .main {
+                margin-left: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -89,6 +507,9 @@
 
 <div class="main">
     <div class="topbar">
+        <button class="hamburger" id="toggleBtn" aria-label="Toggle sidebar">
+  ☰
+</button>
         <h1>📋 {{ hospital.name }} — Subscription History</h1>
         <a href="{% url 'super_admin_subscriptions' %}" class="topbar-back"><i class="fas fa-arrow-left"></i> Back</a>
     </div>
@@ -211,5 +632,33 @@
 
     </div>
 </div>
+<div class="overlay" id="overlay"></div>
+<script>
+const sidebar = document.querySelector('.sidebar');
+const toggleBtn = document.getElementById('toggleBtn');
+const overlay = document.getElementById('overlay');
+
+function openSidebar(){
+    sidebar.classList.add('open');
+    overlay.classList.add('show');
+    toggleBtn.innerHTML = "✖";
+}
+
+function closeSidebar(){
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+    toggleBtn.innerHTML = "☰";
+}
+
+toggleBtn.addEventListener('click', () => {
+    if(sidebar.classList.contains('open')){
+        closeSidebar();
+    } else {
+        openSidebar();
+    }
+});
+
+overlay.addEventListener('click', closeSidebar);
+</script>
 </body>
 </html>

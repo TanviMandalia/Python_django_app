@@ -378,6 +378,848 @@
             color: #F5C518;
             margin-bottom: 15px;
         }
+
+        /* =====================================================
+   RESPONSIVE IMPROVEMENTS
+===================================================== */
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    overflow-x:hidden;
+}
+
+/* Better focus accessibility */
+
+a:focus,
+button:focus,
+input:focus,
+textarea:focus,
+select:focus{
+    outline:3px solid rgba(245,197,24,.35);
+    outline-offset:2px;
+}
+
+/* Images */
+
+img{
+    max-width:100%;
+    height:auto;
+    display:block;
+}
+
+/* Buttons */
+
+button,
+.btn-start,
+.btn-done,
+.logout-btn,
+.nav-item{
+    transition:.3s ease;
+}
+
+/* Sticky Header */
+
+.topbar{
+    position:sticky;
+    top:0;
+    z-index:900;
+}
+
+/* Sidebar */
+
+.sidebar{
+    transition:.35s ease;
+    z-index:1200;
+}
+
+/* Main */
+
+.main-content{
+    transition:.35s ease;
+}
+
+/* Hamburger */
+
+.menu-toggle{
+
+    width:45px;
+    height:45px;
+
+    display:none;
+
+    align-items:center;
+    justify-content:center;
+
+    cursor:pointer;
+
+    border:none;
+    border-radius:10px;
+
+    background:#F5C518;
+    color:#2C2C2C;
+
+    font-size:22px;
+
+    transition:.3s;
+}
+
+.menu-toggle:hover{
+
+    transform:scale(1.05);
+
+}
+
+.sidebar-overlay{
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(0,0,0,.45);
+
+    opacity:0;
+
+    visibility:hidden;
+
+    transition:.3s;
+
+    z-index:1100;
+
+}
+
+/* Active */
+
+.sidebar.show{
+
+    transform:translateX(0);
+
+}
+
+.sidebar-overlay.show{
+
+    opacity:1;
+
+    visibility:visible;
+
+}
+
+/* ==========================
+        TABLE
+========================== */
+
+.table-responsive{
+
+    width:100%;
+
+    overflow-x:auto;
+
+    -webkit-overflow-scrolling:touch;
+
+}
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+    min-width:700px;
+
+}
+
+table th,
+table td{
+
+    padding:14px;
+
+    white-space:nowrap;
+
+}
+
+/* ==========================
+        FORMS
+========================== */
+
+form{
+
+    width:100%;
+
+}
+
+input,
+textarea,
+select{
+
+    width:100%;
+
+    max-width:100%;
+
+}
+
+textarea{
+
+    resize:vertical;
+
+}
+
+/* ==========================
+        LARGE SCREEN
+========================== */
+
+@media (min-width:1200px){
+
+.dashboard-body{
+
+padding:30px;
+
+}
+
+.stat-row{
+
+grid-template-columns:repeat(3,1fr);
+
+}
+
+}
+
+/* ==========================
+        LAPTOP
+========================== */
+
+@media (max-width:1199px){
+
+.stat-row{
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+.task-card{
+
+flex-wrap:wrap;
+
+}
+
+.action-btns{
+
+width:100%;
+
+flex-direction:row;
+
+}
+
+}
+
+/* ==========================
+        TABLET
+========================== */
+
+@media (max-width:992px){
+
+.sidebar{
+
+transform:translateX(-100%);
+
+}
+
+.main-content{
+
+margin-left:0;
+
+width:100%;
+
+}
+
+.menu-toggle{
+
+display:flex;
+
+}
+
+.topbar{
+
+display:flex;
+
+align-items:center;
+
+gap:15px;
+
+padding:15px 20px;
+
+}
+
+.dashboard-body{
+
+padding:20px;
+
+}
+
+.stat-row{
+
+grid-template-columns:1fr;
+
+}
+
+.task-card{
+
+padding:18px;
+
+}
+
+}
+
+/* ==========================
+        MOBILE
+========================== */
+
+@media (max-width:768px){
+
+.dashboard-body{
+
+padding:15px;
+
+}
+
+.stat-card{
+
+padding:16px;
+
+}
+
+.task-card{
+
+flex-direction:column;
+
+align-items:flex-start;
+
+}
+
+.task-meta{
+
+width:100%;
+
+}
+
+.action-btns{
+
+width:100%;
+
+display:flex;
+
+flex-direction:column;
+
+}
+
+.action-btns a{
+
+width:100%;
+
+text-align:center;
+
+}
+
+.user-info h4{
+
+font-size:.82rem;
+
+}
+
+.sidebar{
+
+width:260px;
+
+}
+
+.topbar h1{
+
+font-size:1rem;
+
+}
+
+}
+
+/* ==========================
+      SMALL MOBILE
+========================== */
+
+@media (max-width:480px){
+
+.dashboard-body{
+
+padding:12px;
+
+}
+
+.stat-card{
+
+gap:12px;
+
+padding:14px;
+
+}
+
+.stat-info h3{
+
+font-size:1.25rem;
+
+}
+
+.task-info h3{
+
+font-size:.9rem;
+
+}
+
+.task-info p{
+
+font-size:.78rem;
+
+}
+
+.badge{
+
+font-size:.68rem;
+
+padding:5px 10px;
+
+}
+
+.topbar{
+
+padding:12px;
+
+}
+
+.menu-toggle{
+
+width:40px;
+height:40px;
+
+font-size:20px;
+
+}
+
+.sidebar{
+
+width:240px;
+
+}
+
+}
+
+/*=====================================================
+    PART 3 - RESPONSIVE COMPONENT IMPROVEMENTS
+======================================================*/
+
+/* ---------- Global Spacing ---------- */
+
+.dashboard-body>*{
+    margin-bottom:24px;
+}
+
+.dashboard-body>*:last-child{
+    margin-bottom:0;
+}
+
+/* ---------- Card Design ---------- */
+
+.stat-card,
+.task-card,
+.empty-state{
+
+    transition:
+        transform .30s ease,
+        box-shadow .30s ease,
+        border-color .30s ease;
+
+}
+
+.stat-card:hover{
+
+    transform:translateY(-4px);
+
+    box-shadow:0 12px 28px rgba(0,0,0,.10);
+
+}
+
+.task-card:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:0 10px 25px rgba(0,0,0,.10);
+
+}
+
+.empty-state:hover{
+
+    transform:translateY(-3px);
+
+}
+
+/* ---------- Icons ---------- */
+
+.stat-icon{
+
+    transition:.30s;
+
+}
+
+.stat-card:hover .stat-icon{
+
+    transform:scale(1.08);
+
+}
+
+/* ---------- Navigation ---------- */
+
+.nav-item{
+
+    position:relative;
+
+    overflow:hidden;
+
+}
+
+.nav-item::before{
+
+    content:"";
+
+    position:absolute;
+
+    left:0;
+    top:0;
+
+    width:0;
+    height:100%;
+
+    background:rgba(245,197,24,.08);
+
+    transition:.30s;
+
+}
+
+.nav-item:hover::before{
+
+    width:100%;
+
+}
+
+.nav-item>*{
+
+    position:relative;
+    z-index:2;
+
+}
+
+/* ---------- Buttons ---------- */
+
+.btn-start,
+.btn-done,
+.logout-btn{
+
+    transition:
+        background .30s,
+        color .30s,
+        transform .25s,
+        box-shadow .25s;
+
+}
+
+.btn-start:hover,
+.btn-done:hover,
+.logout-btn:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:0 8px 20px rgba(0,0,0,.12);
+
+}
+
+.btn-start:active,
+.btn-done:active{
+
+    transform:scale(.96);
+
+}
+
+/* ---------- Forms ---------- */
+
+.form-group{
+
+    margin-bottom:18px;
+
+}
+
+label{
+
+    display:block;
+
+    margin-bottom:8px;
+
+    font-size:.90rem;
+
+    font-weight:600;
+
+    color:#2C2C2C;
+
+}
+
+input,
+select,
+textarea{
+
+    padding:12px 15px;
+
+    border:1px solid #dcdcdc;
+
+    border-radius:10px;
+
+    font-size:.90rem;
+
+    background:#fff;
+
+    transition:.30s;
+
+}
+
+input:hover,
+select:hover,
+textarea:hover{
+
+    border-color:#F5C518;
+
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+
+    border-color:#F5C518;
+
+    box-shadow:0 0 0 4px rgba(245,197,24,.15);
+
+    outline:none;
+
+}
+
+/* ---------- Tables ---------- */
+
+.table-responsive{
+
+    border-radius:14px;
+
+    background:#fff;
+
+    overflow:auto;
+
+    box-shadow:0 3px 12px rgba(0,0,0,.06);
+
+}
+
+table{
+
+    min-width:720px;
+
+}
+
+thead{
+
+    background:#2C2C2C;
+
+    color:#fff;
+
+}
+
+thead th{
+
+    font-weight:600;
+
+}
+
+tbody tr{
+
+    transition:.25s;
+
+}
+
+tbody tr:nth-child(even){
+
+    background:#fafafa;
+
+}
+
+tbody tr:hover{
+
+    background:#fff9dd;
+
+}
+
+/* ---------- Images ---------- */
+
+img{
+
+    max-width:100%;
+
+    height:auto;
+
+}
+
+.sidebar-logo img{
+
+    transition:.35s;
+
+}
+
+.sidebar-logo img:hover{
+
+    transform:scale(1.05);
+
+}
+
+/* ---------- Empty State ---------- */
+
+.empty-state{
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+/* ---------- Task Meta ---------- */
+
+.task-meta{
+
+    row-gap:8px;
+
+}
+
+.task-meta span{
+
+    background:#f8f8f8;
+
+    padding:5px 10px;
+
+    border-radius:30px;
+
+}
+
+/* ---------- Badge ---------- */
+
+.badge{
+
+    white-space:nowrap;
+
+}
+
+/* ---------- Responsive Cards ---------- */
+
+@media (max-width:992px){
+
+    .stat-card{
+
+        align-items:center;
+
+    }
+
+    .task-card{
+
+        row-gap:14px;
+
+    }
+
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width:768px){
+
+    .stat-card{
+
+        flex-direction:row;
+
+    }
+
+    .task-info,
+    .stat-info{
+
+        width:100%;
+
+    }
+
+    .badge{
+
+        align-self:flex-start;
+
+    }
+
+    .task-meta{
+
+        width:100%;
+
+    }
+
+}
+
+/* ---------- Small Mobile ---------- */
+
+@media (max-width:480px){
+
+    .dashboard-body>*{
+
+        margin-bottom:18px;
+
+    }
+
+    .task-card{
+
+        padding:15px;
+
+    }
+
+    .stat-card{
+
+        padding:15px;
+
+    }
+
+    .empty-state{
+
+        padding:30px 20px;
+
+    }
+
+    .task-meta{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+    }
+
+    .task-meta span{
+
+        width:100%;
+
+    }
+
+    .btn-start,
+    .btn-done{
+
+        width:100%;
+
+    }
+
+}
     </style>
 </head>
 
@@ -484,6 +1326,96 @@
             {% endif %}
         </div>
     </div>
+
+    <script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const sidebar = document.querySelector(".sidebar");
+
+    /* Create Hamburger Button */
+    const menuBtn = document.createElement("button");
+    menuBtn.className = "menu-toggle";
+    menuBtn.setAttribute("aria-label", "Toggle Sidebar");
+    menuBtn.setAttribute("aria-expanded", "false");
+    menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+
+    /* Create Overlay */
+    const overlay = document.createElement("div");
+    overlay.className = "sidebar-overlay";
+
+    document.body.appendChild(overlay);
+
+    /* Insert button into topbar */
+    const topbar = document.querySelector(".topbar");
+
+    if (topbar) {
+        topbar.prepend(menuBtn);
+    }
+
+    function openSidebar() {
+        sidebar.classList.add("show");
+        overlay.classList.add("show");
+        menuBtn.setAttribute("aria-expanded", "true");
+        document.body.style.overflow = "hidden";
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove("show");
+        overlay.classList.remove("show");
+        menuBtn.setAttribute("aria-expanded", "false");
+        document.body.style.overflow = "";
+    }
+
+    menuBtn.addEventListener("click", function () {
+
+        if (sidebar.classList.contains("show")) {
+            closeSidebar();
+        } else {
+            openSidebar();
+        }
+
+    });
+
+    overlay.addEventListener("click", closeSidebar);
+
+    document.addEventListener("keydown", function (e) {
+
+        if (e.key === "Escape") {
+            closeSidebar();
+        }
+
+    });
+
+    /* Close sidebar after clicking menu on mobile */
+
+    document.querySelectorAll(".nav-item").forEach(function (item) {
+
+        item.addEventListener("click", function () {
+
+            if (window.innerWidth <= 992) {
+                closeSidebar();
+            }
+
+        });
+
+    });
+
+    /* Reset when resizing */
+
+    window.addEventListener("resize", function () {
+
+        if (window.innerWidth > 992) {
+
+            sidebar.classList.remove("show");
+            overlay.classList.remove("show");
+            document.body.style.overflow = "";
+
+        }
+
+    });
+
+});
+</script>
 </body>
 
 </html>

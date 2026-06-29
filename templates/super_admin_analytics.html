@@ -274,6 +274,107 @@
         background: #f8d7da;
         color: #721c24;
       }
+      /* =========================
+   GLOBAL RESPONSIVE FIX
+========================= */
+
+html, body {
+  overflow-x: hidden;
+}
+
+/* Smooth transitions */
+.sidebar,
+.main {
+  transition: all 0.3s ease;
+}
+
+/* =========================
+   HAMBURGER BUTTON
+========================= */
+
+.menu-toggle {
+  display: none;
+  font-size: 1.6rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1a1a2e;
+  padding: 6px 10px;
+}
+
+/* =========================
+   RESPONSIVE TABLE
+========================= */
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  min-width: 600px;
+}
+
+/* =========================
+   MOBILE / TABLET VIEW
+========================= */
+
+@media (max-width: 992px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .main {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 999;
+  }
+
+  .sidebar.show {
+    transform: translateX(0);
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+}
+
+/* =========================
+   SMALL MOBILE
+========================= */
+
+@media (max-width: 576px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    padding: 14px 16px;
+  }
+
+  .body {
+    padding: 18px 14px;
+  }
+}
+
+/* =========================
+   ACCESSIBILITY IMPROVEMENTS
+========================= */
+
+.nav-item:focus,
+.menu-toggle:focus,
+.logout-btn:focus {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
     </style>
   </head>
   <body>
@@ -314,6 +415,9 @@
 
     <div class="main">
       <div class="topbar">
+        <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+  ☰
+</button>
         <h1>📊 Platform Analytics</h1>
         <div class="topbar-user">👑 {{ user.username }}</div>
       </div>
@@ -388,6 +492,7 @@
             <i class="fas fa-hospital"></i> Hospital Performance
           </div>
           {% if hospitals %}
+          <div class="table-wrapper">
           <table class="table">
             <thead>
               <tr>
@@ -423,6 +528,7 @@
               {% endfor %}
             </tbody>
           </table>
+          </div>
           {% else %}
           <div style="text-align: center; padding: 40px; color: #bbb">
             <i
@@ -440,5 +546,20 @@
         </div>
       </div>
     </div>
+    <script>
+  function toggleSidebar() {
+    document.querySelector(".sidebar").classList.toggle("show");
+  }
+
+  // Optional: close sidebar when clicking outside (mobile UX)
+  document.addEventListener("click", function (e) {
+    const sidebar = document.querySelector(".sidebar");
+    const toggle = document.querySelector(".menu-toggle");
+
+    if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+      sidebar.classList.remove("show");
+    }
+  });
+</script>
   </body>
 </html>

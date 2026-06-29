@@ -1,402 +1,524 @@
 {% load static %}
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Super Admin — Support Tickets</title>
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      rel="stylesheet"
-    />
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Super Admin — Support Tickets</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 260px;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0f0f1a, #1a1a2e);
+      position: fixed;
+      top: 0;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      padding: 24px 20px;
+      border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+      text-align: center;
+    }
+
+    .sidebar-logo .brand {
+      color: #fff;
+      font-size: 1.1em;
+      font-weight: 800;
+    }
+
+    .sidebar-logo .sub {
+      color: #8b5cf6;
+      font-size: 0.72em;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .sidebar-badge {
+      margin: 12px 20px;
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.78em;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .nav-section {
+      padding: 12px 22px 5px;
+      color: #444;
+      font-size: 0.68em;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 12px 22px;
+      color: #aaa;
+      text-decoration: none;
+      font-size: 0.88em;
+      transition: all 0.25s;
+      border-left: 3px solid transparent;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: rgba(139, 92, 246, 0.12);
+      color: #a78bfa;
+      border-left-color: #8b5cf6;
+    }
+
+    .nav-item i {
+      width: 18px;
+      text-align: center;
+    }
+
+    .logout-btn {
+      margin: 15px;
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      background: rgba(220, 53, 69, 0.12);
+      color: #ff6b6b;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 0.84em;
+    }
+
+    .main {
+      margin-left: 260px;
+      min-height: 100vh;
+      width: calc(100% - 260px);
+    }
+
+    .topbar {
+      background: #fff;
+      padding: 18px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar h1 {
+      font-size: 1.25em;
+      color: #1a1a2e;
+      font-weight: 700;
+    }
+
+    .topbar-user {
+      background: #f5f5f5;
+      padding: 8px 16px;
+      border-radius: 25px;
+      font-size: 0.86em;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .body {
+      padding: 28px 30px;
+    }
+
+    .alert-success {
+      background: #d4edda;
+      border: 1px solid #28a745;
+      color: #155724;
+      padding: 12px 18px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 0.9em;
+    }
+
+    .stat-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-mini {
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px 22px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+      flex: 1;
+      text-align: center;
+    }
+
+    .stat-mini h3 {
+      font-size: 1.5em;
+      font-weight: 800;
+      color: #1a1a2e;
+    }
+
+    .stat-mini p {
+      font-size: 0.78em;
+      color: #888;
+      margin-top: 3px;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 7px 18px;
+      border-radius: 20px;
+      text-decoration: none;
+      font-size: 0.82em;
+      font-weight: 600;
+      border: 1px solid #ddd;
+      color: #555;
+      background: #fff;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+      background: #8b5cf6;
+      color: #fff;
+      border-color: #8b5cf6;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+    }
+
+    .ticket-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    .ticket-row:last-child {
+      border-bottom: none;
+    }
+
+    .ticket-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(139, 92, 246, 0.1);
+      color: #8b5cf6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1em;
+      flex-shrink: 0;
+    }
+
+    .ticket-body {
+      flex: 1;
+    }
+
+    .ticket-subject {
+      font-size: 0.92em;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    .ticket-meta {
+      font-size: 0.78em;
+      color: #aaa;
+      margin-top: 3px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.72em;
+      font-weight: 700;
+    }
+
+    .badge-open {
+      background: #cce5ff;
+      color: #004085;
+    }
+
+    .badge-in_progress {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .badge-resolved {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .badge-closed {
+      background: #e2e3e5;
+      color: #383d41;
+    }
+
+    .btn-reply {
+      background: #8b5cf6;
+      color: #fff;
+      padding: 7px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.8em;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .btn-reply:hover {
+      background: #7c3aed;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 50px;
+      color: #bbb;
+    }
+
+    .empty i {
+      font-size: 3em;
+      display: block;
+      margin-bottom: 12px;
+      color: #ddd;
+    }
+
+    /* =========================
+   RESPONSIVE CORE
+========================= */
+
+    .menu-toggle {
+      display: none;
+      font-size: 1.4em;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #1a1a2e;
+    }
+
+    /* Sidebar transition */
+    .sidebar {
+      transition: all 0.3s ease;
+    }
+
+    /* MAIN CONTENT TRANSITION */
+    .main {
+      transition: all 0.3s ease;
+    }
+
+    /* =========================
+   MOBILE / TABLET
+========================= */
+    @media (max-width: 992px) {
+      .menu-toggle {
+        display: block;
       }
-      body {
-        font-family: "Segoe UI", sans-serif;
-        background: #f0f2f5;
-        display: flex;
-      }
+
       .sidebar {
-        width: 260px;
-        min-height: 100vh;
-        background: linear-gradient(180deg, #0f0f1a, #1a1a2e);
+        transform: translateX(-100%);
         position: fixed;
-        top: 0;
         left: 0;
-        display: flex;
-        flex-direction: column;
-        z-index: 100;
-      }
-      .sidebar-logo {
-        padding: 24px 20px;
-        border-bottom: 1px solid rgba(139, 92, 246, 0.25);
-        text-align: center;
-      }
-      .sidebar-logo .brand {
-        color: #fff;
-        font-size: 1.1em;
-        font-weight: 800;
-      }
-      .sidebar-logo .sub {
-        color: #8b5cf6;
-        font-size: 0.72em;
-        font-weight: 600;
-        margin-top: 2px;
-      }
-      .sidebar-badge {
-        margin: 12px 20px;
-        background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-        color: #fff;
-        padding: 8px 14px;
-        border-radius: 10px;
-        font-size: 0.78em;
-        font-weight: 700;
-        text-align: center;
-      }
-      .nav-section {
-        padding: 12px 22px 5px;
-        color: #444;
-        font-size: 0.68em;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        font-weight: 700;
-      }
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 13px;
-        padding: 12px 22px;
-        color: #aaa;
-        text-decoration: none;
-        font-size: 0.88em;
-        transition: all 0.25s;
-        border-left: 3px solid transparent;
-      }
-      .nav-item:hover,
-      .nav-item.active {
-        background: rgba(139, 92, 246, 0.12);
-        color: #a78bfa;
-        border-left-color: #8b5cf6;
-      }
-      .nav-item i {
-        width: 18px;
-        text-align: center;
-      }
-      .logout-btn {
-        margin: 15px;
-        margin-top: auto;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 18px;
-        background: rgba(220, 53, 69, 0.12);
-        color: #ff6b6b;
-        border-radius: 10px;
-        text-decoration: none;
-        font-size: 0.84em;
-      }
-      .main {
-        margin-left: 260px;
-        min-height: 100vh;
-        width: calc(100% - 260px);
-      }
-      .topbar {
-        background: #fff;
-        padding: 18px 30px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-        position: sticky;
         top: 0;
-        z-index: 50;
+        height: 100vh;
+        z-index: 200;
       }
-      .topbar h1 {
-        font-size: 1.25em;
-        color: #1a1a2e;
-        font-weight: 700;
+
+      .sidebar.show {
+        transform: translateX(0);
       }
-      .topbar-user {
-        background: #f5f5f5;
-        padding: 8px 16px;
-        border-radius: 25px;
-        font-size: 0.86em;
-        font-weight: 600;
-        color: #333;
+
+      .main {
+        margin-left: 0;
+        width: 100%;
       }
-      .body {
-        padding: 28px 30px;
-      }
-      .alert-success {
-        background: #d4edda;
-        border: 1px solid #28a745;
-        color: #155724;
-        padding: 12px 18px;
-        border-radius: 10px;
-        margin-bottom: 16px;
-        font-size: 0.9em;
-      }
+
       .stat-row {
-        display: flex;
-        gap: 16px;
-        margin-bottom: 24px;
+        flex-direction: column;
       }
-      .stat-mini {
-        background: #fff;
-        border-radius: 14px;
-        padding: 16px 22px;
-        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
-        flex: 1;
-        text-align: center;
-      }
-      .stat-mini h3 {
-        font-size: 1.5em;
-        font-weight: 800;
-        color: #1a1a2e;
-      }
-      .stat-mini p {
-        font-size: 0.78em;
-        color: #888;
-        margin-top: 3px;
-      }
+
       .filter-bar {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
         flex-wrap: wrap;
       }
-      .filter-btn {
-        padding: 7px 18px;
-        border-radius: 20px;
-        text-decoration: none;
-        font-size: 0.82em;
-        font-weight: 600;
-        border: 1px solid #ddd;
-        color: #555;
-        background: #fff;
-        transition: all 0.2s;
+    }
+
+    /* =========================
+   SMALL MOBILE
+========================= */
+    @media (max-width: 576px) {
+      .topbar {
+        padding: 14px 16px;
       }
-      .filter-btn:hover,
-      .filter-btn.active {
-        background: #8b5cf6;
-        color: #fff;
-        border-color: #8b5cf6;
+
+      .body {
+        padding: 16px;
       }
-      .card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+
+      .stat-mini h3 {
+        font-size: 1.2em;
       }
+
       .ticket-row {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 14px 0;
-        border-bottom: 1px solid #f5f5f5;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
       }
-      .ticket-row:last-child {
-        border-bottom: none;
-      }
-      .ticket-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        background: rgba(139, 92, 246, 0.1);
-        color: #8b5cf6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1em;
-        flex-shrink: 0;
-      }
-      .ticket-body {
-        flex: 1;
-      }
-      .ticket-subject {
-        font-size: 0.92em;
-        font-weight: 700;
-        color: #1a1a2e;
-      }
-      .ticket-meta {
-        font-size: 0.78em;
-        color: #aaa;
-        margin-top: 3px;
-      }
-      .badge {
-        display: inline-block;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 0.72em;
-        font-weight: 700;
-      }
-      .badge-open {
-        background: #cce5ff;
-        color: #004085;
-      }
-      .badge-in_progress {
-        background: #fff3cd;
-        color: #856404;
-      }
-      .badge-resolved {
-        background: #d4edda;
-        color: #155724;
-      }
-      .badge-closed {
-        background: #e2e3e5;
-        color: #383d41;
-      }
+
       .btn-reply {
-        background: #8b5cf6;
-        color: #fff;
-        padding: 7px 16px;
-        border-radius: 8px;
-        text-decoration: none;
-        font-size: 0.8em;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        white-space: nowrap;
-        transition: all 0.2s;
+        width: 100%;
+        justify-content: center;
       }
-      .btn-reply:hover {
-        background: #7c3aed;
-      }
-      .empty {
-        text-align: center;
-        padding: 50px;
-        color: #bbb;
-      }
-      .empty i {
-        font-size: 3em;
-        display: block;
-        margin-bottom: 12px;
-        color: #ddd;
-      }
-    </style>
-  </head>
-  <body>
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <div class="brand">👑 SUPER ADMIN</div>
-        <div class="sub">Platform Control Panel</div>
-      </div>
-      <div class="sidebar-badge">Platform Administrator</div>
-      <nav>
-        <div class="nav-section">Platform</div>
-        <a href="{% url 'super_admin_dashboard' %}" class="nav-item"
-          ><i class="fas fa-tachometer-alt"></i> Dashboard</a
-        >
-        <a href="{% url 'super_admin_hospitals' %}" class="nav-item"
-          ><i class="fas fa-hospital"></i> Hospitals</a
-        >
-        <a href="{% url 'super_admin_subscriptions' %}" class="nav-item"
-          ><i class="fas fa-file-invoice-dollar"></i> Subscriptions</a
-        >
-        <div class="nav-section">Finance</div>
-        <a href="{% url 'super_admin_all_payments' %}" class="nav-item"
-          ><i class="fas fa-credit-card"></i> All Payments</a
-        >
-        <div class="nav-section">Reports</div>
-        <a href="{% url 'super_admin_analytics' %}" class="nav-item"
-          ><i class="fas fa-chart-bar"></i> Analytics</a
-        >
-        <div class="nav-section">Support</div>
-        <a href="{% url 'super_admin_support' %}" class="nav-item active"
-          ><i class="fas fa-headset"></i> Support Tickets</a
-        >
-      </nav>
-      <a href="{% url 'logout' %}" class="logout-btn"
-        ><i class="fas fa-sign-out-alt"></i> Logout</a
-      >
-    </aside>
+    }
 
-    <div class="main">
-      <div class="topbar">
-        <h1>🎧 Support Tickets</h1>
-        <div class="topbar-user">👑 {{ user.username }}</div>
-      </div>
-      <div class="body">
-        {% for m in messages %}
-        <div class="alert-success">{{ m }}</div>
-        {% endfor %}
-        <div class="stat-row">
-          <div class="stat-mini">
-            <h3>{{ open_count }}</h3>
-            <p>Open</p>
-          </div>
-          <div class="stat-mini">
-            <h3>{{ in_progress_count }}</h3>
-            <p>In Progress</p>
-          </div>
-          <div class="stat-mini">
-            <h3>{{ resolved_count }}</h3>
-            <p>Resolved</p>
-          </div>
+    /* =========================
+   ACCESSIBILITY IMPROVEMENT
+========================= */
+    a:focus,
+    button:focus {
+      outline: 2px solid #8b5cf6;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">👑 SUPER ADMIN</div>
+      <div class="sub">Platform Control Panel</div>
+    </div>
+    <div class="sidebar-badge">Platform Administrator</div>
+    <nav>
+      <div class="nav-section">Platform</div>
+      <a href="{% url 'super_admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="{% url 'super_admin_hospitals' %}" class="nav-item"><i class="fas fa-hospital"></i> Hospitals</a>
+      <a href="{% url 'super_admin_subscriptions' %}" class="nav-item"><i class="fas fa-file-invoice-dollar"></i>
+        Subscriptions</a>
+      <div class="nav-section">Finance</div>
+      <a href="{% url 'super_admin_all_payments' %}" class="nav-item"><i class="fas fa-credit-card"></i> All
+        Payments</a>
+      <div class="nav-section">Reports</div>
+      <a href="{% url 'super_admin_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+      <div class="nav-section">Support</div>
+      <a href="{% url 'super_admin_support' %}" class="nav-item active"><i class="fas fa-headset"></i> Support
+        Tickets</a>
+    </nav>
+    <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+        ☰
+      </button>
+      <h1>🎧 Support Tickets</h1>
+      <div class="topbar-user">👑 {{ user.username }}</div>
+    </div>
+    <div class="body">
+      {% for m in messages %}
+      <div class="alert-success">{{ m }}</div>
+      {% endfor %}
+      <div class="stat-row">
+        <div class="stat-mini">
+          <h3>{{ open_count }}</h3>
+          <p>Open</p>
         </div>
-
-        <div class="filter-bar">
-          <a
-            href="{% url 'super_admin_support' %}"
-            class="filter-btn {% if not status_filter %}active{% endif %}"
-            >All</a
-          >
-          <a
-            href="?status=open"
-            class="filter-btn {% if status_filter == 'open' %}active{% endif %}"
-            >Open</a
-          >
-          <a
-            href="?status=in_progress"
-            class="filter-btn {% if status_filter == 'in_progress' %}active{% endif %}"
-            >In Progress</a
-          >
-          <a
-            href="?status=resolved"
-            class="filter-btn {% if status_filter == 'resolved' %}active{% endif %}"
-            >Resolved</a
-          >
-          <a
-            href="?status=closed"
-            class="filter-btn {% if status_filter == 'closed' %}active{% endif %}"
-            >Closed</a
-          >
+        <div class="stat-mini">
+          <h3>{{ in_progress_count }}</h3>
+          <p>In Progress</p>
         </div>
+        <div class="stat-mini">
+          <h3>{{ resolved_count }}</h3>
+          <p>Resolved</p>
+        </div>
+      </div>
 
-        <div class="card">
-          {% if tickets %} {% for t in tickets %}
-          <div class="ticket-row">
-            <div class="ticket-icon"><i class="fas fa-headset"></i></div>
-            <div class="ticket-body">
-              <div class="ticket-subject">{{ t.subject }}</div>
-              <div class="ticket-meta">
-                <span>{{ t.hospital.name|default:"Platform" }}</span> ·
-                <span>{{ t.submitted_by.username|default:"Anonymous" }}</span> ·
-                <span>{{ t.created_at|date:"M d, Y H:i" }}</span>
-              </div>
+      <div class="filter-bar">
+        <a href="{% url 'super_admin_support' %}" class="filter-btn {% if not status_filter %}active{% endif %}">All</a>
+        <a href="?status=open" class="filter-btn {% if status_filter == 'open' %}active{% endif %}">Open</a>
+        <a href="?status=in_progress" class="filter-btn {% if status_filter == 'in_progress' %}active{% endif %}">In
+          Progress</a>
+        <a href="?status=resolved" class="filter-btn {% if status_filter == 'resolved' %}active{% endif %}">Resolved</a>
+        <a href="?status=closed" class="filter-btn {% if status_filter == 'closed' %}active{% endif %}">Closed</a>
+      </div>
+
+      <div class="card">
+        {% if tickets %} {% for t in tickets %}
+        <div class="ticket-row">
+          <div class="ticket-icon"><i class="fas fa-headset"></i></div>
+          <div class="ticket-body">
+            <div class="ticket-subject">{{ t.subject }}</div>
+            <div class="ticket-meta">
+              <span>{{ t.hospital.name|default:"Platform" }}</span> ·
+              <span>{{ t.submitted_by.username|default:"Anonymous" }}</span> ·
+              <span>{{ t.created_at|date:"M d, Y H:i" }}</span>
             </div>
-            <span class="badge badge-{{ t.status }}"
-              >{{ t.get_status_display }}</span
-            >
-            <a
-              href="{% url 'super_admin_support_reply' t.id %}"
-              class="btn-reply"
-              ><i class="fas fa-reply"></i> Reply</a
-            >
           </div>
-          {% endfor %} {% else %}
-          <div class="empty">
-            <i class="fas fa-headset"></i>
-            <p>No tickets found.</p>
-          </div>
-          {% endif %}
+          <span class="badge badge-{{ t.status }}">{{ t.get_status_display }}</span>
+          <a href="{% url 'super_admin_support_reply' t.id %}" class="btn-reply"><i class="fas fa-reply"></i> Reply</a>
         </div>
+        {% endfor %} {% else %}
+        <div class="empty">
+          <i class="fas fa-headset"></i>
+          <p>No tickets found.</p>
+        </div>
+        {% endif %}
       </div>
     </div>
-  </body>
+  </div>
+  <script>
+    
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  sidebar.classList.toggle('show');
+}
+    document.addEventListener("click", function (e) {
+      const sidebar = document.querySelector(".sidebar");
+      const toggleBtn = document.querySelector(".menu-toggle");
+
+      if (
+        window.innerWidth <= 992 &&
+        sidebar.classList.contains("show") &&
+        !sidebar.contains(e.target) &&
+        !toggleBtn.contains(e.target)
+      ) {
+        sidebar.classList.remove("show");
+      }
+    });
+  </script>
+</body>
+
 </html>

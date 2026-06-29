@@ -1,421 +1,514 @@
 {% load static %}
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Super Admin — Add Hospital</title>
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      rel="stylesheet"
-    />
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        font-family: "Segoe UI", sans-serif;
-        background: #f0f2f5;
-        display: flex;
-      }
-      .sidebar {
-        width: 260px;
-        min-height: 100vh;
-        background: linear-gradient(180deg, #0f0f1a, #1a1a2e);
-        position: fixed;
-        top: 0;
-        left: 0;
-        display: flex;
-        flex-direction: column;
-        z-index: 100;
-      }
-      .sidebar-logo {
-        padding: 24px 20px;
-        border-bottom: 1px solid rgba(139, 92, 246, 0.25);
-        text-align: center;
-      }
-      .sidebar-logo .brand {
-        color: #fff;
-        font-size: 1.1em;
-        font-weight: 800;
-      }
-      .sidebar-logo .sub {
-        color: #8b5cf6;
-        font-size: 0.72em;
-        font-weight: 600;
-        margin-top: 2px;
-      }
-      .sidebar-badge {
-        margin: 12px 20px;
-        background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-        color: #fff;
-        padding: 8px 14px;
-        border-radius: 10px;
-        font-size: 0.78em;
-        font-weight: 700;
-        text-align: center;
-      }
-      .nav-section {
-        padding: 12px 22px 5px;
-        color: #444;
-        font-size: 0.68em;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        font-weight: 700;
-      }
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 13px;
-        padding: 12px 22px;
-        color: #aaa;
-        text-decoration: none;
-        font-size: 0.88em;
-        transition: all 0.25s;
-        border-left: 3px solid transparent;
-      }
-      .nav-item:hover,
-      .nav-item.active {
-        background: rgba(139, 92, 246, 0.12);
-        color: #a78bfa;
-        border-left-color: #8b5cf6;
-      }
-      .nav-item i {
-        width: 18px;
-        text-align: center;
-      }
-      .logout-btn {
-        margin: 15px;
-        margin-top: auto;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 18px;
-        background: rgba(220, 53, 69, 0.12);
-        color: #ff6b6b;
-        border-radius: 10px;
-        text-decoration: none;
-        font-size: 0.84em;
-      }
-      .main {
-        margin-left: 260px;
-        min-height: 100vh;
-        width: calc(100% - 260px);
-      }
-      .topbar {
-        background: #fff;
-        padding: 18px 30px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-        position: sticky;
-        top: 0;
-        z-index: 50;
-      }
-      .topbar h1 {
-        font-size: 1.25em;
-        color: #1a1a2e;
-        font-weight: 700;
-      }
-      .topbar-user {
-        background: #f5f5f5;
-        padding: 8px 16px;
-        border-radius: 25px;
-        font-size: 0.86em;
-        font-weight: 600;
-        color: #333;
-      }
-      .body {
-        padding: 28px 30px;
-      }
-      .alert-error {
-        background: #f8d7da;
-        border: 1px solid #dc3545;
-        color: #721c24;
-        padding: 12px 18px;
-        border-radius: 10px;
-        margin-bottom: 16px;
-        font-size: 0.9em;
-      }
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Super Admin — Add Hospital</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ================= SIDEBAR ================= */
+    .sidebar {
+      width: 260px;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0f0f1a, #1a1a2e);
+      position: fixed;
+      top: 0;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+
+    /* collapsed sidebar */
+    .sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+
+    .sidebar-logo {
+      padding: 24px 20px;
+      border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+      text-align: center;
+    }
+
+    .sidebar-logo .brand {
+      color: #fff;
+      font-size: 1.1em;
+      font-weight: 800;
+    }
+
+    .sidebar-logo .sub {
+      color: #8b5cf6;
+      font-size: 0.72em;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .sidebar-badge {
+      margin: 12px 20px;
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.78em;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .nav-section {
+      padding: 12px 22px 5px;
+      color: #444;
+      font-size: 0.68em;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 12px 22px;
+      color: #aaa;
+      text-decoration: none;
+      font-size: 0.88em;
+      transition: all 0.25s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: rgba(139, 92, 246, 0.12);
+      color: #a78bfa;
+      border-left-color: #8b5cf6;
+    }
+
+    .nav-item i {
+      width: 18px;
+      text-align: center;
+    }
+
+    .logout-btn {
+      margin: 15px;
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      background: rgba(220, 53, 69, 0.12);
+      color: #ff6b6b;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 0.84em;
+    }
+
+    /* ================= MAIN ================= */
+    .main {
+      margin-left: 260px;
+      min-height: 100vh;
+      width: calc(100% - 260px);
+      transition: all 0.3s ease;
+    }
+
+    /* when sidebar collapsed */
+    .main.full {
+      margin-left: 0;
+      width: 100%;
+    }
+
+    /* ================= TOPBAR ================= */
+    .topbar {
+      background: #fff;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar h1 {
+      font-size: 1.2em;
+      color: #1a1a2e;
+      font-weight: 700;
+    }
+
+    .topbar-user {
+      background: #f5f5f5;
+      padding: 8px 16px;
+      border-radius: 25px;
+      font-size: 0.86em;
+      font-weight: 600;
+      color: #333;
+    }
+
+    /* hamburger button */
+    .menu-toggle {
+      display: none;
+      font-size: 1.4em;
+      cursor: pointer;
+      padding: 6px 10px;
+    }
+
+    /* ================= BODY ================= */
+    .body {
+      padding: 28px 30px;
+    }
+
+    .alert-error {
+      background: #f8d7da;
+      border: 1px solid #dc3545;
+      color: #721c24;
+      padding: 12px 18px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 0.9em;
+    }
+
+    /* ================= GRID ================= */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+    }
+
+    .section-title {
+      font-size: 1em;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .section-title i {
+      color: #8b5cf6;
+    }
+
+    /* ================= FORMS ================= */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.82em;
+      font-weight: 700;
+      color: #555;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      font-size: 0.9em;
+      outline: none;
+      transition: 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: #8b5cf6;
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      transition: 0.25s;
+    }
+
+    .btn-primary:hover {
+      background: #7c3aed;
+    }
+
+    .btn-cancel {
+      background: #f0f0f0;
+      color: #555;
+      padding: 12px 24px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .btn-cancel:hover {
+      background: #e0e0e0;
+    }
+
+    /* ================= NOTE ================= */
+    .note-box {
+      background: rgba(139, 92, 246, 0.06);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 0.86em;
+    }
+
+    .note-box i {
+      color: #8b5cf6;
+    }
+
+    .sidebar {
+      transform: translateX(0);
+      transition: 0.3s ease;
+    }
+
+    /* hidden sidebar */
+    .sidebar.active {
+      transform: translateX(0);
+    }
+
+    /* collapsed state */
+    .sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+
+    /* full width main when sidebar closed */
+    .main.full {
+      margin-left: 0;
+      width: 100%;
+    }
+
+    /* ================= RESPONSIVE ================= */
+
+    /* tablets */
+    @media (max-width: 992px) {
       .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
+        grid-template-columns: 1fr;
       }
-      .card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 28px;
-        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+
+      .body {
+        padding: 20px;
       }
-      .section-title {
-        font-size: 1em;
-        font-weight: 700;
-        color: #1a1a2e;
-        margin-bottom: 18px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #f0f0f0;
+    }
+
+    /* mobile */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+        position: fixed;
       }
-      .section-title i {
-        color: #8b5cf6;
+
+      .sidebar.active {
+        transform: translateX(0);
       }
-      .form-group {
-        margin-bottom: 16px;
-      }
-      .form-group label {
-        display: block;
-        font-size: 0.82em;
-        font-weight: 700;
-        color: #555;
-        margin-bottom: 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      .form-group input,
-      .form-group select,
-      .form-group textarea {
+
+      .main {
+        margin-left: 0;
         width: 100%;
-        padding: 10px 14px;
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        font-size: 0.9em;
-        font-family: inherit;
-        transition: border-color 0.2s;
-        outline: none;
       }
-      .form-group input:focus,
-      .form-group select:focus,
-      .form-group textarea:focus {
-        border-color: #8b5cf6;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-      }
-      .form-group small {
-        color: #999;
-        font-size: 0.78em;
-        margin-top: 4px;
+
+      .menu-toggle {
         display: block;
       }
-      .required {
-        color: #dc3545;
+
+      .topbar {
+        padding: 14px 16px;
       }
-      .btn-row {
-        display: flex;
-        gap: 12px;
-        margin-top: 24px;
+    }
+
+    /* small mobile */
+    @media (max-width: 480px) {
+      .card {
+        padding: 18px;
       }
-      .btn-primary {
-        background: #8b5cf6;
-        color: #fff;
-        padding: 12px 28px;
-        border-radius: 10px;
-        border: none;
-        font-size: 0.9em;
-        font-weight: 700;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.25s;
-      }
-      .btn-primary:hover {
-        background: #7c3aed;
-      }
+
+      .btn-primary,
       .btn-cancel {
-        background: #f0f0f0;
-        color: #555;
-        padding: 12px 24px;
-        border-radius: 10px;
-        text-decoration: none;
-        font-size: 0.9em;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        width: 100%;
+        justify-content: center;
       }
-      .btn-cancel:hover {
-        background: #e0e0e0;
-      }
-      .note-box {
-        background: rgba(139, 92, 246, 0.06);
-        border: 1px solid rgba(139, 92, 246, 0.2);
-        border-radius: 12px;
-        padding: 14px 18px;
-        margin-bottom: 24px;
-        font-size: 0.86em;
-        color: #555;
-      }
-      .note-box i {
-        color: #8b5cf6;
-        margin-right: 6px;
-      }
-    </style>
-  </head>
-  <body>
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <div class="brand">👑 SUPER ADMIN</div>
-        <div class="sub">Platform Control Panel</div>
-      </div>
-      <div class="sidebar-badge">Platform Administrator</div>
-      <nav>
-        <div class="nav-section">Platform</div>
-        <a href="{% url 'super_admin_dashboard' %}" class="nav-item"
-          ><i class="fas fa-tachometer-alt"></i> Dashboard</a
-        >
-        <a href="{% url 'super_admin_hospitals' %}" class="nav-item active"
-          ><i class="fas fa-hospital"></i> Hospitals</a
-        >
-        <a href="{% url 'super_admin_subscriptions' %}" class="nav-item"
-          ><i class="fas fa-credit-card"></i> Subscriptions</a
-        >
-        <div class="nav-section">Reports</div>
-        <a href="{% url 'super_admin_analytics' %}" class="nav-item"
-          ><i class="fas fa-chart-bar"></i> Analytics</a
-        >
-        <div class="nav-section">Support</div>
-        <a href="{% url 'super_admin_support' %}" class="nav-item"
-          ><i class="fas fa-headset"></i> Support Tickets</a
-        >
-      </nav>
-      <a href="{% url 'logout' %}" class="logout-btn"
-        ><i class="fas fa-sign-out-alt"></i> Logout</a
-      >
-    </aside>
+    }
+  </style>
+</head>
 
-    <div class="main">
-      <div class="topbar">
-        <h1>🏥 Add New Hospital</h1>
-        <div class="topbar-user">👑 {{ user.username }}</div>
-      </div>
-      <div class="body">
-        {% for m in messages %}
-        <div class="alert-error">{{ m }}</div>
-        {% endfor %}
-        <div class="note-box">
-          <i class="fas fa-info-circle"></i> This will create a hospital/clinic
-          and a dedicated admin account for it. The admin can then log in and
-          manage their clinic independently.
-        </div>
-        <form method="post">
-          {% csrf_token %}
-          <div class="form-grid">
-            <div class="card">
-              <div class="section-title">
-                <i class="fas fa-hospital"></i> Hospital Details
-              </div>
-              <div class="form-group">
-                <label
-                  >Hospital / Clinic Name <span class="required">*</span></label
-                ><input
-                  type="text"
-                  name="name"
-                  placeholder="e.g. City Physio Clinic"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label>City</label
-                ><input type="text" name="city" placeholder="e.g. Mumbai" />
-              </div>
-              <div class="form-group">
-                <label>Address</label
-                ><textarea
-                  name="address"
-                  rows="2"
-                  placeholder="Full address..."
-                ></textarea>
-              </div>
-              <div class="form-group">
-                <label>Phone</label
-                ><input type="text" name="phone" placeholder="+91 9876543210" />
-              </div>
-              <div class="form-group">
-                <label>Email</label
-                ><input
-                  type="email"
-                  name="email"
-                  placeholder="clinic@example.com"
-                />
-              </div>
-              <div class="form-group">
-                <label>Subscription Plan</label>
-                <select name="plan">
-                  <option value="">— Trial (No Plan) —</option>
-                  {% for p in plans %}
-                  <option value="{{ p.id }}">
-                    {{ p.get_name_display }} (₹{{ p.price_monthly }}/mo)
-                  </option>
-                  {% endfor %}
-                </select>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="section-title">
-                <i class="fas fa-user-shield"></i> Clinic Admin Account
-              </div>
-              <div class="form-group">
-                <label>First Name</label
-                ><input
-                  type="text"
-                  name="admin_first"
-                  placeholder="Admin first name"
-                />
-              </div>
-              <div class="form-group">
-                <label>Last Name</label
-                ><input
-                  type="text"
-                  name="admin_last"
-                  placeholder="Admin last name"
-                />
-              </div>
-              <div class="form-group">
-                <label>Username <span class="required">*</span></label
-                ><input
-                  type="text"
-                  name="admin_username"
-                  placeholder="unique_username"
-                  required
-                /><small>The admin will log in with this username.</small>
-              </div>
-              <div class="form-group">
-                <label>Email <span class="required">*</span></label
-                ><input
-                  type="email"
-                  name="admin_email"
-                  placeholder="admin@clinic.com"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label>Password <span class="required">*</span></label
-                ><input
-                  type="password"
-                  name="admin_password"
-                  placeholder="Secure password"
-                  required
-                /><small>Share this securely with the clinic owner.</small>
-              </div>
-            </div>
-          </div>
-
-          <div class="btn-row">
-            <button type="submit" class="btn-primary">
-              <i class="fas fa-plus"></i> Create Hospital
-            </button>
-            <a href="{% url 'super_admin_hospitals' %}" class="btn-cancel"
-              ><i class="fas fa-times"></i> Cancel</a
-            >
-          </div>
-        </form>
-      </div>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">👑 SUPER ADMIN</div>
+      <div class="sub">Platform Control Panel</div>
     </div>
-  </body>
+    <div class="sidebar-badge">Platform Administrator</div>
+    <nav>
+      <div class="nav-section">Platform</div>
+      <a href="{% url 'super_admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="{% url 'super_admin_hospitals' %}" class="nav-item active"><i class="fas fa-hospital"></i> Hospitals</a>
+      <a href="{% url 'super_admin_subscriptions' %}" class="nav-item"><i class="fas fa-credit-card"></i>
+        Subscriptions</a>
+      <div class="nav-section">Reports</div>
+      <a href="{% url 'super_admin_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+      <div class="nav-section">Support</div>
+      <a href="{% url 'super_admin_support' %}" class="nav-item"><i class="fas fa-headset"></i> Support Tickets</a>
+    </nav>
+    <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
+      <h1>🏥 Add New Hospital</h1>
+      <div class="topbar-user">👑 {{ user.username }}</div>
+    </div>
+    <div class="body">
+      {% for m in messages %}
+      <div class="alert-error">{{ m }}</div>
+      {% endfor %}
+      <div class="note-box">
+        <i class="fas fa-info-circle"></i> This will create a hospital/clinic
+        and a dedicated admin account for it. The admin can then log in and
+        manage their clinic independently.
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="card">
+            <div class="section-title">
+              <i class="fas fa-hospital"></i> Hospital Details
+            </div>
+            <div class="form-group">
+              <label>Hospital / Clinic Name <span class="required">*</span></label><input type="text" name="name"
+                placeholder="e.g. City Physio Clinic" required />
+            </div>
+            <div class="form-group">
+              <label>City</label><input type="text" name="city" placeholder="e.g. Mumbai" />
+            </div>
+            <div class="form-group">
+              <label>Address</label><textarea name="address" rows="2" placeholder="Full address..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Phone</label><input type="text" name="phone" placeholder="+91 9876543210" />
+            </div>
+            <div class="form-group">
+              <label>Email</label><input type="email" name="email" placeholder="clinic@example.com" />
+            </div>
+            <div class="form-group">
+              <label>Subscription Plan</label>
+              <select name="plan">
+                <option value="">— Trial (No Plan) —</option>
+                {% for p in plans %}
+                <option value="{{ p.id }}">
+                  {{ p.get_name_display }} (₹{{ p.price_monthly }}/mo)
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-title">
+              <i class="fas fa-user-shield"></i> Clinic Admin Account
+            </div>
+            <div class="form-group">
+              <label>First Name</label><input type="text" name="admin_first" placeholder="Admin first name" />
+            </div>
+            <div class="form-group">
+              <label>Last Name</label><input type="text" name="admin_last" placeholder="Admin last name" />
+            </div>
+            <div class="form-group">
+              <label>Username <span class="required">*</span></label><input type="text" name="admin_username"
+                placeholder="unique_username" required /><small>The admin will log in with this username.</small>
+            </div>
+            <div class="form-group">
+              <label>Email <span class="required">*</span></label><input type="email" name="admin_email"
+                placeholder="admin@clinic.com" required />
+            </div>
+            <div class="form-group">
+              <label>Password <span class="required">*</span></label><input type="password" name="admin_password"
+                placeholder="Secure password" required /><small>Share this securely with the clinic owner.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="submit" class="btn-primary">
+            <i class="fas fa-plus"></i> Create Hospital
+          </button>
+          <a href="{% url 'super_admin_hospitals' %}" class="btn-cancel"><i class="fas fa-times"></i> Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<script>
+  const sidebar = document.querySelector(".sidebar");
+  const main = document.querySelector(".main");
+
+  function toggleSidebar() {
+    sidebar.classList.toggle("active");
+    sidebar.classList.toggle("collapsed");
+    main.classList.toggle("full");
+  }
+
+  // ✅ Close when clicking outside (mobile only)
+  document.addEventListener("click", function (event) {
+    const isMobile = window.innerWidth <= 768;
+
+    if (!isMobile) return;
+
+    const isClickInsideSidebar = sidebar.contains(event.target);
+    const isToggleButton = event.target.closest(".menu-toggle");
+
+    if (!isClickInsideSidebar && !isToggleButton) {
+      sidebar.classList.add("collapsed");
+      sidebar.classList.remove("active");
+      main.classList.add("full");
+    }
+  });
+
+  // Optional: close on resize to desktop
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 768) {
+      sidebar.classList.remove("collapsed", "active");
+      main.classList.remove("full");
+    }
+  });
+</script>
+</body>
+
 </html>

@@ -262,6 +262,130 @@
       .admin-info strong {
         color: #7c3aed;
       }
+
+      /* ===== GLOBAL ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", sans-serif;
+  background: #f0f2f5;
+  display: flex;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 260px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0f0f1a, #1a1a2e);
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: transform 0.3s ease;
+}
+
+/* collapsed state */
+.sidebar.collapsed {
+  transform: translateX(-100%);
+}
+
+/* ===== MAIN ===== */
+.main {
+  margin-left: 260px;
+  min-height: 100vh;
+  width: calc(100% - 260px);
+  transition: all 0.3s ease;
+}
+
+/* full width when sidebar hidden */
+.main.expanded {
+  margin-left: 0;
+  width: 100%;
+}
+
+/* ===== TOPBAR ===== */
+.topbar {
+  background: #fff;
+  padding: 18px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+
+/* hamburger button */
+.menu-toggle {
+  display: none;
+  font-size: 22px;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+/* ===== GRID ===== */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 992px) {
+  .menu-toggle {
+    display: block;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  .main {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== OVERLAY (mobile background blur) ===== */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  z-index: 90;
+}
+
+.overlay.show {
+  display: block;
+}
+
+/* ===== BUTTONS & ACCESSIBILITY ===== */
+button, a {
+  transition: all 0.2s ease;
+}
+
+button:focus, input:focus, select:focus {
+  outline: 3px solid rgba(139, 92, 246, 0.3);
+}
     </style>
   </head>
   <body>
@@ -298,6 +422,8 @@
 
     <div class="main">
       <div class="topbar">
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
         <h1>✏️ Edit — {{ hospital.name }}</h1>
         <div class="topbar-user">👑 {{ user.username }}</div>
       </div>
@@ -431,5 +557,19 @@
         </form>
       </div>
     </div>
+    <div class="overlay" onclick="toggleSidebar()"></div>
+    <script>
+function toggleSidebar() {
+  const sidebar = document.querySelector(".sidebar");
+  const overlay = document.querySelector(".overlay");
+  const main = document.querySelector(".main");
+
+  sidebar.classList.toggle("active");
+  overlay.classList.toggle("show");
+
+  // optional full-width main adjustment
+  main.classList.toggle("expanded");
+}
+</script>
   </body>
 </html>
