@@ -49,14 +49,11 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 
     # ── Your custom middleware (ORDER MATTERS) ──
-    "core.middleware.NoCacheMiddleware",  # ✅ ADD THIS (important)
-    "core.middleware.PreventBackAfterLogoutMiddleware",  # ✅ ADD THIS
-
-    "core.middleware.UpdateLastSeenMiddleware",
-    "core.middleware.SessionTimeoutMiddleware",
-    "core.middleware.LoginAttemptMiddleware",
-    "core.middleware.SubscriptionGateMiddleware",
-    "core.middleware.SubscriptionExpiryNotifierMiddleware",
+   'core.middleware.UpdateLastSeenMiddleware',
+    'core.middleware.SessionTimeoutMiddleware',
+    'core.middleware.LoginAttemptMiddleware',
+    'core.middleware.SubscriptionGateMiddleware',
+    'core.middleware.PreventBackAfterLogoutMiddleware',
 ]
 
 ROOT_URLCONF = 'myproject.urls'
@@ -118,7 +115,7 @@ USE_TZ = True
 # STATIC & MEDIA
 # =========================
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
