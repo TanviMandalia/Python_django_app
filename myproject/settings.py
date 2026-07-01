@@ -2,31 +2,27 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+# =========================
+# BASE CONFIG
+# =========================
 
-# Load environment variables
+BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 # =========================
-# SECURITY
+# SECURITY (CRITICAL)
 # =========================
 
-SECRET_KEY = os.getenv(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-fallback-key-change-in-production"
-)
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    raise Exception("DJANGO_SECRET_KEY is missing in environment variables")
 
-DEBUG = os.getenv("DEBUG", "True") == "True"
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = ["*"]
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://*.replit.dev",
-    "https://*.repl.co",
-    "https://*.replit.app",
-]
-
-APPEND_SLASH = True
+ALLOWED_HOSTS = os.getenv(
+    "ALLOWED_HOSTS",
+    "localhost,127.0.0.1"
+).split(",")
 
 # =========================
 # APPLICATIONS
@@ -55,6 +51,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 
+    # custom middleware
     "core.middleware.UpdateLastSeenMiddleware",
     "core.middleware.SessionTimeoutMiddleware",
     "core.middleware.LoginAttemptMiddleware",
@@ -131,37 +128,50 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # =========================
-# SESSION / CSRF SECURITY
+# SECURITY HEADERS (PRODUCTION SAFE)
 # =========================
+
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+
+# HTTPS settings (ENABLE IN PRODUCTION)
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
 
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SAMESITE = "Lax"
 
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
+# =========================
+# CSRF / TRUSTED ORIGINS
+# =========================
+
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    "CSRF_TRUSTED_ORIGINS",
+    "http://localhost"
+).split(",")
 
 # =========================
-# EMAIL CONFIGURATION (SECURE)
+# EMAIL CONFIG (PRODUCTION SAFE)
 # =========================
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
 
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
+if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
+    raise Exception("Email credentials missing in environment variables")
+
 DEFAULT_FROM_EMAIL = f"PhysioRehab Clinic <{EMAIL_HOST_USER}>"
 SERVER_EMAIL = EMAIL_HOST_USER
 
-# fallback for dev only
-if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
 # =========================
-# AUTH / REDIRECTS
+# AUTH
 # =========================
 
 LOGIN_URL = "/login/"
@@ -169,10 +179,28 @@ LOGIN_REDIRECT_URL = "/client-dashboard/"
 LOGOUT_REDIRECT_URL = "/"
 
 # =========================
-# RAZORPAY CONFIG
+# RAZORPAY / PAYMENT
 # =========================
 
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
 
-CLINIC_UPI_ID = os.getenv("CLINIC_UPI_ID", "dhvanipatalia@upi")
+CLINIC_UPI_ID = os.getenv("CLINIC_UPI_ID", "")
+
+# =========================
+# LOGGING (IMPORTANT FOR PRODUCTION)
+# =========================
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+}

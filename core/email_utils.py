@@ -8,6 +8,8 @@ import logging
 from datetime import date as date_type
 from django.core.mail import send_mail
 from django.conf import settings
+from django.core.mail import EmailMessage
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -262,3 +264,26 @@ Contact us: {CLINIC_EMAIL} | {CLINIC_PHONE}
 {CLINIC_NAME} Platform
 """
     return send_clinic_email(subject, body, hospital.email)
+
+
+
+def send_email(subject, body, recipient_list, html_message=None):
+    try:
+        email = EmailMessage(
+            subject=subject,
+            body=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=recipient_list,
+        )
+
+        if html_message:
+            email.content_subtype = "html"
+
+        email.send(fail_silently=False)
+        logger.info(f"Email sent to {recipient_list}")
+
+        return True
+
+    except Exception as e:
+        logger.error(f"Email failed: {str(e)}")
+        return False
