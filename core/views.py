@@ -625,21 +625,30 @@ def reset_password(request):
 
 @login_required
 def change_password_request(request):
-    """Logged-in user changes password via OTP sent to their email."""
+
     if request.method == "POST":
+
+        if not request.user.email:
+            messages.error(request, "❌ Email not set in user profile")
+            return redirect("change_password")
+
         otp = str(random.randint(100000, 999999))
+
         PasswordResetOTP.objects.filter(user=request.user).delete()
         PasswordResetOTP.objects.create(user=request.user, otp=otp)
 
         ok = send_otp_email(request.user.email, otp, purpose="Password Change")
+
         if ok:
-            messages.success(request, f"✅ OTP sent to {request.user.email}")
+            messages.success(request, "✅ OTP sent successfully")
         else:
-            messages.warning(request, "⚠️ Email not sent – check server config.")
+            messages.error(request, "❌ Email sending failed (check logs)")
 
         request.session["reset_user_id"] = request.user.id
         request.session["otp_verified"] = False
+
         return redirect("verify_otp")
+
     return render(request, "change_password.html")
 
 

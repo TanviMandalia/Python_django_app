@@ -9,8 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 # ─── SECURITY ────────────────────────────────────────────────
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me")
-DEBUG = os.getenv("DEBUG", "True") == "True"
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+
+DEBUG = os.getenv("DEBUG") == "True"
 
 ALLOWED_HOSTS = ["*"]
 
@@ -107,20 +108,21 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/"
 
-# ─── EMAIL CONFIG (SECURE) ───────────────────────────────────
+# ─── EMAIL CONFIG (SAFE VERSION) ─────────────────────────────
+
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+EMAIL_USE_TLS = str(os.getenv("EMAIL_USE_TLS", "True")).lower() == "true"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = f"PhysioRehab Clinic <{EMAIL_HOST_USER}>"
 
-# fallback (ONLY for development)
-if not EMAIL_HOST_PASSWORD:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# FAIL FAST (IMPORTANT FOR DEBUGGING)
+if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
+    raise Exception("EMAIL CONFIG ERROR: Missing EMAIL credentials in .env")
 
 # ─── SESSION ──────────────────────────────────────────────────
 SESSION_COOKIE_AGE = 86400

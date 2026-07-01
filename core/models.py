@@ -6,6 +6,12 @@ from django.dispatch import receiver
 import random
 from django.utils.text import slugify
 
+from django.core.mail import send_mail
+from django.conf import settings
+from django.http import HttpResponse
+
+
+
 
 # DASHBOARD APPOINTMENT
 
@@ -21,7 +27,7 @@ class Hospital(models.Model):
     address = models.TextField(blank=True)
     city = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=20, blank=True)
-    email = models.EmailField(blank=True)
+    email = models.EmailField(blank=False, null=False)
     logo = models.ImageField(upload_to="hospital_logos/", null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -708,3 +714,22 @@ class ClinicPromo(models.Model):
         if self.end_date and today > self.end_date:
             return False
         return today >= self.start_date
+    
+def send_demo_email(request):
+    print("VIEW HIT")  # DEBUG
+
+    try:
+        result = send_mail(
+            "Test Email",
+            "Hello from Django Website",
+            settings.EMAIL_HOST_USER,
+            ["tanvi.mandaliya150483@marwadiuniversity.ac.in"],
+            fail_silently=False,
+        )
+
+        print("EMAIL RESULT:", result)
+        return HttpResponse("Email sent successfully")
+
+    except Exception as e:
+        print("EMAIL ERROR:", e)
+        return HttpResponse(f"Email failed: {e}")
