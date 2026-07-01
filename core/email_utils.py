@@ -2,14 +2,25 @@
 Centralised email utility for PhysioRehab Clinic.
 All emails go through send_clinic_email() so formatting is consistent
 and failures never crash the main flow (errors are logged).
+
+IMPORTANT (one-to-many sends):
+  - send_clinic_email() is for ONE recipient. Never pass multiple addresses
+    into a single Django send_mail()/EmailMessage() call in this file —
+    Django puts every address in the same "To:" header, which means each
+    patient/staff member would see every other recipient's email address.
+    That is a real privacy leak for a hospital system, not just a style issue.
+  - For "send this to many people" use send_bulk_clinic_email() below, which
+    sends one isolated email per recipient over a single reused SMTP
+    connection (fast, no per-email login) and never lets one failure abort
+    the rest of the batch.
+  - In production this function should be called from a Celery task
+    (see tasks.py), never directly inside a request/response cycle, or a
+    large batch will exceed the web server's request timeout.
 """
 
 import logging
-from datetime import date as date_type
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection, EmailMessage
 from django.conf import settings
-from django.core.mail import EmailMessage
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +62,26 @@ def format_date(d):
 
 
 def send_clinic_email(subject, message_text, recipient_list):
+    """
+    Send ONE email. If recipient_list has more than one address, they will
+    all appear in the same To: header (address exposure). For genuinely
+    sending the same message to many people, use send_bulk_clinic_email()
+    instead — do not just pass a long list in here.
+    """
+    recipients = recipient_list if isinstance(recipient_list, list) else [recipient_list]
+    if len(recipients) > 1:
+        logger.warning(
+            "send_clinic_email() called with %d recipients in one To: header "
+            "(%s) — use send_bulk_clinic_email() for multi-recipient sends "
+            "to avoid exposing addresses to each other.",
+            len(recipients), subject,
+        )
     try:
         send_mail(
             subject=f"[{CLINIC_NAME}] {subject}",
             message=message_text,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=recipient_list if isinstance(recipient_list, list) else [recipient_list],
+            recipient_list=recipients,
             fail_silently=False,
         )
         logger.info(f"Email sent to {recipient_list}: {subject}")
@@ -64,6 +89,63 @@ def send_clinic_email(subject, message_text, recipient_list):
     except Exception as e:
         logger.error(f"Email failed to {recipient_list}: {e}")
         return False
+
+
+def send_bulk_clinic_email(subject, message_text, recipient_list, html_message=None):
+    """
+    Send the SAME message to MANY recipients — the correct way.
+
+    - Opens ONE SMTP connection and reuses it for every message (this is
+      the #1 reason "one works, many doesn't": opening a fresh connection
+      per email gets rate-limited/blocked by Gmail after a handful of
+      rapid logins).
+    - Sends each recipient their OWN isolated email (their address never
+      appears alongside anyone else's — no privacy leak).
+    - One bad address / one failure does NOT abort the rest of the batch.
+    - Returns a summary dict so the caller (a Celery task, ideally — see
+      tasks.py) can log/report exactly what happened.
+
+    This function is intentionally synchronous and blocking. For more than
+    a handful of recipients, call it from a Celery task, not from a view.
+    """
+    recipients = [r for r in (recipient_list or []) if r]
+    result = {"total": len(recipients), "sent": 0, "failed": 0, "errors": []}
+
+    if not recipients:
+        return result
+
+    connection = get_connection(fail_silently=False)
+    try:
+        connection.open()
+        for addr in recipients:
+            try:
+                email = EmailMessage(
+                    subject=f"[{CLINIC_NAME}] {subject}",
+                    body=message_text,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[addr],
+                    connection=connection,
+                )
+                if html_message:
+                    email.content_subtype = "html"
+                    email.body = html_message
+                email.send(fail_silently=False)
+                result["sent"] += 1
+            except Exception as e:
+                result["failed"] += 1
+                result["errors"].append({"email": addr, "error": str(e)})
+                logger.error(f"Bulk email failed for {addr}: {e}")
+    finally:
+        try:
+            connection.close()
+        except Exception:
+            pass
+
+    logger.info(
+        f"Bulk email '{subject}': {result['sent']}/{result['total']} sent, "
+        f"{result['failed']} failed."
+    )
+    return result
 
 
 # ── APPOINTMENT EMAILS ───────────────────────────────────────
@@ -268,20 +350,32 @@ Contact us: {CLINIC_EMAIL} | {CLINIC_PHONE}
 
 
 def send_email(subject, body, recipient_list, html_message=None):
+    """
+    Generic single/multi send. If more than one recipient is passed, this
+    now automatically routes through send_bulk_clinic_email() so addresses
+    stay isolated and one bad address can't sink the whole call — this was
+    the main "one-to-many silently fails" trap in the old version, which
+    put every recipient in one shared To: header via a single send_mail().
+    """
+    recipients = recipient_list if isinstance(recipient_list, list) else [recipient_list]
+
+    if len(recipients) > 1:
+        result = send_bulk_clinic_email(subject, body, recipients, html_message=html_message)
+        return result["failed"] == 0
+
     try:
         email = EmailMessage(
             subject=subject,
             body=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            to=recipient_list,
+            to=recipients,
         )
-
         if html_message:
             email.content_subtype = "html"
+            email.body = html_message
 
         email.send(fail_silently=False)
-        logger.info(f"Email sent to {recipient_list}")
-
+        logger.info(f"Email sent to {recipients}")
         return True
 
     except Exception as e:

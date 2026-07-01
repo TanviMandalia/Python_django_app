@@ -6,19 +6,10 @@ from django.dispatch import receiver
 import random
 from django.utils.text import slugify
 
-from django.core.mail import send_mail
-from django.conf import settings
-from django.http import HttpResponse
-
-
-
 
 # DASHBOARD APPOINTMENT
-
-morning_clock_out = models.TimeField(null=True, blank=True)
-morning_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-evening_clock_in = models.TimeField(null=True, blank=True)
-evening_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+# (Attendance model itself is defined further below, with all shift fields
+# properly declared inside the class — see class Attendance.)
 
 
 class Hospital(models.Model):
@@ -166,14 +157,21 @@ class Appointment(models.Model):
     ]
 
     TIME_CHOICES = [
-        ("09:00", "9:00 AM"),
+        
         ("10:00", "10:00 AM"),
-        ("11:00", "11:00 AM"),
+        ("10:30", "10:30 AM"),
+        ("11:00", "11:00 PM"),
+        ("11:30", "11:30 PM"),
         ("12:00", "12:00 PM"),
-        ("14:00", "2:00 PM"),
-        ("15:00", "3:00 PM"),
-        ("16:00", "4:00 PM"),
-        ("17:00", "5:00 PM"),
+        ("12:30", "12:30 PM"),
+        ("04:00", "04:00 PM"),
+        ("04:30", "04:30 PM"),
+        ("05:00", "05:00 PM"),
+        ("05:30", "05:30 PM"),
+        ("06:00", "06:00 PM"),
+        ("06:30", "06:30 PM"),
+        ("07:00", "07:00 PM"),
+        ("07:30", "07:30 PM"),
     ]
 
     # Clinic this appointment belongs to
@@ -258,10 +256,21 @@ class Attendance(models.Model):
         User, on_delete=models.CASCADE, related_name="attendances"
     )
     date = models.DateField(default=timezone.now)
+
+    # ── Morning shift ──
     clock_in = models.TimeField(null=True, blank=True)
+    morning_clock_out = models.TimeField(null=True, blank=True)
+    morning_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+    # ── Evening shift ──
+    evening_clock_in = models.TimeField(null=True, blank=True)
     clock_out = models.TimeField(null=True, blank=True)
+    evening_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+    # ── Legacy/optional lunch break fields (kept for backward compatibility) ──
     lunch_start = models.TimeField(null=True, blank=True)
     lunch_end = models.TimeField(null=True, blank=True)
+
     total_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     notes = models.TextField(blank=True)
 
@@ -714,22 +723,3 @@ class ClinicPromo(models.Model):
         if self.end_date and today > self.end_date:
             return False
         return today >= self.start_date
-    
-def send_demo_email(request):
-    print("VIEW HIT")  # DEBUG
-
-    try:
-        result = send_mail(
-            "Test Email",
-            "Hello from Django Website",
-            settings.EMAIL_HOST_USER,
-            ["tanvi.mandaliya150483@marwadiuniversity.ac.in"],
-            fail_silently=False,
-        )
-
-        print("EMAIL RESULT:", result)
-        return HttpResponse("Email sent successfully")
-
-    except Exception as e:
-        print("EMAIL ERROR:", e)
-        return HttpResponse(f"Email failed: {e}")

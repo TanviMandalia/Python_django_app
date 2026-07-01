@@ -1,5 +1,6 @@
 from django.utils import timezone
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.contrib.auth import logout
@@ -127,7 +128,10 @@ class SubscriptionGateMiddleware:
         try:
             if user.is_superuser and user.profile.is_platform_admin:
                 return self.get_response(request)
-        except:
+        except (AttributeError, ObjectDoesNotExist):
+            # No profile yet, or profile has no is_platform_admin — treat
+            # as "not a platform admin" and fall through, rather than
+            # silently swallowing every possible exception here.
             pass
 
         return self.get_response(request)

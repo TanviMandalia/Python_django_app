@@ -1,23 +1,22 @@
-from django.conf import settings
+"""
+In-app notifications + notification-triggered emails for PhysioRehab Clinic.
+
+Email sending here goes through tasks.send_email_task.delay(), the same
+Celery task used everywhere else in the project. Do NOT reimplement a
+local fallback send function in this file — a second, slightly different
+copy of the "how do we send email" logic is exactly how one-to-many sends
+and error handling silently drift out of sync (this file used to have its
+own private send_mail() fallback with fail_silently=True, which hid every
+failure). If Celery/tasks.py isn't available, that's a deployment problem
+to fix, not something to paper over here.
+"""
+
+import logging
+
 from .models import Notification
+from .tasks import send_email_task
 
-# IMPORTANT:
-# Replace this import with your actual email function location
-# If you don't have async system yet, fallback is fine.
-try:
-    from .tasks import send_email_async
-except ImportError:
-    from django.core.mail import send_mail
-
-    def send_email_async(subject, message, recipient_list):
-        return send_mail(
-            subject,
-            message,
-            settings.EMAIL_HOST_USER,
-            recipient_list,
-            fail_silently=True,
-        )
-
+logger = logging.getLogger(__name__)
 
 SERVICE_NAMES = {
     'orthopedic': 'Orthopedic Therapy',
@@ -30,7 +29,7 @@ SERVICE_NAMES = {
 
 
 # ─────────────────────────────────────────────
-# EMAIL HELPERS
+# EMAIL HELPERS (queued via Celery, non-blocking)
 # ─────────────────────────────────────────────
 
 def send_welcome_email(user):
@@ -40,7 +39,7 @@ def send_welcome_email(user):
     subject = "Welcome to Hospital System"
     body = f"Hello {user.username}, welcome onboard!"
 
-    send_email_async(subject, body, [user.email])
+    send_email_task.delay(subject, body, [user.email])
 
 
 def send_appointment_email(patient_email, doctor_name, date):
@@ -50,7 +49,7 @@ def send_appointment_email(patient_email, doctor_name, date):
     subject = "Appointment Confirmation"
     body = f"Your appointment with Dr {doctor_name} is scheduled on {date}"
 
-    send_email_async(subject, body, [patient_email])
+    send_email_task.delay(subject, body, [patient_email])
 
 
 # ─────────────────────────────────────────────
@@ -63,16 +62,23 @@ def get_service_name(appt):
 
 def notify(recipient, message, link=""):
     """
-    Create a notification safely.
+    Create an in-app notification safely. This does NOT send email — it's
+    purely the bell-icon notification record. Email is a separate, explicit
+    call (see the email helpers above / email_utils.py / tasks.py).
     """
     if not recipient:
         return
 
-    Notification.objects.create(
-        recipient=recipient,
-        message=message,
-        link=link,
-    )
+    try:
+        Notification.objects.create(
+            recipient=recipient,
+            message=message,
+            link=link,
+        )
+    except Exception as e:
+        # A failed in-app notification should never break the calling view
+        # (e.g. appointment booking, leave approval) — log and move on.
+        logger.error(f"Failed to create notification for {recipient}: {e}")
 
 
 # ─────────────────────────────────────────────
