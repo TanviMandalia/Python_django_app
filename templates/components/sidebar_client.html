@@ -1,0 +1,75 @@
+{% load static %}
+<aside class="app-sidebar">
+  <div class="sidebar-header">
+    <i class="fas fa-heartbeat text-warning fs-3"></i>
+    <h2 class="sidebar-brand-name">{{ clinic_info.clinic_name|default:"PhysioRehab" }}</h2>
+  </div>
+
+  <div class="sidebar-user">
+    {% if request.user.profile.profile_photo %}
+      <img src="{{ request.user.profile.profile_photo.url }}" alt="{{ request.user.username }}" class="sidebar-user-avatar">
+    {% else %}
+      <div class="sidebar-user-avatar">
+        {{ request.user.first_name|default:request.user.username|make_list|first|upper }}
+      </div>
+    {% endif %}
+    <div class="sidebar-user-info">
+      <p class="sidebar-user-name">{{ request.user.get_full_name|default:request.user.username }}</p>
+      <span class="sidebar-user-role">Patient Portal</span>
+    </div>
+  </div>
+
+  <ul class="sidebar-nav">
+    <li class="sidebar-section-title">My Health</li>
+    <li>
+      <a href="{% url 'client_dashboard' %}" class="nav-link-item {% if request.resolver_match.url_name == 'client_dashboard' %}active{% endif %}">
+        <i class="fas fa-columns"></i>
+        <span class="nav-link-text">Dashboard</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'book_appointment' %}" class="nav-link-item {% if request.resolver_match.url_name == 'book_appointment' %}active{% endif %}">
+        <i class="fas fa-calendar-plus"></i>
+        <span class="nav-link-text">Book Appointment</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'my_appointments' %}" class="nav-link-item {% if request.resolver_match.url_name == 'my_appointments' %}active{% endif %}">
+        <i class="fas fa-calendar-alt"></i>
+        <span class="nav-link-text">My Appointments</span>
+      </a>
+    </li>
+
+    <li class="sidebar-section-title">Support & Billing</li>
+    <li>
+      <a href="{% url 'payments' %}" class="nav-link-item {% if request.resolver_match.url_name == 'payments' %}active{% endif %}">
+        <i class="fas fa-receipt"></i>
+        <span class="nav-link-text">Bills & Receipts</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'client_chat' %}" class="nav-link-item {% if request.resolver_match.url_name == 'client_chat' %}active{% endif %}">
+        <i class="fas fa-comments"></i>
+        <span class="nav-link-text">Chat with Doctor</span>
+        {% if unread_messages_count > 0 %}
+          <span class="nav-badge">{{ unread_messages_count }}</span>
+        {% endif %}
+      </a>
+    </li>
+
+    <li class="sidebar-section-title">Settings</li>
+    <li>
+      <a href="{% url 'profile' %}" class="nav-link-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+        <i class="fas fa-user-circle"></i>
+        <span class="nav-link-text">My Profile</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'logout' %}" class="nav-link-item text-danger">
+        <i class="fas fa-sign-out-alt text-danger"></i>
+        <span class="nav-link-text">Log Out</span>
+      </a>
+    </li>
+  </ul>
+</aside>
+

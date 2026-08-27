@@ -1,0 +1,80 @@
+{% load static %}
+<aside class="app-sidebar">
+  <div class="sidebar-header">
+    <i class="fas fa-hospital-user text-warning fs-3"></i>
+    <h2 class="sidebar-brand-name">{{ clinic_info.clinic_name|default:"PhysioRehab" }}</h2>
+  </div>
+
+  <div class="sidebar-user">
+    {% if request.user.profile.profile_photo %}
+      <img src="{{ request.user.profile.profile_photo.url }}" alt="{{ request.user.username }}" class="sidebar-user-avatar">
+    {% else %}
+      <div class="sidebar-user-avatar">
+        {{ request.user.first_name|default:request.user.username|make_list|first|upper }}
+      </div>
+    {% endif %}
+    <div class="sidebar-user-info">
+      <p class="sidebar-user-name">{{ request.user.get_full_name|default:request.user.username }}</p>
+      <span class="sidebar-user-role">Clinic Staff / Employee</span>
+    </div>
+  </div>
+
+  <ul class="sidebar-nav">
+    <li class="sidebar-section-title">Overview</li>
+    <li>
+      <a href="{% url 'staff_dashboard' %}" class="nav-link-item {% if request.resolver_match.url_name == 'staff_dashboard' %}active{% endif %}">
+        <i class="fas fa-th-large"></i>
+        <span class="nav-link-text">My Workspace</span>
+      </a>
+    </li>
+
+    <li class="sidebar-section-title">Attendance & Shifts</li>
+    <li>
+      <a href="{% url 'staff_attendance' %}" class="nav-link-item {% if request.resolver_match.url_name == 'staff_attendance' %}active{% endif %}">
+        <i class="fas fa-fingerprint"></i>
+        <span class="nav-link-text">Shift Clock-In / Out</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'staff_leave' %}" class="nav-link-item {% if request.resolver_match.url_name == 'staff_leave' %}active{% endif %}">
+        <i class="fas fa-calendar-minus"></i>
+        <span class="nav-link-text">Leave Applications</span>
+      </a>
+    </li>
+
+    <li class="sidebar-section-title">Tasks & Compensation</li>
+    <li>
+      <a href="{% url 'staff_tasks' %}" class="nav-link-item {% if request.resolver_match.url_name == 'staff_tasks' %}active{% endif %}">
+        <i class="fas fa-tasks"></i>
+        <span class="nav-link-text">My Assigned Tasks</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'staff_salary' %}" class="nav-link-item {% if request.resolver_match.url_name == 'staff_salary' %}active{% endif %}">
+        <i class="fas fa-file-invoice-dollar"></i>
+        <span class="nav-link-text">My Salary Slips</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'staff_session_notes' %}" class="nav-link-item {% if request.resolver_match.url_name == 'staff_session_notes' %}active{% endif %}">
+        <i class="fas fa-clipboard-list"></i>
+        <span class="nav-link-text">Patient Session Notes</span>
+      </a>
+    </li>
+
+    <li class="sidebar-section-title">Account</li>
+    <li>
+      <a href="{% url 'profile' %}" class="nav-link-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+        <i class="fas fa-user-circle"></i>
+        <span class="nav-link-text">My Profile</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'logout' %}" class="nav-link-item text-danger">
+        <i class="fas fa-sign-out-alt text-danger"></i>
+        <span class="nav-link-text">Log Out</span>
+      </a>
+    </li>
+  </ul>
+</aside>
+

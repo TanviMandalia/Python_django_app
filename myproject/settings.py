@@ -13,15 +13,16 @@ load_dotenv(BASE_DIR / ".env")
 # SECURITY (CRITICAL)
 # =========================
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
-if not SECRET_KEY:
-    raise Exception("DJANGO_SECRET_KEY is missing in environment variables")
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-default-development-key-physiorehab-2026"
+)
 
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
 ALLOWED_HOSTS = os.getenv(
     "ALLOWED_HOSTS",
-    "localhost,127.0.0.1"
+    "localhost,127.0.0.1,0.0.0.0,testserver"
 ).split(",")
 
 # =========================
@@ -76,6 +77,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "core.context_processors.unread_notifications",
             ],
         },
     },
@@ -135,7 +137,6 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
-# HTTPS settings (ENABLE IN PRODUCTION)
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 
@@ -148,62 +149,39 @@ SESSION_COOKIE_SAMESITE = "Lax"
 
 CSRF_TRUSTED_ORIGINS = os.getenv(
     "CSRF_TRUSTED_ORIGINS",
-    "http://localhost"
+    "http://localhost:8000,http://127.0.0.1:8000,http://localhost,http://127.0.0.1"
 ).split(",")
 
 # =========================
-# EMAIL CONFIG (PRODUCTION SAFE)
+# EMAIL CONFIG
 # =========================
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend"
+)
 
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
 
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-
-if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
-    raise Exception("Email credentials missing in environment variables")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "physiorehab.clinic.demo@gmail.com")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 
 DEFAULT_FROM_EMAIL = f"PhysioRehab Clinic <{EMAIL_HOST_USER}>"
 SERVER_EMAIL = EMAIL_HOST_USER
-
-# Without a timeout, a hung SMTP connection can block a request/worker
-# indefinitely. 10-15s is plenty for a normal SMTP handshake.
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", 15))
 
 # =========================
 # CELERY (background & bulk email)
 # =========================
-# Production / Linux: use Redis (or another real broker) — set
-# CELERY_BROKER_URL in .env to something like redis://localhost:6379/0
-# and remove/ignore the filesystem fallback below.
-#
-# Local Windows dev without Docker/WSL/Memurai installed: the filesystem
-# transport below needs NO server at all — it just uses folders on disk as
-# a queue. It's for getting unblocked locally only; do not use it in
-# production (no real concurrency guarantees, not for multi-machine setups).
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "")
 
 if CELERY_BROKER_URL:
     CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
 else:
-    # No broker configured in .env -> fall back to filesystem transport.
-    #
-    # IMPORTANT: per Kombu's own filesystem transport docs, the producer
-    # writes new messages into data_folder_in, while the consumer reads
-    # messages from data_folder_out. Kombu expects producer and consumer to
-    # be configured with those two OPPOSITE to each other (a true "in" vs
-    # "out" pair) when they're separate deployments. But here, the Django
-    # app (producer, e.g. a view or `shell -c`) and the Celery worker
-    # (consumer) both load this exact same settings.py — so if we give them
-    # different folders, the producer writes into "in" and the worker only
-    # ever polls "out", and the two never meet. The fix is to point both
-    # at the SAME single folder, so whichever process writes a task file,
-    # the other process (polling that same folder) picks it up.
+    # Filesystem broker fallback for local dev
     _CELERY_QUEUE_DIR = BASE_DIR / "celery_queue"
     _CELERY_QUEUE_MESSAGES = _CELERY_QUEUE_DIR / "messages"
     _CELERY_QUEUE_MESSAGES.mkdir(parents=True, exist_ok=True)
@@ -216,18 +194,12 @@ else:
         "data_folder_processed": str(_CELERY_QUEUE_DIR / "processed"),
         "store_processed": True,
     }
-    # No result backend here on purpose: a "file://C:\Users\..." URL breaks
-    # on Windows because urllib misreads the drive letter's ":" as a port
-    # separator. We don't need results for fire-and-forget email tasks
-    # (nothing in this project calls .get() on a task result), so it's
-    # simplest and most robust to just not configure one at all.
     CELERY_RESULT_BACKEND = None
 
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
-# Don't let one huge bulk-email task hog a worker forever.
 CELERY_TASK_SOFT_TIME_LIMIT = 300
 CELERY_TASK_TIME_LIMIT = 360
 
@@ -243,18 +215,16 @@ LOGOUT_REDIRECT_URL = "/"
 # RAZORPAY / PAYMENT
 # =========================
 
-RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
-RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_test_SampleKeyId12345")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "SampleKeySecret12345")
+RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
 
-CLINIC_UPI_ID = os.getenv("CLINIC_UPI_ID", "")
+CLINIC_UPI_ID = os.getenv("CLINIC_UPI_ID", "physiorehab@upi")
 
 # =========================
-# LOGGING (IMPORTANT FOR PRODUCTION)
+# LOGGING
 # =========================
 
-# Ensure the logs directory exists before the file handler tries to open
-# app.log — without this, a fresh clone/deploy (no logs/ folder yet)
-# crashes Django/Celery at startup with "Unable to configure handler 'file'".
 LOGS_DIR = BASE_DIR / "logs"
 LOGS_DIR.mkdir(exist_ok=True)
 
@@ -268,7 +238,7 @@ LOGGING = {
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOGS_DIR / "app.log",
-            "maxBytes": 5 * 1024 * 1024,  # 5 MB
+            "maxBytes": 5 * 1024 * 1024,
             "backupCount": 5,
         },
     },
@@ -277,15 +247,7 @@ LOGGING = {
         "level": "WARNING",
     },
     "loggers": {
-        # Bumps email-related logging to INFO so send/failure/bulk-summary
-        # lines from email_utils.py and tasks.py actually show up, instead
-        # of being swallowed by the root WARNING level above.
-        "core.email_utils": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "core.tasks": {
+        "core": {
             "handlers": ["console", "file"],
             "level": "INFO",
             "propagate": False,

@@ -1,0 +1,458 @@
+/* ==============================================================================
+   PhysioRehab Core Dashboard CSS
+   ============================================================================== */
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--light-bg);
+  color: var(--text-dark);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── APP LAYOUT ─────────────────────────────────────────────────── */
+.app-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* ─── SIDEBAR ─────────────────────────────────────────────────────── */
+.app-sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1040;
+  background: linear-gradient(180deg, #161616 0%, #202020 100%);
+  color: var(--text-light);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
+  transition: transform var(--transition-normal), width var(--transition-normal);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.sidebar-header {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--dark-border);
+}
+
+.sidebar-logo-img {
+  height: 38px;
+  width: auto;
+  border-radius: var(--radius-sm);
+}
+
+.sidebar-brand-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.sidebar-user {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--dark-border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.sidebar-user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  color: var(--dark-bg);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.sidebar-user-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-user-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: 0.75rem;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.sidebar-nav {
+  padding: 16px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+}
+
+.sidebar-section-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #888;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 12px 12px 4px 12px;
+  margin: 0;
+}
+
+.nav-link-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  color: #CCCCCC;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.nav-link-item i {
+  width: 20px;
+  text-align: center;
+  font-size: 1rem;
+  color: #888;
+  transition: color var(--transition-fast);
+}
+
+.nav-link-item:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-link-item:hover i {
+  color: var(--primary);
+}
+
+.nav-link-item.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+  border: 1px solid var(--primary-border);
+}
+
+.nav-link-item.active i {
+  color: var(--primary);
+}
+
+.nav-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  color: var(--dark-bg);
+  font-weight: 700;
+}
+
+/* ─── MAIN CONTENT WRAPPER ────────────────────────────────────────── */
+.app-main {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left var(--transition-normal);
+}
+
+/* ─── TOPBAR ──────────────────────────────────────────────────────── */
+.app-topbar {
+  height: var(--topbar-height);
+  background: var(--light-surface);
+  border-bottom: 1px solid var(--light-border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  box-shadow: var(--shadow-sm);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--light-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  color: var(--text-dark);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.topbar-toggle-btn:hover {
+  background: var(--light-bg);
+  border-color: #CCC;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topbar-action-btn {
+  position: relative;
+  background: var(--light-bg);
+  border: 1px solid var(--light-border);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dark);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.topbar-action-btn:hover {
+  background: var(--primary-light);
+  color: var(--dark-bg);
+  border-color: var(--primary-border);
+}
+
+.topbar-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  background: var(--danger);
+  color: white;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  border: 2px solid white;
+}
+
+/* ─── PAGE BODY ──────────────────────────────────────────────────── */
+.app-content-body {
+  padding: 24px;
+  flex: 1;
+}
+
+/* ─── STATS & CARDS ──────────────────────────────────────────────── */
+.stat-card {
+  background: var(--light-surface);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  border: 1px solid var(--light-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-icon-wrapper {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.stat-icon-gold { background: var(--primary-light); color: #B38600; }
+.stat-icon-green { background: var(--success-light); color: var(--success); }
+.stat-icon-blue { background: var(--info-light); color: var(--info); }
+.stat-icon-red { background: var(--danger-light); color: var(--danger); }
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ─── CONTENT CARDS & TABLES ─────────────────────────────────────── */
+.content-card {
+  background: var(--light-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--light-border);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.content-card-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--light-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.content-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.content-card-body {
+  padding: 22px;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.custom-table {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: collapse;
+}
+
+.custom-table th {
+  background: #F8F9FA;
+  color: #4A5568;
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--light-border);
+  white-space: nowrap;
+}
+
+.custom-table td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--light-border);
+  font-size: 0.9rem;
+}
+
+.custom-table tr:hover td {
+  background: #FAFAFA;
+}
+
+/* ─── STATUS PILLS ───────────────────────────────────────────────── */
+.badge-status {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: capitalize;
+}
+
+.badge-pending { background: var(--warning-light); color: #B45309; }
+.badge-confirmed { background: var(--info-light); color: #1D4ED8; }
+.badge-completed, .badge-approved, .badge-paid { background: var(--success-light); color: #047857; }
+.badge-cancelled, .badge-rejected, .badge-failed { background: var(--danger-light); color: #B91C1C; }
+
+/* ─── BUTTONS ────────────────────────────────────────────────────── */
+.btn-gold {
+  background: var(--primary);
+  color: #1A1A1A;
+  font-weight: 600;
+  border: none;
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-gold:hover {
+  background: var(--primary-hover);
+  color: #000000;
+  transform: translateY(-1px);
+}
+
+.btn-dark-slate {
+  background: #1A1A1A;
+  color: var(--primary);
+  border: 1px solid var(--dark-border);
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.btn-dark-slate:hover {
+  background: #2C2C2C;
+  color: #FFFFFF;
+}
+
+/* ─── FOOTER ─────────────────────────────────────────────────────── */
+.app-footer {
+  background: var(--light-surface);
+  border-top: 1px solid var(--light-border);
+  padding: 16px 24px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: auto;
+}
+

@@ -1,0 +1,124 @@
+{% load static %}
+<aside class="app-sidebar">
+  <div class="sidebar-header">
+    <i class="fas fa-heartbeat text-warning fs-3"></i>
+    <h2 class="sidebar-brand-name">{{ clinic_info.clinic_name|default:"PhysioRehab" }}</h2>
+  </div>
+
+  <div class="sidebar-user">
+    {% if request.user.profile.profile_photo %}
+      <img src="{{ request.user.profile.profile_photo.url }}" alt="{{ request.user.username }}" class="sidebar-user-avatar">
+    {% else %}
+      <div class="sidebar-user-avatar">
+        {{ request.user.first_name|default:request.user.username|make_list|first|upper }}
+      </div>
+    {% endif %}
+    <div class="sidebar-user-info">
+      <p class="sidebar-user-name">{{ request.user.get_full_name|default:request.user.username }}</p>
+      <span class="sidebar-user-role">Clinic Admin</span>
+    </div>
+  </div>
+
+  <ul class="sidebar-nav">
+    <li class="sidebar-section-title">Overview</li>
+    <li>
+      <a href="{% url 'admin_dashboard' %}" class="nav-link-item {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+        <i class="fas fa-th-large"></i>
+        <span class="nav-link-text">Dashboard</span>
+      </a>
+    </li>
+
+    <li class="sidebar-section-title">Clinical Operations</li>
+    <li>
+      <a href="{% url 'admin_appointments' %}" class="nav-link-item {% if 'appointment' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-calendar-check"></i>
+        <span class="nav-link-text">Appointments</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'admin_patients' %}" class="nav-link-item {% if 'patient' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-user-injured"></i>
+        <span class="nav-link-text">Patients Directory</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'admin_session_notes' %}" class="nav-link-item {% if 'session_note' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-notes-medical"></i>
+        <span class="nav-link-text">Session Notes</span>
+      </a>
+    </li>
+
+    <li class="sidebar-section-title">Staff & Payroll</li>
+    <li>
+      <a href="{% url 'admin_staff' %}" class="nav-link-item {% if 'staff' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-user-md"></i>
+        <span class="nav-link-text">Staff Management</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'admin_attendance' %}" class="nav-link-item {% if 'attendance' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-clock"></i>
+        <span class="nav-link-text">Staff Attendance</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'admin_leaves' %}" class="nav-link-item {% if 'leave' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-calendar-minus"></i>
+        <span class="nav-link-text">Leave Requests</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'admin_salary' %}" class="nav-link-item {% if 'salary' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-money-bill-wave"></i>
+        <span class="nav-link-text">Staff Payroll</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'admin_tasks' %}" class="nav-link-item {% if 'task' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-tasks"></i>
+        <span class="nav-link-text">Daily Tasks</span>
+      </a>
+    </li>
+
+    <li class="sidebar-section-title">Billing & Marketing</li>
+    <li>
+      <a href="{% url 'admin_payments' %}" class="nav-link-item {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-receipt"></i>
+        <span class="nav-link-text">Patient Payments</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'admin_promos' %}" class="nav-link-item {% if 'promo' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-bullhorn"></i>
+        <span class="nav-link-text">Promos & Banners</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'admin_reviews' %}" class="nav-link-item {% if 'review' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-star"></i>
+        <span class="nav-link-text">Patient Reviews</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'admin_blog_list' %}" class="nav-link-item {% if 'blog' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-newspaper"></i>
+        <span class="nav-link-text">Blog Articles</span>
+      </a>
+    </li>
+
+    <li class="sidebar-section-title">System</li>
+    <li>
+      <a href="{% url 'admin_settings' %}" class="nav-link-item {% if request.resolver_match.url_name == 'admin_settings' %}active{% endif %}">
+        <i class="fas fa-sliders-h"></i>
+        <span class="nav-link-text">Clinic Settings</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'logout' %}" class="nav-link-item text-danger">
+        <i class="fas fa-sign-out-alt text-danger"></i>
+        <span class="nav-link-text">Log Out</span>
+      </a>
+    </li>
+  </ul>
+</aside>
+

@@ -1,0 +1,17 @@
+{% load static %}
+<footer class="app-footer">
+  <div class="container-fluid d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2">
+    <div>
+      © {% now "Y" %} <strong>{{ clinic_info.clinic_name|default:"PhysioRehab Clinic" }}</strong>. All rights reserved.
+    </div>
+    <div class="text-muted small">
+      {% if clinic_info.phone %}
+        <span><i class="fas fa-phone-alt me-1 text-warning"></i>{{ clinic_info.phone }}</span>
+      {% endif %}
+      {% if clinic_info.address %}
+        <span class="ms-3 d-none d-md-inline"><i class="fas fa-map-marker-alt me-1 text-warning"></i>{{ clinic_info.address }}</span>
+      {% endif %}
+    </div>
+  </div>
+</footer>
+

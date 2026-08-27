@@ -1,0 +1,70 @@
+{% load static %}
+<header class="app-topbar">
+  <div class="topbar-left">
+    <!-- Mobile Hamburger Toggle -->
+    <button id="toggleSidebarMobile" class="topbar-toggle-btn d-lg-none" aria-label="Toggle navigation">
+      <i class="fas fa-bars"></i>
+    </button>
+    <!-- Desktop Sidebar Collapse Toggle -->
+    <button id="toggleSidebarDesktop" class="topbar-toggle-btn d-none d-lg-flex" aria-label="Collapse sidebar">
+      <i class="fas fa-bars"></i>
+    </button>
+    <span class="fw-semibold text-dark d-none d-sm-inline">
+      {% block page_heading %}Dashboard{% endblock %}
+    </span>
+  </div>
+
+  <div class="topbar-right">
+    <!-- Public Site Link -->
+    <a href="{% url 'home' %}" class="topbar-action-btn" title="View Public Website" target="_blank">
+      <i class="fas fa-globe"></i>
+    </a>
+
+    <!-- Notifications Bell -->
+    <a href="{% url 'notifications' %}" class="topbar-action-btn" title="Notifications">
+      <i class="fas fa-bell"></i>
+      {% if unread_notif_count > 0 %}
+        <span class="topbar-badge">{{ unread_notif_count }}</span>
+      {% endif %}
+    </a>
+
+    <!-- Live Chat -->
+    {% if user_role == 'admin' or user_role == 'super_admin' %}
+      <a href="{% url 'admin_chat' %}" class="topbar-action-btn" title="Clinic Messages">
+        <i class="fas fa-comments"></i>
+        {% if unread_messages_count > 0 %}
+          <span class="topbar-badge">{{ unread_messages_count }}</span>
+        {% endif %}
+      </a>
+    {% else %}
+      <a href="{% url 'client_chat' %}" class="topbar-action-btn" title="Chat with Doctor">
+        <i class="fas fa-comments"></i>
+        {% if unread_messages_count > 0 %}
+          <span class="topbar-badge">{{ unread_messages_count }}</span>
+        {% endif %}
+      </a>
+    {% endif %}
+
+    <!-- User Profile Dropdown -->
+    <div class="dropdown">
+      <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        {% if request.user.profile.profile_photo %}
+          <img src="{{ request.user.profile.profile_photo.url }}" alt="{{ request.user.username }}" class="rounded-circle" width="34" height="34" style="object-fit: cover;">
+        {% else %}
+          <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:34px; height:34px; font-size: 0.85rem;">
+            {{ request.user.first_name|default:request.user.username|make_list|first|upper }}
+          </div>
+        {% endif %}
+        <span class="ms-2 fw-medium d-none d-md-inline">{{ request.user.first_name|default:request.user.username }}</span>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuDropdown">
+        <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fas fa-user-circle me-2 text-muted"></i>My Profile</a></li>
+        <li><a class="dropdown-item" href="{% url 'edit_profile' %}"><i class="fas fa-cog me-2 text-muted"></i>Account Settings</a></li>
+        <li><a class="dropdown-item" href="{% url 'change_password' %}"><i class="fas fa-key me-2 text-muted"></i>Change Password</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Log Out</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+

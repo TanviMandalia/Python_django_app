@@ -1,305 +1,36 @@
+{% extends "layouts/base_public.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta charset="UTF-8">
-    <title>Verify OTP</title>
+{% block title %}Verify OTP — PhysioRehab Clinic{% endblock %}
 
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f5f5f5;
-        }
-
-        .otp-page {
-            height: 90vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .otp-card {
-            width: 380px;
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
-            text-align: center;
-            border-top: 4px solid #F5C518;
-        }
-
-        .otp-card h2 {
-            color: #2C2C2C;
-            font-size: 1.4em;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .otp-card p {
-            font-size: 0.9em;
-            color: #777;
-            margin-bottom: 20px;
-        }
-
-        .otp-inputs {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .otp-inputs input {
-            width: 48px;
-            height: 52px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: 600;
-            border-radius: 10px;
-            border: 1px solid #ddd;
-            outline: none;
-            transition: 0.2s;
-            background: #fff;
-        }
-
-        .otp-inputs input:focus {
-            border-color: #F5C518;
-            box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.2);
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #F5C518;
-            border: none;
-            border-radius: 25px;
-            color: #2C2C2C;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            background: #e6b800;
-            transform: translateY(-2px);
-        }
-
-        .resend {
-            margin-top: 15px;
-            font-size: 0.85em;
-            color: #666;
-        }
-
-        .resend a {
-            color: #F5C518;
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        .resend a:hover {
-            text-decoration: underline;
-        }
-
-        .msg {
-            font-size: 0.85em;
-            margin-bottom: 10px;
-        }
-
-        .msg.error {
-            color: #dc3545;
-        }
-
-        .msg.success {
-            color: #28a745;
-        }
-
-        /* ===== RESPONSIVE FIX (ADD ONLY) ===== */
-
-        /* Tablets */
-        @media (max-width: 768px) {
-            .otp-card {
-                width: 90%;
-                padding: 25px;
-            }
-
-            .otp-inputs {
-                gap: 8px;
-            }
-
-            .otp-inputs input {
-                width: 42px;
-                height: 48px;
-                font-size: 16px;
-            }
-        }
-
-        /* Mobile */
-        @media (max-width: 480px) {
-            .otp-page {
-                padding: 10px;
-                height: auto;
-                min-height: 100vh;
-            }
-
-            .otp-card {
-                width: 100%;
-                padding: 20px;
-                border-radius: 12px;
-            }
-
-            .otp-card h2 {
-                font-size: 1.2em;
-            }
-
-            .otp-card p {
-                font-size: 0.8em;
-            }
-
-            .otp-inputs {
-                gap: 6px;
-            }
-
-            .otp-inputs input {
-                width: 38px;
-                height: 44px;
-                font-size: 15px;
-            }
-
-            button {
-                padding: 11px;
-                font-size: 14px;
-            }
-        }
-
-        /* Very small devices */
-        @media (max-width: 360px) {
-            .otp-inputs {
-                gap: 4px;
-            }
-
-            .otp-inputs input {
-                width: 34px;
-                height: 40px;
-                font-size: 14px;
-            }
-        }
-    </style>
-</head>
-
-<body>
-
-    <div class="otp-page">
-
-        <div class="otp-card">
-
-            <h2>Verify OTP</h2>
-            <p>Enter the 6-digit code sent to your registered email</p>
-
-            {% if messages %}
-            {% for message in messages %}
-            <div class="msg {% if message.tags %}{{ message.tags }}{% endif %}">
-                {{ message }}
-            </div>
-            {% endfor %}
-            {% endif %}
-
-            <form method="POST" action="{% url 'verify_otp' %}">
-                {% csrf_token %}
-
-                <div class="otp-inputs">
-                    <input type="text" maxlength="1" inputmode="numeric">
-                    <input type="text" maxlength="1" inputmode="numeric">
-                    <input type="text" maxlength="1" inputmode="numeric">
-                    <input type="text" maxlength="1" inputmode="numeric">
-                    <input type="text" maxlength="1" inputmode="numeric">
-                    <input type="text" maxlength="1" inputmode="numeric">
-                </div>
-
-                <!-- Hidden field sent to Django -->
-                <input type="hidden" name="otp" id="otp-hidden">
-
-                <button type="submit">
-                    Verify OTP
-                </button>
-            </form>
-
-            <div class="resend">
-                Didn’t receive code?
-                <a href="{% url 'resend_otp' %}">
-                    Resend OTP
-                </a>
-            </div>
-
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-5">
+      <div class="card border-0 shadow-lg rounded-4 overflow-hidden mt-4">
+        <div class="bg-dark text-white p-4 text-center">
+          <i class="fas fa-shield-alt text-warning fs-1 mb-2"></i>
+          <h3 class="fw-bold mb-1">Verify OTP</h3>
+          <p class="text-secondary small mb-0">Enter the 6-digit code sent to {{ email }}</p>
         </div>
-
+        <div class="card-body p-4 p-md-5 bg-white">
+          <form method="POST" action="{% url 'verify_otp' %}">
+            {% csrf_token %}
+            <div class="mb-3 text-center">
+              <label class="form-label fw-semibold">Enter 6-Digit Code</label>
+              <input type="text" name="otp" class="form-control text-center fs-3 letter-spacing-2 fw-bold" maxlength="6" placeholder="------" required autofocus>
+            </div>
+            <button type="submit" class="btn btn-warning w-100 py-2 fw-bold mt-3 rounded-pill shadow-sm">
+              <i class="fas fa-check me-1"></i> Verify OTP
+            </button>
+          </form>
+          <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top small">
+            <a href="{% url 'resend_otp' %}" class="text-warning text-decoration-none"><i class="fas fa-redo me-1"></i> Resend OTP</a>
+            <a href="{% url 'login' %}" class="text-muted text-decoration-none">Back to Login</a>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <script>
-        const inputs = document.querySelectorAll(".otp-inputs input");
-        const otpHidden = document.getElementById("otp-hidden");
-        const form = document.querySelector("form");
-
-        inputs.forEach((input, index) => {
-
-            input.addEventListener("input", (e) => {
-
-                if (!/^\d$/.test(e.target.value)) {
-                    e.target.value = "";
-                    return;
-                }
-
-                if (index < inputs.length - 1) {
-                    inputs[index + 1].focus();
-                }
-            });
-
-            input.addEventListener("keydown", (e) => {
-
-                if (
-                    e.key === "Backspace" &&
-                    input.value === "" &&
-                    index > 0
-                ) {
-                    inputs[index - 1].focus();
-                }
-            });
-
-            input.addEventListener("paste", (e) => {
-
-                e.preventDefault();
-
-                const data = (e.clipboardData || window.clipboardData)
-                    .getData("text")
-                    .replace(/\D/g, "")
-                    .slice(0, inputs.length);
-
-                data.split("").forEach((num, i) => {
-                    if (inputs[i]) {
-                        inputs[i].value = num;
-                    }
-                });
-
-                if (inputs[data.length - 1]) {
-                    inputs[data.length - 1].focus();
-                }
-            });
-
-        });
-
-        form.addEventListener("submit", function () {
-
-            let otp = "";
-
-            inputs.forEach(input => {
-                otp += input.value;
-            });
-
-            otpHidden.value = otp;
-        });
-    </script>
-
-</body>
-
-</html>
+  </div>
+</div>
+{% endblock %}

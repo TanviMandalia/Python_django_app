@@ -1,0 +1,111 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block layout_body %}
+<!-- Public Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top py-3 shadow-sm border-bottom border-secondary">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-warning" href="{% url 'home' %}">
+      <i class="fas fa-heartbeat fs-3"></i>
+      <span>{{ clinic_info.clinic_name|default:"PhysioRehab Clinic" }}</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#publicNavDropdown" aria-controls="publicNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="publicNavDropdown">
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-2">
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active text-warning{% endif %}" href="{% url 'home' %}">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'about' %}active text-warning{% endif %}" href="{% url 'about' %}">About Us</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'services' %}active text-warning{% endif %}" href="{% url 'services' %}">Services</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if 'blog' in request.resolver_match.url_name %}active text-warning{% endif %}" href="{% url 'blog_list' %}">Health Blog</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'contact' %}active text-warning{% endif %}" href="{% url 'contact' %}">Contact</a>
+        </li>
+        <li class="nav-item ms-lg-2">
+          <a class="btn btn-warning fw-semibold px-3 py-2 rounded-pill shadow-sm" href="{% url 'book_appointment' %}">
+            <i class="fas fa-calendar-plus me-1"></i> Book Appointment
+          </a>
+        </li>
+        {% if request.user.is_authenticated %}
+          <li class="nav-item ms-lg-2">
+            <a class="btn btn-outline-light fw-medium px-3 py-2 rounded-pill" href="{% url 'login' %}">
+              <i class="fas fa-user-circle me-1"></i> My Portal
+            </a>
+          </li>
+        {% else %}
+          <li class="nav-item ms-lg-2">
+            <a class="btn btn-outline-light fw-medium px-3 py-2 rounded-pill" href="{% url 'login' %}">
+              <i class="fas fa-sign-in-alt me-1"></i> Log In
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Page Content -->
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<!-- Public Footer -->
+<footer class="bg-dark text-light py-5 border-top border-secondary mt-5">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-lg-4 col-md-6">
+        <h4 class="fw-bold text-warning mb-3 d-flex align-items-center gap-2">
+          <i class="fas fa-heartbeat"></i> {{ clinic_info.clinic_name|default:"PhysioRehab Clinic" }}
+        </h4>
+        <p class="text-secondary mb-3">
+          {{ clinic_info.tagline|default:"Advanced Physiotherapy, Sports Rehabilitation & Pain Relief Care by expert therapists." }}
+        </p>
+        <div class="d-flex gap-3 text-warning fs-5">
+          {% if clinic_info.instagram %}<a href="{{ clinic_info.instagram }}" class="text-warning" target="_blank"><i class="fab fa-instagram"></i></a>{% endif %}
+          {% if clinic_info.facebook %}<a href="{{ clinic_info.facebook }}" class="text-warning" target="_blank"><i class="fab fa-facebook"></i></a>{% endif %}
+          {% if clinic_info.linkedin %}<a href="{{ clinic_info.linkedin }}" class="text-warning" target="_blank"><i class="fab fa-linkedin"></i></a>{% endif %}
+          {% if clinic_info.whatsapp %}<a href="https://wa.me/{{ clinic_info.whatsapp }}" class="text-warning" target="_blank"><i class="fab fa-whatsapp"></i></a>{% endif %}
+        </div>
+      </div>
+      <div class="col-lg-2 col-md-6">
+        <h6 class="text-white fw-bold text-uppercase mb-3">Quick Links</h6>
+        <ul class="list-unstyled d-flex flex-column gap-2 text-secondary">
+          <li><a href="{% url 'home' %}" class="text-secondary text-decoration-none">Home</a></li>
+          <li><a href="{% url 'about' %}" class="text-secondary text-decoration-none">About Us</a></li>
+          <li><a href="{% url 'services' %}" class="text-secondary text-decoration-none">Treatments</a></li>
+          <li><a href="{% url 'blog_list' %}" class="text-secondary text-decoration-none">Articles</a></li>
+          <li><a href="{% url 'contact' %}" class="text-secondary text-decoration-none">Contact</a></li>
+        </ul>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <h6 class="text-white fw-bold text-uppercase mb-3">Working Hours</h6>
+        <p class="text-secondary mb-1"><i class="fas fa-clock text-warning me-2"></i>Mon - Sat: 10:00 AM - 08:00 PM</p>
+        <p class="text-secondary"><i class="fas fa-calendar-times text-danger me-2"></i>Sunday: Closed</p>
+        <a href="{% url 'book_appointment' %}" class="btn btn-sm btn-outline-warning mt-2">Instant Booking</a>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <h6 class="text-white fw-bold text-uppercase mb-3">Clinic Contact</h6>
+        <p class="text-secondary mb-1"><i class="fas fa-map-marker-alt text-warning me-2"></i>{{ clinic_info.address|default:"Bedi Gate, Jamnagar, Gujarat" }}</p>
+        <p class="text-secondary mb-1"><i class="fas fa-phone text-warning me-2"></i>{{ clinic_info.phone|default:"+91 94095 10501" }}</p>
+        <p class="text-secondary"><i class="fas fa-envelope text-warning me-2"></i>{{ clinic_info.email|default:"info@physiorehab.com" }}</p>
+      </div>
+    </div>
+    <hr class="border-secondary my-4">
+    <div class="text-center text-secondary small">
+      © {% now "Y" %} {{ clinic_info.clinic_name|default:"PhysioRehab Clinic" }}. Built with production Django architecture.
+    </div>
+  </div>
+</footer>
+
+<!-- Django Messages & Alert Toasts -->
+{% include "components/toasts.html" %}
+{% endblock %}
+

@@ -1,915 +1,231 @@
+{% extends "layouts/base_dashboard.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Dashboard - Physio Rehab</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
 
-      body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; }
+{% block title %}Admin Dashboard — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Clinic Administration Dashboard{% endblock %}
 
-      /* ── SIDEBAR ── */
-      .sidebar {
-        width: 260px; height: 100vh; position: fixed; left: 0; top: 0;
-        background: linear-gradient(180deg, #111827, #1f2937);
-        overflow-y: auto; scrollbar-width: none; z-index: 100;
-        display: flex; flex-direction: column;
-      }
-      .sidebar::-webkit-scrollbar { display: none; }
+{% block content %}
+<div class="container-fluid p-0">
 
-      .sidebar-logo {
-        padding: 24px 20px 18px; border-bottom: 1px solid rgba(245,197,24,0.15);
-        text-align: center;
-      }
-      .sidebar-logo img { width: 120px; border-radius: 10px; }
-      .sidebar-logo-badge {
-        display: inline-flex; align-items: center; gap: 6px;
-        background: rgba(245,197,24,0.12); color: #f5c518;
-        padding: 4px 12px; border-radius: 20px; font-size: 0.72em;
-        font-weight: 700; margin-top: 10px; letter-spacing: 0.5px;
-      }
-
-      .sidebar-user {
-        padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.06);
-        display: flex; align-items: center; gap: 10px;
-      }
-      .user-avatar {
-        width: 40px; height: 40px; background: linear-gradient(135deg,#f5c518,#e6a800);
-        border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        font-weight: 800; color: #111; font-size: 0.95em; flex-shrink: 0;
-      }
-      .user-info h4 { color: #fff; font-size: 0.87em; font-weight: 600; }
-      .user-info span { color: #6b7280; font-size: 0.72em; }
-      .online-dot {
-        width: 8px; height: 8px; background: #22c55e; border-radius: 50%;
-        display: inline-block; margin-right: 4px;
-      }
-
-      .nav-scroll { flex: 1; overflow-y: auto; scrollbar-width: none; padding-bottom: 10px; }
-      .nav-scroll::-webkit-scrollbar { display: none; }
-
-      .nav-section {
-        padding: 16px 20px 5px; color: #4b5563; font-size: 0.67em;
-        text-transform: uppercase; letter-spacing: 1.8px; font-weight: 700;
-      }
-      .nav-item {
-        display: flex; align-items: center; gap: 10px; padding: 10px 20px;
-        color: #9ca3af; text-decoration: none; font-size: 0.88em;
-        transition: all 0.2s; border-left: 3px solid transparent;
-        border-radius: 0 8px 8px 0; margin-right: 8px;
-      }
-      .nav-item:hover { background: rgba(245,197,24,0.08); color: #f5c518; border-left-color: rgba(245,197,24,0.4); }
-      .nav-item.active { background: rgba(245,197,24,0.12); color: #f5c518; border-left-color: #f5c518; font-weight: 600; }
-      .nav-item i { width: 16px; text-align: center; font-size: 0.9em; }
-
-      .sidebar-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.06); }
-      .logout-btn {
-        display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-        background: rgba(239,68,68,0.1); color: #f87171; border-radius: 10px;
-        text-decoration: none; font-size: 0.86em; font-weight: 600;
-        transition: all 0.2s; width: 100%;
-      }
-      .logout-btn:hover { background: rgba(239,68,68,0.2); }
-
-      /* ── MAIN ── */
-      .main-content { margin-left: 260px; min-height: 100vh; }
-
-      .topbar {
-        background: #fff; padding: 0 28px; height: 64px;
-        display: flex; align-items: center; justify-content: space-between;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08); position: sticky; top: 0; z-index: 50;
-      }
-      .topbar-left h1 { font-size: 1.15em; color: #111827; font-weight: 700; }
-      .topbar-left p { font-size: 0.78em; color: #6b7280; margin-top: 1px; }
-      .topbar-right { display: flex; align-items: center; gap: 14px; }
-      .topbar-badge {
-        background: linear-gradient(135deg,#f5c518,#e6a800); color: #111;
-        padding: 5px 14px; border-radius: 20px; font-size: 0.78em; font-weight: 700;
-      }
-      .notif-btn {
-        position: relative; width: 38px; height: 38px; border-radius: 50%;
-        background: #f9fafb; border: 1px solid #e5e7eb;
-        display: flex; align-items: center; justify-content: center;
-        text-decoration: none; color: #374151; font-size: 1em; transition: all 0.2s;
-      }
-      .notif-btn:hover { background: #f3f4f6; }
-      .notif-count {
-        position: absolute; top: -3px; right: -3px; min-width: 16px; height: 16px;
-        background: #ef4444; color: #fff; border-radius: 50%; font-size: 0.65em;
-        font-weight: 700; display: flex; align-items: center; justify-content: center;
-        padding: 2px;
-      }
-
-      .dashboard-body { padding: 24px 28px; }
-
-      /* ── WELCOME ── */
-      .welcome-card {
-        background: linear-gradient(135deg, #111827 0%, #1e3a5f 100%);
-        border-radius: 16px; padding: 26px 32px; margin-bottom: 24px;
-        display: flex; align-items: center; justify-content: space-between;
-        position: relative; overflow: hidden;
-      }
-      .welcome-card::before {
-        content: ''; position: absolute; top: -30px; right: 60px;
-        width: 180px; height: 180px; background: rgba(245,197,24,0.06);
-        border-radius: 50%;
-      }
-      .welcome-card::after {
-        content: ''; position: absolute; bottom: -50px; right: 20px;
-        width: 220px; height: 220px; background: rgba(245,197,24,0.04);
-        border-radius: 50%;
-      }
-      .welcome-text h2 { color: #fff; font-size: 1.45em; font-weight: 700; margin-bottom: 5px; }
-      .welcome-text h2 span { color: #f5c518; }
-      .welcome-text p { color: #9ca3af; font-size: 0.88em; }
-      .welcome-meta { margin-top: 14px; display: flex; gap: 20px; }
-      .welcome-meta-item {
-        display: flex; align-items: center; gap: 7px;
-        background: rgba(255,255,255,0.06); padding: 8px 16px; border-radius: 8px;
-      }
-      .welcome-meta-item i { color: #f5c518; font-size: 0.9em; }
-      .welcome-meta-item span { color: #d1d5db; font-size: 0.82em; font-weight: 500; }
-      .welcome-icon { font-size: 5em; color: rgba(245,197,24,0.15); z-index: 1; }
-
-      /* ── STAT CARDS ── */
-      .stat-grid {
-        display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 24px;
-      }
-      .stat-card {
-        background: #fff; border-radius: 14px; padding: 18px 16px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.06); text-decoration: none;
-        display: flex; flex-direction: column; gap: 12px;
-        transition: all 0.25s; border: 1px solid transparent;
-      }
-      .stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); border-color: #f5c518; }
-      .stat-top { display: flex; align-items: center; justify-content: space-between; }
-      .stat-icon {
-        width: 46px; height: 46px; border-radius: 12px;
-        display: flex; align-items: center; justify-content: center; font-size: 1.1em;
-      }
-      .si-yellow { background: rgba(245,197,24,0.12); color: #d4a017; }
-      .si-green  { background: rgba(34,197,94,0.12);  color: #16a34a; }
-      .si-blue   { background: rgba(59,130,246,0.12); color: #2563eb; }
-      .si-red    { background: rgba(239,68,68,0.12);  color: #dc2626; }
-      .si-purple { background: rgba(168,85,247,0.12); color: #9333ea; }
-      .si-orange { background: rgba(249,115,22,0.12); color: #ea580c; }
-      .stat-trend { font-size: 0.72em; font-weight: 700; padding: 3px 8px; border-radius: 8px; }
-      .up   { background: #dcfce7; color: #15803d; }
-      .down { background: #fee2e2; color: #b91c1c; }
-      .stat-val { font-size: 1.8em; font-weight: 800; color: #111827; line-height: 1; }
-      .stat-lbl { font-size: 0.78em; color: #6b7280; margin-top: 2px; }
-
-      /* ── MAIN GRID ── */
-      .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }
-
-      /* ── CARDS ── */
-      .card {
-        background: #fff; border-radius: 14px; padding: 22px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-      }
-      .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-      .card-title { font-size: 0.95em; font-weight: 700; color: #111827; display: flex; align-items: center; gap: 8px; }
-      .card-title i { color: #f5c518; }
-      .view-all { color: #f5c518; font-size: 0.8em; text-decoration: none; font-weight: 600; }
-      .view-all:hover { text-decoration: underline; }
-
-      /* ── TABLE ── */
-      table { width: 100%; border-collapse: collapse; }
-      th {
-        background: #f9fafb; padding: 10px 12px; text-align: left;
-        font-size: 0.75em; color: #6b7280; font-weight: 700;
-        text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #f3f4f6;
-      }
-      td { padding: 12px; font-size: 0.85em; color: #374151; border-bottom: 1px solid #f9fafb; }
-      tr:last-child td { border-bottom: none; }
-      tr:hover td { background: #fafafa; }
-
-      .user-cell { display: flex; align-items: center; gap: 9px; }
-      .mini-avatar {
-        width: 30px; height: 30px; background: linear-gradient(135deg,#f5c518,#e6a800);
-        border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        font-weight: 700; color: #111; font-size: 0.75em; flex-shrink: 0;
-      }
-
-      .badge { padding: 3px 10px; border-radius: 20px; font-size: 0.72em; font-weight: 700; white-space: nowrap; }
-      .badge-pending   { background: #fef3c7; color: #92400e; }
-      .badge-confirmed { background: #dcfce7; color: #166534; }
-      .badge-completed { background: #e0e7ff; color: #3730a3; }
-      .badge-cancelled { background: #fee2e2; color: #991b1b; }
-
-      .action-link {
-        display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px;
-        border-radius: 6px; font-size: 0.75em; font-weight: 600; text-decoration: none;
-        transition: all 0.2s;
-      }
-      .btn-confirm { background: #dcfce7; color: #15803d; }
-      .btn-confirm:hover { background: #bbf7d0; }
-      .btn-complete { background: #e0e7ff; color: #4338ca; }
-      .btn-complete:hover { background: #c7d2fe; }
-      .btn-edit { background: #fef3c7; color: #b45309; }
-      .btn-edit:hover { background: #fde68a; }
-      .btn-delete { background: #fee2e2; color: #b91c1c; }
-      .btn-delete:hover { background: #fecaca; }
-
-      /* ── QUICK ACTIONS ── */
-      .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .quick-btn {
-        display: flex; align-items: center; gap: 9px; padding: 11px 12px;
-        background: #f9fafb; border: 1px solid #f3f4f6; border-radius: 10px;
-        text-decoration: none; color: #374151; font-size: 0.84em; font-weight: 600;
-        transition: all 0.2s;
-      }
-      .quick-btn:hover { background: rgba(245,197,24,0.08); border-color: #f5c518; color: #111; }
-      .quick-btn .qicon {
-        width: 30px; height: 30px; background: #1f2937; color: #f5c518;
-        border-radius: 8px; display: flex; align-items: center; justify-content: center;
-        font-size: 0.85em; flex-shrink: 0;
-      }
-
-      /* ── ACTIVITY ── */
-      .activity-item {
-        display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f9fafb;
-        align-items: flex-start;
-      }
-      .activity-item:last-child { border-bottom: none; }
-      .activity-dot {
-        width: 30px; height: 30px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.8em; flex-shrink: 0;
-      }
-      .dot-green  { background: rgba(34,197,94,0.12);  color: #16a34a; }
-      .dot-yellow { background: rgba(245,197,24,0.12); color: #d4a017; }
-      .dot-blue   { background: rgba(59,130,246,0.12); color: #2563eb; }
-      .dot-red    { background: rgba(239,68,68,0.12);  color: #dc2626; }
-      .activity-info h4 { font-size: 0.83em; font-weight: 600; color: #111827; }
-      .activity-info p  { font-size: 0.75em; color: #9ca3af; margin-top: 1px; }
-
-      /* ── STATUS SUMMARY ── */
-      .appt-status-row {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 22px;
-      }
-      .status-mini {
-        background: #f9fafb; border-radius: 10px; padding: 12px 14px;
-        display: flex; align-items: center; gap: 10px; border: 1px solid #f3f4f6;
-      }
-      .status-mini i { font-size: 1.1em; }
-      .status-mini h4 { font-size: 1.2em; font-weight: 800; color: #111827; }
-      .status-mini p  { font-size: 0.73em; color: #6b7280; }
-
-      /* ── BLOG GRID ── */
-      .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-      .section-title { font-size: 0.98em; font-weight: 700; color: #111827; display: flex; align-items: center; gap: 8px; }
-      .section-title i { color: #f5c518; }
-      .section-action {
-        background: #f5c518; color: #111; text-decoration: none; padding: 7px 16px;
-        border-radius: 8px; font-size: 0.8em; font-weight: 700; transition: all 0.2s;
-        display: inline-flex; align-items: center; gap: 6px;
-      }
-      .section-action:hover { background: #e6a800; }
-      .blog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-      .blog-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: all 0.25s; }
-      .blog-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.09); }
-      .blog-image { width: 100%; height: 140px; object-fit: cover; }
-      .blog-content { padding: 14px; }
-      .blog-title { font-weight: 700; color: #111827; font-size: 0.9em; margin-bottom: 6px; line-height: 1.4; }
-      .blog-meta { font-size: 0.75em; color: #9ca3af; display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
-      .blog-excerpt { font-size: 0.8em; color: #6b7280; line-height: 1.5; margin-bottom: 12px; }
-      .blog-actions { display: flex; gap: 8px; }
-
-      /* ── REVIEWS ── */
-      .reviews-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
-      .review-card { background: #f9fafb; border-radius: 12px; padding: 16px; border: 1px solid #f3f4f6; }
-      .review-name { font-weight: 700; color: #111827; font-size: 0.9em; }
-      .review-title-sub { color: #9ca3af; font-size: 0.75em; margin-top: 1px; }
-      .review-stars { color: #f5c518; font-size: 0.9em; }
-      .review-text { color: #6b7280; font-size: 0.82em; line-height: 1.6; margin-top: 8px; }
-      .review-date { color: #d1d5db; font-size: 0.72em; margin-top: 8px; }
-
-      /* ── BOTTOM GRID ── */
-      .bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 30px; }
-
-      .chart-bars { display: flex; align-items: flex-end; gap: 8px; height: 90px; margin-top: 12px; }
-      .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-      .bar { width: 100%; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, #f5c518, #e6a800); min-height: 4px; }
-      .bar-label { font-size: 0.68em; color: #9ca3af; }
-
-      .progress-item { margin-bottom: 13px; }
-      .progress-header { display: flex; justify-content: space-between; font-size: 0.82em; margin-bottom: 5px; }
-      .progress-header span:first-child { color: #374151; font-weight: 600; }
-      .progress-header span:last-child  { color: #f5c518; font-weight: 700; }
-      .progress-bar { height: 6px; background: #f3f4f6; border-radius: 10px; overflow: hidden; }
-      .progress-fill { height: 100%; background: linear-gradient(90deg, #f5c518, #e6a800); border-radius: 10px; }
-
-      .sys-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f9fafb; }
-      .sys-item:last-child { border-bottom: none; }
-      .sys-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-      .sys-online  { background: #22c55e; }
-      .sys-warning { background: #f5c518; }
-      .sys-info { flex: 1; }
-      .sys-info h5 { font-size: 0.83em; font-weight: 600; color: #374151; }
-      .sys-info p  { font-size: 0.73em; color: #9ca3af; margin-top: 1px; }
-
-      /* ── EMPTY STATE ── */
-      .empty-state { text-align: center; padding: 30px 20px; color: #9ca3af; }
-      .empty-state i { font-size: 2em; color: #d1d5db; margin-bottom: 10px; display: block; }
-      .empty-state p { font-size: 0.85em; }
-    </style>
-  </head>
-
-  <body>
-    <!-- ════ SIDEBAR ════ -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
-        <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
-      </div>
-
-      <div class="sidebar-user">
-        <div class="user-avatar">{{ user.username|first|upper }}</div>
-        <div class="user-info">
-          <h4>{{ user.username }}</h4>
-          <span><span class="online-dot"></span>Super Admin</span>
+  <!-- Top Metric Cards Row -->
+  <div class="row g-3 mb-4">
+    <!-- Appointments Stat -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div>
+          <p class="stat-label">Total Appointments</p>
+          <h3 class="stat-value">{{ total_appointments }}</h3>
+          <span class="badge badge-status badge-pending mt-2">{{ pending_appointments }} Pending Action</span>
+        </div>
+        <div class="stat-icon-wrapper stat-icon-gold">
+          <i class="fas fa-calendar-check"></i>
         </div>
       </div>
+    </div>
 
-      <div class="nav-scroll">
-        <nav>
-          <div class="nav-section">Overview</div>
-          <a href="{% url 'admin_dashboard' %}" class="nav-item active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-
-          <div class="nav-section">Management</div>
-          <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
-          <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
-          <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All Appointments</a>
-          <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
-
-          <div class="nav-section">Staff Tools</div>
-          <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave Requests</a>
-          <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
-          <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
-          <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session Notes</a>
-
-          <div class="nav-section">Communication</div>
-          <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
-
-          <div class="nav-section">Content</div>
-          <a href="{% url 'admin_payments' %}" class="nav-item"><i class="fas fa-credit-card"></i> Payments</a>
-          <a href="{% url 'admin_promos' %}" class="nav-item"><i class="fas fa-bullhorn"></i> Promo Notifications</a>
-          <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
-          <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
-
-          <div class="nav-section">Reports</div>
-          <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress Tracking</a>
-          <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
-
-          <div class="nav-section">System</div>
-          <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
-          <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
-          <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
-        </nav>
-      </div>
-
-      <div class="sidebar-footer">
-        <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-      </div>
-    </aside>
-
-    <!-- ════ MAIN ════ -->
-    <div class="main-content">
-      <!-- TOPBAR -->
-      <div class="topbar">
-        <div class="topbar-left">
-          <h1>Admin Dashboard</h1>
-          <p id="live-date">Loading date...</p>
+    <!-- Active Patients Stat -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div>
+          <p class="stat-label">Registered Patients</p>
+          <h3 class="stat-value">{{ total_patients }}</h3>
+          <span class="text-success small fw-medium mt-2 d-inline-block"><i class="fas fa-user-plus me-1"></i>Active Records</span>
         </div>
-        <div class="topbar-right">
-          <span class="topbar-badge"><i class="fas fa-shield-alt"></i> Super Admin</span>
-          <a href="{% url 'admin_chat' %}" class="notif-btn" title="Messages">
-            <i class="fas fa-bell"></i>
-            {% if new_messages > 0 %}
-              <span class="notif-count">{{ new_messages }}</span>
-            {% endif %}
-          </a>
+        <div class="stat-icon-wrapper stat-icon-blue">
+          <i class="fas fa-user-injured"></i>
         </div>
       </div>
+    </div>
 
-      <div class="dashboard-body">
-
-        <!-- WELCOME BANNER -->
-        <div class="welcome-card">
-          <div class="welcome-text">
-            <h2>Welcome back, <span>Dr. Dhvani Patalia</span> 👋</h2>
-            <p>Here's what's happening at your clinic today.</p>
-            <div class="welcome-meta">
-              <div class="welcome-meta-item">
-                <i class="fas fa-calendar-check"></i>
-                <span>{{ total_appointments }} Total Appointments</span>
-              </div>
-              <div class="welcome-meta-item">
-                <i class="fas fa-clock"></i>
-                <span>{{ pending }} Pending Approval</span>
-              </div>
-              {% if new_messages > 0 %}
-              <div class="welcome-meta-item">
-                <i class="fas fa-envelope"></i>
-                <span>{{ new_messages }} New Message{{ new_messages|pluralize }}</span>
-              </div>
-              {% endif %}
-            </div>
-          </div>
-          <div class="welcome-icon"><i class="fas fa-hospital-symbol"></i></div>
+    <!-- Active Staff Stat -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div>
+          <p class="stat-label">Active Staff</p>
+          <h3 class="stat-value">{{ total_staff }}</h3>
+          <span class="badge badge-status badge-confirmed mt-2">{{ pending_leaves }} Pending Leaves</span>
         </div>
+        <div class="stat-icon-wrapper stat-icon-green">
+          <i class="fas fa-user-md"></i>
+        </div>
+      </div>
+    </div>
 
-        <!-- STAT CARDS ROW -->
-        <div class="stat-grid">
-          <a href="{% url 'admin_patients' %}" class="stat-card">
-            <div class="stat-top">
-              <div class="stat-icon si-yellow"><i class="fas fa-users"></i></div>
-              <span class="stat-trend up">↑ Active</span>
-            </div>
-            <div>
-              <div class="stat-val">{{ total_users }}</div>
-              <div class="stat-lbl">Total Patients</div>
-            </div>
-          </a>
+    <!-- Total Revenue Stat -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div>
+          <p class="stat-label">Total Revenue</p>
+          <h3 class="stat-value">₹{{ total_revenue|floatformat:2 }}</h3>
+          <span class="badge badge-status badge-completed mt-2">Verified Receipts</span>
+        </div>
+        <div class="stat-icon-wrapper stat-icon-gold">
+          <i class="fas fa-wallet"></i>
+        </div>
+      </div>
+    </div>
+  </div>
 
-          <a href="{% url 'admin_appointments' %}" class="stat-card">
-            <div class="stat-top">
-              <div class="stat-icon si-green"><i class="fas fa-calendar-check"></i></div>
-              <span class="stat-trend up">↑ All Time</span>
-            </div>
-            <div>
-              <div class="stat-val">{{ total_appointments }}</div>
-              <div class="stat-lbl">Appointments</div>
-            </div>
-          </a>
-
-          <a href="{% url 'admin_appointments' %}" class="stat-card">
-            <div class="stat-top">
-              <div class="stat-icon si-red"><i class="fas fa-hourglass-half"></i></div>
-              {% if pending > 0 %}
-              <span class="stat-trend down">⚠ Action</span>
-              {% else %}
-              <span class="stat-trend up">✓ Clear</span>
-              {% endif %}
-            </div>
-            <div>
-              <div class="stat-val">{{ pending }}</div>
-              <div class="stat-lbl">Pending</div>
-            </div>
-          </a>
-
-          <a href="{% url 'admin_appointments' %}" class="stat-card">
-            <div class="stat-top">
-              <div class="stat-icon si-blue"><i class="fas fa-calendar-check"></i></div>
-              <span class="stat-trend up">✓ Done</span>
-            </div>
-            <div>
-              <div class="stat-val">{{ completed }}</div>
-              <div class="stat-lbl">Completed</div>
-            </div>
-          </a>
-
-          <a href="{% url 'admin_staff' %}" class="stat-card">
-            <div class="stat-top">
-              <div class="stat-icon si-purple"><i class="fas fa-user-md"></i></div>
-              <span class="stat-trend up">↑ Staff</span>
-            </div>
-            <div>
-              <div class="stat-val">{{ total_staff }}</div>
-              <div class="stat-lbl">Staff Members</div>
-            </div>
-          </a>
-
-          <a href="{% url 'admin_chat' %}" class="stat-card">
-            <div class="stat-top">
-              <div class="stat-icon si-orange"><i class="fas fa-comments"></i></div>
-              {% if new_messages > 0 %}
-              <span class="stat-trend down">{{ new_messages }} New</span>
-              {% else %}
-              <span class="stat-trend up">✓ Read</span>
-              {% endif %}
-            </div>
-            <div>
-              <div class="stat-val">{{ new_messages }}</div>
-              <div class="stat-lbl">New Messages</div>
-            </div>
+  <!-- Today's Schedule & Action Bar -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-lg-8">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-calendar-day text-warning"></i> Today's Appointments Schedule
+          </h3>
+          <a href="{% url 'admin_appointments' %}" class="btn btn-sm btn-dark-slate">
+            View All ({% now "d M Y" %})
           </a>
         </div>
-
-        <!-- APPOINTMENT STATUS SUMMARY -->
-        <div class="appt-status-row">
-          <div class="status-mini">
-            <i class="fas fa-hourglass-half" style="color:#d97706;"></i>
-            <div>
-              <h4>{{ pending }}</h4>
-              <p>Pending Approval</p>
-            </div>
-          </div>
-          <div class="status-mini">
-            <i class="fas fa-calendar-check" style="color:#2563eb;"></i>
-            <div>
-              <h4>{{ confirmed }}</h4>
-              <p>Confirmed</p>
-            </div>
-          </div>
-          <div class="status-mini">
-            <i class="fas fa-check-circle" style="color:#16a34a;"></i>
-            <div>
-              <h4>{{ completed }}</h4>
-              <p>Completed</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- MAIN GRID -->
-        <div class="content-grid">
-          <!-- RECENT APPOINTMENTS TABLE -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="fas fa-calendar-alt"></i> Recent Appointments</div>
-              <a href="{% url 'admin_appointments' %}" class="view-all">View All →</a>
-            </div>
-            {% if all_appointments %}
-              <table>
-                <thead>
+        <div class="content-card-body p-0">
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Patient Name</th>
+                  <th>Therapy / Service</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for appt in today_appointments %}
                   <tr>
-                    <th>Patient</th>
-                    <th>Service</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <td><strong class="text-dark">{{ appt.get_time_display }}</strong></td>
+                    <td>
+                      <div class="fw-semibold">{{ appt.name }}</div>
+                      <small class="text-muted">{{ appt.email }}</small>
+                    </td>
+                    <td>{{ appt.get_service_display }}</td>
+                    <td>{{ appt.phone }}</td>
+                    <td>
+                      <span class="badge badge-status badge-{{ appt.status }}">
+                        {{ appt.status }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        {% if appt.status == 'pending' %}
+                          <a href="{% url 'update_appointment' appt.id 'confirmed' %}" class="btn btn-sm btn-outline-success" title="Confirm"><i class="fas fa-check"></i></a>
+                        {% elif appt.status == 'confirmed' %}
+                          <a href="{% url 'update_appointment' appt.id 'completed' %}" class="btn btn-sm btn-outline-primary" title="Complete"><i class="fas fa-check-double"></i></a>
+                        {% endif %}
+                        <a href="{% url 'edit_appointment' appt.id %}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="fas fa-edit"></i></a>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {% for appt in all_appointments|slice:':6' %}
-                    <tr>
-                      <td>
-                        <div class="user-cell">
-                          <div class="mini-avatar">{{ appt.patient.first_name|first|upper }}</div>
-                          <span>{{ appt.patient.get_full_name|default:appt.patient.username }}</span>
-                        </div>
-                      </td>
-                      <td>{{ appt.get_service_display }}</td>
-                      <td>{{ appt.date|date:'d M Y' }}</td>
-                      <td>
-                        <span class="badge badge-{{ appt.status }}">{{ appt.status|title }}</span>
-                      </td>
-                      <td>
-                        <div style="display:flex;gap:5px;flex-wrap:wrap;">
-                          {% if appt.status == 'pending' %}
-                            <a href="{% url 'update_appointment' appt.id 'confirmed' %}" class="action-link btn-confirm"><i class="fas fa-check"></i> Confirm</a>
-                          {% elif appt.status == 'confirmed' %}
-                            <a href="{% url 'update_appointment' appt.id 'completed' %}" class="action-link btn-complete"><i class="fas fa-flag"></i> Complete</a>
-                          {% endif %}
-                          <a href="{% url 'edit_appointment' appt.id %}" class="action-link btn-edit"><i class="fas fa-edit"></i></a>
-                        </div>
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            {% else %}
-              <div class="empty-state">
-                <i class="fas fa-calendar-times"></i>
-                <p>No appointments yet. <a href="{% url 'add_appointment' %}" style="color:#f5c518;">Add one →</a></p>
-              </div>
-            {% endif %}
-          </div>
-
-          <!-- RIGHT COLUMN -->
-          <div style="display:flex; flex-direction:column; gap:16px;">
-            <!-- RECENT PAYMENTS -->
-            <div class="card">
-              <div class="card-header" style="margin-bottom:12px;">
-                <div class="card-title"><i class="fas fa-credit-card"></i> Recent Payments</div>
-                <a href="{% url 'admin_payments' %}" class="view-all">View All →</a>
-              </div>
-              <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
-                <div style="flex:1;background:linear-gradient(135deg,#d4edda,#c3e6cb);border-radius:10px;padding:10px 14px;min-width:100px;">
-                  <div style="font-size:1.1em;font-weight:800;color:#155724;">₹{{ total_paid }}</div>
-                  <div style="font-size:0.72em;color:#1e7e34;font-weight:600;">Total Collected</div>
-                </div>
-                {% if pending_payments_count %}<div style="flex:1;background:linear-gradient(135deg,#fff3cd,#ffeeba);border-radius:10px;padding:10px 14px;min-width:80px;">
-                  <div style="font-size:1.1em;font-weight:800;color:#856404;">{{ pending_payments_count }}</div>
-                  <div style="font-size:0.72em;color:#856404;font-weight:600;">Pending</div>
-                </div>{% endif %}
-              </div>
-              {% if recent_payments %}
-              {% for pay in recent_payments %}
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:0.83em;">
-                <div>
-                  <div style="font-weight:600;color:#1f2937;">{% if pay.patient %}{{ pay.patient.get_full_name|default:pay.patient.username }}{% else %}—{% endif %}</div>
-                  <div style="color:#888;font-size:0.78em;">{{ pay.created_at|date:"d M" }} · {% if pay.method == 'razorpay' %}<i class="fas fa-bolt" style="color:#f5c518;"></i> Razorpay{% elif pay.method == 'upi' %}<i class="fas fa-qrcode" style="color:#00b900;"></i> UPI{% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color:#28a745;"></i> Cash{% else %}{{ pay.get_method_display }}{% endif %}</div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-weight:700;color:#1f2937;">₹{{ pay.amount }}</div>
-                  {% if pay.status == 'paid' %}<span style="background:#d4edda;color:#155724;padding:1px 7px;border-radius:8px;font-size:0.72em;font-weight:700;">Paid</span>
-                  {% elif pay.status == 'pending' %}<span style="background:#fff3cd;color:#856404;padding:1px 7px;border-radius:8px;font-size:0.72em;font-weight:700;">Pending</span>
-                  {% else %}<span style="background:#f8d7da;color:#721c24;padding:1px 7px;border-radius:8px;font-size:0.72em;font-weight:700;">{{ pay.get_status_display }}</span>{% endif %}
-                </div>
-              </div>
-              {% endfor %}
-              {% else %}
-              <div style="text-align:center;padding:16px;color:#bbb;font-size:0.83em;"><i class="fas fa-credit-card" style="display:block;font-size:1.8em;margin-bottom:6px;"></i>No payments yet.</div>
-              {% endif %}
-            </div>
-
-            <!-- QUICK ACTIONS -->
-            <div class="card">
-              <div class="card-header" style="margin-bottom:14px;">
-                <div class="card-title"><i class="fas fa-bolt"></i> Quick Actions</div>
-              </div>
-              <div class="quick-grid">
-                <a href="{% url 'admin_patients' %}" class="quick-btn"><span class="qicon"><i class="fas fa-users"></i></span> Patients</a>
-                <a href="{% url 'add_appointment' %}" class="quick-btn"><span class="qicon"><i class="fas fa-plus"></i></span> New Appt</a>
-                <a href="{% url 'admin_staff' %}" class="quick-btn"><span class="qicon"><i class="fas fa-user-md"></i></span> Staff</a>
-                <a href="{% url 'admin_leaves' %}" class="quick-btn"><span class="qicon"><i class="fas fa-calendar-minus"></i></span> Leaves</a>
-                <a href="{% url 'admin_blog_add' %}" class="quick-btn"><span class="qicon"><i class="fas fa-blog"></i></span> Add Blog</a>
-                <a href="{% url 'admin_salary' %}" class="quick-btn"><span class="qicon"><i class="fas fa-rupee-sign"></i></span> Salary</a>
-              </div>
-            </div>
-
-            <!-- RECENT ACTIVITY -->
-            <div class="card">
-              <div class="card-header" style="margin-bottom:12px;">
-                <div class="card-title"><i class="fas fa-history"></i> System Activity</div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot dot-green"><i class="fas fa-server"></i></div>
-                <div class="activity-info">
-                  <h4>Django Server</h4>
-                  <p>Running normally</p>
-                </div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot dot-green"><i class="fas fa-database"></i></div>
-                <div class="activity-info">
-                  <h4>Database</h4>
-                  <p>SQLite — connected</p>
-                </div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot dot-green"><i class="fas fa-image"></i></div>
-                <div class="activity-info">
-                  <h4>Static Files</h4>
-                  <p>Loaded correctly</p>
-                </div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot {% if new_messages > 0 %}dot-yellow{% else %}dot-green{% endif %}">
-                  <i class="fas fa-envelope"></i>
-                </div>
-                <div class="activity-info">
-                  <h4>Patient Messages</h4>
-                  <p>{% if new_messages > 0 %}{{ new_messages }} unread{% else %}All read{% endif %}</p>
-                </div>
-              </div>
-              {% if pending > 0 %}
-              <div class="activity-item">
-                <div class="activity-dot dot-yellow"><i class="fas fa-clock"></i></div>
-                <div class="activity-info">
-                  <h4>Pending Appointments</h4>
-                  <p>{{ pending }} need review</p>
-                </div>
-              </div>
-              {% endif %}
-            </div>
+                {% empty %}
+                  <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">
+                      <i class="fas fa-calendar-check fs-2 text-secondary mb-2 d-block"></i>
+                      No appointments scheduled for today yet.
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- BLOG SECTION -->
-        {% if blogs %}
-        <div style="margin-bottom:24px;">
-          <div class="section-header">
-            <div class="section-title"><i class="fas fa-blog"></i> Recent Blog Posts</div>
-            <div style="display:flex;gap:8px;">
-              <a href="{% url 'admin_blog_add' %}" class="section-action"><i class="fas fa-plus"></i> Add Post</a>
-              <a href="{% url 'admin_blog_list' %}" class="section-action" style="background:#1f2937;color:#f5c518;"><i class="fas fa-list"></i> Manage</a>
-            </div>
-          </div>
-          <div class="blog-grid">
-            {% for blog in blogs|slice:':3' %}
-
-              <div class="blog-card">
-                {% if blog.image %}
-                  <img src="{{ blog.image.url }}" class="blog-image" alt="{{ blog.title }}" />
-                {% else %}
-                  <div style="width:100%;height:140px;background:linear-gradient(135deg,#1f2937,#374151);display:flex;align-items:center;justify-content:center;">
-                    <i class="fas fa-blog" style="font-size:2.5em;color:rgba(245,197,24,0.3);"></i>
-                  </div>
-                {% endif %}
-                <div class="blog-content">
-                  <div class="blog-title">{{ blog.title }}</div>
-                  <div class="blog-meta"><i class="fas fa-calendar"></i> {{ blog.created_at|date:'d M Y' }}</div>
-                  <div class="blog-excerpt">{{ blog.content|truncatechars:90 }}</div>
-                  <div class="blog-actions">
-                    <a href="{% url 'admin_blog_edit' blog.id %}" class="action-link btn-edit"><i class="fas fa-edit"></i> Edit</a>
-                    <a href="{% url 'admin_blog_delete' blog.id %}" class="action-link btn-delete" onclick="return confirm('Delete this blog post?')"><i class="fas fa-trash"></i> Delete</a>
-                  </div>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-          <div style="text-align:center;margin-top:16px;">
-            <a href="{% url 'admin_blog_list' %}" style="display:inline-block;background:rgba(245,197,24,0.1);color:#2c2c2c;border:1px solid rgba(245,197,24,0.35);padding:9px 26px;border-radius:22px;font-size:0.83em;font-weight:700;text-decoration:none;">
-              <i class="fas fa-th-list" style="color:#f5c518;margin-right:6px;"></i>View All Blog Posts →
-            </a>
-          </div>
+    <!-- Quick Operations & Actions -->
+    <div class="col-12 col-lg-4">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-bolt text-warning"></i> Quick Operations
+          </h3>
         </div>
-        {% else %}
-        <div class="card" style="margin-bottom:24px;">
-          <div class="section-header">
-            <div class="section-title"><i class="fas fa-blog"></i> Blog Posts</div>
-            <a href="{% url 'admin_blog_add' %}" class="section-action"><i class="fas fa-plus"></i> Create First Post</a>
-          </div>
-          <div class="empty-state">
-            <i class="fas fa-pen-nib"></i>
-            <p>No blog posts yet. Write your first article!</p>
-          </div>
-        </div>
-        {% endif %}
-
-        <!-- REVIEWS SECTION -->
-        <div class="card" style="margin-bottom:24px;">
-          <div class="section-header">
-            <div class="section-title"><i class="fas fa-star"></i> Patient Reviews</div>
-            <div style="display:flex;gap:8px;align-items:center;">
-              {% if pending_reviews > 0 %}
-              <span style="background:#fef3c7;color:#92400e;padding:5px 12px;border-radius:20px;font-size:0.78em;font-weight:700;">
-                <i class="fas fa-clock"></i> {{ pending_reviews }} Pending
-              </span>
-              {% endif %}
-              <a href="{% url 'admin_reviews' %}" class="section-action" style="background:#1f2937;color:#f5c518;"><i class="fas fa-cog"></i> Manage</a>
-              <a href="{% url 'admin_add_review' %}" class="section-action"><i class="fas fa-plus"></i> Add Review</a>
-            </div>
-          </div>
-          {% if recent_reviews %}
-          <div class="reviews-grid">
-            {% for review in recent_reviews %}
-            <div class="review-card">
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div>
-                  <div class="review-name">{{ review.reviewer_name }}</div>
-                  {% if review.reviewer_title %}
-                  <div class="review-title-sub">{{ review.reviewer_title }}</div>
-                  {% endif %}
-                </div>
-                <div class="review-stars">{% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}</div>
-              </div>
-              <p class="review-text">{{ review.message|truncatechars:100 }}</p>
-              <div class="review-date">{{ review.created_at|date:"d M Y" }}</div>
-            </div>
-            {% endfor %}
-          </div>
-          <div style="text-align:center;margin-top:16px;">
-            <a href="{% url 'admin_reviews' %}" style="display:inline-block;background:rgba(245,197,24,0.1);color:#2c2c2c;border:1px solid rgba(245,197,24,0.35);padding:9px 26px;border-radius:22px;font-size:0.83em;font-weight:700;text-decoration:none;">
-              <i class="fas fa-star" style="color:#f5c518;margin-right:6px;"></i>View All Reviews →
-            </a>
-          </div>
-          {% else %}
-          <div class="empty-state">
-            <i class="fas fa-star"></i>
-            <p>No approved reviews yet. <a href="{% url 'admin_add_review' %}" style="color:#f5c518;">Add one →</a></p>
-          </div>
-          {% endif %}
-        </div>
-
-        <!-- BOTTOM GRID -->
-        <div class="bottom-grid">
-          <!-- SERVICES CHART -->
-          <div class="card">
-            <div class="card-title"><i class="fas fa-chart-bar"></i> Services Popularity</div>
-            <div class="chart-bars">
-              <div class="bar-item"><div class="bar" style="height:80px;"></div><span class="bar-label">Ortho</span></div>
-              <div class="bar-item"><div class="bar" style="height:55px;"></div><span class="bar-label">Neuro</span></div>
-              <div class="bar-item"><div class="bar" style="height:65px;"></div><span class="bar-label">Sports</span></div>
-              <div class="bar-item"><div class="bar" style="height:40px;"></div><span class="bar-label">Pedia</span></div>
-              <div class="bar-item"><div class="bar" style="height:50px;"></div><span class="bar-label">Women</span></div>
-              <div class="bar-item"><div class="bar" style="height:35px;"></div><span class="bar-label">Home</span></div>
-            </div>
-          </div>
-
-          <!-- COMPLETION RATES -->
-          <div class="card">
-            <div class="card-title"><i class="fas fa-tasks"></i> Service Completion</div>
-            <div style="margin-top:14px;">
-              <div class="progress-item">
-                <div class="progress-header"><span>Orthopedic</span><span>80%</span></div>
-                <div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div>
-              </div>
-              <div class="progress-item">
-                <div class="progress-header"><span>Sports Rehab</span><span>65%</span></div>
-                <div class="progress-bar"><div class="progress-fill" style="width:65%"></div></div>
-              </div>
-              <div class="progress-item">
-                <div class="progress-header"><span>Neurological</span><span>55%</span></div>
-                <div class="progress-bar"><div class="progress-fill" style="width:55%"></div></div>
-              </div>
-              <div class="progress-item">
-                <div class="progress-header"><span>Home Visits</span><span>40%</span></div>
-                <div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- SYSTEM STATUS -->
-          <div class="card">
-            <div class="card-title"><i class="fas fa-server"></i> System Status</div>
-            <div style="margin-top:14px;">
-              <div class="sys-item">
-                <div class="sys-dot sys-online"></div>
-                <div class="sys-info"><h5>Django Server</h5><p>Running perfectly</p></div>
-              </div>
-              <div class="sys-item">
-                <div class="sys-dot sys-online"></div>
-                <div class="sys-info"><h5>Database (SQLite)</h5><p>Connected & healthy</p></div>
-              </div>
-              <div class="sys-item">
-                <div class="sys-dot sys-online"></div>
-                <div class="sys-info"><h5>Static Files</h5><p>Serving correctly</p></div>
-              </div>
-              <div class="sys-item">
-                <div class="sys-dot sys-online"></div>
-                <div class="sys-info"><h5>Media Storage</h5><p>Available</p></div>
-              </div>
-              <div class="sys-item">
-                <div class="sys-dot sys-warning"></div>
-                <div class="sys-info"><h5>Email (SMTP)</h5><p>Configured via env vars</p></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- /dashboard-body -->
-    </div><!-- /main-content -->
-
-    <script>
-      // Live date/time in topbar
-      function updateDate() {
-        const now = new Date();
-        const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
-        document.getElementById('live-date').textContent = now.toLocaleDateString('en-IN', opts);
-      }
-      updateDate();
-      setInterval(updateDate, 60000);
-    </script>
-
-    {% if active_promos %}
-    <!-- PROMO POPUPS -->
-    <div id="promo-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;">
-      <div id="promo-box" style="background:#fff;border-radius:18px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;">
-        <div style="background:linear-gradient(135deg,#F5C518,#f0a800);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <div style="font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#7a5900;margin-bottom:2px;">📢 Clinic Announcement</div>
-            <h3 id="promo-title" style="font-size:1.15rem;font-weight:800;color:#222;"></h3>
-          </div>
-          <button onclick="dismissCurrentPromo()" style="background:rgba(0,0,0,.1);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">✕</button>
-        </div>
-        <div style="padding:22px 24px;">
-          <p id="promo-msg" style="color:#444;font-size:.95rem;line-height:1.6;margin-bottom:18px;"></p>
-          <div id="promo-nav" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-            <span id="promo-counter" style="font-size:.78rem;color:#aaa;"></span>
-            <div style="display:flex;gap:8px;">
-              <button onclick="prevPromo()" id="btn-prev" style="padding:8px 16px;background:#f0f0f0;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;">← Prev</button>
-              <button onclick="nextPromo()" id="btn-next" style="padding:8px 18px;background:#F5C518;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;">Next →</button>
-              <button onclick="dismissAll()" style="padding:8px 16px;background:#222;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;">Got it!</button>
+        <div class="content-card-body d-flex flex-column gap-3">
+          <a href="{% url 'add_appointment' %}" class="btn btn-gold w-100 justify-content-center py-2">
+            <i class="fas fa-calendar-plus"></i> New Appointment
+          </a>
+          <a href="{% url 'add_staff' %}" class="btn btn-dark-slate w-100 justify-content-center py-2">
+            <i class="fas fa-user-plus"></i> Register Staff Member
+          </a>
+          <a href="{% url 'admin_promo_add' %}" class="btn btn-outline-dark w-100 justify-content-center py-2">
+            <i class="fas fa-bullhorn"></i> Post Clinic Promo Banner
+          </a>
+          <a href="{% url 'admin_blog_add' %}" class="btn btn-outline-dark w-100 justify-content-center py-2">
+            <i class="fas fa-pen-fancy"></i> Publish Health Article
+          </a>
+          <div class="pt-3 border-top">
+            <h6 class="text-muted small fw-bold text-uppercase mb-2">Export Data</h6>
+            <div class="d-flex gap-2">
+              <a href="{% url 'export_appointments_excel' %}" class="btn btn-sm btn-outline-success flex-fill">
+                <i class="fas fa-file-excel me-1"></i> Appointments
+              </a>
+              <a href="{% url 'export_patients_pdf' %}" class="btn btn-sm btn-outline-danger flex-fill">
+                <i class="fas fa-file-pdf me-1"></i> Patients
+              </a>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <script>
-    const promos = [
-      {% for p in active_promos %}{"id":"{{ p.id }}","title":{{ p.title|escapejs|stringformat:'"%s"' }},"msg":{{ p.message|escapejs|stringformat:'"%s"' }}}{% if not forloop.last %},{% endif %}{% endfor %}
-    ];
-    let cur = 0;
-    function showPromo(i) {
-      if (!promos.length) { document.getElementById('promo-overlay').style.display='none'; return; }
-      cur = i;
-      document.getElementById('promo-title').textContent = promos[i].title;
-      document.getElementById('promo-msg').textContent = promos[i].msg;
-      document.getElementById('promo-counter').textContent = (i+1) + ' of ' + promos.length;
-      document.getElementById('btn-prev').style.visibility = i===0?'hidden':'visible';
-      document.getElementById('btn-next').style.display = i===promos.length-1?'none':'inline-block';
-    }
-    function nextPromo() { if(cur<promos.length-1) showPromo(cur+1); }
-    function prevPromo() { if(cur>0) showPromo(cur-1); }
-    function dismissCurrentPromo() {
-      fetch("{% url 'dismiss_promo' %}",{method:'POST',headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/x-www-form-urlencoded'},body:'promo_id='+promos[cur].id});
-      promos.splice(cur,0); cur=0;
-      if(!promos.length) { document.getElementById('promo-overlay').style.display='none'; } else showPromo(0);
-    }
-    function dismissAll() {
-      promos.forEach(p=>fetch("{% url 'dismiss_promo' %}",{method:'POST',headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/x-www-form-urlencoded'},body:'promo_id='+p.id}));
-      document.getElementById('promo-overlay').style.display='none';
-    }
-    if(promos.length) showPromo(0); else document.getElementById('promo-overlay').style.display='none';
-    </script>
-    {% endif %}
-  </body>
-</html>
+  </div>
+
+  <!-- Recent Patient Reviews -->
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-star text-warning"></i> Recent Patient Feedback & Reviews
+      </h3>
+      <a href="{% url 'admin_reviews' %}" class="btn btn-sm btn-outline-secondary">Manage Reviews</a>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Rating</th>
+              <th>Review Feedback</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for review in recent_reviews %}
+              <tr>
+                <td class="fw-semibold">{{ review.reviewer_name }}</td>
+                <td>
+                  <span class="text-warning">
+                    {% for i in "12345"|make_list %}
+                      {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
+                    {% endfor %}
+                  </span>
+                </td>
+                <td>{{ review.message|truncatewords:15 }}</td>
+                <td>
+                  {% if review.is_approved %}
+                    <span class="badge badge-status badge-approved">Live on Site</span>
+                  {% else %}
+                    <span class="badge badge-status badge-pending">Pending Approval</span>
+                  {% endif %}
+                </td>
+                <td>{{ review.created_at|date:"d M Y" }}</td>
+                <td>
+                  <a href="{% url 'toggle_review_approval' review.id %}" class="btn btn-sm {% if review.is_approved %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+                    {% if review.is_approved %}Hide{% else %}Approve{% endif %}
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No reviews submitted yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block layout_body %}
+<div class="app-wrapper">
+  <!-- Dynamic Sidebar Inclusion based on User Role -->
+  {% if user_role == 'super_admin' %}
+    {% include "components/sidebar_super_admin.html" %}
+  {% elif user_role == 'admin' %}
+    {% include "components/sidebar_admin.html" %}
+  {% elif user_role == 'doctor' %}
+    {% include "components/sidebar_doctor.html" %}
+  {% elif user_role == 'staff' %}
+    {% include "components/sidebar_staff.html" %}
+  {% else %}
+    {% include "components/sidebar_client.html" %}
+  {% endif %}
+
+  <!-- Mobile Drawer Backdrop Overlay -->
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main Application Wrapper -->
+  <div class="app-main">
+    <!-- Unified Topbar -->
+    {% include "components/topbar.html" %}
+
+    <!-- Page Body Container -->
+    <main class="app-content-body">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Unified Footer -->
+    {% include "components/footer.html" %}
+  </div>
+</div>
+
+<!-- Django Messages & Alert Toasts -->
+{% include "components/toasts.html" %}
+{% endblock %}
+
