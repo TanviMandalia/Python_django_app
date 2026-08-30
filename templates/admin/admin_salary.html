@@ -1,0 +1,71 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Salary Records — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Staff Payroll & Salary Disbursements{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-money-check-alt text-warning"></i> Payroll Records ({{ salaries.count }})
+      </h3>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Month / Year</th>
+              <th>Basic Salary</th>
+              <th>Bonus</th>
+              <th>Deductions</th>
+              <th>Net Salary</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sal in salaries %}
+              <tr>
+                <td>
+                  <div class="fw-bold text-dark">{{ sal.staff.get_full_name|default:sal.staff.username }}</div>
+                  <div class="small text-muted">{{ sal.staff.email }}</div>
+                </td>
+                <td><strong>{{ sal.month }} {{ sal.year }}</strong></td>
+                <td>₹{{ sal.basic_salary }}</td>
+                <td class="text-success">+₹{{ sal.bonus }}</td>
+                <td class="text-danger">-₹{{ sal.deduction }}</td>
+                <td class="fw-bold text-dark fs-6">₹{{ sal.net_salary }}</td>
+                <td>
+                  <span class="badge {% if sal.is_paid %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                    {% if sal.is_paid %}Paid on {{ sal.paid_on|date:"d M Y" }}{% else %}Pending{% endif %}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a href="{% url 'edit_salary' sal.id %}" class="btn btn-sm btn-outline-dark" title="Edit Record">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'delete_salary' sal.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete salary record?')" title="Delete">
+                      <i class="fas fa-trash-alt"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="8" class="text-center py-5 text-muted">No salary records generated.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -8,7 +8,7 @@ from core.models import Notification
 @login_required
 def notifications_view(request):
     notifications = Notification.objects.filter(recipient=request.user).order_by("-created_at")
-    return render(request, "notifications.html", {"notifications": notifications})
+    return render(request, "client/notifications.html", {"notifications": notifications})
 
 
 @login_required
@@ -26,4 +26,3 @@ def mark_notification_read(request, notif_id):
     if notif.link:
         return redirect(notif.link)
     return redirect("notifications")
-

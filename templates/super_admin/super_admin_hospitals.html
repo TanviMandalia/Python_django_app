@@ -1,0 +1,101 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}All Hospitals — PhysioRehab SaaS{% endblock %}
+{% block page_heading %}Hospital & Clinic Tenant Directory{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-hospital text-warning"></i> All Registered Clinics & Hospitals ({{ hospitals|length }})
+      </h3>
+      <a href="{% url 'super_admin_add_hospital' %}" class="btn btn-gold btn-sm">
+        <i class="fas fa-plus me-1"></i> Add Hospital
+      </a>
+    </div>
+    <div class="content-card-body p-0">
+      {% if hospitals %}
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Hospital Name</th>
+                <th>City</th>
+                <th>Admin User</th>
+                <th>Plan</th>
+                <th>Subscription</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for h in hospitals %}
+                <tr>
+                  <td class="text-muted small">{{ forloop.counter }}</td>
+                  <td>
+                    <strong class="text-dark">{{ h.name }}</strong>
+                    {% if h.email %}<br><small class="text-muted">{{ h.email }}</small>{% endif %}
+                  </td>
+                  <td>{{ h.city|default:"—" }}</td>
+                  <td>
+                    {% for ca in h.admins.all %}
+                      <span class="badge bg-light text-dark border small">{{ ca.user.username }}</span>
+                    {% empty %}—{% endfor %}
+                  </td>
+                  <td>
+                    {% if h.subscription and h.subscription.plan %}
+                      <span class="badge bg-dark text-warning">{{ h.subscription.plan.get_name_display }}</span>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td>
+                    {% if h.subscription %}
+                      <span class="badge badge-status badge-{{ h.subscription.status }}">{{ h.subscription.get_status_display }}</span>
+                      {% if h.subscription.expires_at %}
+                        <div class="small text-muted">Exp: {{ h.subscription.expires_at|date:"d M Y" }}</div>
+                      {% endif %}
+                    {% else %}
+                      <span class="badge bg-warning text-dark">No Plan</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge {% if h.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                      {% if h.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                  </td>
+                  <td class="small text-muted">{{ h.created_at|date:"d M Y" }}</td>
+                  <td>
+                    <div class="d-flex gap-1">
+                      <a href="{% url 'super_admin_edit_hospital' h.id %}" class="btn btn-sm btn-outline-dark" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </a>
+                      <form method="post" action="{% url 'super_admin_delete_hospital' h.id %}" onsubmit="return confirm('Delete {{ h.name }}? This cannot be undone.')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="fas fa-hospital fs-1 mb-3 d-block text-secondary opacity-50"></i>
+          <p class="fw-semibold">No hospitals yet</p>
+          <p class="mb-3">Start by adding the first clinic or hospital to the platform.</p>
+          <a href="{% url 'super_admin_add_hospital' %}" class="btn btn-gold">+ Add First Hospital</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

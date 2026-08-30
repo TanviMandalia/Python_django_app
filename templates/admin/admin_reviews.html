@@ -1,0 +1,74 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Patient Reviews — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Patient Reviews & Testimonial Moderation{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-star text-warning"></i> Reviews & Recovery Testimonials ({{ reviews.count }})
+      </h3>
+      <a href="{% url 'admin_add_review' %}" class="btn btn-gold btn-sm">
+        <i class="fas fa-plus me-1"></i> Add Testimonial
+      </a>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Reviewer</th>
+              <th>Rating</th>
+              <th>Review Message</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rev in reviews %}
+              <tr>
+                <td>
+                  <div class="fw-bold text-dark">{{ rev.reviewer_name }}</div>
+                  <small class="text-muted">{{ rev.reviewer_title|default:"Verified Patient" }}</small>
+                </td>
+                <td class="text-warning">
+                  {% for i in "12345"|make_list %}
+                    {% if forloop.counter <= rev.rating %}★{% else %}☆{% endif %}
+                  {% endfor %}
+                </td>
+                <td>{{ rev.message }}</td>
+                <td>{{ rev.created_at|date:"d M Y" }}</td>
+                <td>
+                  <span class="badge {% if rev.is_approved %}bg-success{% else %}bg-secondary{% endif %}">
+                    {% if rev.is_approved %}Published{% else %}Hidden{% endif %}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a href="{% url 'toggle_review_approval' rev.id %}" class="btn btn-sm btn-outline-dark" title="Toggle Approval">
+                      {% if rev.is_approved %}<i class="fas fa-eye-slash"></i>{% else %}<i class="fas fa-eye"></i>{% endif %}
+                    </a>
+                    <a href="{% url 'admin_delete_review' rev.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete review?')" title="Delete">
+                      <i class="fas fa-trash-alt"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-5 text-muted">No reviews submitted yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

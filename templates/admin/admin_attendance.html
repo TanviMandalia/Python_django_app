@@ -1,0 +1,88 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Attendance Log — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Daily Staff Attendance Records{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Date Filter Card -->
+  <div class="content-card mb-4">
+    <div class="content-card-body p-3">
+      <form method="GET" action="{% url 'admin_attendance' %}" class="row g-2 align-items-center">
+        <div class="col-12 col-md-4">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="fas fa-calendar-day text-muted"></i></span>
+            <input type="date" name="date" class="form-control border-start-0" value="{{ date_filter }}" onchange="this.form.submit()">
+          </div>
+        </div>
+        <div class="col-12 col-md-8 text-end d-flex gap-2 justify-content-md-end">
+          <button type="submit" class="btn btn-dark-slate">Filter Date</button>
+          <a href="{% url 'add_attendance' %}" class="btn btn-gold">
+            <i class="fas fa-plus me-1"></i> Manual Entry
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Attendance Table -->
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-clock text-warning"></i> Attendance Log for {{ date_filter }} ({{ attendances.count }})
+      </h3>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Staff Member</th>
+              <th>Morning Shift (10am–1pm)</th>
+              <th>Evening Shift (4pm–8pm)</th>
+              <th>Total Hours</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for att in attendances %}
+              <tr>
+                <td>
+                  <div class="fw-bold text-dark">{{ att.staff.get_full_name|default:att.staff.username }}</div>
+                  <div class="small text-muted">{{ att.staff.email }}</div>
+                </td>
+                <td>
+                  {{ att.clock_in|time:"h:i A"|default:"--" }} – {{ att.morning_clock_out|time:"h:i A"|default:"--" }}
+                  <small class="text-muted">({{ att.morning_hours|default:"0.00" }}h)</small>
+                </td>
+                <td>
+                  {{ att.evening_clock_in|time:"h:i A"|default:"--" }} – {{ att.clock_out|time:"h:i A"|default:"--" }}
+                  <small class="text-muted">({{ att.evening_hours|default:"0.00" }}h)</small>
+                </td>
+                <td class="fw-bold text-dark fs-6">{{ att.total_hours|default:"0.00" }} hrs</td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a href="{% url 'edit_attendance' att.id %}" class="btn btn-sm btn-outline-dark" title="Edit Entry">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'delete_attendance' att.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete attendance record?')" title="Delete">
+                      <i class="fas fa-trash-alt"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-5 text-muted">No attendance records for this date.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

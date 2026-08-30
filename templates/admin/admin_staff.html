@@ -1,0 +1,78 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Staff Directory — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Staff Roster & Role Permissions{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-user-md text-warning"></i> Clinical Staff & Employees ({{ staff_members.count }})
+      </h3>
+      <a href="{% url 'add_staff' %}" class="btn btn-gold btn-sm">
+        <i class="fas fa-plus me-1"></i> Register New Staff
+      </a>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Role</th>
+              <th>Phone</th>
+              <th>Basic Salary</th>
+              <th>Joined Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for staff in staff_members %}
+              <tr>
+                <td>
+                  <div class="fw-bold text-dark">{{ staff.user.get_full_name|default:staff.user.username }}</div>
+                  <div class="small text-muted">{{ staff.user.email }}</div>
+                </td>
+                <td>
+                  <span class="badge {% if staff.role == 'physiotherapist' %}bg-primary{% else %}bg-dark{% endif %} text-uppercase">
+                    {{ staff.get_role_display }}
+                  </span>
+                </td>
+                <td>{{ staff.phone|default:"--" }}</td>
+                <td class="fw-semibold">₹{{ staff.salary }}</td>
+                <td>{{ staff.joining_date|date:"d M Y"|default:"--" }}</td>
+                <td>
+                  {% if staff.is_active %}
+                    <span class="badge bg-success">Active</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a href="{% url 'edit_staff' staff.id %}" class="btn btn-sm btn-outline-dark" title="Edit Staff">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'delete_staff' staff.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deactivate staff member?')" title="Deactivate">
+                      <i class="fas fa-user-times"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-5 text-muted">No staff members registered yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

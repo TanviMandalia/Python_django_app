@@ -1,0 +1,95 @@
+{% extends "layouts/base_public.html" %}
+{% load static %}
+
+{% block title %}Contact Us — {{ clinic_info.clinic_name|default:"PhysioRehab Clinic" }}{% endblock %}
+
+{% block content %}
+<section class="py-5 bg-dark text-white text-center">
+  <div class="container py-4">
+    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold text-uppercase mb-3">Get in Touch</span>
+    <h1 class="display-5 fw-bold mb-3">Contact PhysioRehab Clinic</h1>
+    <p class="lead text-light mx-auto" style="max-width: 700px;">
+      Have a question about a treatment plan or appointment? We are here to help.
+    </p>
+  </div>
+</section>
+
+<section class="py-5 bg-white">
+  <div class="container">
+    <div class="row g-5">
+      <!-- Contact Info Card -->
+      <div class="col-12 col-lg-5">
+        <div class="p-4 p-md-5 rounded-4 bg-dark text-white h-100 shadow-sm">
+          <h3 class="fw-bold text-warning mb-4">Clinic Information</h3>
+
+          <div class="d-flex align-items-start gap-3 mb-4">
+            <i class="fas fa-map-marker-alt text-warning fs-4 mt-1"></i>
+            <div>
+              <h6 class="fw-bold mb-1 text-white">Clinic Address</h6>
+              <p class="text-secondary mb-0">{{ clinic_info.address|default:"Bedi Gate, Jamnagar, Gujarat - 361001" }}</p>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-start gap-3 mb-4">
+            <i class="fas fa-phone-alt text-warning fs-4 mt-1"></i>
+            <div>
+              <h6 class="fw-bold mb-1 text-white">Phone & Consultation Desk</h6>
+              <p class="text-secondary mb-0">{{ clinic_info.phone|default:"+91 94095 10501" }}</p>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-start gap-3 mb-4">
+            <i class="fas fa-envelope text-warning fs-4 mt-1"></i>
+            <div>
+              <h6 class="fw-bold mb-1 text-white">Email Address</h6>
+              <p class="text-secondary mb-0">{{ clinic_info.email|default:"contact@physiorehab.com" }}</p>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-start gap-3">
+            <i class="fas fa-clock text-warning fs-4 mt-1"></i>
+            <div>
+              <h6 class="fw-bold mb-1 text-white">Opening Hours</h6>
+              <p class="text-secondary mb-0">Monday – Saturday: 10:00 AM – 08:00 PM<br>Sunday: Closed</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Message Form -->
+      <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-light">
+          <h3 class="fw-bold text-dark mb-2">Send Us a Message</h3>
+          <p class="text-muted mb-4">Fill out the form below and our medical reception will get back to you.</p>
+
+          <form method="POST" action="{% url 'contact' %}">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Your Name</label>
+                <input type="text" name="name" class="form-control" placeholder="Full Name" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Phone Number</label>
+                <input type="tel" name="phone" class="form-control" placeholder="Mobile Number" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Email Address</label>
+                <input type="email" name="email" class="form-control" placeholder="email@example.com" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Message / Inquiry</label>
+                <textarea name="message" class="form-control" rows="4" placeholder="How can we help you?" required></textarea>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-warning w-100 py-3 fw-bold mt-4 rounded-pill shadow-sm">
+              <i class="fas fa-paper-plane me-1"></i> Submit Message
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

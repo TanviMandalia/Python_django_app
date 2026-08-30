@@ -1,0 +1,147 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Billing & Payments — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Invoices, Receipts & Payments{% endblock %}
+
+{% block extra_js %}
+<!-- Razorpay Checkout SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Pending Bills / Appointments to Pay -->
+  <div class="content-card mb-4">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-file-invoice-dollar text-warning"></i> Pending Appointments & Invoices
+      </h3>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Appt #</th>
+              <th>Service</th>
+              <th>Date & Time</th>
+              <th>Fee Amount</th>
+              <th>Payment Option</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appt in pending_appointments %}
+              <tr>
+                <td><strong>#{{ appt.id }}</strong></td>
+                <td>{{ appt.get_service_display }}</td>
+                <td>{{ appt.date|date:"d M Y" }} @ {{ appt.get_time_display }}</td>
+                <td class="fw-bold fs-6 text-dark">₹{{ appt.consultation_fee|default:500 }}</td>
+                <td>
+                  <button type="button" class="btn btn-sm btn-gold" onclick="initiateRazorpayPayment('{{ appt.consultation_fee|default:500 }}', '{{ appt.id }}', '{{ razorpay_key_id }}')">
+                    <i class="fas fa-credit-card me-1"></i> Pay with Razorpay
+                  </button>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">
+                  <i class="fas fa-check-circle fs-3 text-success d-block mb-2"></i>
+                  No pending bills! All consultations are settled.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direct UPI Payment Option -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-lg-6">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-qrcode text-warning"></i> Pay via UPI QR / VPA
+          </h3>
+        </div>
+        <div class="content-card-body">
+          <p class="text-muted small">You can also transfer directly to the clinic official UPI ID and submit your transaction ID below for verification:</p>
+          <div class="p-3 bg-light rounded-3 border mb-3 text-center">
+            <span class="text-muted small d-block">Official Clinic UPI ID:</span>
+            <strong class="fs-5 text-dark">{{ clinic_info.whatsapp|default:"physiorehab@upi" }}</strong>
+          </div>
+
+          <form method="POST" action="{% url 'record_upi_payment' %}">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold text-dark">Select Appointment</label>
+              <select name="appointment_id" class="form-select" required>
+                {% for appt in pending_appointments %}
+                  <option value="{{ appt.id }}">Appt #{{ appt.id }} - {{ appt.get_service_display }} (₹{{ appt.consultation_fee|default:500 }})</option>
+                {% empty %}
+                  <option value="">No pending appointment</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold text-dark">UPI Reference / UTR Number</label>
+              <input type="text" name="transaction_id" class="form-control" placeholder="12-digit UPI reference number" required>
+            </div>
+            <button type="submit" class="btn btn-dark-slate w-100" {% if not pending_appointments %}disabled{% endif %}>
+              <i class="fas fa-paper-plane me-1"></i> Submit UPI Reference
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verified Payment Receipts Log -->
+    <div class="col-12 col-lg-6">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-receipt text-warning"></i> Payment History & Receipts
+          </h3>
+        </div>
+        <div class="content-card-body p-0">
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Method</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in payment_history %}
+                  <tr>
+                    <td>{{ p.created_at|date:"d M Y" }}</td>
+                    <td class="fw-bold">₹{{ p.amount }}</td>
+                    <td><span class="text-uppercase small">{{ p.method }}</span></td>
+                    <td>
+                      <span class="badge badge-status badge-{{ p.status }}">
+                        {{ p.status }}
+                      </span>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center py-4 text-muted">No past payment records.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

@@ -1,0 +1,70 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Reports & Clinical Analytics — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Patient Recovery & Clinical Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-lg-8">
+      <div class="content-card mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-chart-line text-warning"></i> Treatment Modality Distribution
+          </h3>
+        </div>
+        <div class="content-card-body">
+          <div class="row g-3 text-center">
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3 border">
+                <h4 class="fw-bold text-warning mb-1">45%</h4>
+                <small class="text-muted">Orthopedic</small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3 border">
+                <h4 class="fw-bold text-success mb-1">28%</h4>
+                <small class="text-muted">Sports Injury</small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3 border">
+                <h4 class="fw-bold text-primary mb-1">17%</h4>
+                <small class="text-muted">Neurological</small>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-3 bg-light rounded-3 border">
+                <h4 class="fw-bold text-danger mb-1">10%</h4>
+                <small class="text-muted">Pediatric / Other</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+      <div class="content-card mb-0 h-100">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-file-export text-warning"></i> Export Reports
+          </h3>
+        </div>
+        <div class="content-card-body d-flex flex-column justify-content-center gap-3">
+          <a href="{% url 'export_analytics_pdf' %}" class="btn btn-gold py-2">
+            <i class="fas fa-file-pdf me-2"></i> Download Analytics PDF
+          </a>
+          <a href="{% url 'export_patients_excel' %}" class="btn btn-outline-dark py-2">
+            <i class="fas fa-file-excel me-2"></i> Download Patients Excel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

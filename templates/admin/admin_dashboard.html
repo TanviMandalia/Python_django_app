@@ -1,0 +1,193 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Clinic Admin Dashboard — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Clinic Operations & Executive Overview{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Core Analytics KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-gold"><i class="fas fa-calendar-check"></i></div>
+        <div class="stat-label">Total Appointments</div>
+        <div class="stat-value">{{ total_appointments }}</div>
+        <div class="stat-desc"><span class="badge bg-warning-subtle text-dark">{{ pending_appointments }} Pending</span></div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-user-injured"></i></div>
+        <div class="stat-label">Registered Patients</div>
+        <div class="stat-value">{{ total_patients }}</div>
+        <div class="stat-desc">Active clinic profiles</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-user-md"></i></div>
+        <div class="stat-label">Clinical Staff</div>
+        <div class="stat-value">{{ total_staff }}</div>
+        <div class="stat-desc">Doctors & assistants</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-red"><i class="fas fa-rupee-sign"></i></div>
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value">₹{{ total_revenue|floatformat:0 }}</div>
+        <div class="stat-desc">Paid consultations</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Today's Appointments & Actions -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-lg-8">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-clock text-warning"></i> Today's Scheduled Appointments
+          </h3>
+          <a href="{% url 'admin_appointments' %}" class="btn btn-sm btn-outline-secondary">View All</a>
+        </div>
+        <div class="content-card-body p-0">
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Patient</th>
+                  <th>Service</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for appt in today_appointments %}
+                  <tr>
+                    <td><strong class="text-dark">{{ appt.get_time_display }}</strong></td>
+                    <td>
+                      <div class="fw-semibold text-dark">{{ appt.name }}</div>
+                      <div class="small text-muted">{{ appt.phone }}</div>
+                    </td>
+                    <td>{{ appt.get_service_display }}</td>
+                    <td>
+                      <span class="badge badge-status badge-{{ appt.status }}">
+                        {{ appt.get_status_display }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                          Update
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                          <li><a class="dropdown-item" href="{% url 'update_appointment' appt.id 'confirmed' %}"><i class="fas fa-check text-success me-2"></i> Confirm</a></li>
+                          <li><a class="dropdown-item" href="{% url 'update_appointment' appt.id 'completed' %}"><i class="fas fa-check-double text-primary me-2"></i> Complete</a></li>
+                          <li><a class="dropdown-item text-danger" href="{% url 'update_appointment' appt.id 'cancelled' %}"><i class="fas fa-times text-danger me-2"></i> Cancel</a></li>
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center py-5 text-muted">
+                      <i class="fas fa-calendar-day fs-2 text-secondary mb-2 d-block"></i>
+                      No appointments scheduled for today.
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Management Action Shortcuts -->
+    <div class="col-12 col-lg-4">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-bolt text-warning"></i> Quick Actions
+          </h3>
+        </div>
+        <div class="content-card-body d-flex flex-column gap-2">
+          <a href="{% url 'add_appointment' %}" class="btn btn-gold py-2 text-start">
+            <i class="fas fa-calendar-plus me-2"></i> Add Appointment
+          </a>
+          <a href="{% url 'add_staff' %}" class="btn btn-dark-slate py-2 text-start">
+            <i class="fas fa-user-plus me-2"></i> Register New Staff
+          </a>
+          <a href="{% url 'add_task' %}" class="btn btn-outline-dark py-2 text-start">
+            <i class="fas fa-tasks me-2"></i> Assign Daily Task
+          </a>
+          <a href="{% url 'admin_settings' %}" class="btn btn-outline-secondary py-2 text-start">
+            <i class="fas fa-sliders-h me-2"></i> Clinic Settings & Fees
+          </a>
+          <a href="{% url 'export_analytics_pdf' %}" class="btn btn-outline-secondary py-2 text-start">
+            <i class="fas fa-file-pdf me-2"></i> Export Monthly Summary PDF
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Patient Reviews & Testimonials -->
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-star text-warning"></i> Recent Patient Reviews & Feedback
+      </h3>
+      <a href="{% url 'admin_reviews' %}" class="btn btn-sm btn-outline-secondary">Moderate Reviews</a>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Rating</th>
+              <th>Review Message</th>
+              <th>Status</th>
+              <th>Toggle</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rev in recent_reviews %}
+              <tr>
+                <td><strong>{{ rev.reviewer_name }}</strong></td>
+                <td class="text-warning">
+                  {% for i in "12345"|make_list %}
+                    {% if forloop.counter <= rev.rating %}★{% else %}☆{% endif %}
+                  {% endfor %}
+                </td>
+                <td>{{ rev.message|truncatechars:65 }}</td>
+                <td>
+                  <span class="badge {% if rev.is_approved %}bg-success{% else %}bg-secondary{% endif %}">
+                    {% if rev.is_approved %}Published{% else %}Hidden{% endif %}
+                  </span>
+                </td>
+                <td>
+                  <a href="{% url 'toggle_review_approval' rev.id %}" class="btn btn-sm btn-outline-dark rounded-pill">
+                    {% if rev.is_approved %}Hide{% else %}Publish{% endif %}
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">No reviews submitted yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

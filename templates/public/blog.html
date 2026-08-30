@@ -1,0 +1,65 @@
+{% extends "layouts/base_public.html" %}
+{% load static %}
+
+{% block title %}Physiotherapy Health Articles & Guides — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+
+{% block content %}
+<section class="py-5 bg-dark text-white text-center">
+  <div class="container py-4">
+    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold text-uppercase mb-3">Health & Wellness Insights</span>
+    <h1 class="display-5 fw-bold mb-3">Physiotherapy & Recovery Articles</h1>
+    <p class="lead text-light mx-auto" style="max-width: 700px;">
+      Expert advice on posture correction, exercise techniques, injury prevention, and pain relief.
+    </p>
+  </div>
+</section>
+
+<section class="py-5 bg-light">
+  <div class="container">
+    <!-- Category Filter Pills -->
+    <div class="d-flex flex-wrap gap-2 justify-content-center mb-5">
+      <a href="{% url 'blog_list' %}" class="btn btn-sm {% if not active_category %}btn-warning text-dark fw-bold{% else %}btn-outline-dark{% endif %} rounded-pill px-3">
+        All Categories
+      </a>
+      {% for cat_key, cat_name in categories %}
+        <a href="{% url 'blog_list' %}?category={{ cat_key }}" class="btn btn-sm {% if active_category == cat_key %}btn-warning text-dark fw-bold{% else %}btn-outline-dark{% endif %} rounded-pill px-3">
+          {{ cat_name }}
+        </a>
+      {% endfor %}
+    </div>
+
+    <!-- Blogs Grid -->
+    <div class="row g-4">
+      {% for blog in blogs %}
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+            {% if blog.image %}
+              <img src="{{ blog.image.url }}" alt="{{ blog.title }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+            {% else %}
+              <div class="bg-dark text-warning d-flex align-items-center justify-content-center" style="height: 200px;">
+                <i class="fas fa-newspaper fs-1"></i>
+              </div>
+            {% endif %}
+            <div class="card-body p-4 d-flex flex-column">
+              <span class="badge bg-warning text-dark fw-semibold mb-2 align-self-start">{{ blog.category }}</span>
+              <h5 class="card-title fw-bold text-dark">{{ blog.title }}</h5>
+              <p class="card-text text-muted small mb-4">{{ blog.excerpt|default:blog.content|truncatewords:20 }}</p>
+              <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top">
+                <small class="text-muted">{{ blog.created_at|date:"d M Y" }}</small>
+                <a href="{% url 'blog_detail' blog.slug %}" class="btn btn-sm btn-outline-dark rounded-pill">Read Full Story</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-12 text-center py-5 text-muted">
+          <i class="fas fa-newspaper fs-1 text-secondary mb-3 d-block"></i>
+          <h4>No blog articles found</h4>
+          <p>Check back soon for new articles by our physiotherapy team.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+

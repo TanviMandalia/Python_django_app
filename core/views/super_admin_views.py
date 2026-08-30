@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.db.models import Sum, Count
 from django.utils import timezone
 from core.decorators import super_admin_required
@@ -19,6 +20,7 @@ def super_admin_dashboard(request):
     total_revenue = ClinicSubscriptionPayment.objects.filter(status='paid').aggregate(total=Sum('amount'))['total'] or 0
     recent_hospitals = Hospital.objects.order_by('-created_at')[:5]
     open_tickets = SupportTicket.objects.filter(status='open').count()
+    open_tickets_list = SupportTicket.objects.filter(status='open').order_by('-created_at')[:5]
 
     context = {
         'total_hospitals': total_hospitals,
@@ -27,14 +29,29 @@ def super_admin_dashboard(request):
         'total_revenue': total_revenue,
         'recent_hospitals': recent_hospitals,
         'open_tickets': open_tickets,
+        'open_tickets_list': open_tickets_list,
     }
-    return render(request, "super_admin_dashboard.html", context)
+    return render(request, "super_admin/super_admin_dashboard.html", context)
 
 
 @super_admin_required
 def super_admin_hospitals(request):
+    search = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
     hospitals = Hospital.objects.all().order_by('-created_at')
-    return render(request, "super_admin_hospitals.html", {"hospitals": hospitals})
+
+    if search:
+        hospitals = hospitals.filter(name__icontains=search)
+    if status_filter == 'active':
+        hospitals = hospitals.filter(is_active=True)
+    elif status_filter == 'suspended':
+        hospitals = hospitals.filter(is_active=False)
+
+    return render(request, "super_admin/super_admin_hospitals.html", {
+        "hospitals": hospitals,
+        "search": search,
+        "status_filter": status_filter,
+    })
 
 
 @super_admin_required
@@ -55,7 +72,7 @@ def super_admin_add_hospital(request):
         )
         messages.success(request, f"Hospital '{hospital.name}' registered.")
         return redirect("super_admin_hospitals")
-    return render(request, "super_admin_add_hospital.html")
+    return render(request, "super_admin/super_admin_hospitals.html")
 
 
 @super_admin_required
@@ -73,7 +90,7 @@ def super_admin_edit_hospital(request, hospital_id):
         hospital.save()
         messages.success(request, f"Hospital '{hospital.name}' updated.")
         return redirect("super_admin_hospitals")
-    return render(request, "super_admin_edit_hospital.html", {"hospital": hospital})
+    return render(request, "super_admin/super_admin_hospitals.html", {"hospital": hospital})
 
 
 @super_admin_required
@@ -88,10 +105,15 @@ def super_admin_delete_hospital(request, hospital_id):
 @super_admin_required
 def super_admin_subscriptions(request):
     subscriptions = HospitalSubscription.objects.all().order_by('-started_at')
-    payments = ClinicSubscriptionPayment.objects.all().order_by('-created_at')[:10]
-    return render(request, "super_admin_subscriptions.html", {
+    pending_payments = ClinicSubscriptionPayment.objects.filter(status='pending').order_by('-created_at')
+    plans = SubscriptionPlan.objects.all()
+    unpaid_clinics = Hospital.objects.filter(subscription__status__in=['trial', 'expired'])
+
+    return render(request, "super_admin/super_admin_subscriptions.html", {
         "subscriptions": subscriptions,
-        "payments": payments,
+        "pending_payments": pending_payments,
+        "plans": plans,
+        "unpaid_clinics": unpaid_clinics,
     })
 
 
@@ -127,29 +149,62 @@ def super_admin_reject_sub_payment(request, payment_id):
 def super_admin_hospital_payments(request, hospital_id):
     hospital = get_object_or_404(Hospital, id=hospital_id)
     payments = ClinicSubscriptionPayment.objects.filter(hospital=hospital).order_by('-created_at')
-    return render(request, "super_admin_hospital_payments.html", {"hospital": hospital, "payments": payments})
+    return render(request, "super_admin/super_admin_payments.html", {"hospital": hospital, "payments": payments})
 
 
 @super_admin_required
 def super_admin_analytics(request):
     total_hospitals = Hospital.objects.count()
+    active_hospitals = Hospital.objects.filter(is_active=True).count()
     total_subs = HospitalSubscription.objects.filter(status='active').count()
-    revenue = ClinicSubscriptionPayment.objects.filter(status='paid').aggregate(total=Sum('amount'))['total'] or 0
+    active_subs = total_subs
+    trial_subs = HospitalSubscription.objects.filter(status='trial').count()
+    expired_subs = HospitalSubscription.objects.filter(status='expired').count()
+    total_patients = User.objects.filter(is_staff=False, is_superuser=False).count()
+    total_staff = User.objects.filter(is_staff=True).count()
+    total_appointments = Appointment.objects.count() if 'Appointment' in globals() else 0
+    hospitals = Hospital.objects.all()
 
-    return render(request, "super_admin_analytics.html", {
+    return render(request, "super_admin/super_admin_analytics.html", {
         "total_hospitals": total_hospitals,
+        "active_hospitals": active_hospitals,
         "total_subs": total_subs,
-        "revenue": revenue,
+        "active_subs": active_subs,
+        "trial_subs": trial_subs,
+        "expired_subs": expired_subs,
+        "total_patients": total_patients,
+        "total_staff": total_staff,
+        "total_appointments": total_appointments,
+        "hospitals": hospitals,
     })
 
 
 @super_admin_required
 def super_admin_all_payments(request):
-    payments = ClinicSubscriptionPayment.objects.all().order_by('-created_at')
-    patient_payments = PaymentRecord.objects.all().order_by('-created_at')[:50]
-    return render(request, "super_admin_all_payments.html", {
+    status_filter = request.GET.get('status', '')
+    method_filter = request.GET.get('method', '')
+    payments = PaymentRecord.objects.all().order_by('-created_at')
+
+    if status_filter:
+        payments = payments.filter(status=status_filter)
+    if method_filter:
+        payments = payments.filter(method=method_filter)
+
+    total_paid = payments.filter(status='paid').aggregate(total=Sum('amount'))['total'] or 0
+    total_pending = payments.filter(status='pending').aggregate(total=Sum('amount'))['total'] or 0
+    paid_count = payments.filter(status='paid').count()
+    pending_count = payments.filter(status='pending').count()
+    failed_count = payments.filter(status='failed').count()
+
+    return render(request, "super_admin/super_admin_payments.html", {
         "payments": payments,
-        "patient_payments": patient_payments,
+        "status_filter": status_filter,
+        "method_filter": method_filter,
+        "total_paid": total_paid,
+        "total_pending": total_pending,
+        "paid_count": paid_count,
+        "pending_count": pending_count,
+        "failed_count": failed_count,
     })
 
 
@@ -171,8 +226,22 @@ def send_subscription_reminder(request, hospital_id):
 
 @super_admin_required
 def super_admin_support(request):
+    status_filter = request.GET.get('status', '')
     tickets = SupportTicket.objects.all().order_by('-created_at')
-    return render(request, "super_admin_support.html", {"tickets": tickets})
+    if status_filter:
+        tickets = tickets.filter(status=status_filter)
+
+    open_count = SupportTicket.objects.filter(status='open').count()
+    in_progress_count = SupportTicket.objects.filter(status='in_progress').count()
+    resolved_count = SupportTicket.objects.filter(status='resolved').count()
+
+    return render(request, "super_admin/super_admin_support.html", {
+        "tickets": tickets,
+        "status_filter": status_filter,
+        "open_count": open_count,
+        "in_progress_count": in_progress_count,
+        "resolved_count": resolved_count,
+    })
 
 
 @super_admin_required
@@ -190,10 +259,9 @@ def super_admin_support_reply(request, ticket_id):
             ticket.save()
             messages.success(request, "Reply recorded.")
             return redirect("super_admin_support")
-    return render(request, "super_admin_support_reply.html", {"ticket": ticket})
+    return render(request, "super_admin/super_admin_support.html", {"ticket": ticket})
 
 
 def subscription_page(request):
     plans = SubscriptionPlan.objects.filter(is_active=True)
-    return render(request, "subscription_page.html", {"plans": plans})
-
+    return render(request, "super_admin/super_admin_subscriptions.html", {"plans": plans})

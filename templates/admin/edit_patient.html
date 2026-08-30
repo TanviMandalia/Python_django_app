@@ -1,0 +1,75 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Edit Patient {{ patient_user.username }} — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Edit Patient Profile & Medical History{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-user-edit text-warning"></i> Update Patient: {{ patient_user.get_full_name|default:patient_user.username }}
+          </h3>
+          <a href="{% url 'admin_patients' %}" class="btn btn-sm btn-outline-secondary">Back to Patients</a>
+        </div>
+        <div class="content-card-body">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">First Name</label>
+                <input type="text" name="first_name" class="form-control" value="{{ patient_user.first_name }}">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Last Name</label>
+                <input type="text" name="last_name" class="form-control" value="{{ patient_user.last_name }}">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Email Address</label>
+                <input type="email" name="email" class="form-control" value="{{ patient_user.email }}">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Phone Number</label>
+                <input type="text" name="phone_number" class="form-control" value="{{ profile.phone_number|default:'' }}">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Gender</label>
+                <select name="gender" class="form-select">
+                  <option value="Male" {% if profile.gender == 'Male' %}selected{% endif %}>Male</option>
+                  <option value="Female" {% if profile.gender == 'Female' %}selected{% endif %}>Female</option>
+                  <option value="Other" {% if profile.gender == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Blood Group</label>
+                <input type="text" name="blood_group" class="form-control" value="{{ profile.blood_group|default:'' }}">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Emergency Contact</label>
+                <input type="text" name="emergency_contact" class="form-control" value="{{ profile.emergency_contact|default:'' }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold text-dark">Residential Address</label>
+                <textarea name="address" class="form-control" rows="2">{{ profile.address|default:'' }}</textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold text-dark">Medical Notes & Health History</label>
+                <textarea name="medical_notes" class="form-control" rows="3">{{ profile.medical_notes|default:'' }}</textarea>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+              <a href="{% url 'admin_patients' %}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="submit" class="btn btn-gold px-4">
+                <i class="fas fa-save me-1"></i> Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

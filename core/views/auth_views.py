@@ -42,7 +42,7 @@ def login_view(request):
                 if user:
                     if not user.is_active:
                         messages.error(request, "⛔ Your account has been deactivated. Please contact clinic support.")
-                        return render(request, "login.html", {"form": form})
+                        return render(request, "auth/login.html", {"form": form})
                     login(request, user)
                     messages.success(request, f"👋 Welcome back, {user.first_name or user.username}!")
                     next_url = request.GET.get('next')
@@ -52,7 +52,7 @@ def login_view(request):
     else:
         form = UserLoginForm()
 
-    return render(request, "login.html", {"form": form})
+    return render(request, "auth/login.html", {"form": form})
 
 
 def register_view(request):
@@ -92,7 +92,7 @@ def register_view(request):
     else:
         form = UserRegistrationForm()
 
-    return render(request, "register.html", {"form": form})
+    return render(request, "auth/register.html", {"form": form})
 
 
 def logout_view(request):
@@ -105,7 +105,7 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
-    return render(request, "profile.html", {"profile": profile, "user": request.user})
+    return render(request, "auth/profile.html", {"profile": profile, "user": request.user})
 
 
 @login_required
@@ -132,7 +132,7 @@ def edit_profile(request):
             'email': request.user.email,
         })
 
-    return render(request, "edit_profile.html", {"form": form, "profile": profile})
+    return render(request, "auth/edit_profile.html", {"form": form, "profile": profile})
 
 
 def request_otp(request):
@@ -149,7 +149,7 @@ def request_otp(request):
             return redirect("verify_otp")
         else:
             messages.error(request, "⚠️ No account found with that email address.")
-    return render(request, "request_otp.html")
+    return render(request, "auth/request_otp.html")
 
 
 def verify_otp(request):
@@ -174,7 +174,7 @@ def verify_otp(request):
         else:
             messages.error(request, "❌ Invalid or expired OTP. Please try again.")
 
-    return render(request, "verify_otp.html", {"email": user.email})
+    return render(request, "auth/verify_otp.html", {"email": user.email})
 
 
 def resend_otp(request):
@@ -214,7 +214,7 @@ def reset_password(request):
         else:
             messages.error(request, "❌ Passwords do not match.")
 
-    return render(request, "reset_password.html")
+    return render(request, "auth/reset_password.html")
 
 
 @login_required
@@ -237,5 +237,4 @@ def change_password_request(request):
             messages.success(request, "✅ Password changed successfully!")
             return redirect("profile")
 
-    return render(request, "change_password.html")
-
+    return render(request, "auth/change_password.html")

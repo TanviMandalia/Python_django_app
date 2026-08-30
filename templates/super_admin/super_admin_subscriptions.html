@@ -1,0 +1,292 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static custom_filters %}
+
+{% block title %}Subscriptions & Payments — PhysioRehab SaaS{% endblock %}
+{% block page_heading %}Subscriptions & Payment Verification{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Stats Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-hospital"></i></div>
+        <div class="stat-card-value">{{ subscriptions|length }}</div>
+        <div class="stat-card-label">Total Clinics</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-card-value">{{ subscriptions|length }}</div>
+        <div class="stat-card-label">Active Subscriptions</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-clock"></i></div>
+        <div class="stat-card-value">{{ pending_payments|length }}</div>
+        <div class="stat-card-label">Pending Payments</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-boxes"></i></div>
+        <div class="stat-card-value">{{ plans|length }}</div>
+        <div class="stat-card-label">Plan Types</div>
+      </div>
+    </div>
+  </div>
+
+  {% if pending_payments %}
+    <div class="alert alert-warning d-flex align-items-center gap-3 mb-4" role="alert">
+      <i class="fas fa-exclamation-triangle fs-4"></i>
+      <div>
+        <strong>{{ pending_payments|length }} Payment{{ pending_payments|length|pluralize }} awaiting verification</strong><br>
+        Review and confirm or reject below.
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- TAB NAVIGATION -->
+  <ul class="nav nav-tabs mb-4" id="subTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-pending" type="button">
+        <i class="fas fa-clock me-1"></i> Pending Payments
+        {% if pending_payments %}
+          <span class="badge bg-danger ms-1">{{ pending_payments|length }}</span>
+        {% endif %}
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-hospitals" type="button">
+        <i class="fas fa-hospital me-1"></i> Clinic Status
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-subscriptions" type="button">
+        <i class="fas fa-list me-1"></i> All Subscriptions
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-plans" type="button">
+        <i class="fas fa-boxes me-1"></i> Manage Plans
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="subTabContent">
+
+    <!-- TAB: PENDING PAYMENTS -->
+    <div class="tab-pane fade show active" id="tab-pending" role="tabpanel">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title"><i class="fas fa-clock text-warning"></i> Pending Verification</h3>
+        </div>
+        <div class="content-card-body p-0">
+          {% if pending_payments %}
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Date & Time</th><th>Clinic</th><th>Plan</th><th>Amount</th>
+                    <th>Duration</th><th>Method</th><th>Txn ID</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for pay in pending_payments %}
+                    <tr>
+                      <td>
+                        <strong>{{ pay.created_at|date:"d M Y" }}</strong>
+                        <div class="small text-muted">{{ pay.created_at|time:"h:i A" }}</div>
+                      </td>
+                      <td>
+                        <strong>{{ pay.hospital.name }}</strong>
+                        <div class="small text-muted">{{ pay.hospital.city|default:"—" }}</div>
+                      </td>
+                      <td>
+                        {% if pay.plan %}
+                          <span class="badge bg-dark text-warning">{{ pay.plan.get_name_display }}</span>
+                        {% else %}—{% endif %}
+                      </td>
+                      <td><strong>₹{{ pay.amount }}</strong></td>
+                      <td>{{ pay.duration_months }} mo</td>
+                      <td>{{ pay.get_method_display }}</td>
+                      <td><code class="small">{{ pay.transaction_id|default:"—" }}</code></td>
+                      <td>
+                        <div class="d-flex gap-1">
+                          <a href="{% url 'super_admin_confirm_sub_payment' pay.id %}" class="btn btn-sm btn-outline-success" onclick="return confirm('Confirm and activate subscription?')">
+                            <i class="fas fa-check"></i> Confirm
+                          </a>
+                          <a href="{% url 'super_admin_reject_sub_payment' pay.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Reject this payment?')">
+                            <i class="fas fa-times"></i> Reject
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-5 text-muted">
+              <i class="fas fa-check-circle fs-2 text-success mb-2 d-block"></i>
+              No pending payments. All clear!
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CLINIC STATUS -->
+    <div class="tab-pane fade" id="tab-hospitals" role="tabpanel">
+      {% if unpaid_clinics %}
+        <div class="alert alert-warning mb-4">
+          <strong><i class="fas fa-exclamation-triangle me-2"></i>{{ unpaid_clinics|length }} Clinic(s) Have Not Paid Subscription</strong>
+          <p class="mb-0 mt-2 small">These clinics are on trial or expired plans. Send a reminder:</p>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            {% for h in unpaid_clinics %}
+              <div class="d-flex align-items-center gap-3 bg-white border rounded-3 p-2 px-3">
+                <div>
+                  <strong class="small text-dark">{{ h.name }}</strong>
+                  <div class="text-muted" style="font-size:0.76rem;">{{ h.city|default:"—" }}</div>
+                </div>
+                <form method="POST" action="{% url 'send_subscription_reminder' h.id %}" onsubmit="return confirm('Send subscription reminder to {{ h.name }}?')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-gold"><i class="fas fa-bell me-1"></i> Remind</button>
+                </form>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title"><i class="fas fa-hospital text-warning"></i> Clinic Subscription & Payment Status</h3>
+        </div>
+        <div class="content-card-body p-0">
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr><th>Clinic</th><th>Plan</th><th>Sub Status</th><th>Expires</th><th>Payment Status</th><th>Total Paid</th><th>Actions</th></tr>
+              </thead>
+              <tbody>
+                {% for sub in subscriptions %}
+                  {% with hid=sub.hospital.id %}
+                    <tr {% if sub.status == 'trial' or sub.status == 'expired' or sub.is_expired %}class="table-warning"{% endif %}>
+                      <td>
+                        <strong>{{ sub.hospital.name }}</strong>
+                        <div class="small text-muted">{{ sub.hospital.city|default:"—" }}</div>
+                      </td>
+                      <td>
+                        {% if sub.plan %}
+                          <span class="badge bg-dark text-warning">{{ sub.plan.get_name_display }}</span>
+                        {% else %}
+                          <span class="text-muted small">No Plan</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <span class="badge badge-status badge-{{ sub.status }}">{{ sub.get_status_display }}</span>
+                        {% if sub.is_expired %}<span class="badge bg-danger ms-1">Overdue</span>{% endif %}
+                      </td>
+                      <td class="small text-muted">{{ sub.expires_at|date:"d M Y"|default:"—" }}</td>
+                      <td>
+                        {% if hospital_payment_summary|get_item:hid %}
+                          {% with summary=hospital_payment_summary|get_item:hid %}
+                            {% if summary.has_pending %}
+                              <span class="badge bg-warning text-dark">Pending</span>
+                            {% elif summary.total_paid > 0 %}
+                              <span class="badge bg-success">Paid</span>
+                            {% else %}
+                              <span class="badge bg-danger">Not Paid</span>
+                            {% endif %}
+                          {% endwith %}
+                        {% else %}
+                          <span class="badge bg-danger">Not Paid</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if hospital_payment_summary|get_item:hid %}
+                          <strong>₹{{ hospital_payment_summary|get_item:hid|get_item:'total_paid'|floatformat:0 }}</strong>
+                        {% else %}
+                          <span class="text-muted">₹0</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <a href="{% url 'super_admin_hospital_payments' sub.hospital.id %}" class="btn btn-sm btn-outline-dark">
+                          <i class="fas fa-history me-1"></i> History
+                        </a>
+                      </td>
+                    </tr>
+                  {% endwith %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: ALL SUBSCRIPTIONS -->
+    <div class="tab-pane fade" id="tab-subscriptions" role="tabpanel">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title"><i class="fas fa-list text-warning"></i> All Subscription Records</h3>
+        </div>
+        <div class="content-card-body p-0">
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr><th>Hospital</th><th>Plan</th><th>Status</th><th>Start</th><th>Expires</th><th>Amount</th></tr>
+              </thead>
+              <tbody>
+                {% for sub in subscriptions %}
+                  <tr>
+                    <td><strong>{{ sub.hospital.name }}</strong></td>
+                    <td>{% if sub.plan %}<span class="badge bg-dark text-warning">{{ sub.plan.get_name_display }}</span>{% else %}—{% endif %}</td>
+                    <td><span class="badge badge-status badge-{{ sub.status }}">{{ sub.get_status_display }}</span></td>
+                    <td class="small">{{ sub.start_date|date:"d M Y"|default:"—" }}</td>
+                    <td class="small">{{ sub.expires_at|date:"d M Y"|default:"—" }}</td>
+                    <td><strong>₹{{ sub.amount_paid|default:"—" }}</strong></td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="6" class="text-center py-4 text-muted">No subscription records found.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: MANAGE PLANS -->
+    <div class="tab-pane fade" id="tab-plans" role="tabpanel">
+      <div class="row g-4">
+        {% for plan in plans %}
+          <div class="col-12 col-md-4">
+            <div class="content-card h-100">
+              <div class="content-card-header">
+                <h3 class="content-card-title">
+                  <i class="fas fa-box text-warning"></i> {{ plan.get_name_display }}
+                </h3>
+              </div>
+              <div class="content-card-body">
+                <div class="fw-bold fs-4 text-dark mb-2">₹{{ plan.price }}<span class="fs-6 text-muted fw-normal">/month</span></div>
+                <p class="text-muted small">{{ plan.description|default:"Standard subscription plan." }}</p>
+                <a href="{% url 'super_admin_subscriptions' %}" class="btn btn-outline-dark btn-sm w-100 mt-2">Active Plan</a>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="col-12 text-center py-5 text-muted">No subscription plans defined yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+

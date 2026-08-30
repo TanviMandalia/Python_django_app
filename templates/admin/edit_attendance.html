@@ -1,0 +1,63 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Edit Attendance — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Edit Attendance Record{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-edit text-warning"></i> Update Attendance for {{ att.staff.get_full_name|default:att.staff.username }} ({{ att.date|date:"d M Y" }})
+          </h3>
+          <a href="{% url 'admin_attendance' %}" class="btn btn-sm btn-outline-secondary">Back to Attendance</a>
+        </div>
+        <div class="content-card-body">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Staff Member</label>
+                {{ form.staff }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Date</label>
+                {{ form.date }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Morning Clock In</label>
+                {{ form.clock_in }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Morning Clock Out</label>
+                {{ form.morning_clock_out }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Evening Clock In</label>
+                {{ form.evening_clock_in }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Evening Clock Out</label>
+                {{ form.clock_out }}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold text-dark">Notes / Reason for Edit</label>
+                {{ form.notes }}
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+              <a href="{% url 'admin_attendance' %}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="submit" class="btn btn-gold px-4">
+                <i class="fas fa-save me-1"></i> Update Attendance
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

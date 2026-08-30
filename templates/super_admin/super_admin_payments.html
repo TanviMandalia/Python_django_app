@@ -1,0 +1,171 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}All Patient Payments — PhysioRehab SaaS{% endblock %}
+{% block page_heading %}Platform-Wide Patient Transactions{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Revenue Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-rupee-sign"></i></div>
+        <div class="stat-card-value">₹{{ total_paid }}</div>
+        <div class="stat-card-label">Total Collected</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-hourglass-half"></i></div>
+        <div class="stat-card-value">₹{{ total_pending }}</div>
+        <div class="stat-card-label">Pending Amount</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-card-value">{{ paid_count }}</div>
+        <div class="stat-card-label">Confirmed Txns</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-clock"></i></div>
+        <div class="stat-card-value">{{ pending_count }}</div>
+        <div class="stat-card-label">Pending Verification</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-times-circle"></i></div>
+        <div class="stat-card-value">{{ failed_count }}</div>
+        <div class="stat-card-label">Rejected</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-list-alt"></i></div>
+        <div class="stat-card-value">{{ payments|length }}</div>
+        <div class="stat-card-label">Filtered Results</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="content-card mb-4">
+    <div class="content-card-body p-3">
+      <form method="GET" action="{% url 'super_admin_all_payments' %}" class="row g-2 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold small text-dark mb-1">Status</label>
+          <select name="status" class="form-select">
+            <option value="">All Statuses</option>
+            <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+            <option value="refunded" {% if status_filter == 'refunded' %}selected{% endif %}>Refunded</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold small text-dark mb-1">Payment Method</label>
+          <select name="method" class="form-select">
+            <option value="">All Methods</option>
+            <option value="razorpay" {% if method_filter == 'razorpay' %}selected{% endif %}>Razorpay</option>
+            <option value="upi" {% if method_filter == 'upi' %}selected{% endif %}>UPI</option>
+            <option value="cash" {% if method_filter == 'cash' %}selected{% endif %}>Cash</option>
+            <option value="netbanking" {% if method_filter == 'netbanking' %}selected{% endif %}>Net Banking</option>
+            <option value="wallet" {% if method_filter == 'wallet' %}selected{% endif %}>Wallet</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-6 d-flex gap-2 align-items-end justify-content-md-end">
+          <button type="submit" class="btn btn-dark-slate"><i class="fas fa-filter me-1"></i> Filter</button>
+          {% if status_filter or method_filter %}
+            <a href="{% url 'super_admin_all_payments' %}" class="btn btn-outline-secondary">Clear</a>
+          {% endif %}
+          <a href="{% url 'export_payments_excel' %}{% if status_filter or method_filter %}?status={{ status_filter }}&method={{ method_filter }}{% endif %}" class="btn btn-outline-success">
+            <i class="fas fa-file-excel me-1"></i> Excel
+          </a>
+          <a href="{% url 'export_payments_pdf' %}{% if status_filter or method_filter %}?status={{ status_filter }}&method={{ method_filter }}{% endif %}" class="btn btn-outline-danger">
+            <i class="fas fa-file-pdf me-1"></i> PDF
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Payments Table -->
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-list text-warning"></i> All Transactions
+        <span class="small fw-normal text-muted ms-2">({{ payments|length }} records)</span>
+      </h3>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Patient</th>
+              <th>Appointment</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Txn / Reference</th>
+              <th>Notes</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pay in payments %}
+              <tr>
+                <td>
+                  <strong class="small">{{ pay.created_at|date:"d M Y" }}</strong>
+                  <div class="text-muted" style="font-size:0.76em;">{{ pay.created_at|time:"h:i A" }}</div>
+                </td>
+                <td>
+                  <strong>{{ pay.patient.get_full_name|default:pay.patient.username }}</strong>
+                  <div class="small text-muted">{{ pay.patient.email }}</div>
+                </td>
+                <td>
+                  {% if pay.appointment %}
+                    <span class="small">{{ pay.appointment.date|date:"d M Y" }}</span>
+                  {% else %}
+                    <span class="text-muted small">General</span>
+                  {% endif %}
+                </td>
+                <td><strong class="fs-6">₹{{ pay.amount }}</strong></td>
+                <td>
+                  {% if pay.method == 'razorpay' %}<i class="fas fa-bolt text-warning me-1"></i>Razorpay
+                  {% elif pay.method == 'upi' %}<i class="fas fa-qrcode text-success me-1"></i>UPI
+                  {% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave text-success me-1"></i>Cash
+                  {% elif pay.method == 'netbanking' %}<i class="fas fa-university text-primary me-1"></i>NEFT
+                  {% elif pay.method == 'wallet' %}<i class="fas fa-wallet text-purple me-1"></i>Wallet
+                  {% else %}<i class="fas fa-credit-card me-1"></i>{{ pay.get_method_display }}{% endif %}
+                </td>
+                <td><code class="small">{{ pay.transaction_id|default:"—" }}</code></td>
+                <td class="small text-muted">{{ pay.notes|default:"—"|truncatechars:50 }}</td>
+                <td>
+                  <span class="badge {% if pay.status == 'paid' %}bg-success{% elif pay.status == 'pending' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                    {{ pay.get_status_display }}
+                  </span>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="8" class="text-center py-5 text-muted">
+                  <i class="fas fa-credit-card fs-2 mb-2 d-block text-secondary opacity-50"></i>
+                  No payment records found{% if status_filter or method_filter %} for the selected filters{% endif %}.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

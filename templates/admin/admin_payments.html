@@ -1,0 +1,105 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Payment Records — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Razorpay Payment Transactions & Revenue Ledger{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Revenue Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-rupee-sign"></i></div>
+        <div class="stat-card-value">₹{{ total_revenue|default:"0" }}</div>
+        <div class="stat-card-label">Total Revenue</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-card-value">{{ paid_count|default:0 }}</div>
+        <div class="stat-card-label">Paid Transactions</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-hourglass-half"></i></div>
+        <div class="stat-card-value">{{ pending_count|default:0 }}</div>
+        <div class="stat-card-label">Pending Payments</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-times-circle"></i></div>
+        <div class="stat-card-value">{{ failed_count|default:0 }}</div>
+        <div class="stat-card-label">Failed / Refunded</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payments Table -->
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-credit-card text-warning"></i> All Transactions ({{ payments.count }})
+      </h3>
+      <div class="d-flex gap-2">
+        <a href="{% url 'export_payments_excel' %}" class="btn btn-sm btn-outline-success">
+          <i class="fas fa-file-excel me-1"></i> Excel
+        </a>
+        <a href="{% url 'export_payments_pdf' %}" class="btn btn-sm btn-outline-danger">
+          <i class="fas fa-file-pdf me-1"></i> PDF
+        </a>
+      </div>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Razorpay Order ID</th>
+              <th>Patient</th>
+              <th>Service / Appointment</th>
+              <th>Amount</th>
+              <th>Payment Date</th>
+              <th>Method</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pay in payments %}
+              <tr>
+                <td>
+                  <code class="small">{{ pay.razorpay_order_id|truncatechars:20 }}</code>
+                </td>
+                <td>
+                  <div class="fw-semibold text-dark">{{ pay.patient.get_full_name|default:pay.patient.username }}</div>
+                </td>
+                <td>{{ pay.appointment.get_service_display|default:"--" }}</td>
+                <td class="fw-bold text-dark">₹{{ pay.amount }}</td>
+                <td>{{ pay.created_at|date:"d M Y, h:i A" }}</td>
+                <td>{{ pay.payment_method|default:"Online" }}</td>
+                <td>
+                  <span class="badge {% if pay.status == 'paid' %}bg-success{% elif pay.status == 'pending' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                    {{ pay.get_status_display|title }}
+                  </span>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                  <i class="fas fa-credit-card fs-2 text-secondary mb-2 d-block opacity-50"></i>
+                  No payment transactions found.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

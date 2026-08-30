@@ -34,7 +34,7 @@ def progress_tracking(request):
         'today_appointments': today_appointments,
         'recent_notes': recent_notes,
     }
-    return render(request, "progress_tracking.html", context)
+    return render(request, "doctor/progress_tracking.html", context)
 
 
 @doctor_required
@@ -51,7 +51,7 @@ def reports_analytics(request):
         'total_patients': total_patients,
         'total_notes': total_notes,
     }
-    return render(request, "reports_analytics.html", context)
+    return render(request, "doctor/reports_analytics.html", context)
 
 
 @doctor_required
@@ -72,7 +72,7 @@ def add_session_note(request):
             initial['patient'] = patient_id
         form = SessionNoteForm(initial=initial)
 
-    return render(request, "add_session_note.html", {"form": form})
+    return render(request, "doctor/add_session_note.html", {"form": form})
 
 
 @doctor_required
@@ -87,7 +87,7 @@ def edit_session_note(request, note_id):
     else:
         form = SessionNoteForm(instance=note)
 
-    return render(request, "edit_session_note.html", {"form": form, "note": note})
+    return render(request, "doctor/edit_session_note.html", {"form": form, "note": note})
 
 
 @doctor_required
@@ -115,4 +115,3 @@ def send_exercise_reminder(request, patient_id):
         messages.warning(request, "⚠️ Patient does not have an email address on file.")
 
     return redirect("progress_tracking")
-

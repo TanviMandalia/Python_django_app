@@ -1,0 +1,136 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Clinic Settings — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Clinic Settings & System Configuration{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="row g-4">
+    <!-- Clinic Settings Form Column -->
+    <div class="col-12 col-lg-8">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-sliders-h text-warning"></i> General Clinic Information & Consultation Fees
+          </h3>
+        </div>
+        <div class="content-card-body">
+          <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Clinic Name</label>
+                {{ form.clinic_name }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Tagline</label>
+                {{ form.tagline }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Contact Phone</label>
+                {{ form.phone }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Official Email</label>
+                {{ form.email }}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold text-dark">Address</label>
+                {{ form.address }}
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold text-dark">Initial Consultation Fee (₹)</label>
+                {{ form.appointment_fee }}
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold text-dark">Follow-up Fee (₹)</label>
+                {{ form.followup_fee }}
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold text-dark">Session Duration (Mins)</label>
+                {{ form.session_duration }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Opening Time</label>
+                {{ form.opening_time }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Closing Time</label>
+                {{ form.closing_time }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">WhatsApp Number / UPI ID</label>
+                {{ form.whatsapp }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Instagram Link</label>
+                {{ form.instagram }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Facebook Link</label>
+                {{ form.facebook }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">LinkedIn Link</label>
+                {{ form.linkedin }}
+              </div>
+              <div class="col-12">
+                <hr>
+                <h6 class="fw-bold text-dark mb-3">Feature Toggles & Modules</h6>
+                <div class="d-flex flex-wrap gap-4">
+                  <div class="form-check form-switch">
+                    {{ form.enable_chat }}
+                    <label class="form-check-label fw-semibold text-dark">Enable Patient Live Chat</label>
+                  </div>
+                  <div class="form-check form-switch">
+                    {{ form.enable_payments }}
+                    <label class="form-check-label fw-semibold text-dark">Enable Razorpay Payments</label>
+                  </div>
+                  <div class="form-check form-switch">
+                    {{ form.enable_otp_reset }}
+                    <label class="form-check-label fw-semibold text-dark">Enable Email OTP Password Reset</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-top text-end">
+              <button type="submit" class="btn btn-gold px-4">
+                <i class="fas fa-save me-1"></i> Save Settings
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platform Support Ticket Column -->
+    <div class="col-12 col-lg-4">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-headset text-warning"></i> Platform Support
+          </h3>
+        </div>
+        <div class="content-card-body">
+          <p class="text-muted small">Need technical assistance with your SaaS subscription or feature setup? Send a ticket to Platform Administration:</p>
+          <form method="POST" action="{% url 'submit_support_ticket' %}">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold text-dark">Subject</label>
+              <input type="text" name="subject" class="form-control" placeholder="e.g. Need assistance with Razorpay API keys" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold text-dark">Message</label>
+              <textarea name="message" class="form-control" rows="3" placeholder="Describe the issue in detail..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-dark-slate w-100 py-2">
+              <i class="fas fa-paper-plane me-1"></i> Submit Support Request
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

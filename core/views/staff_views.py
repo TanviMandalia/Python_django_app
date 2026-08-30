@@ -32,7 +32,7 @@ def staff_dashboard(request):
         'recent_leaves': recent_leaves,
         'recent_salaries': recent_salaries,
     }
-    return render(request, "staff_dashboard.html", context)
+    return render(request, "staff/staff_dashboard.html", context)
 
 
 @staff_required
@@ -68,7 +68,7 @@ def staff_attendance(request):
         return redirect("staff_attendance")
 
     history = Attendance.objects.filter(staff=user).order_by('-date')[:30]
-    return render(request, "staff_attendance.html", {
+    return render(request, "staff/staff_attendance.html", {
         "today_attendance": attendance,
         "history": history,
     })
@@ -90,19 +90,19 @@ def staff_leave(request):
         form = LeaveApplicationForm()
 
     leaves = LeaveApplication.objects.filter(staff=user).order_by('-applied_on')
-    return render(request, "staff_leave.html", {"form": form, "leaves": leaves})
+    return render(request, "staff/staff_leave.html", {"form": form, "leaves": leaves})
 
 
 @staff_required
 def staff_salary(request):
     salaries = SalaryRecord.objects.filter(staff=request.user).order_by('-year', '-month')
-    return render(request, "staff_salary.html", {"salaries": salaries})
+    return render(request, "staff/staff_salary.html", {"salaries": salaries})
 
 
 @staff_required
 def staff_tasks(request):
     tasks = DailyTask.objects.filter(assigned_to=request.user).order_by('-created_at')
-    return render(request, "staff_tasks.html", {"tasks": tasks})
+    return render(request, "staff/staff_tasks.html", {"tasks": tasks})
 
 
 @staff_required
@@ -120,5 +120,4 @@ def update_task(request, task_id, status):
 @staff_required
 def staff_session_notes(request):
     notes = SessionNote.objects.filter(staff=request.user).order_by('-date')
-    return render(request, "staff_session_notes.html", {"notes": notes})
-
+    return render(request, "staff/staff_session_notes.html", {"notes": notes})

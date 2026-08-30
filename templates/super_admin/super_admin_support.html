@@ -1,0 +1,83 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Support Tickets — PhysioRehab SaaS{% endblock %}
+{% block page_heading %}Clinic Support Ticket Resolution Desk{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Ticket Summary Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-4 col-md-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-folder-open"></i></div>
+        <div class="stat-card-value">{{ open_count }}</div>
+        <div class="stat-card-label">Open</div>
+      </div>
+    </div>
+    <div class="col-4 col-md-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-spinner"></i></div>
+        <div class="stat-card-value">{{ in_progress_count }}</div>
+        <div class="stat-card-label">In Progress</div>
+      </div>
+    </div>
+    <div class="col-4 col-md-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-check-double"></i></div>
+        <div class="stat-card-value">{{ resolved_count }}</div>
+        <div class="stat-card-label">Resolved</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Filter Pills -->
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{% url 'super_admin_support' %}" class="btn btn-sm {% if not status_filter %}btn-dark-slate{% else %}btn-outline-secondary{% endif %}">All</a>
+    <a href="?status=open" class="btn btn-sm {% if status_filter == 'open' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Open</a>
+    <a href="?status=in_progress" class="btn btn-sm {% if status_filter == 'in_progress' %}btn-warning{% else %}btn-outline-secondary{% endif %}">In Progress</a>
+    <a href="?status=resolved" class="btn btn-sm {% if status_filter == 'resolved' %}btn-success{% else %}btn-outline-secondary{% endif %}">Resolved</a>
+    <a href="?status=closed" class="btn btn-sm {% if status_filter == 'closed' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Closed</a>
+  </div>
+
+  <!-- Ticket Cards -->
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-headset text-warning"></i> Support Tickets
+      </h3>
+    </div>
+    <div class="content-card-body p-0">
+      {% if tickets %}
+        {% for t in tickets %}
+          <div class="d-flex align-items-center gap-3 px-4 py-3 border-bottom">
+            <div class="rounded-3 bg-warning bg-opacity-10 text-warning p-2 fs-5 flex-shrink-0">
+              <i class="fas fa-headset"></i>
+            </div>
+            <div class="flex-fill overflow-hidden">
+              <div class="fw-semibold text-dark">{{ t.subject }}</div>
+              <div class="text-muted small mt-1">
+                <span>{{ t.hospital.name|default:"Platform" }}</span> ·
+                <span>{{ t.submitted_by.username|default:"Anonymous" }}</span> ·
+                <span>{{ t.created_at|date:"d M Y H:i" }}</span>
+              </div>
+            </div>
+            <span class="badge badge-status badge-{{ t.status }} flex-shrink-0">{{ t.get_status_display }}</span>
+            <a href="{% url 'super_admin_support_reply' t.id %}" class="btn btn-sm btn-gold flex-shrink-0">
+              <i class="fas fa-reply me-1"></i> Reply
+            </a>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="fas fa-headset fs-1 mb-3 d-block text-secondary opacity-50"></i>
+          No tickets found.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

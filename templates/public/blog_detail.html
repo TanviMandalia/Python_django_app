@@ -1,0 +1,63 @@
+{% extends "layouts/base_public.html" %}
+{% load static %}
+
+{% block title %}{{ blog.title }} — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-warning text-decoration-none">Home</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'blog_list' %}" class="text-warning text-decoration-none">Articles</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ blog.title|truncatechars:30 }}</li>
+        </ol>
+      </nav>
+
+      <article class="bg-white p-4 p-md-5 rounded-4 shadow-sm border mb-5">
+        <span class="badge bg-warning text-dark fw-bold text-uppercase mb-2">{{ blog.category }}</span>
+        <h1 class="display-6 fw-bold mb-3 text-dark">{{ blog.title }}</h1>
+        <div class="d-flex align-items-center gap-3 text-muted small pb-3 mb-4 border-bottom">
+          <span><i class="fas fa-calendar-alt me-1"></i> Published on {{ blog.created_at|date:"d F Y" }}</span>
+          <span><i class="fas fa-user-md me-1"></i> Dr. Dhvani Patalia</span>
+        </div>
+
+        {% if blog.image %}
+          <img src="{{ blog.image.url }}" alt="{{ blog.title }}" class="img-fluid rounded-4 mb-4 w-100 shadow-sm" style="max-height: 420px; object-fit: cover;">
+        {% endif %}
+
+        <div class="blog-content-body lead fs-6 lh-lg text-dark">
+          {{ blog.content|linebreaks }}
+        </div>
+
+        {% if blog.before_image and blog.after_image %}
+          <div class="mt-5 p-4 rounded-4 bg-light border">
+            <h5 class="fw-bold mb-3 text-center"><i class="fas fa-camera text-warning me-2"></i>Patient Recovery Transformation</h5>
+            <div class="row g-3">
+              <div class="col-6 text-center">
+                <img src="{{ blog.before_image.url }}" class="img-fluid rounded-3 shadow-sm mb-2" alt="Before Treatment">
+                <span class="badge bg-dark">Before Therapy</span>
+              </div>
+              <div class="col-6 text-center">
+                <img src="{{ blog.after_image.url }}" class="img-fluid rounded-3 shadow-sm mb-2" alt="After Treatment">
+                <span class="badge bg-success">After Full Recovery</span>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </article>
+
+      <!-- CTA Box -->
+      <div class="card border-0 shadow-sm rounded-4 bg-dark text-white p-4 text-center">
+        <h4 class="fw-bold text-warning mb-2">Need Professional Therapy Guidance?</h4>
+        <p class="text-secondary small mb-3">Book an assessment consultation with our lead physiotherapist.</p>
+        <a href="{% url 'book_appointment' %}" class="btn btn-warning fw-bold px-4 py-2 rounded-pill align-self-center shadow-sm">
+          Schedule Appointment
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -32,7 +32,7 @@ def payments(request):
         'clinic_info': clinic_info,
         'razorpay_key_id': getattr(settings, 'RAZORPAY_KEY_ID', ''),
     }
-    return render(request, "payments.html", context)
+    return render(request, "client/payments.html", context)
 
 
 @login_required
@@ -175,7 +175,7 @@ def record_upi_payment(request):
 @admin_required
 def admin_payments(request):
     payments_list = PaymentRecord.objects.all().order_by('-created_at')
-    return render(request, "admin_payments.html", {"payments": payments_list})
+    return render(request, "admin/admin_payments.html", {"payments": payments_list})
 
 
 @admin_required
@@ -194,4 +194,3 @@ def reject_payment(request, payment_id):
     payment.save()
     messages.info(request, f"Payment #{payment.id} rejected.")
     return redirect("admin_payments")
-

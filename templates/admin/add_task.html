@@ -1,0 +1,55 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Assign Task — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Assign New Clinic Task{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-plus-circle text-warning"></i> Task Assignment Form
+          </h3>
+          <a href="{% url 'admin_tasks' %}" class="btn btn-sm btn-outline-secondary">Back to Tasks</a>
+        </div>
+        <div class="content-card-body">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Assign To Staff Member <span class="text-danger">*</span></label>
+                {{ form.assigned_to }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Priority <span class="text-danger">*</span></label>
+                {{ form.priority }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Task Title <span class="text-danger">*</span></label>
+                {{ form.title }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Due Date</label>
+                {{ form.due_date }}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold text-dark">Detailed Description</label>
+                {{ form.description }}
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+              <a href="{% url 'admin_tasks' %}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="submit" class="btn btn-gold px-4">
+                <i class="fas fa-paper-plane me-1"></i> Assign Task
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

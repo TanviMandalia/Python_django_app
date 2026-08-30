@@ -1,0 +1,57 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}{% if blog %}Edit{% else %}New{% endif %} Article — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}{% if blog %}Edit Blog Article{% else %}Write New Blog Article{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-feather-alt text-warning"></i>
+            {% if blog %}Edit: {{ blog.title|truncatechars:35 }}{% else %}Compose New Health Article{% endif %}
+          </h3>
+          <a href="{% url 'admin_blog_list' %}" class="btn btn-sm btn-outline-secondary">Back to Blog</a>
+        </div>
+        <div class="content-card-body">
+          <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold text-dark">Article Title <span class="text-danger">*</span></label>
+                {{ form.title }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Category</label>
+                {{ form.category }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Featured Image</label>
+                {{ form.image }}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold text-dark">Short Excerpt (for list page)</label>
+                {{ form.excerpt }}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold text-dark">Full Article Content <span class="text-danger">*</span></label>
+                {{ form.content }}
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+              <a href="{% url 'admin_blog_list' %}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="submit" class="btn btn-gold px-4">
+                <i class="fas fa-upload me-1"></i>
+                {% if blog %}Update Article{% else %}Publish Article{% endif %}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

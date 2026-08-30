@@ -1,0 +1,77 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Edit Salary — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Update Staff Salary Record{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-edit text-warning"></i> Update Salary Record for {{ salary.staff.get_full_name|default:salary.staff.username }} ({{ salary.month }} {{ salary.year }})
+          </h3>
+          <a href="{% url 'admin_salary' %}" class="btn btn-sm btn-outline-secondary">Back to Salaries</a>
+        </div>
+        <div class="content-card-body">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Staff Member</label>
+                {{ form.staff }}
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label fw-semibold text-dark">Month</label>
+                {{ form.month }}
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label fw-semibold text-dark">Year</label>
+                {{ form.year }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Basic Salary (₹)</label>
+                {{ form.basic_salary }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Bonus / Allowances (₹)</label>
+                {{ form.bonus }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Deductions (₹)</label>
+                {{ form.deduction }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Net Salary (₹)</label>
+                {{ form.net_salary }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Disbursed / Paid On</label>
+                {{ form.paid_on }}
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="form-check form-switch mt-4">
+                  {{ form.is_paid }}
+                  <label class="form-check-label fw-semibold text-dark">Salary Marked as Paid</label>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold text-dark">Notes</label>
+                {{ form.notes }}
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+              <a href="{% url 'admin_salary' %}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="submit" class="btn btn-gold px-4">
+                <i class="fas fa-save me-1"></i> Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

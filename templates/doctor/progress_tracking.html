@@ -1,0 +1,148 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Clinical Progress & Patient Tracking — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Clinical Assessment & Session Records{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Doctor KPI Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-gold"><i class="fas fa-user-injured"></i></div>
+        <div class="stat-label">Active Patients</div>
+        <div class="stat-value">{{ patients.count }}</div>
+        <div class="stat-desc">Registered undergoing care</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-file-medical-alt"></i></div>
+        <div class="stat-label">Clinical Notes</div>
+        <div class="stat-value">{{ notes.count }}</div>
+        <div class="stat-desc">Recorded therapy sessions</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-calendar-check"></i></div>
+        <div class="stat-label">Appointments Today</div>
+        <div class="stat-value">{{ today_appointments_count|default:0 }}</div>
+        <div class="stat-desc">Scheduled consultations</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-red"><i class="fas fa-clock"></i></div>
+        <div class="stat-label">Shift Status</div>
+        <div class="stat-value">Active</div>
+        <div class="stat-desc">{{ user.get_full_name|default:user.username }} (PT)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Session Notes Entry Form Column -->
+    <div class="col-12 col-lg-5">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-plus-circle text-warning"></i> Add Clinical Session Note
+          </h3>
+        </div>
+        <div class="content-card-body">
+          <form method="POST" action="{% url 'add_session_note' %}">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold text-dark">Select Patient <span class="text-danger">*</span></label>
+              <select name="patient" class="form-select" required>
+                <option value="">-- Choose Patient --</option>
+                {% for p in patients %}
+                  <option value="{{ p.id }}">{{ p.get_full_name|default:p.username }} ({{ p.email }})</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold text-dark">Session Date <span class="text-danger">*</span></label>
+              <input type="date" name="date" class="form-control" value="{% now 'Y-m-d' %}" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold text-dark">Clinical Diagnosis Findings <span class="text-danger">*</span></label>
+              <textarea name="diagnosis" class="form-control" rows="3" placeholder="e.g. Lumbar disc strain L4-L5, reduced flexion range..." required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold text-dark">Therapy Performed & Modalities <span class="text-danger">*</span></label>
+              <textarea name="treatment" class="form-control" rows="3" placeholder="e.g. IFT 15 mins, manual spine mobilization, pelvic tilt exercises..." required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold text-dark">Next Session Plan / Date</label>
+              <input type="text" name="next_session" class="form-control" placeholder="e.g. Next session in 3 days for core strengthening">
+            </div>
+            <button type="submit" class="btn btn-gold w-100 py-2">
+              <i class="fas fa-save me-1"></i> Save Clinical Record
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Clinical Notes History List -->
+    <div class="col-12 col-lg-7">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-history text-warning"></i> Recent Treatment Logs
+          </h3>
+        </div>
+        <div class="content-card-body p-0">
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Date</th>
+                  <th>Diagnosis & Treatment</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for note in notes %}
+                  <tr>
+                    <td>
+                      <strong>{{ note.patient.get_full_name|default:note.patient.username }}</strong>
+                      <div class="small text-muted">{{ note.patient.email }}</div>
+                    </td>
+                    <td>{{ note.date|date:"d M Y" }}</td>
+                    <td>
+                      <div class="small fw-semibold text-dark">{{ note.diagnosis|truncatechars:45 }}</div>
+                      <div class="small text-muted">{{ note.treatment|truncatechars:45 }}</div>
+                    </td>
+                    <td>
+                      <div class="d-flex gap-1">
+                        <a href="{% url 'edit_session_note' note.id %}" class="btn btn-sm btn-outline-secondary" title="Edit Note">
+                          <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'delete_session_note' note.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this clinical note?')" title="Delete">
+                          <i class="fas fa-trash-alt"></i>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center py-5 text-muted">No session notes recorded yet.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

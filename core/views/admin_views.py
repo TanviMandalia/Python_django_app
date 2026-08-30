@@ -48,7 +48,7 @@ def admin_dashboard(request):
         'recent_appointments': recent_appointments,
         'recent_reviews': recent_reviews,
     }
-    return render(request, "admin_dashboard.html", context)
+    return render(request, "admin/admin_dashboard.html", context)
 
 
 # ─── APPOINTMENTS MANAGEMENT ──────────────────────────────────────────
@@ -68,7 +68,7 @@ def admin_appointments(request):
             Q(email__icontains=search_query)
         )
 
-    return render(request, "admin_appointments.html", {
+    return render(request, "admin/admin_appointments.html", {
         "appointments": appointments,
         "status_filter": status_filter,
         "search_query": search_query,
@@ -96,7 +96,7 @@ def add_appointment(request):
             return redirect("admin_appointments")
     else:
         form = AppointmentBookingForm()
-    return render(request, "add_appointment.html", {"form": form})
+    return render(request, "admin/add_appointment.html", {"form": form})
 
 
 @admin_required
@@ -110,18 +110,18 @@ def edit_appointment(request, appt_id):
             return redirect("admin_appointments")
     else:
         form = AppointmentUpdateForm(instance=appt)
-    return render(request, "edit_appointment.html", {"form": form, "appointment": appt})
+    return render(request, "admin/edit_appointment.html", {"form": form, "appointment": appt})
 
 
 @admin_required
 def delete_appointment(request, appt_id):
     appt = get_object_or_404(Appointment, id=appt_id)
     appt.delete()
-    messages.info(request, "Appointment deleted.")
+    messages.info(request, f"Appointment #{appt_id} deleted.")
     return redirect("admin_appointments")
 
 
-# ─── PATIENTS MANAGEMENT ──────────────────────────────────────────────
+# ─── PATIENT DIRECTORY ───────────────────────────────────────────────
 
 @admin_required
 def admin_patients(request):
@@ -134,12 +134,12 @@ def admin_patients(request):
             Q(last_name__icontains=search) |
             Q(email__icontains=search)
         )
-    return render(request, "admin_patients.html", {"patients": patients, "search": search})
+    return render(request, "admin/admin_patients.html", {"patients": patients, "search": search})
 
 
 @admin_required
-def edit_patient(request, user_id):
-    patient_user = get_object_or_404(User, id=user_id)
+def edit_patient(request, patient_id):
+    patient_user = get_object_or_404(User, id=patient_id)
     profile, _ = Profile.objects.get_or_create(user=patient_user)
 
     if request.method == "POST":
@@ -151,68 +151,77 @@ def edit_patient(request, user_id):
         profile.phone_number = request.POST.get('phone_number', profile.phone_number)
         profile.gender = request.POST.get('gender', profile.gender)
         profile.blood_group = request.POST.get('blood_group', profile.blood_group)
+        profile.address = request.POST.get('address', profile.address)
         profile.emergency_contact = request.POST.get('emergency_contact', profile.emergency_contact)
         profile.medical_notes = request.POST.get('medical_notes', profile.medical_notes)
-        profile.address = request.POST.get('address', profile.address)
         profile.save()
 
-        messages.success(request, f"Patient profile for {patient_user.username} updated.")
+        messages.success(request, f"Patient {patient_user.get_full_name() or patient_user.username} updated.")
         return redirect("admin_patients")
 
-    return render(request, "edit_patient.html", {"patient_user": patient_user, "profile": profile})
+    return render(request, "admin/edit_patient.html", {"patient_user": patient_user, "profile": profile})
 
 
 @admin_required
-def delete_patient(request, user_id):
-    patient_user = get_object_or_404(User, id=user_id)
-    patient_user.is_active = False
-    patient_user.save()
-    messages.info(request, f"Patient {patient_user.username} deactivated.")
+def delete_patient(request, patient_id):
+    patient = get_object_or_404(User, id=patient_id)
+    patient.is_active = False
+    patient.save()
+    messages.info(request, f"Patient {patient.username} deactivated.")
     return redirect("admin_patients")
 
 
 @admin_required
-def reactivate_patient(request, user_id):
-    patient_user = get_object_or_404(User, id=user_id)
-    patient_user.is_active = True
-    patient_user.save()
-    messages.success(request, f"Patient {patient_user.username} reactivated.")
+def reactivate_patient(request, patient_id):
+    patient = get_object_or_404(User, id=patient_id)
+    patient.is_active = True
+    patient.save()
+    messages.success(request, f"Patient {patient.username} reactivated.")
     return redirect("admin_patients")
 
 
-# ─── STAFF MANAGEMENT ─────────────────────────────────────────────────
+# ─── STAFF MANAGEMENT ────────────────────────────────────────────────
 
 @admin_required
 def admin_staff(request):
     staff_members = StaffProfile.objects.all().order_by('-joining_date')
-    return render(request, "admin_staff.html", {"staff_members": staff_members})
+    return render(request, "admin/admin_staff.html", {"staff_members": staff_members})
 
 
 @admin_required
 def add_staff(request):
     if request.method == "POST":
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
         username = request.POST.get('username')
         email = request.POST.get('email')
         password = request.POST.get('password')
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        role = request.POST.get('role', 'physiotherapist')
+        role = request.POST.get('role', 'receptionist')
         phone = request.POST.get('phone', '')
-        salary = request.POST.get('salary', 0)
+        salary = request.POST.get('salary', 25000)
 
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists.")
         else:
             user = User.objects.create_user(
-                username=username, email=email, password=password,
-                first_name=first_name, last_name=last_name, is_staff=True
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                is_staff=True
             )
             StaffProfile.objects.create(
-                user=user, role=role, phone=phone, salary=salary, is_active=True
+                user=user,
+                role=role,
+                phone=phone,
+                salary=salary,
+                is_active=True
             )
-            messages.success(request, f"Staff member {user.get_full_name() or user.username} registered.")
+            messages.success(request, f"Staff member '{user.get_full_name() or user.username}' registered.")
             return redirect("admin_staff")
-    return render(request, "add_staff.html")
+
+    return render(request, "admin/add_staff.html")
 
 
 @admin_required
@@ -222,11 +231,11 @@ def edit_staff(request, staff_id):
         form = StaffProfileForm(request.POST, instance=staff)
         if form.is_valid():
             form.save()
-            messages.success(request, f"Staff profile updated.")
+            messages.success(request, "Staff details updated.")
             return redirect("admin_staff")
     else:
         form = StaffProfileForm(instance=staff)
-    return render(request, "edit_staff.html", {"form": form, "staff": staff})
+    return render(request, "admin/edit_staff.html", {"form": form, "staff": staff})
 
 
 @admin_required
@@ -234,25 +243,27 @@ def delete_staff(request, staff_id):
     staff = get_object_or_404(StaffProfile, id=staff_id)
     staff.is_active = False
     staff.save()
-    messages.info(request, "Staff member deactivated.")
+    messages.info(request, f"Staff '{staff.user.username}' deactivated.")
     return redirect("admin_staff")
 
 
-# ─── LEAVES & ATTENDANCE ──────────────────────────────────────────────
+# ─── LEAVE MANAGEMENT ────────────────────────────────────────────────
 
 @admin_required
 def admin_leaves(request):
     leaves = LeaveApplication.objects.all().order_by('-applied_on')
-    return render(request, "admin_leaves.html", {"leaves": leaves})
+    return render(request, "admin/admin_leaves.html", {"leaves": leaves})
 
 
 @admin_required
 def update_leave(request, leave_id, status):
     leave = get_object_or_404(LeaveApplication, id=leave_id)
-    if status in ['approved', 'rejected', 'pending']:
+    if status in ['approved', 'rejected']:
         leave.status = status
+        leave.reviewed_by = request.user
+        leave.reviewed_on = timezone.now()
         leave.save()
-        messages.success(request, f"Leave application marked as {status.title()}.")
+        messages.success(request, f"Leave application #{leave.id} {status}.")
     return redirect("admin_leaves")
 
 
@@ -264,13 +275,15 @@ def delete_leave(request, leave_id):
     return redirect("admin_leaves")
 
 
+# ─── ATTENDANCE LOG ──────────────────────────────────────────────────
+
 @admin_required
 def admin_attendance(request):
-    date_filter = request.GET.get('date', timezone.now().date().isoformat())
+    date_filter = request.GET.get('date', str(timezone.now().date()))
     attendances = Attendance.objects.filter(date=date_filter).order_by('staff__username')
-    return render(request, "admin_attendance.html", {
+    return render(request, "admin/admin_attendance.html", {
         "attendances": attendances,
-        "date_filter": date_filter
+        "date_filter": date_filter,
     })
 
 
@@ -279,12 +292,12 @@ def add_attendance(request):
     if request.method == "POST":
         form = AttendanceForm(request.POST)
         if form.is_valid():
-            att = form.save()
-            messages.success(request, "Attendance record created.")
+            form.save()
+            messages.success(request, "Attendance record added.")
             return redirect("admin_attendance")
     else:
         form = AttendanceForm(initial={'date': timezone.now().date()})
-    return render(request, "add_attendance.html", {"form": form})
+    return render(request, "admin/add_attendance.html", {"form": form})
 
 
 @admin_required
@@ -298,7 +311,7 @@ def edit_attendance(request, att_id):
             return redirect("admin_attendance")
     else:
         form = AttendanceForm(instance=att)
-    return render(request, "edit_attendance.html", {"form": form, "att": att})
+    return render(request, "admin/edit_attendance.html", {"form": form, "att": att})
 
 
 @admin_required
@@ -309,17 +322,17 @@ def delete_attendance(request, att_id):
     return redirect("admin_attendance")
 
 
-# ─── SALARY MANAGEMENT ────────────────────────────────────────────────
+# ─── SALARY MANAGEMENT ───────────────────────────────────────────────
 
 @admin_required
 def admin_salary(request):
     salaries = SalaryRecord.objects.all().order_by('-year', '-month')
-    return render(request, "admin_salary.html", {"salaries": salaries})
+    return render(request, "admin/admin_salary.html", {"salaries": salaries})
 
 
 @admin_required
-def edit_salary(request, record_id):
-    salary = get_object_or_404(SalaryRecord, id=record_id)
+def edit_salary(request, salary_id):
+    salary = get_object_or_404(SalaryRecord, id=salary_id)
     if request.method == "POST":
         form = SalaryRecordForm(request.POST, instance=salary)
         if form.is_valid():
@@ -328,23 +341,23 @@ def edit_salary(request, record_id):
             return redirect("admin_salary")
     else:
         form = SalaryRecordForm(instance=salary)
-    return render(request, "edit_salary.html", {"form": form, "salary": salary})
+    return render(request, "admin/edit_salary.html", {"form": form, "salary": salary})
 
 
 @admin_required
-def delete_salary(request, record_id):
-    salary = get_object_or_404(SalaryRecord, id=record_id)
+def delete_salary(request, salary_id):
+    salary = get_object_or_404(SalaryRecord, id=salary_id)
     salary.delete()
     messages.info(request, "Salary record deleted.")
     return redirect("admin_salary")
 
 
-# ─── TASKS MANAGEMENT ─────────────────────────────────────────────────
+# ─── TASKS MANAGEMENT ────────────────────────────────────────────────
 
 @admin_required
 def admin_tasks(request):
     tasks = DailyTask.objects.all().order_by('-created_at')
-    return render(request, "admin_tasks.html", {"tasks": tasks})
+    return render(request, "admin/admin_tasks.html", {"tasks": tasks})
 
 
 @admin_required
@@ -355,11 +368,11 @@ def add_task(request):
             task = form.save(commit=False)
             task.assigned_by = request.user
             task.save()
-            messages.success(request, f"Task '{task.title}' assigned.")
+            messages.success(request, f"Task '{task.title}' assigned to {task.assigned_to.username}.")
             return redirect("admin_tasks")
     else:
         form = DailyTaskForm()
-    return render(request, "add_task.html", {"form": form})
+    return render(request, "admin/add_task.html", {"form": form})
 
 
 @admin_required
@@ -369,11 +382,11 @@ def edit_task_admin(request, task_id):
         form = DailyTaskForm(request.POST, instance=task)
         if form.is_valid():
             form.save()
-            messages.success(request, "Task updated.")
+            messages.success(request, f"Task '{task.title}' updated.")
             return redirect("admin_tasks")
     else:
         form = DailyTaskForm(instance=task)
-    return render(request, "edit_task.html", {"form": form, "task": task})
+    return render(request, "admin/edit_task.html", {"form": form, "task": task})
 
 
 @admin_required
@@ -384,7 +397,7 @@ def delete_task_admin(request, task_id):
     return redirect("admin_tasks")
 
 
-# ─── CLINIC SETTINGS, PROMOS, REVIEWS, BLOG ───────────────────────────
+# ─── CLINIC SETTINGS & PROMOS ────────────────────────────────────────
 
 @admin_required
 def admin_settings(request):
@@ -397,13 +410,13 @@ def admin_settings(request):
             return redirect("admin_settings")
     else:
         form = ClinicSettingsForm(instance=settings_obj)
-    return render(request, "admin_settings.html", {"form": form})
+    return render(request, "admin/admin_settings.html", {"form": form})
 
 
 @admin_required
 def admin_promos(request):
     promos = ClinicPromo.objects.all().order_by('-created_at')
-    return render(request, "admin_promos.html", {"promos": promos})
+    return render(request, "admin/admin_promos.html", {"promos": promos})
 
 
 @admin_required
@@ -411,30 +424,40 @@ def admin_promo_add(request):
     if request.method == "POST":
         form = PromoForm(request.POST)
         if form.is_valid():
-            form.save()
+            promo = form.save(commit=False)
+            promo.created_by = request.user
+            promo.save()
             messages.success(request, "Promo announcement created.")
             return redirect("admin_promos")
     else:
         form = PromoForm()
-    return render(request, "admin_promo_add.html", {"form": form})
+    return render(request, "admin/admin_promo_add.html", {"form": form})
 
 
 @admin_required
 def admin_promo_delete(request, promo_id):
     promo = get_object_or_404(ClinicPromo, id=promo_id)
     promo.delete()
-    messages.info(request, "Promo deleted.")
+    messages.info(request, "Announcement deleted.")
     return redirect("admin_promos")
 
 
 def dismiss_promo(request):
-    return JsonResponse({'status': 'dismissed'})
+    promo_id = request.POST.get("promo_id")
+    if promo_id:
+        dismissed = request.session.get("dismissed_promos", [])
+        if promo_id not in dismissed:
+            dismissed.append(promo_id)
+            request.session["dismissed_promos"] = dismissed
+    return JsonResponse({"status": "ok"})
 
+
+# ─── REVIEWS MODERATION ──────────────────────────────────────────────
 
 @admin_required
 def admin_reviews(request):
     reviews = Review.objects.all().order_by('-created_at')
-    return render(request, "admin_reviews.html", {"reviews": reviews})
+    return render(request, "admin/admin_reviews.html", {"reviews": reviews})
 
 
 @admin_required
@@ -444,13 +467,12 @@ def admin_add_review(request):
         if form.is_valid():
             review = form.save(commit=False)
             review.is_approved = True
-            review.added_by_admin = True
             review.save()
             messages.success(request, "Review published.")
             return redirect("admin_reviews")
     else:
         form = ReviewForm()
-    return render(request, "admin_add_review.html", {"form": form})
+    return render(request, "admin/admin_add_review.html", {"form": form})
 
 
 @admin_required
@@ -459,7 +481,7 @@ def toggle_review_approval(request, review_id):
     review.is_approved = not review.is_approved
     review.save()
     status = "approved" if review.is_approved else "hidden"
-    messages.success(request, f"Review marked as {status}.")
+    messages.success(request, f"Review #{review.id} is now {status}.")
     return redirect("admin_reviews")
 
 
@@ -467,16 +489,16 @@ def toggle_review_approval(request, review_id):
 def admin_delete_review(request, review_id):
     review = get_object_or_404(Review, id=review_id)
     review.delete()
-    messages.info(request, "Review removed.")
+    messages.info(request, "Review deleted.")
     return redirect("admin_reviews")
 
 
-# ─── ADMIN BLOG CRUD ──────────────────────────────────────────────────
+# ─── BLOG MANAGEMENT ─────────────────────────────────────────────────
 
 @admin_required
 def admin_blog_list(request):
-    blogs = Blog.objects.order_by("-created_at")
-    return render(request, "blog_list.html", {"blogs": blogs})
+    blogs = Blog.objects.all().order_by('-created_at')
+    return render(request, "admin/blog_list.html", {"blogs": blogs})
 
 
 @admin_required
@@ -484,12 +506,14 @@ def admin_blog_add(request):
     if request.method == "POST":
         form = BlogForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Blog post published.")
+            blog = form.save(commit=False)
+            blog.author = request.user
+            blog.save()
+            messages.success(request, f"Article '{blog.title}' published.")
             return redirect("admin_blog_list")
     else:
         form = BlogForm()
-    return render(request, "blog_form.html", {"form": form, "categories": Blog.CATEGORY_CHOICES})
+    return render(request, "admin/blog_form.html", {"form": form, "categories": Blog.CATEGORY_CHOICES})
 
 
 @admin_required
@@ -499,27 +523,27 @@ def admin_blog_edit(request, id):
         form = BlogForm(request.POST, request.FILES, instance=blog)
         if form.is_valid():
             form.save()
-            messages.success(request, "Blog post updated.")
+            messages.success(request, f"Article '{blog.title}' updated.")
             return redirect("admin_blog_list")
     else:
         form = BlogForm(instance=blog)
-    return render(request, "blog_form.html", {"form": form, "blog": blog, "categories": Blog.CATEGORY_CHOICES})
+    return render(request, "admin/blog_form.html", {"form": form, "blog": blog, "categories": Blog.CATEGORY_CHOICES})
 
 
 @admin_required
 def admin_blog_delete(request, id):
     blog = get_object_or_404(Blog, id=id)
     blog.delete()
-    messages.info(request, "Blog post deleted.")
+    messages.info(request, "Article deleted.")
     return redirect("admin_blog_list")
 
 
-# ─── ADMIN SESSION NOTES CRUD ─────────────────────────────────────────
+# ─── SESSION NOTES ───────────────────────────────────────────────────
 
 @admin_required
 def admin_session_notes(request):
     notes = SessionNote.objects.all().order_by('-date')
-    return render(request, "admin_session_notes.html", {"notes": notes})
+    return render(request, "admin/admin_session_notes.html", {"notes": notes})
 
 
 @admin_required
@@ -530,20 +554,20 @@ def admin_add_session_note(request):
             note = form.save(commit=False)
             note.staff = request.user
             note.save()
-            messages.success(request, "Session note recorded.")
+            messages.success(request, "Clinical note saved.")
             return redirect("admin_session_notes")
     else:
         form = SessionNoteForm()
-    return render(request, "admin_add_session_note.html", {"form": form})
+    return render(request, "admin/admin_add_session_note.html", {"form": form})
 
 
-# ─── SUPPORT TICKETS ──────────────────────────────────────────────────
+# ─── SUPPORT TICKETS ─────────────────────────────────────────────────
 
 @admin_required
 def submit_support_ticket(request):
     if request.method == "POST":
-        subject = request.POST.get('subject', '')
-        message = request.POST.get('message', '')
+        subject = request.POST.get("subject")
+        message = request.POST.get("message")
         if subject and message:
             SupportTicket.objects.create(
                 submitted_by=request.user,
@@ -551,6 +575,5 @@ def submit_support_ticket(request):
                 message=message,
                 status='open'
             )
-            messages.success(request, "Support request sent to platform administration.")
+            messages.success(request, "Support request submitted to platform team.")
     return redirect("admin_settings")
-

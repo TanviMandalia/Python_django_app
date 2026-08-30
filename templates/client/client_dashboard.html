@@ -1,0 +1,188 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Patient Portal — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Welcome Back, {{ request.user.first_name|default:request.user.username }}! 👋{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Promo / Announcement Banner -->
+  {% if active_promos %}
+    {% for promo in active_promos %}
+      <div class="promo-banner mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+          <i class="fas fa-bullhorn text-warning fs-3"></i>
+          <div>
+            <h5 class="mb-0 fw-bold text-white">{{ promo.title }}</h5>
+            <p class="mb-0 text-light small">{{ promo.message }}</p>
+          </div>
+        </div>
+        <a href="{% url 'book_appointment' %}" class="btn btn-warning btn-sm text-dark fw-bold rounded-pill">
+          Book Consultation
+        </a>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Patient KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-gold"><i class="fas fa-calendar-check"></i></div>
+        <div class="stat-label">Upcoming Sessions</div>
+        <div class="stat-value">{{ upcoming_appointments.count }}</div>
+        <div class="stat-desc">Next scheduled visits</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-notes-medical"></i></div>
+        <div class="stat-label">Clinical Notes</div>
+        <div class="stat-value">{{ session_notes.count }}</div>
+        <div class="stat-desc">Doctor therapy logs</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-receipt"></i></div>
+        <div class="stat-label">Completed Sessions</div>
+        <div class="stat-value">{{ completed_count }}</div>
+        <div class="stat-desc">Rehab treatments received</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-red"><i class="fas fa-comments"></i></div>
+        <div class="stat-label">Unread Messages</div>
+        <div class="stat-value">{{ unread_messages_count|default:0 }}</div>
+        <div class="stat-desc">From clinic therapy team</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Upcoming Appointments Table -->
+    <div class="col-12 col-lg-7">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-calendar-alt text-warning"></i> Your Upcoming Appointments
+          </h3>
+          <a href="{% url 'book_appointment' %}" class="btn btn-sm btn-gold">
+            <i class="fas fa-plus me-1"></i> Book New
+          </a>
+        </div>
+        <div class="content-card-body p-0">
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Service</th>
+                  <th>Status</th>
+                  <th>Fee</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for appt in upcoming_appointments %}
+                  <tr>
+                    <td>
+                      <strong>{{ appt.date|date:"d M Y" }}</strong>
+                      <div class="small text-muted">{{ appt.get_time_display }}</div>
+                    </td>
+                    <td>{{ appt.get_service_display }}</td>
+                    <td>
+                      <span class="badge badge-status badge-{{ appt.status }}">
+                        {{ appt.get_status_display }}
+                      </span>
+                    </td>
+                    <td>₹{{ appt.consultation_fee|default:500 }}</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center py-4 text-muted">
+                      No upcoming appointments scheduled.<br>
+                      <a href="{% url 'book_appointment' %}" class="btn btn-sm btn-outline-warning text-dark mt-2">Book a Session</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doctor Session Notes & Exercises -->
+    <div class="col-12 col-lg-5">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-clipboard-list text-warning"></i> Recent Doctor Notes
+          </h3>
+        </div>
+        <div class="content-card-body">
+          {% for note in session_notes %}
+            <div class="p-3 mb-3 rounded-3 bg-light border">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong class="text-dark"><i class="fas fa-user-md text-warning me-1"></i> {{ note.staff.get_full_name|default:note.staff.username }}</strong>
+                <small class="text-muted">{{ note.date|date:"d M Y" }}</small>
+              </div>
+              <p class="mb-1 text-dark small"><strong>Diagnosis:</strong> {{ note.diagnosis }}</p>
+              <p class="mb-1 text-muted small"><strong>Treatment:</strong> {{ note.treatment }}</p>
+              {% if note.next_session %}
+                <div class="badge bg-warning-subtle text-dark small mt-1">
+                  Next Session: {{ note.next_session }}
+                </div>
+              {% endif %}
+            </div>
+          {% empty %}
+            <div class="text-center py-4 text-muted">
+              <i class="fas fa-file-medical fs-2 text-secondary mb-2 d-block"></i>
+              No treatment notes recorded yet.
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review / Feedback Submission -->
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-star text-warning"></i> Share Your Recovery Experience
+      </h3>
+    </div>
+    <div class="content-card-body">
+      <form method="POST" action="{% url 'submit_review' %}">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12 col-md-3">
+            <label class="form-label fw-semibold text-dark">Your Rating</label>
+            <select name="rating" class="form-select" required>
+              <option value="5">⭐⭐⭐⭐⭐ (Excellent - 5 Stars)</option>
+              <option value="4">⭐⭐⭐⭐ (Very Good - 4 Stars)</option>
+              <option value="3">⭐⭐⭐ (Average - 3 Stars)</option>
+              <option value="2">⭐⭐ (Needs Improvement - 2 Stars)</option>
+              <option value="1">⭐ (Poor - 1 Star)</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-9">
+            <label class="form-label fw-semibold text-dark">Your Testimonial / Feedback</label>
+            <textarea name="message" class="form-control" rows="2" placeholder="Tell us how Dr. Dhvani Patalia helped your recovery..." required></textarea>
+          </div>
+        </div>
+        <div class="text-end mt-3">
+          <button type="submit" class="btn btn-gold">
+            <i class="fas fa-paper-plane me-1"></i> Submit Review
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

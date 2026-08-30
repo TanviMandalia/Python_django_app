@@ -1,0 +1,54 @@
+{% extends "layouts/base_public.html" %}
+{% load static %}
+
+{% block title %}About Us — {{ clinic_info.clinic_name|default:"PhysioRehab Clinic" }}{% endblock %}
+
+{% block content %}
+<section class="py-5 bg-dark text-white text-center">
+  <div class="container py-4">
+    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold text-uppercase mb-3">Our Mission</span>
+    <h1 class="display-5 fw-bold mb-3">Dedicated to Your Complete Physical Recovery</h1>
+    <p class="lead text-light mx-auto" style="max-width: 700px;">
+      Empowering patients through advanced, personalized, evidence-based physiotherapy treatments in Jamnagar.
+    </p>
+  </div>
+</section>
+
+<section class="py-5 bg-white">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-12 col-lg-5 text-center">
+        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia" class="img-fluid rounded-4 shadow-lg" style="max-height: 440px; object-fit: cover;">
+      </div>
+      <div class="col-12 col-lg-7">
+        <span class="text-warning fw-bold text-uppercase">Lead Physiotherapist</span>
+        <h2 class="fw-bold mb-3 text-dark">Dr. Dhvani Patalia (PT)</h2>
+        <p class="text-secondary lead">Founder & Chief Consultant Physiotherapist</p>
+        <p class="text-muted">
+          Dr. Dhvani Patalia has extensive clinical experience treating musculoskeletal disorders, sports injuries, post-surgical recovery, and chronic pain conditions. Combining modern manual therapy techniques, electro-modalities, and customized therapeutic exercise prescriptions.
+        </p>
+        <div class="row g-3 mt-3">
+          <div class="col-6">
+            <div class="p-3 border rounded-3 bg-light text-center">
+              <h4 class="fw-bold text-warning mb-1">5000+</h4>
+              <small class="text-muted">Patients Treated</small>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 border rounded-3 bg-light text-center">
+              <h4 class="fw-bold text-warning mb-1">98%</h4>
+              <small class="text-muted">Recovery Rate</small>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4">
+          <a href="{% url 'book_appointment' %}" class="btn btn-warning px-4 py-2 rounded-pill fw-bold shadow-sm">
+            <i class="fas fa-calendar-check me-1"></i> Book Consultation
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

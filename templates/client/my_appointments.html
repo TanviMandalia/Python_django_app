@@ -1,0 +1,63 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}My Appointments — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}My Appointment History & Consultations{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-calendar-alt text-warning"></i> All Consultations
+      </h3>
+      <a href="{% url 'book_appointment' %}" class="btn btn-gold btn-sm">
+        <i class="fas fa-plus me-1"></i> Book Consultation
+      </a>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Appt #</th>
+              <th>Service</th>
+              <th>Date & Time</th>
+              <th>Doctor / Clinic</th>
+              <th>Status</th>
+              <th>Fee</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appt in appointments %}
+              <tr>
+                <td><strong>#{{ appt.id }}</strong></td>
+                <td>{{ appt.get_service_display }}</td>
+                <td>
+                  <strong>{{ appt.date|date:"d M Y" }}</strong>
+                  <div class="small text-muted">{{ appt.get_time_display }}</div>
+                </td>
+                <td>{{ clinic_info.clinic_name|default:"Dr. Dhvani Patalia Clinic" }}</td>
+                <td>
+                  <span class="badge badge-status badge-{{ appt.status }}">
+                    {{ appt.get_status_display }}
+                  </span>
+                </td>
+                <td class="fw-bold">₹{{ appt.consultation_fee|default:500 }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-5 text-muted">
+                  <i class="fas fa-calendar-times fs-2 text-secondary mb-2 d-block"></i>
+                  No appointments found.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

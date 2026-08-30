@@ -1,0 +1,57 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}New Announcement — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Create Clinic Announcement / Promo Banner{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-bullhorn text-warning"></i> Announcement Details
+          </h3>
+          <a href="{% url 'admin_promos' %}" class="btn btn-sm btn-outline-secondary">Back to Promos</a>
+        </div>
+        <div class="content-card-body">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold text-dark">Headline / Title <span class="text-danger">*</span></label>
+                {{ form.title }}
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold text-dark">Announcement Message <span class="text-danger">*</span></label>
+                {{ form.message }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">Start Date</label>
+                {{ form.start_date }}
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold text-dark">End Date</label>
+                {{ form.end_date }}
+              </div>
+              <div class="col-12">
+                <div class="form-check form-switch mt-2">
+                  {{ form.is_active }}
+                  <label class="form-check-label fw-semibold text-dark">Display this banner immediately</label>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+              <a href="{% url 'admin_promos' %}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="submit" class="btn btn-gold px-4">
+                <i class="fas fa-paper-plane me-1"></i> Publish Announcement
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

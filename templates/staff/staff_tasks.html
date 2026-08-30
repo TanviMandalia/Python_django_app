@@ -1,0 +1,69 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Daily Tasks — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Daily Tasks & Work Checklist{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-tasks text-warning"></i> Assigned Tasks
+      </h3>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Assigned By</th>
+              <th>Priority</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for task in tasks %}
+              <tr>
+                <td>
+                  <strong class="text-dark">{{ task.title }}</strong>
+                  <div class="small text-muted">{{ task.description|truncatechars:50 }}</div>
+                </td>
+                <td>{{ task.assigned_by.get_full_name|default:task.assigned_by.username }}</td>
+                <td>
+                  <span class="badge {% if task.priority == 'high' %}bg-danger{% elif task.priority == 'medium' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                    {{ task.get_priority_display }}
+                  </span>
+                </td>
+                <td>{{ task.due_date|date:"d M Y"|default:"--" }}</td>
+                <td>
+                  <span class="badge badge-status badge-{{ task.status }}">
+                    {{ task.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  {% if task.status != 'completed' %}
+                    <a href="{% url 'update_task' task.id 'completed' %}" class="btn btn-sm btn-outline-success rounded-pill">
+                      <i class="fas fa-check me-1"></i> Mark Done
+                    </a>
+                  {% else %}
+                    <span class="text-success small fw-bold"><i class="fas fa-check-circle me-1"></i> Done</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-5 text-muted">No tasks assigned.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

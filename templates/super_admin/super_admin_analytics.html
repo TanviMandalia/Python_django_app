@@ -1,0 +1,132 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Platform Analytics — PhysioRehab SaaS{% endblock %}
+{% block page_heading %}SaaS Platform Analytics & Growth Metrics{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Platform KPI Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-hospital"></i></div>
+        <div class="stat-card-value">{{ total_hospitals }}</div>
+        <div class="stat-card-label">Total Hospitals</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-card-value">{{ active_hospitals }}</div>
+        <div class="stat-card-label">Active</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-card-value">{{ total_patients }}</div>
+        <div class="stat-card-label">Total Patients</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-user-md"></i></div>
+        <div class="stat-card-value">{{ total_staff }}</div>
+        <div class="stat-card-label">Total Staff</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-calendar-check"></i></div>
+        <div class="stat-card-value">{{ total_appointments }}</div>
+        <div class="stat-card-label">Appointments</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-star"></i></div>
+        <div class="stat-card-value">{{ active_subs }}</div>
+        <div class="stat-card-label">Active Subs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subscription Distribution -->
+  <div class="content-card mb-4">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-chart-pie text-warning"></i> Subscription Distribution Overview
+      </h3>
+    </div>
+    <div class="content-card-body">
+      <div class="d-flex flex-wrap gap-3">
+        <span class="badge fs-6 bg-success py-2 px-3">Active: {{ active_subs }}</span>
+        <span class="badge fs-6 bg-warning text-dark py-2 px-3">Trial: {{ trial_subs }}</span>
+        <span class="badge fs-6 bg-danger py-2 px-3">Expired: {{ expired_subs }}</span>
+        <span class="badge fs-6 bg-dark py-2 px-3">Total Clinics: {{ total_hospitals }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hospital Performance Table -->
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-hospital text-warning"></i> Hospital Performance Benchmark
+      </h3>
+    </div>
+    <div class="content-card-body p-0">
+      {% if hospitals %}
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Hospital / Clinic</th>
+                <th>City</th>
+                <th>Appointments</th>
+                <th>Staff Count</th>
+                <th>Activity Ratio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for h in hospitals %}
+                <tr>
+                  <td><strong class="text-dark">{{ h.name }}</strong></td>
+                  <td class="text-muted">{{ h.city|default:"—" }}</td>
+                  <td><strong>{{ h.appt_count }}</strong></td>
+                  <td>{{ h.staff_count }}</td>
+                  <td>
+                    {% if total_appointments > 0 %}
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-fill" style="height:8px;max-width:120px;">
+                          <div class="progress-bar bg-warning" role="progressbar"
+                            style="width:{% widthratio h.appt_count total_appointments 100 %}%">
+                          </div>
+                        </div>
+                        <small class="text-muted">{% widthratio h.appt_count total_appointments 100 %}%</small>
+                      </div>
+                    {% else %}
+                      <div class="progress" style="height:8px;max-width:120px;">
+                        <div class="progress-bar" style="width:0%"></div>
+                      </div>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="fas fa-chart-bar fs-2 mb-2 d-block text-secondary opacity-50"></i>
+          No data yet. Add hospitals to see analytics.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

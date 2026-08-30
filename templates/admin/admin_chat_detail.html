@@ -1,0 +1,94 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Chat with {{ patient_user.get_full_name|default:patient_user.username }} — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Chat with {{ patient_user.get_full_name|default:patient_user.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="row g-4" style="height: calc(100vh - 180px); min-height: 550px;">
+
+    <!-- Thread List Sidebar -->
+    <div class="col-12 col-md-4 col-xl-3 d-flex flex-column">
+      <div class="content-card flex-fill d-flex flex-column overflow-hidden">
+        <div class="content-card-header flex-shrink-0">
+          <h3 class="content-card-title" style="font-size:0.95rem;">
+            <i class="fas fa-comments text-warning"></i> All Threads
+          </h3>
+          <a href="{% url 'admin_chat' %}" class="btn btn-sm btn-outline-secondary">Back</a>
+        </div>
+        <div class="overflow-auto flex-fill p-2">
+          {% for thread in threads %}
+            <a href="{% url 'admin_chat_detail' thread.patient.id %}" class="d-flex align-items-center gap-2 p-2 rounded-3 text-decoration-none mb-1 {% if thread.patient.id == patient_user.id %}bg-warning bg-opacity-15{% else %}hover-bg{% endif %}">
+              <div class="avatar-circle bg-dark text-warning flex-shrink-0" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;">
+                {{ thread.patient.first_name|first|upper }}
+              </div>
+              <div class="overflow-hidden">
+                <div class="fw-semibold text-dark small text-truncate">{{ thread.patient.get_full_name|default:thread.patient.username }}</div>
+              </div>
+              {% if thread.unread_count %}
+                <span class="badge bg-warning text-dark ms-auto flex-shrink-0">{{ thread.unread_count }}</span>
+              {% endif %}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Chat Window -->
+    <div class="col-12 col-md-8 col-xl-9 d-flex flex-column">
+      <div class="content-card flex-fill d-flex flex-column overflow-hidden">
+        <!-- Chat Header -->
+        <div class="content-card-header flex-shrink-0 border-bottom">
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar-circle bg-warning text-dark" style="width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;">
+              {{ patient_user.first_name|first|upper }}
+            </div>
+            <div>
+              <div class="fw-bold text-dark">{{ patient_user.get_full_name|default:patient_user.username }}</div>
+              <div class="small text-success"><i class="fas fa-circle me-1" style="font-size:0.6rem;"></i>Patient</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Messages Feed -->
+        <div class="flex-fill overflow-auto p-3" id="chatMessages" style="background:#f9f9f9;">
+          {% for msg in messages %}
+            <div class="d-flex {% if msg.sender == request.user %}justify-content-end{% else %}justify-content-start{% endif %} mb-3">
+              <div class="px-3 py-2 rounded-3 shadow-sm" style="max-width:70%;background:{% if msg.sender == request.user %}#1A1A1A{% else %}#fff{% endif %};color:{% if msg.sender == request.user %}#F5C518{% else %}#1A1A1A{% endif %};border:1px solid {% if msg.sender == request.user %}#1A1A1A{% else %}#dee2e6{% endif %};">
+                <p class="mb-1 small" style="line-height:1.5;">{{ msg.content }}</p>
+                <div class="text-end" style="font-size:0.7rem;opacity:0.6;">{{ msg.timestamp|date:"d M, h:i A" }}</div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="text-center text-muted mt-5">
+              <i class="fas fa-comment-slash fs-2 mb-2 d-block text-secondary opacity-50"></i>
+              No messages yet. Start the conversation below.
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Message Input Box -->
+        <div class="flex-shrink-0 p-3 border-top bg-white">
+          <form method="POST" action="{% url 'admin_send_message' patient_user.id %}">
+            {% csrf_token %}
+            <div class="input-group">
+              <textarea name="content" class="form-control border-end-0" rows="2" placeholder="Type your reply…" style="resize:none;" required></textarea>
+              <button type="submit" class="btn btn-gold px-4" title="Send Message">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Auto-scroll to bottom of chat
+  const chatFeed = document.getElementById('chatMessages');
+  if (chatFeed) chatFeed.scrollTop = chatFeed.scrollHeight;
+</script>
+{% endblock %}

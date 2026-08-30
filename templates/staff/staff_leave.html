@@ -1,0 +1,92 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Leave Applications — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Leave Applications & Time Off{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="row g-4">
+    <!-- Apply Leave Form -->
+    <div class="col-12 col-lg-5">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-calendar-plus text-warning"></i> Apply for Leave
+          </h3>
+        </div>
+        <div class="content-card-body">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold text-dark">Leave Type</label>
+              {{ form.leave_type }}
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold text-dark">From Date</label>
+                {{ form.from_date }}
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold text-dark">To Date</label>
+                {{ form.to_date }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold text-dark">Reason</label>
+              {{ form.reason }}
+            </div>
+            <button type="submit" class="btn btn-gold w-100 py-2">
+              <i class="fas fa-paper-plane me-1"></i> Submit Leave Request
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leave History -->
+    <div class="col-12 col-lg-7">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-history text-warning"></i> Leave Request History
+          </h3>
+        </div>
+        <div class="content-card-body p-0">
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Dates</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for leave in leaves %}
+                  <tr>
+                    <td><strong class="text-dark">{{ leave.get_leave_type_display }}</strong></td>
+                    <td>{{ leave.from_date|date:"d M Y" }} to {{ leave.to_date|date:"d M Y" }}</td>
+                    <td>{{ leave.reason|truncatechars:35 }}</td>
+                    <td>
+                      <span class="badge badge-status badge-{{ leave.status }}">
+                        {{ leave.get_status_display }}
+                      </span>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center py-4 text-muted">No leave requests found.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

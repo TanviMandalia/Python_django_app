@@ -1,0 +1,128 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Appointments Management — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Appointments & Consultation Schedule{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Filters & Search Bar -->
+  <div class="content-card mb-4">
+    <div class="content-card-body p-3">
+      <form method="GET" action="{% url 'admin_appointments' %}" class="row g-2 align-items-center">
+        <div class="col-12 col-md-5">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" name="search" class="form-control border-start-0" placeholder="Search by patient name, email, or phone..." value="{{ search_query }}">
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <select name="status" class="form-select" onchange="this.form.submit()">
+            <option value="">All Statuses</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>Confirmed</option>
+            <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+            <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-4 text-end d-flex gap-2 justify-content-end">
+          <button type="submit" class="btn btn-dark-slate">Filter</button>
+          <a href="{% url 'add_appointment' %}" class="btn btn-gold">
+            <i class="fas fa-plus me-1"></i> Add Appt
+          </a>
+          <a href="{% url 'export_appointments_excel' %}" class="btn btn-outline-success" title="Export Excel">
+            <i class="fas fa-file-excel"></i>
+          </a>
+          <a href="{% url 'export_appointments_pdf' %}" class="btn btn-outline-danger" title="Export PDF">
+            <i class="fas fa-file-pdf"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Appointments Table -->
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-calendar-check text-warning"></i> All Consultations ({{ appointments.count }})
+      </h3>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Patient</th>
+              <th>Contact Info</th>
+              <th>Service</th>
+              <th>Date & Time</th>
+              <th>Fee</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appt in appointments %}
+              <tr>
+                <td><strong>#{{ appt.id }}</strong></td>
+                <td>
+                  <div class="fw-semibold text-dark">{{ appt.name }}</div>
+                  {% if appt.patient %}
+                    <span class="badge bg-light text-muted border">Registered</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="small text-dark">{{ appt.phone }}</div>
+                  <div class="small text-muted">{{ appt.email }}</div>
+                </td>
+                <td>{{ appt.get_service_display }}</td>
+                <td>
+                  <strong>{{ appt.date|date:"d M Y" }}</strong>
+                  <div class="small text-muted">{{ appt.get_time_display }}</div>
+                </td>
+                <td class="fw-semibold">₹{{ appt.consultation_fee|default:500 }}</td>
+                <td>
+                  <span class="badge badge-status badge-{{ appt.status }}">
+                    {{ appt.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Status
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li><a class="dropdown-item text-success" href="{% url 'update_appointment' appt.id 'confirmed' %}"><i class="fas fa-check me-2"></i> Confirm</a></li>
+                        <li><a class="dropdown-item text-primary" href="{% url 'update_appointment' appt.id 'completed' %}"><i class="fas fa-check-double me-2"></i> Complete</a></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'update_appointment' appt.id 'cancelled' %}"><i class="fas fa-times me-2"></i> Cancel</a></li>
+                      </ul>
+                    </div>
+                    <a href="{% url 'edit_appointment' appt.id %}" class="btn btn-sm btn-outline-dark" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'delete_appointment' appt.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete appointment #{{ appt.id }}?')" title="Delete">
+                      <i class="fas fa-trash-alt"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="8" class="text-center py-5 text-muted">
+                  <i class="fas fa-calendar-times fs-2 text-secondary mb-2 d-block"></i>
+                  No appointments match the criteria.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

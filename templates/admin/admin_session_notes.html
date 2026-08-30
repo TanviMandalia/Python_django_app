@@ -1,0 +1,57 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Clinical Records — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Clinic-Wide Clinical Notes & Session Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-notes-medical text-warning"></i> All Clinical Records ({{ notes.count }})
+      </h3>
+      <a href="{% url 'admin_add_session_note' %}" class="btn btn-gold btn-sm">
+        <i class="fas fa-plus me-1"></i> Add Record
+      </a>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Therapist / Doctor</th>
+              <th>Date</th>
+              <th>Diagnosis Findings</th>
+              <th>Treatment Modalities</th>
+              <th>Next Session</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for note in notes %}
+              <tr>
+                <td>
+                  <div class="fw-bold text-dark">{{ note.patient.get_full_name|default:note.patient.username }}</div>
+                  <div class="small text-muted">{{ note.patient.email }}</div>
+                </td>
+                <td>{{ note.staff.get_full_name|default:note.staff.username }}</td>
+                <td>{{ note.date|date:"d M Y" }}</td>
+                <td>{{ note.diagnosis|truncatechars:45 }}</td>
+                <td>{{ note.treatment|truncatechars:45 }}</td>
+                <td>{{ note.next_session|default:"--" }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-5 text-muted">No clinical session notes recorded.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -38,7 +38,7 @@ def client_chat(request):
 
     Message.objects.filter(sender=admin_user, receiver=request.user, is_read=False).update(is_read=True)
 
-    return render(request, "client_chat.html", {
+    return render(request, "client/client_chat.html", {
         "admin": admin_user,
         "messages_list": chat_messages,
     })
@@ -72,7 +72,7 @@ def admin_chat(request):
                 'unread_count': unread_count
             })
 
-    return render(request, "admin_chat.html", {"conversations": conversations})
+    return render(request, "admin/admin_chat.html", {"threads": conversations})
 
 
 @admin_required
@@ -80,7 +80,7 @@ def admin_chat_detail(request, patient_id):
     patient = get_object_or_404(User, id=patient_id)
 
     if request.method == "POST":
-        content = request.POST.get("message", "").strip()
+        content = request.POST.get("content", "").strip() or request.POST.get("message", "").strip()
         if content:
             Message.objects.create(
                 sender=request.user,
@@ -97,9 +97,35 @@ def admin_chat_detail(request, patient_id):
 
     Message.objects.filter(sender=patient, receiver=request.user, is_read=False).update(is_read=True)
 
-    return render(request, "admin_chat_detail.html", {
-        "patient": patient,
-        "messages_list": chat_messages,
+    # Fetch all threads for sidebar
+    patient_ids = Message.objects.filter(
+        Q(receiver=request.user) | Q(sender=request.user)
+    ).values_list('sender_id', 'receiver_id')
+    unique_ids = set()
+    for s_id, r_id in patient_ids:
+        if s_id != request.user.id:
+            unique_ids.add(s_id)
+        if r_id != request.user.id:
+            unique_ids.add(r_id)
+
+    threads = []
+    for p_id in unique_ids:
+        p = User.objects.filter(id=p_id).first()
+        if p:
+            last_m = Message.objects.filter(
+                (Q(sender=request.user) & Q(receiver=p)) |
+                (Q(sender=p) & Q(receiver=request.user))
+            ).order_by('-created_at').first()
+            threads.append({
+                'patient': p,
+                'last_message': getattr(last_m, 'content', ''),
+                'unread_count': Message.objects.filter(sender=p, receiver=request.user, is_read=False).count()
+            })
+
+    return render(request, "admin/admin_chat_detail.html", {
+        "patient_user": patient,
+        "messages": chat_messages,
+        "threads": threads,
     })
 
 
@@ -141,4 +167,3 @@ def check_typing(request, user_id):
         activity = UserActivity.objects.filter(user=target_user, typing_to=request.user, is_typing=True).first()
         return JsonResponse({'is_typing': bool(activity)})
     return JsonResponse({'is_typing': False})
-

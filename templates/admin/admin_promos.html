@@ -1,0 +1,60 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Promo Announcements — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Clinic Announcements & Promotional Banners{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-bullhorn text-warning"></i> Active & Past Announcements
+      </h3>
+      <a href="{% url 'admin_promo_add' %}" class="btn btn-gold btn-sm">
+        <i class="fas fa-plus me-1"></i> Create Announcement
+      </a>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Message</th>
+              <th>Date Range</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for promo in promos %}
+              <tr>
+                <td><strong class="text-dark">{{ promo.title }}</strong></td>
+                <td>{{ promo.message|truncatechars:60 }}</td>
+                <td>{{ promo.start_date|date:"d M Y" }} – {{ promo.end_date|date:"d M Y" }}</td>
+                <td>
+                  <span class="badge {% if promo.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                    {% if promo.is_active %}Active{% else %}Inactive{% endif %}
+                  </span>
+                </td>
+                <td>
+                  <a href="{% url 'admin_promo_delete' promo.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete announcement?')" title="Delete">
+                    <i class="fas fa-trash-alt"></i>
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-5 text-muted">No promotional announcements found.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

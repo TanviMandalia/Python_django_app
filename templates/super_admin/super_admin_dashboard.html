@@ -1,0 +1,135 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Super Admin Platform Overview — PhysioRehab SaaS{% endblock %}
+{% block page_heading %}Platform Master Administration{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Platform KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-hospital"></i></div>
+        <div class="stat-card-value">{{ total_hospitals }}</div>
+        <div class="stat-card-label">Registered Hospitals</div>
+        <span class="badge bg-success mt-2">{{ active_hospitals }} Active</span>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-cubes"></i></div>
+        <div class="stat-card-value">{{ total_subs }}</div>
+        <div class="stat-card-label">Active Subscriptions</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-money-bill-wave"></i></div>
+        <div class="stat-card-value">₹{{ total_revenue|floatformat:2 }}</div>
+        <div class="stat-card-label">Platform Revenue</div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="fas fa-headset"></i></div>
+        <div class="stat-card-value">{{ open_tickets }}</div>
+        <div class="stat-card-label">Open Support Tickets</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Clinics & Pending Tickets Row -->
+  <div class="row g-4">
+
+    <!-- Recent Hospital Registrations -->
+    <div class="col-12 col-lg-7">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-hospital-alt text-warning"></i> Recent Hospital & Clinic Signups
+          </h3>
+          <a href="{% url 'super_admin_add_hospital' %}" class="btn btn-sm btn-gold">
+            <i class="fas fa-plus me-1"></i> Add Hospital
+          </a>
+        </div>
+        <div class="content-card-body p-0">
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Clinic / Hospital</th>
+                  <th>City</th>
+                  <th>Contact Email</th>
+                  <th>Status</th>
+                  <th>Registered</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for h in recent_hospitals %}
+                  <tr>
+                    <td class="fw-bold">{{ h.name }}</td>
+                    <td>{{ h.city|default:"—" }}</td>
+                    <td>{{ h.email }}</td>
+                    <td>
+                      {% if h.is_active %}
+                        <span class="badge bg-success">Active</span>
+                      {% else %}
+                        <span class="badge bg-danger">Inactive</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ h.created_at|date:"d M Y" }}</td>
+                    <td>
+                      <div class="d-flex gap-1">
+                        <a href="{% url 'super_admin_edit_hospital' h.id %}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="fas fa-edit"></i></a>
+                        <a href="{% url 'super_admin_hospital_payments' h.id %}" class="btn btn-sm btn-outline-primary" title="Payments"><i class="fas fa-receipt"></i></a>
+                      </div>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="6" class="text-center py-4 text-muted">No hospitals registered yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Open Support Tickets -->
+    <div class="col-12 col-lg-5">
+      <div class="content-card">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-headset text-warning"></i> Pending Support Tickets
+          </h3>
+          <a href="{% url 'super_admin_support' %}" class="btn btn-sm btn-outline-secondary">All Tickets</a>
+        </div>
+        <div class="content-card-body p-0">
+          {% for t in open_tickets_list %}
+            <div class="d-flex align-items-center gap-3 px-3 py-3 border-bottom">
+              <div class="rounded-3 bg-warning bg-opacity-10 text-warning p-2 flex-shrink-0">
+                <i class="fas fa-headset"></i>
+              </div>
+              <div class="flex-fill overflow-hidden">
+                <div class="fw-semibold text-dark small text-truncate">{{ t.subject }}</div>
+                <div class="text-muted" style="font-size:0.78rem;">{{ t.hospital.name|default:"Platform" }} · {{ t.created_at|date:"d M Y" }}</div>
+              </div>
+              <a href="{% url 'super_admin_support_reply' t.id %}" class="btn btn-sm btn-outline-dark flex-shrink-0">Reply</a>
+            </div>
+          {% empty %}
+            <div class="text-center py-5 text-muted">
+              <i class="fas fa-check-circle fs-2 mb-2 d-block text-success"></i>
+              No open tickets. All clear!
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

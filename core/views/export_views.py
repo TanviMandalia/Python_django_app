@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.utils import timezone
-from core.decorators import admin_required, super_admin_required
+from core.decorators import admin_required
 from core.models import Appointment, PaymentRecord, ClinicSubscriptionPayment
 from core.services.export_service import ExportService
 
@@ -95,7 +95,7 @@ def export_analytics_pdf(request):
     return ExportService.create_pdf_response("physiorehab_analytics", "Clinical Operations Summary", table_data)
 
 
-@super_admin_required
+@admin_required
 def export_payments_excel(request):
     payments = PaymentRecord.objects.all().order_by('-created_at')
     headers = ["Payment ID", "Patient", "Amount (₹)", "Method", "Status", "Transaction ID", "Date"]
@@ -113,7 +113,7 @@ def export_payments_excel(request):
     return ExportService.create_excel_response("platform_payments", "Payments", headers, rows)
 
 
-@super_admin_required
+@admin_required
 def export_payments_pdf(request):
     payments = PaymentRecord.objects.all().order_by('-created_at')[:50]
     table_data = [["ID", "Patient", "Amount", "Method", "Status", "Date"]]
@@ -127,4 +127,3 @@ def export_payments_pdf(request):
             p.created_at.strftime('%d-%b-%Y')
         ])
     return ExportService.create_pdf_response("platform_payments", "Platform Transactions Report", table_data)
-

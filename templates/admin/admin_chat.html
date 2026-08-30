@@ -1,0 +1,53 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Admin Chat — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Patient Messaging & Communication Hub{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="row g-4" style="height: calc(100vh - 180px); min-height: 500px;">
+
+    <!-- Chat Threads Sidebar -->
+    <div class="col-12 col-md-4 col-xl-3 d-flex flex-column">
+      <div class="content-card flex-fill d-flex flex-column overflow-hidden">
+        <div class="content-card-header flex-shrink-0">
+          <h3 class="content-card-title" style="font-size:1rem;">
+            <i class="fas fa-comments text-warning"></i> Patient Threads
+          </h3>
+        </div>
+        <div class="overflow-auto flex-fill p-2">
+          {% for thread in threads %}
+            <a href="{% url 'admin_chat_detail' thread.patient.id %}" class="d-flex align-items-center gap-3 p-2 rounded-3 text-decoration-none mb-1 {% if thread.patient.id == active_patient_id %}bg-warning bg-opacity-15{% else %}hover-bg{% endif %}">
+              <div class="avatar-circle bg-dark text-warning flex-shrink-0" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;">
+                {{ thread.patient.first_name|first|upper }}
+              </div>
+              <div class="overflow-hidden">
+                <div class="fw-semibold text-dark small text-truncate">{{ thread.patient.get_full_name|default:thread.patient.username }}</div>
+                <div class="text-muted" style="font-size:0.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  {{ thread.last_message|truncatechars:32 }}
+                </div>
+              </div>
+              {% if thread.unread_count %}
+                <span class="badge bg-warning text-dark ms-auto flex-shrink-0">{{ thread.unread_count }}</span>
+              {% endif %}
+            </a>
+          {% empty %}
+            <p class="text-muted text-center small mt-4">No conversations yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Select Thread Prompt (when no thread is selected) -->
+    <div class="col-12 col-md-8 col-xl-9 d-flex align-items-center justify-content-center">
+      <div class="text-center text-muted">
+        <i class="fas fa-comment-dots fs-1 mb-3 d-block text-secondary opacity-50"></i>
+        <p class="fw-semibold fs-5">Select a patient conversation to view messages</p>
+        <p class="small">You can reply directly to patients from the chat thread view.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

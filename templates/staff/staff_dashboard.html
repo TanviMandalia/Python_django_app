@@ -1,0 +1,154 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Employee Portal — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Staff Dashboard — {{ request.user.get_full_name|default:request.user.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Staff KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-gold"><i class="fas fa-tasks"></i></div>
+        <div class="stat-label">Pending Tasks</div>
+        <div class="stat-value">{{ pending_tasks.count }}</div>
+        <div class="stat-desc">Assigned for today</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-green"><i class="fas fa-clock"></i></div>
+        <div class="stat-label">Today's Hours</div>
+        <div class="stat-value">{{ today_attendance.total_hours|default:"0.00" }}h</div>
+        <div class="stat-desc">Logged shift time</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-blue"><i class="fas fa-calendar-minus"></i></div>
+        <div class="stat-label">Leave Status</div>
+        <div class="stat-value">{{ leave_applications.first.get_status_display|default:"No active leave" }}</div>
+        <div class="stat-desc">Recent application</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-red"><i class="fas fa-id-badge"></i></div>
+        <div class="stat-label">Role</div>
+        <div class="stat-value text-uppercase fs-5">{{ staff_profile.get_role_display|default:"Staff" }}</div>
+        <div class="stat-desc">PhysioRehab Clinic</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Quick Clock-In Box -->
+  <div class="content-card mb-4 bg-dark text-white">
+    <div class="content-card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h4 class="fw-bold text-warning mb-1"><i class="fas fa-fingerprint me-2"></i>Daily Shift Attendance</h4>
+        <p class="text-secondary small mb-0">Morning Shift (10:00 AM – 1:00 PM) | Evening Shift (4:00 PM – 8:00 PM)</p>
+      </div>
+      <div>
+        <a href="{% url 'staff_attendance' %}" class="btn btn-warning fw-bold px-4 py-2 rounded-pill shadow-sm">
+          <i class="fas fa-clock me-1"></i> Open Attendance Console
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Tasks Checklist -->
+    <div class="col-12 col-lg-7">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-clipboard-check text-warning"></i> Today's Assigned Tasks
+          </h3>
+          <a href="{% url 'staff_tasks' %}" class="btn btn-sm btn-outline-secondary">View All</a>
+        </div>
+        <div class="content-card-body p-0">
+          <div class="list-group list-group-flush">
+            {% for task in pending_tasks %}
+              <div class="list-group-item p-3 d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1 fw-bold text-dark">{{ task.title }}</h6>
+                  <p class="mb-0 text-muted small">{{ task.description|truncatechars:60 }}</p>
+                  <small class="text-danger"><i class="fas fa-calendar-alt me-1"></i> Due: {{ task.due_date|date:"d M Y"|default:"Today" }}</small>
+                </div>
+                <div>
+                  <a href="{% url 'update_task' task.id 'completed' %}" class="btn btn-sm btn-outline-success rounded-pill">
+                    <i class="fas fa-check me-1"></i> Mark Done
+                  </a>
+                </div>
+              </div>
+            {% empty %}
+              <div class="text-center py-5 text-muted">
+                <i class="fas fa-check-circle fs-2 text-success mb-2 d-block"></i>
+                All tasks completed for today!
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Salary & Leaves Overview -->
+    <div class="col-12 col-lg-5">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-file-invoice-dollar text-warning"></i> Latest Salary Record
+          </h3>
+          <a href="{% url 'staff_salary' %}" class="btn btn-sm btn-outline-secondary">Salary History</a>
+        </div>
+        <div class="content-card-body">
+          {% if salary_records.first %}
+            {% with sal=salary_records.first %}
+              <div class="p-3 bg-light rounded-3 border mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted small">Month & Year</span>
+                  <strong class="text-dark">{{ sal.month }} {{ sal.year }}</strong>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted small">Basic Pay</span>
+                  <span class="fw-semibold text-dark">₹{{ sal.basic_salary }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted small">Bonus / Allowances</span>
+                  <span class="text-success fw-semibold">+₹{{ sal.bonus }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted small">Deductions</span>
+                  <span class="text-danger fw-semibold">-₹{{ sal.deduction }}</span>
+                </div>
+                <hr class="my-2">
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong class="text-dark">Net Salary</strong>
+                  <strong class="fs-5 text-dark">₹{{ sal.net_salary }}</strong>
+                </div>
+                <div class="mt-2 text-end">
+                  <span class="badge {% if sal.is_paid %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                    {% if sal.is_paid %}Paid on {{ sal.paid_on|date:"d M Y" }}{% else %}Payment Pending{% endif %}
+                  </span>
+                </div>
+              </div>
+            {% endwith %}
+          {% else %}
+            <div class="text-center py-4 text-muted">No salary records generated yet.</div>
+          {% endif %}
+
+          <div class="d-grid mt-3">
+            <a href="{% url 'staff_leave' %}" class="btn btn-outline-dark">
+              <i class="fas fa-calendar-plus me-1"></i> Apply for Leave
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

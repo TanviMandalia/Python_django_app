@@ -1,0 +1,132 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Shift Attendance — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Staff Shift Attendance Console{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Attendance Shift Status Cards -->
+  <div class="row g-4 mb-4">
+    <!-- Morning Shift Box -->
+    <div class="col-12 col-md-6">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-sun text-warning"></i> Morning Shift (10:00 AM – 1:00 PM)
+          </h3>
+        </div>
+        <div class="content-card-body">
+          <div class="p-3 bg-light rounded-3 border mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted">Clock In Time:</span>
+              <strong>{{ today_attendance.clock_in|time:"h:i A"|default:"Not Clocked In" }}</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Clock Out Time:</span>
+              <strong>{{ today_attendance.morning_clock_out|time:"h:i A"|default:"Not Clocked Out" }}</strong>
+            </div>
+          </div>
+
+          <form method="POST" action="{% url 'staff_attendance' %}">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+              <button type="submit" name="action" value="morning_in" class="btn btn-gold flex-fill" {% if today_attendance.clock_in %}disabled{% endif %}>
+                <i class="fas fa-sign-in-alt me-1"></i> Clock In Morning
+              </button>
+              <button type="submit" name="action" value="morning_out" class="btn btn-outline-dark flex-fill" {% if not today_attendance.clock_in or today_attendance.morning_clock_out %}disabled{% endif %}>
+                <i class="fas fa-sign-out-alt me-1"></i> Clock Out Morning
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Evening Shift Box -->
+    <div class="col-12 col-md-6">
+      <div class="content-card h-100 mb-0">
+        <div class="content-card-header">
+          <h3 class="content-card-title">
+            <i class="fas fa-moon text-warning"></i> Evening Shift (4:00 PM – 8:00 PM)
+          </h3>
+        </div>
+        <div class="content-card-body">
+          <div class="p-3 bg-light rounded-3 border mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted">Clock In Time:</span>
+              <strong>{{ today_attendance.evening_clock_in|time:"h:i A"|default:"Not Clocked In" }}</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Clock Out Time:</span>
+              <strong>{{ today_attendance.clock_out|time:"h:i A"|default:"Not Clocked Out" }}</strong>
+            </div>
+          </div>
+
+          <form method="POST" action="{% url 'staff_attendance' %}">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+              <button type="submit" name="action" value="evening_in" class="btn btn-gold flex-fill" {% if today_attendance.evening_clock_in %}disabled{% endif %}>
+                <i class="fas fa-sign-in-alt me-1"></i> Clock In Evening
+              </button>
+              <button type="submit" name="action" value="evening_out" class="btn btn-outline-dark flex-fill" {% if not today_attendance.evening_clock_in or today_attendance.clock_out %}disabled{% endif %}>
+                <i class="fas fa-sign-out-alt me-1"></i> Clock Out Evening
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Attendance Log -->
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-calendar-check text-warning"></i> Your Attendance Log
+      </h3>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Morning Shift</th>
+              <th>Evening Shift</th>
+              <th>Total Hours</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for att in attendance_history %}
+              <tr>
+                <td><strong>{{ att.date|date:"d M Y" }}</strong></td>
+                <td>
+                  {{ att.clock_in|time:"h:i A"|default:"--" }} – {{ att.morning_clock_out|time:"h:i A"|default:"--" }}
+                  <small class="text-muted">({{ att.morning_hours|default:"0.00" }}h)</small>
+                </td>
+                <td>
+                  {{ att.evening_clock_in|time:"h:i A"|default:"--" }} – {{ att.clock_out|time:"h:i A"|default:"--" }}
+                  <small class="text-muted">({{ att.evening_hours|default:"0.00" }}h)</small>
+                </td>
+                <td class="fw-bold text-dark">{{ att.total_hours|default:"0.00" }} hrs</td>
+                <td>
+                  <span class="badge bg-success">Recorded</span>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">No attendance logs recorded yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

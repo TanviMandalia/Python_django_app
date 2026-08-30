@@ -1,0 +1,74 @@
+{% extends "layouts/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Daily Tasks — {{ clinic_info.clinic_name|default:"PhysioRehab" }}{% endblock %}
+{% block page_heading %}Task Delegation & Management Board{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <div class="content-card">
+    <div class="content-card-header">
+      <h3 class="content-card-title">
+        <i class="fas fa-tasks text-warning"></i> Assigned Clinic Tasks ({{ tasks.count }})
+      </h3>
+      <a href="{% url 'add_task' %}" class="btn btn-gold btn-sm">
+        <i class="fas fa-plus me-1"></i> Assign New Task
+      </a>
+    </div>
+    <div class="content-card-body p-0">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Assigned To</th>
+              <th>Priority</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for task in tasks %}
+              <tr>
+                <td>
+                  <strong class="text-dark">{{ task.title }}</strong>
+                  <div class="small text-muted">{{ task.description|truncatechars:50 }}</div>
+                </td>
+                <td>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</td>
+                <td>
+                  <span class="badge {% if task.priority == 'high' %}bg-danger{% elif task.priority == 'medium' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                    {{ task.get_priority_display }}
+                  </span>
+                </td>
+                <td>{{ task.due_date|date:"d M Y"|default:"--" }}</td>
+                <td>
+                  <span class="badge badge-status badge-{{ task.status }}">
+                    {{ task.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a href="{% url 'edit_task_admin' task.id %}" class="btn btn-sm btn-outline-dark" title="Edit Task">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'delete_task_admin' task.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete task?')" title="Delete">
+                      <i class="fas fa-trash-alt"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-5 text-muted">No tasks assigned yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

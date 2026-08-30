@@ -38,7 +38,7 @@ def client_dashboard(request):
         'clinic_info': clinic_info,
         'recent_payments': payments,
     }
-    return render(request, "client_dashboard.html", context)
+    return render(request, "client/client_dashboard.html", context)
 
 
 def book_appointment(request):
@@ -52,7 +52,7 @@ def book_appointment(request):
             # Validate slot availability
             if not AppointmentService.is_slot_available(appt_date, appt_time):
                 messages.error(request, f"⚠️ The slot on {appt_date} at {appt_time} is already booked. Please choose another time.")
-                return render(request, "book_appointment.html", {"form": form, "clinic_info": clinic_info})
+                return render(request, "client/book_appointment.html", {"form": form, "clinic_info": clinic_info})
 
             patient_user = request.user if request.user.is_authenticated else None
             appointment = form.save(commit=False)
@@ -76,7 +76,7 @@ def book_appointment(request):
             }
         form = AppointmentBookingForm(initial=initial)
 
-    return render(request, "book_appointment.html", {"form": form, "clinic_info": clinic_info})
+    return render(request, "client/book_appointment.html", {"form": form, "clinic_info": clinic_info})
 
 
 @login_required
@@ -87,7 +87,7 @@ def my_appointments(request):
     if status_filter:
         appointments = appointments.filter(status=status_filter)
 
-    return render(request, "my_appointments.html", {
+    return render(request, "client/my_appointments.html", {
         "appointments": appointments,
         "status_filter": status_filter,
     })
@@ -107,5 +107,4 @@ def submit_review(request):
     else:
         form = ReviewForm(initial={'reviewer_name': request.user.get_full_name() or request.user.username})
 
-    return render(request, "client_dashboard.html", {"review_form": form})
-
+    return render(request, "client/client_dashboard.html", {"review_form": form})
