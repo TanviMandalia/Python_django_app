@@ -1,4 +1,5 @@
-asgiref==3.11.1
+﻿asgiref==3.11.1
+celery==5.4.0
 certifi==2026.6.17
 charset-normalizer==3.4.7
 Django==6.0.6
@@ -8,6 +9,8 @@ idna==3.18
 openpyxl==3.1.5
 packaging==26.2
 pillow==12.2.0
+python-dotenv==1.0.1
+razorpay==1.4.2
 reportlab==5.0.0
 requests==2.34.2
 sqlparse==0.5.5
@@ -15,11 +18,3 @@ stripe==15.2.1
 typing_extensions==4.15.0
 tzdata==2026.2
 urllib3==2.7.0
-Django==6.0.6
-gunicorn==26.0.0
-openpyxl==3.1.5
-pillow==12.2.0
-reportlab==5.0.0
-requests==2.34.2
-stripe==15.2.1
-razorpay

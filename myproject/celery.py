@@ -6,7 +6,7 @@ Place this at: myproject/celery.py  (same folder as settings.py, wsgi.py)
 import os
 from celery import Celery
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myproject.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myproject.settings.production")
 
 app = Celery("myproject")
 app.config_from_object("django.conf:settings", namespace="CELERY")
