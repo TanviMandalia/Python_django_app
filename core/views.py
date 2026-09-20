@@ -101,22 +101,22 @@ def home(request):
     approved_reviews = Review.objects.filter(is_approved=True).order_by("-created_at")[
         :8
     ]
-    return render(request, "home.html", {"approved_reviews": approved_reviews})
+    return render(request, "public/home.html", {"approved_reviews": approved_reviews})
 
 
 def about(request):
-    return render(request, "about.html")
+    return render(request, "public/about.html")
 
 
 def services(request):
-    return render(request, "services.html")
+    return render(request, "public/services.html")
 
 
 def contact(request):
     if request.method == "POST":
         messages.success(request, "✅ Message sent! We will contact you soon.")
         return redirect("/contact/")
-    return render(request, "contact.html")
+    return render(request, "public/contact.html")
 
 
 # =========================
@@ -130,7 +130,7 @@ def blog_list(request):
     categories = Blog.CATEGORY_CHOICES
     return render(
         request,
-        "blog.html",
+        "public/blog.html",
         {"blogs": blogs, "categories": categories, "active_category": category},
     )
 
@@ -140,7 +140,7 @@ def blog_list(request):
 # =========================
 def blog_detail(request, slug):
     blog = get_object_or_404(Blog, slug=slug)
-    return render(request, "blog_detail.html", {"blog": blog})
+    return render(request, "public/blog_detail.html", {"blog": blog})
 
 
 # =========================
@@ -149,7 +149,7 @@ def blog_detail(request, slug):
 def admin_blog_list(request):
     blogs = Blog.objects.order_by("-created_at")
 
-    return render(request, "blog_list.html", {"blogs": blogs})
+    return render(request, "public/blog_list.html", {"blogs": blogs})
 
 
 # =========================
@@ -167,7 +167,7 @@ def admin_blog_add(request):
             after_image=request.FILES.get("after_image") or None,
         )
         return redirect("admin_blog_list")
-    return render(request, "blog_form.html", {"categories": Blog.CATEGORY_CHOICES})
+    return render(request, "public/blog_form.html", {"categories": Blog.CATEGORY_CHOICES})
 
 
 # =========================
@@ -189,7 +189,7 @@ def admin_blog_edit(request, id):
         blog.save()
         return redirect("admin_blog_list")
     return render(
-        request, "blog_form.html", {"blog": blog, "categories": Blog.CATEGORY_CHOICES}
+        request, "public/blog_form.html", {"blog": blog, "categories": Blog.CATEGORY_CHOICES}
     )
 
 
@@ -203,7 +203,7 @@ def admin_blog_delete(request, id):
         blog.delete()
         return redirect("admin_blog_list")
 
-    return render(request, "blog_delete.html", {"blog": blog})
+    return render(request, "public/blog_delete.html", {"blog": blog})
 
 
 # ──────────────────────────────────────────────────────────
@@ -247,7 +247,7 @@ def admin_reviews(request):
     pending_count = reviews.filter(is_approved=False).count()
     return render(
         request,
-        "admin_reviews.html",
+        "admin/admin_reviews.html",
         {"reviews": reviews, "pending_count": pending_count},
     )
 
@@ -267,7 +267,7 @@ def admin_add_review(request):
         )
         messages.success(request, "Review added successfully.")
         return redirect("admin_reviews")
-    return render(request, "admin_add_review.html")
+    return render(request, "admin/admin_add_review.html")
 
 
 @login_required
@@ -307,7 +307,7 @@ def login_view(request):
             messages.error(
                 request, f"🔒 Account locked. Try again in {remaining} minute(s)."
             )
-            return render(request, "login.html")
+            return render(request, "auth/login.html")
 
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
@@ -336,7 +336,7 @@ def login_view(request):
                     "🔒 Too many failed attempts. Account locked for 15 minutes.",
                 )
 
-    return render(request, "login.html")
+    return render(request, "auth/login.html")
 
 
 def _get_client_ip(request):
@@ -437,7 +437,7 @@ def register_view(request):
         )
         messages.success(request, "✅ Account created! Please login.")
         return redirect("login")
-    return render(request, "register.html")
+    return render(request, "auth/register.html")
 
 
 def logout_view(request):
@@ -451,7 +451,7 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
-    return render(request, "profile.html", {"profile": profile})
+    return render(request, "client/profile.html", {"profile": profile})
 
 
 @login_required
@@ -476,7 +476,7 @@ def edit_profile(request):
 
         messages.success(request, "✅ Profile updated successfully.")
         return redirect("profile")
-    return render(request, "edit_profile.html", {"profile": profile})
+    return render(request, "client/edit_profile.html", {"profile": profile})
 
 
 # ─── PASSWORD RESET (OTP FLOW) ───────────────────────────────
@@ -490,7 +490,7 @@ def request_otp(request):
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             messages.error(request, "❌ No account found with that email.")
-            return render(request, "request_otp.html")
+            return render(request, "auth/request_otp.html")
 
         # Expire old OTPs
         PasswordResetOTP.objects.filter(user=user).delete()
@@ -509,7 +509,7 @@ def request_otp(request):
         request.session["reset_user_id"] = user.id
         return redirect("verify_otp")
 
-    return render(request, "request_otp.html")
+    return render(request, "auth/request_otp.html")
 
 
 def verify_otp(request):
@@ -538,7 +538,7 @@ def verify_otp(request):
             return redirect("reset_password")
 
         messages.error(request, "❌ Incorrect OTP. Try again.")
-    return render(request, "verify_otp.html")
+    return render(request, "auth/verify_otp.html")
 
 
 def resend_otp(request):
@@ -620,7 +620,7 @@ def reset_password(request):
 
         return redirect("login")
 
-    return render(request, "reset_password.html")
+    return render(request, "auth/reset_password.html")
 
 
 @login_required
@@ -649,7 +649,7 @@ def change_password_request(request):
 
         return redirect("verify_otp")
 
-    return render(request, "change_password.html")
+    return render(request, "auth/change_password.html")
 
 
 # ─── NOTIFICATIONS ───────────────────────────────────────────
@@ -660,7 +660,7 @@ def notifications_view(request):
     notifs = Notification.objects.filter(recipient=request.user)
     return render(
         request,
-        "notifications.html",
+        "client/notifications.html",
         {
             "notifications": notifs,
             "today": timezone.now().date(),
@@ -729,7 +729,7 @@ def payments(request):
     _, razorpay_key_id, _ = _get_patient_razorpay(request.user)
     return render(
         request,
-        "payments.html",
+        "client/payments.html",
         {
             "my_payments": my_payments,
             "upcoming_appointments": upcoming_appointments,
@@ -908,7 +908,7 @@ def admin_payments(request):
     pending_payments = all_payments.filter(status="pending")
     return render(
         request,
-        "admin_payments.html",
+        "admin/admin_payments.html",
         {
             "payments": all_payments,
             "total_paid": total_paid,
@@ -972,7 +972,7 @@ def client_dashboard(request):
     _, razorpay_key_id, _ = _get_patient_razorpay(request.user)
     return render(
         request,
-        "client_dashboard.html",
+        "client/client_dashboard.html",
         {
             "appointments": appointments,
             "upcoming": upcoming,
@@ -1019,7 +1019,7 @@ def admin_dashboard(request):
     pending_payments_count = PaymentRecord.objects.filter(status="pending").count()
     return render(
         request,
-        "admin_dashboard.html",
+        "admin/admin_dashboard.html",
         {
             "total_users": total_users,
             "all_appointments": all_appointments,
@@ -1076,13 +1076,13 @@ def book_appointment(request):
 
         messages.success(request, "✅ Appointment booked! Confirmation email sent.")
         return redirect("my_appointments")
-    return render(request, "book_appointment.html")
+    return render(request, "client/book_appointment.html")
 
 
 @login_required
 def my_appointments(request):
     appointments = Appointment.objects.filter(patient=request.user)
-    return render(request, "my_appointments.html", {"appointments": appointments})
+    return render(request, "client/my_appointments.html", {"appointments": appointments})
 
 
 @login_required
@@ -1092,7 +1092,7 @@ def admin_appointments(request):
     all_appointments = Appointment.objects.all().order_by("-created_at")
     return render(
         request,
-        "admin_appointments.html",
+        "admin/admin_appointments.html",
         {
             "all_appointments": all_appointments,
             "pending_count": all_appointments.filter(status="pending").count(),
@@ -1168,7 +1168,7 @@ def admin_patients(request):
                 "phone": phone,
             }
         )
-    return render(request, "admin_patients.html", {"patient_data": patient_data})
+    return render(request, "admin/admin_patients.html", {"patient_data": patient_data})
 
 
 # ─── CHAT ────────────────────────────────────────────────────
@@ -1178,7 +1178,7 @@ def admin_patients(request):
 def client_chat(request):
     admin = get_admin_user()
     if not admin:
-        return render(request, "client_chat.html", {"error": "No admin account found."})
+        return render(request, "client/client_chat.html", {"error": "No admin account found."})
 
     if request.method == "POST":
         content = request.POST.get("content", "").strip()
@@ -1202,7 +1202,7 @@ def client_chat(request):
     admin_activity = UserActivity.objects.filter(user=admin).first()
     return render(
         request,
-        "client_chat.html",
+        "client/client_chat.html",
         {
             "messages_list": msgs,
             "admin": admin,
@@ -1237,7 +1237,7 @@ def admin_chat(request):
         key=lambda x: x["last_msg"].created_at if x["last_msg"] else timezone.now(),
         reverse=True,
     )
-    return render(request, "admin_chat.html", {"patient_chats": patient_chats})
+    return render(request, "admin/admin_chat.html", {"patient_chats": patient_chats})
 
 
 @login_required
@@ -1269,7 +1269,7 @@ def admin_chat_detail(request, patient_id):
     patient_activity = UserActivity.objects.filter(user=patient).first()
     return render(
         request,
-        "admin_chat_detail.html",
+        "admin/admin_chat_detail.html",
         {
             "patient": patient,
             "messages_list": msgs,
@@ -1354,7 +1354,7 @@ def admin_staff(request):
     if not request.user.is_superuser:
         return redirect("client_dashboard")
     staff_list = StaffProfile.objects.all().select_related("user")
-    return render(request, "admin_staff.html", {"staff_list": staff_list})
+    return render(request, "admin/admin_staff.html", {"staff_list": staff_list})
 
 
 @login_required
@@ -1414,7 +1414,7 @@ def add_staff(request):
             messages.error(request, f"❌ Error creating staff: {str(e)}")
             return redirect("add_staff")
 
-    return render(request, "add_staff.html")
+    return render(request, "admin/add_staff.html")
 
 
 # ─── ADMIN – LEAVES ──────────────────────────────────────────
@@ -1462,7 +1462,7 @@ Dr. Dhvani Patalia Physio Rehab
     # existing code continues below ──
     leaves = LeaveApplication.objects.all().select_related("staff")
     pending = leaves.filter(status="pending").count()
-    return render(request, "admin_leaves.html", {"leaves": leaves, "pending": pending})
+    return render(request, "admin/admin_leaves.html", {"leaves": leaves, "pending": pending})
 
 
 @login_required
@@ -1495,7 +1495,7 @@ def admin_attendance(request):
     all_attendance = Attendance.objects.all().select_related("staff")[:50]
     return render(
         request,
-        "admin_attendance.html",
+        "admin/admin_attendance.html",
         {
             "today_attendance": today_att,
             "all_attendance": all_attendance,
@@ -1544,7 +1544,7 @@ def admin_salary(request):
     staff_list = StaffProfile.objects.all().select_related("user")
     return render(
         request,
-        "admin_salary.html",
+        "admin/admin_salary.html",
         {
             "salary_records": salary_records,
             "staff_list": staff_list,
@@ -1560,7 +1560,7 @@ def admin_tasks(request):
     if not request.user.is_superuser:
         return redirect("client_dashboard")
     tasks = DailyTask.objects.all().select_related("assigned_to", "assigned_by")
-    return render(request, "admin_tasks.html", {"tasks": tasks})
+    return render(request, "admin/admin_tasks.html", {"tasks": tasks})
 
 
 @login_required
@@ -1594,7 +1594,7 @@ def add_task(request):
         return redirect("admin_tasks")
 
     staff_list = StaffProfile.objects.all().select_related("user")
-    return render(request, "add_task.html", {"staff_list": staff_list})
+    return render(request, "staff/add_task.html", {"staff_list": staff_list})
 
 
 # ─── ADMIN – SESSION NOTES ───────────────────────────────────
@@ -1605,7 +1605,7 @@ def admin_session_notes(request):
     if not request.user.is_superuser:
         return redirect("client_dashboard")
     notes = SessionNote.objects.all().select_related("staff", "patient")
-    return render(request, "admin_session_notes.html", {"notes": notes})
+    return render(request, "admin/admin_session_notes.html", {"notes": notes})
 
 
 # ─── STAFF DASHBOARD ─────────────────────────────────────────
@@ -1632,7 +1632,7 @@ def staff_dashboard(request):
     )[:5]
     return render(
         request,
-        "staff_dashboard.html",
+        "staff/staff_dashboard.html",
         {
             "today_attendance": today_att,
             "pending_tasks": pending_tasks,
@@ -1886,7 +1886,7 @@ def staff_attendance(request):
 
     return render(
         request,
-        "staff_attendance.html",
+        "staff/staff_attendance.html",
         {
             "today_record": today_record,
             "all_attendance": all_att,
@@ -2021,7 +2021,7 @@ def staff_leave(request):
         messages.success(request, "✅ Leave application submitted!")
         return redirect("staff_leave")
     my_leaves = LeaveApplication.objects.filter(staff=request.user)
-    return render(request, "staff_leave.html", {"my_leaves": my_leaves})
+    return render(request, "staff/staff_leave.html", {"my_leaves": my_leaves})
 
 
 @login_required
@@ -2032,7 +2032,7 @@ def staff_salary(request):
     total_earned = sum(s.net_salary for s in salary_records if s.is_paid)
     return render(
         request,
-        "staff_salary.html",
+        "staff/staff_salary.html",
         {
             "salary_records": salary_records,
             "total_earned": total_earned,
@@ -2047,7 +2047,7 @@ def staff_tasks(request):
     tasks = DailyTask.objects.filter(assigned_to=request.user)
     return render(
         request,
-        "staff_tasks.html",
+        "staff/staff_tasks.html",
         {
             "tasks": tasks,
             "pending": tasks.filter(status="pending").count(),
@@ -2074,7 +2074,7 @@ def staff_session_notes(request):
     if not _is_staff(request.user):
         return redirect("client_dashboard")
     notes = SessionNote.objects.filter(staff=request.user)
-    return render(request, "staff_session_notes.html", {"notes": notes})
+    return render(request, "staff/staff_session_notes.html", {"notes": notes})
 
 
 @login_required
@@ -2093,7 +2093,7 @@ def add_session_note(request):
         messages.success(request, "✅ Session note added!")
         return redirect("staff_session_notes")
     patients = User.objects.filter(is_superuser=False, is_staff=False)
-    return render(request, "add_session_note.html", {"patients": patients})
+    return render(request, "staff/add_session_note.html", {"patients": patients})
 
 
 # ─── ADMIN – APPOINTMENTS CRUD ───────────────────────────────
@@ -2125,7 +2125,7 @@ def add_appointment(request):
         )
         messages.success(request, "✅ Appointment added successfully!")
         return redirect("admin_appointments")
-    return render(request, "add_appointment.html", {"patients": patients})
+    return render(request, "client/add_appointment.html", {"patients": patients})
 
 
 @login_required
@@ -2142,7 +2142,7 @@ def edit_appointment(request, appt_id):
         appt.save()
         messages.success(request, "✅ Appointment updated successfully!")
         return redirect("admin_appointments")
-    return render(request, "edit_appointment.html", {"appt": appt})
+    return render(request, "client/edit_appointment.html", {"appt": appt})
 
 
 @login_required
@@ -2156,7 +2156,7 @@ def delete_appointment(request, appt_id):
         return redirect("admin_appointments")
     return render(
         request,
-        "confirm_delete.html",
+        "shared/confirm_delete.html",
         {
             "title": "Delete Appointment",
             "item": f"{appt.name} — {appt.get_service_display()} on {appt.date}",
@@ -2185,7 +2185,7 @@ def edit_patient(request, user_id):
         messages.success(request, "✅ Patient updated successfully!")
         return redirect("admin_patients")
     return render(
-        request, "edit_patient.html", {"patient": patient, "profile": profile}
+        request, "admin/edit_patient.html", {"patient": patient, "profile": profile}
     )
 
 
@@ -2204,7 +2204,7 @@ def delete_patient(request, user_id):
         return redirect("admin_patients")
     return render(
         request,
-        "confirm_delete.html",
+        "shared/confirm_delete.html",
         {
             "title": "Deactivate Patient",
             "item": patient.get_full_name() or patient.username,
@@ -2247,7 +2247,7 @@ def edit_staff(request, staff_id):
         staff.save()
         messages.success(request, "✅ Staff member updated successfully!")
         return redirect("admin_staff")
-    return render(request, "edit_staff.html", {"staff": staff})
+    return render(request, "admin/edit_staff.html", {"staff": staff})
 
 
 @login_required
@@ -2261,7 +2261,7 @@ def delete_staff(request, staff_id):
         return redirect("admin_staff")
     return render(
         request,
-        "confirm_delete.html",
+        "shared/confirm_delete.html",
         {
             "title": "Delete Staff Member",
             "item": staff.user.get_full_name() or staff.user.username,
@@ -2297,7 +2297,7 @@ def add_attendance(request):
         )
         messages.success(request, "✅ Attendance record saved!")
         return redirect("admin_attendance")
-    return render(request, "add_attendance.html", {"staff_list": staff_list})
+    return render(request, "staff/add_attendance.html", {"staff_list": staff_list})
 
 
 @login_required
@@ -2313,7 +2313,7 @@ def edit_attendance(request, att_id):
         att.save()
         messages.success(request, "✅ Attendance updated!")
         return redirect("admin_attendance")
-    return render(request, "edit_attendance.html", {"att": att})
+    return render(request, "staff/edit_attendance.html", {"att": att})
 
 
 @login_required
@@ -2327,7 +2327,7 @@ def delete_attendance(request, att_id):
         return redirect("admin_attendance")
     return render(
         request,
-        "confirm_delete.html",
+        "shared/confirm_delete.html",
         {
             "title": "Delete Attendance Record",
             "item": f"{att.staff.get_full_name() or att.staff.username} — {att.date}",
@@ -2350,7 +2350,7 @@ def delete_leave(request, leave_id):
         return redirect("admin_leaves")
     return render(
         request,
-        "confirm_delete.html",
+        "shared/confirm_delete.html",
         {
             "title": "Delete Leave Application",
             "item": f"{leave.staff.get_full_name() or leave.staff.username} — {leave.from_date} to {leave.to_date}",
@@ -2379,7 +2379,7 @@ def edit_salary(request, record_id):
         record.save()
         messages.success(request, "✅ Salary record updated!")
         return redirect("admin_salary")
-    return render(request, "edit_salary.html", {"record": record})
+    return render(request, "staff/edit_salary.html", {"record": record})
 
 
 @login_required
@@ -2393,7 +2393,7 @@ def delete_salary(request, record_id):
         return redirect("admin_salary")
     return render(
         request,
-        "confirm_delete.html",
+        "shared/confirm_delete.html",
         {
             "title": "Delete Salary Record",
             "item": f"{record.staff.get_full_name() or record.staff.username} — {record.month} {record.year}",
@@ -2423,7 +2423,7 @@ def edit_task_admin(request, task_id):
         task.save()
         messages.success(request, "✅ Task updated!")
         return redirect("admin_tasks")
-    return render(request, "edit_task.html", {"task": task, "staff_list": staff_list})
+    return render(request, "staff/edit_task.html", {"task": task, "staff_list": staff_list})
 
 
 @login_required
@@ -2437,7 +2437,7 @@ def delete_task_admin(request, task_id):
         return redirect("admin_tasks")
     return render(
         request,
-        "confirm_delete.html",
+        "shared/confirm_delete.html",
         {
             "title": "Delete Task",
             "item": task.title,
@@ -2469,7 +2469,7 @@ def admin_add_session_note(request):
         return redirect("admin_session_notes")
     return render(
         request,
-        "admin_add_session_note.html",
+        "admin/admin_add_session_note.html",
         {"patients": patients, "staff_list": staff_list},
     )
 
@@ -2492,7 +2492,7 @@ def edit_session_note(request, note_id):
         return redirect("admin_session_notes")
     return render(
         request,
-        "edit_session_note.html",
+        "staff/edit_session_note.html",
         {"note": note, "patients": patients, "staff_list": staff_list},
     )
 
@@ -2508,7 +2508,7 @@ def delete_session_note(request, note_id):
         return redirect("admin_session_notes")
     return render(
         request,
-        "confirm_delete.html",
+        "shared/confirm_delete.html",
         {
             "title": "Delete Session Note",
             "item": f"{note.patient.get_full_name() or note.patient.username} — {note.date}",
@@ -2539,7 +2539,7 @@ def admin_settings(request):
 
         return redirect("admin_settings")
 
-    return render(request, "admin_settings.html", {"settings": settings_obj})
+    return render(request, "admin/admin_settings.html", {"settings": settings_obj})
 
 
 # ════════════════════════════════════════════════════════════
@@ -2623,7 +2623,7 @@ def progress_tracking(request):
 
     return render(
         request,
-        "progress_tracking.html",
+        "shared/progress_tracking.html",
         {
             "appointments": appointments,
             "session_notes": session_notes,
@@ -2702,7 +2702,7 @@ def reports_analytics(request):
 
     return render(
         request,
-        "reports_analytics.html",
+        "admin/reports_analytics.html",
         {
             "total_patients": User.objects.filter(
                 is_superuser=False, is_staff=False
@@ -3305,7 +3305,7 @@ def super_admin_dashboard(request):
     pending_payments = PaymentRecord.objects.filter(status="pending").count()
     return render(
         request,
-        "super_admin_dashboard.html",
+        "super_admin/super_admin_dashboard.html",
         {
             "total_hospitals": total_hospitals,
             "active_hospitals": active_hospitals,
@@ -3327,7 +3327,7 @@ def super_admin_dashboard(request):
 @platform_superadmin_required
 def super_admin_hospitals(request):
     hospitals = Hospital.objects.prefetch_related("subscription", "admins__user").all()
-    return render(request, "super_admin_hospitals.html", {"hospitals": hospitals})
+    return render(request, "super_admin/super_admin_hospitals.html", {"hospitals": hospitals})
 
 
 @platform_superadmin_required
@@ -3360,7 +3360,7 @@ def super_admin_add_hospital(request):
         if errors:
             for e in errors:
                 messages.error(request, e)
-            return render(request, "super_admin_add_hospital.html", {"plans": plans})
+            return render(request, "super_admin/super_admin_add_hospital.html", {"plans": plans})
 
         hospital = Hospital.objects.create(
             name=name, city=city, address=address, phone=phone, email=email
@@ -3391,7 +3391,7 @@ def super_admin_add_hospital(request):
         )
         return redirect("super_admin_hospitals")
 
-    return render(request, "super_admin_add_hospital.html", {"plans": plans})
+    return render(request, "super_admin/super_admin_add_hospital.html", {"plans": plans})
 
 
 @platform_superadmin_required
@@ -3442,7 +3442,7 @@ def super_admin_edit_hospital(request, hospital_id):
 
     return render(
         request,
-        "super_admin_edit_hospital.html",
+        "super_admin/super_admin_edit_hospital.html",
         {
             "hospital": hospital,
             "plans": plans,
@@ -3551,7 +3551,7 @@ def super_admin_subscriptions(request):
 
     return render(
         request,
-        "super_admin_subscriptions.html",
+        "super_admin/super_admin_subscriptions.html",
         {
             "subscriptions": subscriptions,
             "plans": plans,
@@ -3615,7 +3615,7 @@ def super_admin_hospital_payments(request, hospital_id):
         current_sub = None
     return render(
         request,
-        "super_admin_hospital_payments.html",
+        "super_admin/super_admin_hospital_payments.html",
         {
             "hospital": hospital,
             "payments": payments,
@@ -3642,7 +3642,7 @@ def super_admin_analytics(request):
     expired_subs = HospitalSubscription.objects.filter(status="expired").count()
     return render(
         request,
-        "super_admin_analytics.html",
+        "super_admin/super_admin_analytics.html",
         {
             "hospitals": hospitals,
             "total_hospitals": total_hospitals,
@@ -3668,7 +3668,7 @@ def super_admin_support(request):
     resolved_count = SupportTicket.objects.filter(status="resolved").count()
     return render(
         request,
-        "super_admin_support.html",
+        "super_admin/super_admin_support.html",
         {
             "tickets": tickets,
             "status_filter": status_filter,
@@ -3697,7 +3697,7 @@ def super_admin_support_reply(request, ticket_id):
         return redirect("super_admin_support_reply", ticket_id=ticket_id)
     return render(
         request,
-        "super_admin_support_reply.html",
+        "super_admin/super_admin_support_reply.html",
         {
             "ticket": ticket,
             "replies": replies,
@@ -3747,7 +3747,7 @@ def super_admin_all_payments(request):
     pending_count = PaymentRecord.objects.filter(status="pending").count()
     paid_count = PaymentRecord.objects.filter(status="paid").count()
     failed_count = PaymentRecord.objects.filter(status="failed").count()
-    return render(request, "super_admin_all_payments.html", {
+    return render(request, "super_admin/super_admin_all_payments.html", {
         "payments": all_payments,
         "status_filter": status_filter,
         "method_filter": method_filter,
@@ -3977,7 +3977,7 @@ def subscription_page(request):
 
     return render(
         request,
-        "subscription_page.html",
+        "public/subscription_page.html",
         {
             "plans": plans,
             "hospital": hospital,
@@ -3996,7 +3996,7 @@ def admin_promos(request):
     if not request.user.is_superuser:
         return redirect("client_dashboard")
     promos = ClinicPromo.objects.all()
-    return render(request, "admin_promos.html", {"promos": promos})
+    return render(request, "admin/admin_promos.html", {"promos": promos})
 
 
 @login_required
@@ -4013,7 +4013,7 @@ def admin_promo_add(request):
         )
         messages.success(request, "✅ Promo created.")
         return redirect("admin_promos")
-    return render(request, "admin_promo_add.html")
+    return render(request, "admin/admin_promo_add.html")
 
 
 @login_required

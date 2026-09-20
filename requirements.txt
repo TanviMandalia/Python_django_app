@@ -13,6 +13,7 @@ python-dotenv==1.0.1
 razorpay==1.4.2
 reportlab==5.0.0
 requests==2.34.2
+setuptools<81
 sqlparse==0.5.5
 stripe==15.2.1
 typing_extensions==4.15.0

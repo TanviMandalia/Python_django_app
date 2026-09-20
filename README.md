@@ -6,7 +6,7 @@ A management system and client portal for the PhysioRehab Clinic, providing appo
 
 ```text
 Python_django_app/
-├── core/                   # Main Django application
+├── core/                   # Main Django application (keeps the existing app label)
 │   ├── management/         # Management commands (reminders, shift checks)
 │   ├── migrations/         # Database migrations
 │   ├── templatetags/       # Custom template tags and filters
@@ -24,8 +24,15 @@ Python_django_app/
 │   ├── celery.py           # Celery background tasks setup
 │   ├── urls.py             # Root URL routing
 │   └── wsgi.py             # WSGI configuration
-├── static/                 # Static assets (CSS, JS, images)
-├── templates/              # HTML templates
+├── static/                 # Source static assets (CSS, JS, images)
+├── templates/              # Canonical templates grouped by audience
+│   ├── public/             # Marketing pages and public blog pages
+│   ├── auth/               # Authentication and password-recovery pages
+│   ├── client/             # Patient portal pages
+│   ├── staff/              # Staff operations pages
+│   ├── admin/              # Clinic administrator pages
+│   ├── super_admin/        # Platform administrator pages
+│   └── shared/             # Reusable navigation, footer, and shared views
 ├── tests/                  # Automated test suite
 ├── .env.example            # Sample environment variables template
 ├── manage.py               # Django administrative CLI
@@ -37,7 +44,7 @@ Python_django_app/
 ## Getting Started
 
 ### 1. Prerequisites
-- Python 3.11+
+- Python 3.12+
 - Virtualenv (`python -m venv .venv`)
 - Redis (optional for development; Celery falls back to local filesystem queue if unconfigured)
 

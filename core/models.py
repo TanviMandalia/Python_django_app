@@ -1,3 +1,5 @@
+from datetime import time
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -520,8 +522,8 @@ class ClinicSettings(models.Model):
 
     session_duration = models.IntegerField(default=45)
 
-    opening_time = models.TimeField()
-    closing_time = models.TimeField()
+    opening_time = models.TimeField(default=time(9, 0))
+    closing_time = models.TimeField(default=time(17, 0))
 
     instagram = models.URLField(blank=True)
     facebook = models.URLField(blank=True)
