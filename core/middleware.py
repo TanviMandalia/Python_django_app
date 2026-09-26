@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth import logout
 from django.views.decorators.cache import add_never_cache_headers
 
-from .models import UserActivity
+from .models import Profile
 
 
 MAX_ATTEMPTS = 5
@@ -25,10 +25,7 @@ class UpdateLastSeenMiddleware:
         response = self.get_response(request)
 
         if request.user.is_authenticated:
-            UserActivity.objects.update_or_create(
-                user=request.user,
-                defaults={'last_seen': timezone.now()}
-            )
+            Profile.objects.filter(user=request.user).update(last_seen=timezone.now())
 
         return response
 

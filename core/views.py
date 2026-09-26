@@ -38,7 +38,6 @@ from .models import (
     SalaryRecord,
     SessionNote,
     StaffProfile,
-    UserActivity,
     ClinicSettings,
     Blog,
     Review,
@@ -66,6 +65,7 @@ from .notifications import (
     notify_task_assigned,
     notify_salary_paid,
 )
+from .tenancy import resolve_hospital
 
 logger = logging.getLogger(__name__)
 
@@ -85,13 +85,12 @@ def get_admin_user():
 
 
 def is_online(user):
-    try:
-        activity = UserActivity.objects.get(user=user)
-        if not activity.last_seen:
-            return False
-        return activity.last_seen >= timezone.now() - timedelta(minutes=2)
-    except UserActivity.DoesNotExist:
-        return False
+    profile = getattr(user, "profile", None)
+    return bool(
+        profile
+        and profile.last_seen
+        and profile.last_seen >= timezone.now() - timedelta(minutes=2)
+    )
 
 
 # ─── PUBLIC PAGES ────────────────────────────────────────────
@@ -1046,6 +1045,7 @@ def admin_dashboard(request):
 @login_required
 def book_appointment(request):
     if request.method == "POST":
+        hospital = resolve_hospital(request.user)
         service = request.POST.get("service", "")
         date = request.POST.get("date", "")
         time = request.POST.get("time", "")
@@ -1056,6 +1056,7 @@ def book_appointment(request):
         phone = phone.phone_number if phone else ""
 
         appt = Appointment.objects.create(
+            hospital=hospital,
             patient=request.user,
             name=name,
             email=email,
@@ -1199,7 +1200,7 @@ def client_chat(request):
         is_read=True, status=Message.STATUS_READ
     )
 
-    admin_activity = UserActivity.objects.filter(user=admin).first()
+    admin_profile = Profile.objects.filter(user=admin).first()
     return render(
         request,
         "client/client_chat.html",
@@ -1207,7 +1208,7 @@ def client_chat(request):
             "messages_list": msgs,
             "admin": admin,
             "admin_online": is_online(admin),
-            "admin_last_seen": admin_activity.last_seen if admin_activity else None,
+            "admin_last_seen": admin_profile.last_seen if admin_profile else None,
         },
     )
 
@@ -1266,7 +1267,7 @@ def admin_chat_detail(request, patient_id):
         is_read=True, status=Message.STATUS_READ
     )
 
-    patient_activity = UserActivity.objects.filter(user=patient).first()
+    patient_profile = Profile.objects.filter(user=patient).first()
     return render(
         request,
         "admin/admin_chat_detail.html",
@@ -1274,8 +1275,8 @@ def admin_chat_detail(request, patient_id):
             "patient": patient,
             "messages_list": msgs,
             "patient_online": is_online(patient),
-            "patient_last_seen": patient_activity.last_seen
-            if patient_activity
+            "patient_last_seen": patient_profile.last_seen
+            if patient_profile
             else None,
         },
     )
@@ -1303,11 +1304,9 @@ def start_typing(request):
             receiver_id = data.get("receiver_id")
         except Exception:
             receiver_id = None
-        obj, _ = UserActivity.objects.get_or_create(user=request.user)
-        obj.is_typing = True
-        obj.typing_to_id = receiver_id
-        obj.last_seen = timezone.now()  # ← timestamp every keystroke
-        obj.save(update_fields=["is_typing", "typing_to_id", "last_seen"])
+        if receiver_id:
+            cache.set(f"typing:{request.user.id}:{receiver_id}", True, timeout=5)
+            cache.set(f"typing_target:{request.user.id}", receiver_id, timeout=5)
         return JsonResponse({"status": "started"})
     return JsonResponse({"status": "invalid"}, status=400)
 
@@ -1316,33 +1315,17 @@ def start_typing(request):
 @login_required
 def stop_typing(request):
     if request.method == "POST":
-        obj, _ = UserActivity.objects.get_or_create(user=request.user)
-        obj.is_typing = False
-        obj.typing_to_id = None
-        obj.last_seen = timezone.now()
-        obj.save(update_fields=["is_typing", "typing_to_id", "last_seen"])
+        target_id = cache.get(f"typing_target:{request.user.id}")
+        if target_id:
+            cache.delete(f"typing:{request.user.id}:{target_id}")
+        cache.delete(f"typing_target:{request.user.id}")
         return JsonResponse({"status": "stopped"})
     return JsonResponse({"status": "invalid"}, status=400)
 
 
 @login_required
 def check_typing(request, user_id):
-    obj = UserActivity.objects.filter(user_id=user_id).first()
-    if not obj:
-        return JsonResponse({"is_typing": False})
-
-    # Auto-expire typing after 3 seconds of no update
-    if obj.is_typing:
-        from datetime import timedelta
-
-        time_diff = timezone.now() - obj.last_seen
-        if time_diff.seconds > 3:
-            obj.is_typing = False
-            obj.typing_to_id = None
-            obj.save(update_fields=["is_typing", "typing_to_id"])
-            return JsonResponse({"is_typing": False})
-
-    is_typing = obj.is_typing and obj.typing_to_id == request.user.id
+    is_typing = bool(cache.get(f"typing:{user_id}:{request.user.id}"))
     return JsonResponse({"is_typing": is_typing})
 
 

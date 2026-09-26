@@ -15,4 +15,4 @@ class PlaceholderTestCase(SimpleTestCase):
 
     def test_settings_loaded(self):
         self.assertTrue(settings.configured)
-        self.assertIn("core", settings.INSTALLED_APPS)
+        self.assertIn("core.apps.CoreConfig", settings.INSTALLED_APPS)

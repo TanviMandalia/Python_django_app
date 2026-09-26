@@ -1,6 +1,7 @@
 from datetime import time
 
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db.models.signals import post_save
@@ -22,6 +23,10 @@ class Hospital(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=False, null=False)
     logo = models.ImageField(upload_to="hospital_logos/", null=True, blank=True)
+    logo_asset = models.ForeignKey(
+        "MediaAsset", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="hospital_logos",
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     razorpay_key_id = models.CharField(
@@ -127,6 +132,10 @@ class SupportTicket(models.Model):
 
 
 class SupportReply(models.Model):
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.CASCADE, null=True, blank=True,
+        related_name="support_replies",
+    )
     ticket = models.ForeignKey(
         SupportTicket, on_delete=models.CASCADE, related_name="replies"
     )
@@ -193,6 +202,14 @@ class Appointment(models.Model):
         null=True,
         blank=True,
     )
+    assigned_staff = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="assigned_appointments",
+    )
+    clinic_service = models.ForeignKey(
+        "ClinicService", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="appointments",
+    )
 
     # Public booking fields
     name = models.CharField(max_length=100)
@@ -223,6 +240,18 @@ class Appointment(models.Model):
         return f"{self.name} - {self.service} - {self.date}"
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["hospital", "patient", "date", "time"],
+                condition=Q(status__in=["pending", "confirmed"]),
+                name="uniq_active_appointment_patient_slot",
+            ),
+            models.UniqueConstraint(
+                fields=["hospital", "date", "time"],
+                condition=Q(status__in=["pending", "confirmed"]),
+                name="uniq_active_appointment_hospital_slot",
+            ),
+        ]
         ordering = ["-created_at"]
 
 
@@ -254,6 +283,10 @@ class StaffProfile(models.Model):
 
 
 class Attendance(models.Model):
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="attendance_records",
+    )
     staff = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="attendances"
     )
@@ -296,6 +329,14 @@ class LeaveApplication(models.Model):
         ("approved", "Approved"),
         ("rejected", "Rejected"),
     ]
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="leave_applications",
+    )
+    reviewed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="reviewed_leave_applications",
+    )
     staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name="leaves")
     leave_type = models.CharField(max_length=20, choices=LEAVE_TYPES)
     from_date = models.DateField()
@@ -314,6 +355,10 @@ class LeaveApplication(models.Model):
 
 
 class SalaryRecord(models.Model):
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="salary_records",
+    )
     staff = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="salary_records"
     )
@@ -335,6 +380,10 @@ class SalaryRecord(models.Model):
 
 
 class SessionNote(models.Model):
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="session_notes",
+    )
     staff = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="session_notes"
     )
@@ -348,6 +397,7 @@ class SessionNote(models.Model):
     diagnosis = models.TextField()
     treatment = models.TextField()
     next_session = models.TextField(blank=True)
+    patient_visible = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -368,6 +418,10 @@ class DailyTask(models.Model):
         ("in_progress", "In Progress"),
         ("completed", "Completed"),
     ]
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="daily_tasks",
+    )
     assigned_to = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="tasks"
     )
@@ -402,6 +456,10 @@ class Message(models.Model):
         (STATUS_READ, "Read"),
     ]
 
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="messages",
+    )
     sender = models.ForeignKey(
         User, related_name="sent_messages", on_delete=models.CASCADE
     )
@@ -422,25 +480,6 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.sender.username} -> {self.receiver.username}"
-
-
-class UserActivity(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="activity")
-
-    last_seen = models.DateTimeField(default=timezone.now)
-
-    is_typing = models.BooleanField(default=False)
-
-    typing_to = models.ForeignKey(
-        User,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="typing_receivers",
-    )
-
-    def __str__(self):
-        return self.user.username
 
 
 class Profile(models.Model):
@@ -469,6 +508,10 @@ class Profile(models.Model):
     profile_photo = models.ImageField(
         upload_to="profile_photos/", blank=True, null=True
     )
+    avatar_asset = models.ForeignKey(
+        "MediaAsset", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="profile_avatars",
+    )
 
     def __str__(self):
         return self.user.username
@@ -490,6 +533,10 @@ class PasswordResetOTP(models.Model):
 
 
 class Notification(models.Model):
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="notifications",
+    )
     recipient = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notifications"
     )
@@ -506,10 +553,18 @@ class Notification(models.Model):
 
 
 class ClinicSettings(models.Model):
+    hospital = models.OneToOneField(
+        "Hospital", on_delete=models.CASCADE, null=True, blank=True,
+        related_name="settings",
+    )
     clinic_name = models.CharField(max_length=200)
     tagline = models.CharField(max_length=300, blank=True)
 
     logo = models.ImageField(upload_to="clinic_logo/", blank=True, null=True)
+    logo_asset = models.ForeignKey(
+        "MediaAsset", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="clinic_logos",
+    )
 
     phone = models.CharField(max_length=20)
     email = models.EmailField()
@@ -580,11 +635,23 @@ class Blog(models.Model):
         max_length=50, choices=CATEGORY_CHOICES, default="General"
     )
     image = models.ImageField(upload_to="blogs/", null=True, blank=True)
+    cover_asset = models.ForeignKey(
+        "MediaAsset", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="blog_covers",
+    )
     before_image = models.ImageField(
         upload_to="blogs/before_after/", null=True, blank=True
     )
+    before_asset = models.ForeignKey(
+        "MediaAsset", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="blog_before_images",
+    )
     after_image = models.ImageField(
         upload_to="blogs/before_after/", null=True, blank=True
+    )
+    after_asset = models.ForeignKey(
+        "MediaAsset", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="blog_after_images",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -635,6 +702,10 @@ class PaymentRecord(models.Model):
         ("failed", "Failed"),
         ("refunded", "Refunded"),
     ]
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="patient_payments",
+    )
     appointment = models.ForeignKey(
         Appointment,
         on_delete=models.SET_NULL,
@@ -661,6 +732,16 @@ class PaymentRecord(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(amount__gt=0), name="payment_record_amount_positive"
+            ),
+            models.UniqueConstraint(
+                fields=["razorpay_payment_id"],
+                condition=~Q(razorpay_payment_id=""),
+                name="uniq_payment_record_razorpay_payment_id",
+            ),
+        ]
         ordering = ["-created_at"]
 
     def __str__(self):
@@ -704,6 +785,10 @@ class ClinicSubscriptionPayment(models.Model):
 
 
 class ClinicPromo(models.Model):
+    hospital = models.ForeignKey(
+        "Hospital", on_delete=models.CASCADE, null=True, blank=True,
+        related_name="promos",
+    )
     title = models.CharField(max_length=200)
     message = models.TextField()
     is_active = models.BooleanField(default=True)
@@ -725,3 +810,199 @@ class ClinicPromo(models.Model):
         if self.end_date and today > self.end_date:
             return False
         return today >= self.start_date
+
+
+class Role(models.Model):
+    code = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=80)
+
+    def __str__(self):
+        return self.name
+
+
+class UserRole(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="role_assignment"
+    )
+    role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name="users")
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="user_roles",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.role_id and self.role.code == "platform_admin" and self.hospital_id:
+            raise ValidationError("Platform administrators cannot belong to a clinic.")
+        if self.role_id and self.role.code != "platform_admin" and not self.hospital_id:
+            raise ValidationError("Clinic users must be associated with a clinic.")
+
+
+class PatientProfile(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="patient_profile"
+    )
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="patient_profiles",
+    )
+    patient_status = models.CharField(max_length=20, default="active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class MediaAsset(models.Model):
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="media_assets",
+    )
+    cloudinary_public_id = models.CharField(max_length=255, unique=True)
+    secure_url = models.URLField(max_length=1000)
+    resource_type = models.CharField(max_length=30, default="image")
+    file_format = models.CharField(max_length=20, blank=True)
+    bytes = models.PositiveBigIntegerField(null=True, blank=True)
+    width = models.PositiveIntegerField(null=True, blank=True)
+    height = models.PositiveIntegerField(null=True, blank=True)
+    uploaded_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="uploaded_media_assets",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+
+class ClinicService(models.Model):
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.CASCADE, related_name="services"
+    )
+    name = models.CharField(max_length=120)
+    description = models.TextField(blank=True)
+    duration_minutes = models.PositiveSmallIntegerField(default=45)
+    fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["hospital", "name"], name="uniq_clinic_service_name"
+            )
+        ]
+
+
+class StaffAvailability(models.Model):
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.CASCADE, related_name="staff_availability"
+    )
+    staff = models.ForeignKey(
+        StaffProfile, on_delete=models.CASCADE, related_name="availability"
+    )
+    weekday = models.PositiveSmallIntegerField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    is_active = models.BooleanField(default=True)
+
+
+class TreatmentPlan(models.Model):
+    STATUS_CHOICES = [("active", "Active"), ("completed", "Completed"), ("cancelled", "Cancelled")]
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.PROTECT, related_name="treatment_plans"
+    )
+    patient = models.ForeignKey(
+        PatientProfile, on_delete=models.PROTECT, related_name="treatment_plans"
+    )
+    created_by = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name="created_treatment_plans"
+    )
+    title = models.CharField(max_length=200)
+    notes = models.TextField(blank=True)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class Exercise(models.Model):
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.CASCADE, related_name="exercises"
+    )
+    name = models.CharField(max_length=160)
+    description = models.TextField(blank=True)
+    instructions = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+
+class PatientExerciseAssignment(models.Model):
+    STATUS_CHOICES = [("active", "Active"), ("completed", "Completed"), ("cancelled", "Cancelled")]
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.PROTECT, related_name="exercise_assignments"
+    )
+    treatment_plan = models.ForeignKey(
+        TreatmentPlan, on_delete=models.CASCADE, related_name="exercise_assignments"
+    )
+    patient = models.ForeignKey(
+        PatientProfile, on_delete=models.PROTECT, related_name="exercise_assignments"
+    )
+    exercise = models.ForeignKey(
+        Exercise, on_delete=models.PROTECT, related_name="assignments"
+    )
+    assigned_by = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name="exercise_assignments_created"
+    )
+    frequency = models.CharField(max_length=100, blank=True)
+    sets = models.PositiveSmallIntegerField(null=True, blank=True)
+    repetitions = models.PositiveSmallIntegerField(null=True, blank=True)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+
+
+class ExerciseLog(models.Model):
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.PROTECT, related_name="exercise_logs"
+    )
+    assignment = models.ForeignKey(
+        PatientExerciseAssignment, on_delete=models.CASCADE, related_name="logs"
+    )
+    patient = models.ForeignKey(
+        PatientProfile, on_delete=models.PROTECT, related_name="exercise_logs"
+    )
+    completed_at = models.DateTimeField(default=timezone.now)
+    sets_completed = models.PositiveSmallIntegerField(null=True, blank=True)
+    repetitions_completed = models.PositiveSmallIntegerField(null=True, blank=True)
+    pain_level = models.PositiveSmallIntegerField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+
+class PaymentEvent(models.Model):
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.PROTECT, related_name="payment_events"
+    )
+    provider = models.CharField(max_length=30, default="razorpay")
+    provider_event_id = models.CharField(max_length=255, unique=True)
+    payment_record = models.ForeignKey(
+        PaymentRecord, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="events",
+    )
+    event_type = models.CharField(max_length=100)
+    received_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    processing_status = models.CharField(max_length=20, default="received")
+
+
+class AuditEvent(models.Model):
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="audit_events",
+    )
+    actor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="audit_events",
+    )
+    action = models.CharField(max_length=100)
+    entity_type = models.CharField(max_length=100)
+    entity_id = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    metadata = models.JSONField(default=dict, blank=True)
