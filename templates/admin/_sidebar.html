@@ -1,0 +1,133 @@
+{% load static %}
+{% with url_name=request.resolver_match.url_name %}
+<aside class="sidebar" id="adminSidebar">
+  <!-- Logo & Header -->
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-inner">
+      <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="PhysioRehab Logo" class="sidebar-logo-img" />
+      <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> <span>ADMIN PANEL</span></div>
+    </div>
+    <button class="sidebar-close-btn" id="closeSidebar" aria-label="Close Sidebar">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- User info -->
+  <div class="sidebar-user">
+    <div class="user-avatar" title="{{ request.user.get_full_name|default:request.user.username }}">
+      {{ request.user.first_name|first|default:request.user.username|first|upper }}
+    </div>
+    <div class="user-info">
+      <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+      <span><span class="online-dot"></span>
+        {% if request.user.is_superuser %}Super Admin{% else %}Clinic Admin{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-scroll">
+    <nav>
+      <!-- OVERVIEW -->
+      <div class="nav-section">Overview</div>
+      <a href="{% url 'admin_dashboard' %}" class="nav-item{% if url_name == 'admin_dashboard' %} active{% endif %}" title="Dashboard">
+        <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
+      </a>
+
+      <!-- PATIENT MANAGEMENT -->
+      <div class="nav-section">Patient Management</div>
+      <a href="{% url 'admin_patients' %}" class="nav-item{% if url_name == 'admin_patients' or url_name == 'edit_patient' %} active{% endif %}" title="Manage Patients">
+        <i class="fas fa-users"></i> <span>Manage Patients</span>
+      </a>
+      <a href="{% url 'admin_session_notes' %}" class="nav-item{% if url_name == 'admin_session_notes' or url_name == 'admin_add_session_note' or url_name == 'edit_session_note' %} active{% endif %}" title="Session Notes">
+        <i class="fas fa-notes-medical"></i> <span>Session Notes</span>
+      </a>
+      <a href="{% url 'admin_chat' %}" class="nav-item{% if url_name == 'admin_chat' or url_name == 'admin_chat_detail' %} active{% endif %}" title="Patient Messages">
+        <i class="fas fa-comments"></i> <span>Patient Messages</span>
+        {% if unread_messages_count > 0 %}<span class="nav-badge">{{ unread_messages_count }}</span>{% endif %}
+      </a>
+
+      <!-- STAFF & CLINIC -->
+      <div class="nav-section">Staff &amp; Clinic</div>
+      <a href="{% url 'admin_staff' %}" class="nav-item{% if url_name == 'admin_staff' or url_name == 'add_staff' or url_name == 'edit_staff' %} active{% endif %}" title="Manage Staff">
+        <i class="fas fa-user-md"></i> <span>Manage Staff</span>
+      </a>
+      <a href="{% url 'admin_appointments' %}" class="nav-item{% if url_name == 'admin_appointments' or url_name == 'add_appointment' or url_name == 'edit_appointment' %} active{% endif %}" title="All Appointments">
+        <i class="fas fa-calendar-alt"></i> <span>All Appointments</span>
+      </a>
+      <a href="{% url 'admin_leaves' %}" class="nav-item{% if url_name == 'admin_leaves' %} active{% endif %}" title="Leave Requests">
+        <i class="fas fa-calendar-minus"></i> <span>Leave Requests</span>
+      </a>
+      <a href="{% url 'admin_attendance' %}" class="nav-item{% if url_name == 'admin_attendance' or url_name == 'add_attendance' or url_name == 'edit_attendance' %} active{% endif %}" title="Attendance">
+        <i class="fas fa-clock"></i> <span>Attendance</span>
+      </a>
+
+      <!-- FINANCE -->
+      <div class="nav-section">Finance</div>
+      <a href="{% url 'admin_salary' %}" class="nav-item{% if url_name == 'admin_salary' or url_name == 'edit_salary' %} active{% endif %}" title="Salary">
+        <i class="fas fa-rupee-sign"></i> <span>Salary</span>
+      </a>
+      <a href="{% url 'admin_payments' %}" class="nav-item{% if url_name == 'admin_payments' %} active{% endif %}" title="Payments">
+        <i class="fas fa-credit-card"></i> <span>Payments</span>
+      </a>
+
+      <!-- CONTENT -->
+      <div class="nav-section">Content</div>
+      <a href="{% url 'admin_blog_list' %}" class="nav-item{% if url_name == 'admin_blog_list' or url_name == 'admin_blog_add' or url_name == 'admin_blog_edit' or url_name == 'admin_blog_delete' %} active{% endif %}" title="Blog Posts">
+        <i class="fas fa-blog"></i> <span>Blog Posts</span>
+      </a>
+      <a href="{% url 'admin_promos' %}" class="nav-item{% if url_name == 'admin_promos' or url_name == 'admin_promo_add' %} active{% endif %}" title="Promo Notifications">
+        <i class="fas fa-bullhorn"></i> <span>Promo Notification</span>
+      </a>
+      <a href="{% url 'admin_reviews' %}" class="nav-item{% if url_name == 'admin_reviews' or url_name == 'admin_add_review' %} active{% endif %}" title="Patient Reviews">
+        <i class="fas fa-star"></i> <span>Patient Reviews</span>
+      </a>
+
+      <!-- COMMUNICATION -->
+      <div class="nav-section">Communication</div>
+      <a href="{% url 'notifications' %}" class="nav-item{% if url_name == 'notifications' or url_name == 'admin_notifications' %} active{% endif %}" title="Notifications">
+        <i class="fas fa-bell"></i> <span>Notifications</span>
+      </a>
+      <a href="{% url 'admin_doctor_chat' %}" class="nav-item{% if url_name == 'admin_doctor_chat' or url_name == 'admin_doctor_chat_detail' %} active{% endif %}" title="Chat with Doctor">
+        <i class="fas fa-user-nurse"></i> <span>Chat with Doctor</span>
+      </a>
+
+      <!-- TOOLS & REPORTS -->
+      <div class="nav-section">Tools &amp; Reports</div>
+      <a href="{% url 'bulk_import' %}" class="nav-item{% if url_name == 'bulk_import' %} active{% endif %}" title="Import Excel">
+        <i class="fas fa-file-excel"></i> <span>Import Excel</span>
+      </a>
+      <a href="{% url 'admin_tasks' %}" class="nav-item{% if url_name == 'admin_tasks' or url_name == 'add_task' or url_name == 'edit_task_admin' %} active{% endif %}" title="Tasks">
+        <i class="fas fa-tasks"></i> <span>Tasks</span>
+      </a>
+      <a href="{% url 'progress_tracking' %}" class="nav-item{% if url_name == 'progress_tracking' %} active{% endif %}" title="Progress Tracking">
+        <i class="fas fa-chart-line"></i> <span>Progress Tracking</span>
+      </a>
+      <a href="{% url 'reports_analytics' %}" class="nav-item{% if url_name == 'reports_analytics' %} active{% endif %}" title="Analytics">
+        <i class="fas fa-chart-bar"></i> <span>Analytics</span>
+      </a>
+
+      <!-- SYSTEM -->
+      <div class="nav-section">System</div>
+      <a href="{% url 'admin_settings' %}" class="nav-item{% if url_name == 'admin_settings' %} active{% endif %}" title="Settings">
+        <i class="fas fa-cog"></i> <span>Settings</span>
+      </a>
+      {% if request.user.is_superuser %}
+      <a href="/admin/" class="nav-item" title="Django Admin" target="_blank">
+        <i class="fas fa-database"></i> <span>Django Admin</span>
+      </a>
+      {% endif %}
+      <a href="{% url 'home' %}" class="nav-item{% if url_name == 'home' %} active{% endif %}" title="Visit Website">
+        <i class="fas fa-globe"></i> <span>Visit Website</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Logout & Collapse toggle -->
+  <div class="sidebar-footer">
+    <a href="{% url 'logout' %}" class="logout-btn" title="Logout">
+      <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+    </a>
+  </div>
+</aside>
+{% endwith %}

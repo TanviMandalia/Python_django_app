@@ -1,0 +1,46 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Delete Blog Post{% endblock %}
+{% block page_title %}Confirm Delete Blog Article{% endblock %}
+{% block page_subtitle %}Permanent removal confirmation for published article{% endblock %}
+
+{% block content %}
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon" style="background: rgba(220, 53, 69, 0.15); color: #dc3545;">
+      <i class="fas fa-trash-alt"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>Delete Article: {{ blog.title }}</h2>
+      <p>Are you sure you want to permanently delete this published article from the website?</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'admin_blog_list' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+      <i class="fas fa-arrow-left"></i> Back to Blog Posts
+    </a>
+  </div>
+</div>
+
+<div class="admin-card" style="max-width: 600px; margin: 0 auto; text-align: center; padding: 32px 24px;">
+  <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(220, 53, 69, 0.12); color: #dc3545; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 16px;">
+    <i class="fas fa-exclamation-triangle"></i>
+  </div>
+
+  <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--admin-dark); margin: 0 0 8px 0;">Delete "{{ blog.title }}"?</h3>
+  <p style="font-size: 0.88rem; color: var(--admin-text-sub); margin: 0 0 24px 0; line-height: 1.5;">
+    This action cannot be undone. The article and its associated media images will be permanently removed.
+  </p>
+
+  <form method="POST" style="display: flex; justify-content: center; gap: 14px;">
+    {% csrf_token %}
+    <a href="{% url 'admin_blog_list' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+      Cancel
+    </a>
+    <button type="submit" class="topbar-action-link" style="background: #dc3545; color: #fff; border: none; cursor: pointer; font-size: 0.9rem;">
+      <i class="fas fa-trash"></i> Yes, Delete Article
+    </button>
+  </form>
+</div>
+{% endblock %}

@@ -197,8 +197,11 @@
                 width: 14px;
             }
             .plan-select-btn {
-                width: 100%;
-                padding: 12px;
+                width: max-content;
+                max-width: 100%;
+                margin: 14px auto 0;
+                display: block;
+                padding: 12px 28px;
                 background: rgba(245, 197, 24, 0.15);
                 color: #f5c518;
                 border: 1.5px solid rgba(245, 197, 24, 0.4);
@@ -206,7 +209,6 @@
                 font-size: 0.9rem;
                 font-weight: 700;
                 cursor: pointer;
-                margin-top: 14px;
                 transition: 0.2s;
             }
             .plan-select-btn:hover,
@@ -392,8 +394,11 @@
                 color: #fff;
             }
             .submit-btn {
-                width: 100%;
-                padding: 14px;
+                width: max-content;
+                max-width: 100%;
+                margin: 8px auto 0;
+                display: block;
+                padding: 14px 32px;
                 background: #f5c518;
                 color: #222;
                 border: none;
@@ -401,7 +406,6 @@
                 font-size: 0.98rem;
                 font-weight: 800;
                 cursor: pointer;
-                margin-top: 4px;
                 transition: 0.2s;
             }
             .submit-btn:hover {
@@ -480,7 +484,8 @@
                 }
             }
         </style>
-    </head>
+      <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
     <body>
         <div class="container">
             <a href="{% url 'admin_dashboard' %}" class="back-btn"
@@ -541,23 +546,17 @@
                     onclick="selectPlan({{ plan.id }}, '{{ plan.get_name_display }}', {{ plan.price_monthly }})"
                 >
                     <div class="plan-name">
-                        {% if plan.name == 'basic' %}🏥 {{ plan.get_name_display
-                        }} {% elif plan.name == 'standard' %}⭐ {{
-                        plan.get_name_display }} {% else %}👑 {{
-                        plan.get_name_display }}{% endif %}
+                        {% if plan.name == 'basic' %}🏥 {{ plan.get_name_display }}{% elif plan.name == 'standard' %}⭐ {{ plan.get_name_display }}{% else %}👑 {{ plan.get_name_display }}{% endif %}
                     </div>
                     <div class="plan-price">
                         ₹{{ plan.price_monthly }}<span>/month</span>
                     </div>
                     <ul class="plan-features">
                         <li>
-                            <i class="fas fa-users"></i> Up to {{ plan.max_staff
-                            }} staff members
+                            <i class="fas fa-users"></i> Up to {{ plan.max_staff }} staff members
                         </li>
                         <li>
-                            <i class="fas fa-user-injured"></i> {% if
-                            plan.max_patients > 10000 %}Unlimited{% else %}Up to
-                            {{ plan.max_patients }}{% endif %} patients
+                            <i class="fas fa-user-injured"></i> {% if plan.max_patients > 10000 %}Unlimited{% else %}Up to {{ plan.max_patients }}{% endif %} patients
                         </li>
                         {% for feat in plan.features.splitlines %}{% if feat %}
                         <li><i class="fas fa-check"></i> {{ feat }}</li>
@@ -601,7 +600,8 @@
                     History
                 </div>
                 <div style="overflow-x: auto">
-                    <table>
+<div class="table-responsive">
+<table>
                         <thead>
                             <tr>
                                 <th>Date & Time</th>
@@ -630,78 +630,25 @@
                                     {{ pay.plan.get_name_display|default:"—" }}
                                 </td>
                                 <td>
-                                    <strong style="color: #f5c518"
-                                        >₹{{ pay.amount }}</strong
-                                    >
+                                    <strong style="color: #f5c518">₹{{ pay.amount }}</strong>
                                 </td>
                                 <td>
-                                    {{ pay.duration_months }} month{% if
-                                    pay.duration_months > 1 %}s{% endif %}
+                                    {{ pay.duration_months }} month{% if pay.duration_months > 1 %}s{% endif %}
                                 </td>
                                 <td>
-                                    {% if pay.method == 'upi' %}<i
-                                        class="fas fa-qrcode"
-                                        style="color: #00b900"
-                                    ></i>
-                                    UPI {% elif pay.method == 'cash' %}<i
-                                        class="fas fa-money-bill-wave"
-                                        style="color: #28a745"
-                                    ></i>
-                                    Cash {% elif pay.method == 'netbanking' %}<i
-                                        class="fas fa-university"
-                                        style="color: #1a73e8"
-                                    ></i>
-                                    Net Banking {% elif pay.method == 'razorpay' %}<i
-                                        class="fas fa-lock"
-                                        style="color: #3395ff"
-                                    ></i>
-                                    Online{% else %}<i
-                                        class="fas fa-university"
-                                        style="color: #1a73e8"
-                                    ></i>
-                                    Net Banking{% endif %}
+                                    {% if pay.method == 'upi' %}<i class="fas fa-qrcode" style="color: #00b900"></i> UPI{% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color: #28a745"></i> Cash{% elif pay.method == 'netbanking' %}<i class="fas fa-university" style="color: #1a73e8"></i> Net Banking{% elif pay.method == 'razorpay' %}<i class="fas fa-lock" style="color: #3395ff"></i> Online{% else %}<i class="fas fa-university" style="color: #1a73e8"></i> Net Banking{% endif %}
                                 </td>
-                                <td
-                                    style="
-                                        font-family: monospace;
-                                        font-size: 0.78rem;
-                                        color: #888;
-                                    "
-                                >
+                                <td style="font-family: monospace; font-size: 0.78rem; color: #888;">
                                     {{ pay.transaction_id|default:"—" }}
                                 </td>
                                 <td>
-                                    {% if pay.status == 'paid' %}<span
-                                        class="badge badge-paid"
-                                        >✅ Paid</span
-                                    >
-                                    {% elif pay.status == 'pending' %}<span
-                                        class="badge badge-pending"
-                                        >⏳ Pending</span
-                                    >
-                                    {% elif pay.status == 'failed' %}<span
-                                        class="badge badge-failed"
-                                        >❌ Failed</span
-                                    >
-                                    {% else %}<span
-                                        class="badge"
-                                        style="
-                                            background: rgba(
-                                                255,
-                                                255,
-                                                255,
-                                                0.1
-                                            );
-                                            color: #aaa;
-                                        "
-                                        >{{ pay.get_status_display }}</span
-                                    >{% endif %}
+                                    {% if pay.status == 'paid' %}<span class="badge badge-paid">✅ Paid</span>{% elif pay.status == 'pending' %}<span class="badge badge-pending">⏳ Pending</span>{% elif pay.status == 'failed' %}<span class="badge badge-failed">❌ Failed</span>{% else %}<span class="badge" style="background: rgba(255,255,255,0.1); color: #aaa;">{{ pay.get_status_display }}</span>{% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
-                </div>
+</div> </div>
             </div>
             {% endif %}
         </div>
@@ -1017,5 +964,6 @@
                     if (e.target === this) closeModal();
                 });
         </script>
-    </body>
+      <script src="{% static 'js/layout.js' %}"></script>
+</body>
 </html>

@@ -83,6 +83,12 @@ urlpatterns = [
         views.admin_chat_detail,
         name="admin_chat_detail",
     ),
+    path("admin-doctor-chat/", views.admin_doctor_chat, name="admin_doctor_chat"),
+    path(
+        "admin-doctor-chat/<int:doctor_id>/",
+        views.admin_doctor_chat_detail,
+        name="admin_doctor_chat_detail",
+    ),
     # ── Admin Blog ────────────────────────────────────────────
     path("admin-blog/", views.admin_blog_list, name="admin_blog_list"),
     path("admin-blog/add/", views.admin_blog_add, name="admin_blog_add"),
@@ -95,6 +101,8 @@ urlpatterns = [
         "delete-message/<int:message_id>/", views.delete_message, name="delete_message"
     ),
     # ── Typing Indicators ─────────────────────────────────────
+    path("api/chat/send/", views.api_chat_send, name="api_chat_send"),
+    path("api/chat/fetch/<int:user_id>/", views.api_chat_fetch, name="api_chat_fetch"),
     path("start-typing/", views.start_typing),
     path("stop-typing/", views.stop_typing),
     path("check-typing/<int:user_id>/", views.check_typing),
@@ -294,6 +302,11 @@ urlpatterns = [
         views.super_admin_support_reply,
         name="super_admin_support_reply",
     ),
+    # ── Bulk Import (Excel) ────────────────────────────────────
+    path("bulk-import/", views.bulk_import, name="bulk_import"),
+    path("bulk-import/template/<str:model_name>/", views.download_import_template, name="download_import_template"),
+    # ── Inbound Email Webhook API ──────────────────────────────
+    path("api/email/inbound/", views.api_inbound_email_webhook, name="api_inbound_email_webhook"),
 ]
 
 if settings.DEBUG:

@@ -16,7 +16,7 @@ from django.contrib.auth.models import User
 from django.core.cache import cache  # ← ADDED
 from django.db.models import Q, Sum
 from django.db import models
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -80,7 +80,11 @@ LATE_GRACE = 15
 # ─── HELPERS ─────────────────────────────────────────────────
 
 
-def get_admin_user():
+def get_admin_user(hospital=None):
+    if hospital:
+        admin_membership = ClinicAdmin.objects.filter(hospital=hospital).first()
+        if admin_membership:
+            return admin_membership.user
     return User.objects.filter(is_superuser=True).first()
 
 
@@ -113,8 +117,69 @@ def services(request):
 
 def contact(request):
     if request.method == "POST":
+        first_name = request.POST.get("first_name", "").strip()
+        last_name = request.POST.get("last_name", "").strip()
+        email = request.POST.get("email", "").strip()
+        phone = request.POST.get("phone", "").strip()
+        subject_choice = request.POST.get("subject", "General Enquiry").strip()
+        message = request.POST.get("message", "").strip()
+
+        if not first_name or not email or not message:
+            messages.error(request, "Please fill in all required fields (First Name, Email, and Message).")
+            return redirect("contact")
+
+        from .email_utils import validate_recipient_email, send_clinic_email, sanitize_header_value
+        try:
+            clean_email = validate_recipient_email(email)
+        except Exception:
+            messages.error(request, "Please provide a valid email address.")
+            return redirect("contact")
+
+        full_name = f"{first_name} {last_name}".strip()
+        clean_subject = sanitize_header_value(f"Inquiry: {subject_choice} - {full_name}")
+
+        hospital = Hospital.objects.filter(is_active=True).first()
+        admin_email = hospital.email if (hospital and hospital.email) else getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@physiorehab.com")
+
+        alert_body = f"""New public website contact inquiry received:
+
+From    : {full_name}
+Email   : {clean_email}
+Phone   : {phone or 'Not provided'}
+Subject : {subject_choice}
+
+Message:
+{message}
+"""
+        send_clinic_email(
+            clean_subject,
+            alert_body,
+            admin_email,
+            hospital=hospital,
+            email_type="contact_inquiry_admin",
+        )
+
+        ack_body = f"""Dear {full_name},
+
+Thank you for contacting {CLINIC_NAME}.
+We have received your message regarding "{subject_choice}" and our team will get in touch with you shortly.
+
+Summary of your inquiry:
+{message}
+
+Warm regards,
+{CLINIC_NAME} Team
+"""
+        send_clinic_email(
+            f"We received your inquiry – {CLINIC_NAME}",
+            ack_body,
+            clean_email,
+            hospital=hospital,
+            email_type="contact_inquiry_ack",
+        )
+
         messages.success(request, "✅ Message sent! We will contact you soon.")
-        return redirect("/contact/")
+        return redirect("contact")
     return render(request, "public/contact.html")
 
 
@@ -145,40 +210,84 @@ def blog_detail(request, slug):
 # =========================
 # ADMIN BLOG LIST
 # =========================
+@login_required
 def admin_blog_list(request):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
     blogs = Blog.objects.order_by("-created_at")
-
-    return render(request, "public/blog_list.html", {"blogs": blogs})
+    return render(request, "admin/admin_blog_list.html", {"blogs": blogs})
 
 
 # =========================
 # ADMIN ADD BLOG
 # =========================
+@login_required
 def admin_blog_add(request):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
     if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        excerpt = request.POST.get("excerpt", "").strip()
+        category = request.POST.get("category", "General")
+        content = request.POST.get("content", "").strip()
+
+        if not title or not content:
+            messages.error(request, "Title and content are required.")
+            return render(request, "admin/admin_blog_form.html", {"categories": Blog.CATEGORY_CHOICES})
+
+        from .file_security import validate_image_file
+        for field in ["image", "before_image", "after_image"]:
+            img_file = request.FILES.get(field)
+            if img_file:
+                try:
+                    validate_image_file(img_file, max_size_mb=5, field_name=field.replace('_', ' ').title())
+                except ValidationError as e:
+                    messages.error(request, str(e.message if hasattr(e, 'message') else e))
+                    return render(request, "admin/admin_blog_form.html", {"categories": Blog.CATEGORY_CHOICES})
+
         Blog.objects.create(
-            title=request.POST.get("title"),
-            excerpt=request.POST.get("excerpt", ""),
-            category=request.POST.get("category", "General"),
-            content=request.POST.get("content"),
+            title=title,
+            excerpt=excerpt,
+            category=category,
+            content=content,
             image=request.FILES.get("image") or None,
             before_image=request.FILES.get("before_image") or None,
             after_image=request.FILES.get("after_image") or None,
         )
+        messages.success(request, "Blog post published successfully.")
         return redirect("admin_blog_list")
-    return render(request, "public/blog_form.html", {"categories": Blog.CATEGORY_CHOICES})
+    return render(request, "admin/admin_blog_form.html", {"categories": Blog.CATEGORY_CHOICES})
 
 
 # =========================
 # ADMIN EDIT BLOG
 # =========================
+@login_required
 def admin_blog_edit(request, id):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
     blog = get_object_or_404(Blog, id=id)
     if request.method == "POST":
-        blog.title = request.POST.get("title")
-        blog.excerpt = request.POST.get("excerpt", "")
+        title = request.POST.get("title", "").strip()
+        content = request.POST.get("content", "").strip()
+        if not title or not content:
+            messages.error(request, "Title and content are required.")
+            return render(request, "admin/admin_blog_form.html", {"blog": blog, "categories": Blog.CATEGORY_CHOICES})
+
+        from .file_security import validate_image_file
+        for field in ["image", "before_image", "after_image"]:
+            img_file = request.FILES.get(field)
+            if img_file:
+                try:
+                    validate_image_file(img_file, max_size_mb=5, field_name=field.replace('_', ' ').title())
+                except ValidationError as e:
+                    messages.error(request, str(e.message if hasattr(e, 'message') else e))
+                    return render(request, "admin/admin_blog_form.html", {"blog": blog, "categories": Blog.CATEGORY_CHOICES})
+
+        blog.title = title
+        blog.excerpt = request.POST.get("excerpt", "").strip()
         blog.category = request.POST.get("category", "General")
-        blog.content = request.POST.get("content")
+        blog.content = content
         if request.FILES.get("image"):
             blog.image = request.FILES.get("image")
         if request.FILES.get("before_image"):
@@ -186,23 +295,29 @@ def admin_blog_edit(request, id):
         if request.FILES.get("after_image"):
             blog.after_image = request.FILES.get("after_image")
         blog.save()
+        messages.success(request, "Blog post updated successfully.")
         return redirect("admin_blog_list")
     return render(
-        request, "public/blog_form.html", {"blog": blog, "categories": Blog.CATEGORY_CHOICES}
+        request, "admin/admin_blog_form.html", {"blog": blog, "categories": Blog.CATEGORY_CHOICES}
     )
 
 
 # =========================
 # ADMIN DELETE BLOG
 # =========================
+@login_required
 def admin_blog_delete(request, id):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
     blog = get_object_or_404(Blog, id=id)
 
     if request.method == "POST":
         blog.delete()
+        messages.success(request, "Blog post deleted.")
         return redirect("admin_blog_list")
 
-    return render(request, "public/blog_delete.html", {"blog": blog})
+    return render(request, "admin/admin_blog_delete.html", {"blog": blog})
+
 
 
 # ──────────────────────────────────────────────────────────
@@ -222,7 +337,9 @@ def submit_review(request):
         rating = int(request.POST.get("rating", 5))
         message = request.POST.get("message", "").strip()
         if message:
+            hospital = resolve_hospital(request.user)
             Review.objects.create(
+                hospital=hospital,
                 patient=request.user,
                 reviewer_name=name,
                 reviewer_title=title,
@@ -240,9 +357,13 @@ def submit_review(request):
 
 @login_required
 def admin_reviews(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    reviews = Review.objects.all()
+    hospital = resolve_hospital(request.user)
+    if not request.user.is_superuser and hospital:
+        reviews = Review.objects.filter(hospital=hospital)
+    else:
+        reviews = Review.objects.all()
     pending_count = reviews.filter(is_approved=False).count()
     return render(
         request,
@@ -253,10 +374,12 @@ def admin_reviews(request):
 
 @login_required
 def admin_add_review(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     if request.method == "POST":
+        hospital = resolve_hospital(request.user)
         Review.objects.create(
+            hospital=hospital,
             reviewer_name=request.POST.get("reviewer_name", ""),
             reviewer_title=request.POST.get("reviewer_title", ""),
             rating=int(request.POST.get("rating", 5)),
@@ -271,9 +394,13 @@ def admin_add_review(request):
 
 @login_required
 def toggle_review_approval(request, review_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user)
     review = get_object_or_404(Review, id=review_id)
+    if not request.user.is_superuser and hospital and review.hospital_id and review.hospital_id != hospital.id:
+        messages.error(request, "Unauthorized: Review belongs to another clinic.")
+        return redirect("admin_reviews")
     review.is_approved = not review.is_approved
     review.save()
     return redirect("admin_reviews")
@@ -281,9 +408,13 @@ def toggle_review_approval(request, review_id):
 
 @login_required
 def admin_delete_review(request, review_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user)
     review = get_object_or_404(Review, id=review_id)
+    if not request.user.is_superuser and hospital and review.hospital_id and review.hospital_id != hospital.id:
+        messages.error(request, "Unauthorized: Review belongs to another clinic.")
+        return redirect("admin_reviews")
     review.delete()
     return redirect("admin_reviews")
 
@@ -372,6 +503,7 @@ def is_late(t, shift):
 
 
 def _is_platform_superadmin(user):
+    """True only for Django superusers who also have is_platform_admin=True on their Profile."""
     if not user.is_authenticated or not user.is_superuser:
         return False
     profile = getattr(user, "profile", None)
@@ -379,9 +511,10 @@ def _is_platform_superadmin(user):
 
 
 def _is_clinic_admin(user):
-    if not user.is_authenticated or not user.is_superuser:
+    """True for users with a ClinicAdmin record (is_staff=True, is_superuser=False)."""
+    if not user.is_authenticated:
         return False
-    return not _is_platform_superadmin(user)
+    return hasattr(user, "clinic_admin_profile")
 
 
 def platform_superadmin_required(view_func):
@@ -399,12 +532,17 @@ def platform_superadmin_required(view_func):
 
 
 def _redirect_by_role(user):
-    if user.is_superuser:
-        if _is_platform_superadmin(user):
-            return redirect("super_admin_dashboard")
+    """Redirect user to their role-appropriate dashboard after login."""
+    # Platform superadmin (is_superuser + is_platform_admin)
+    if _is_platform_superadmin(user):
+        return redirect("super_admin_dashboard")
+    # Clinic admin (has ClinicAdmin record)
+    if _is_clinic_admin(user):
         return redirect("admin_dashboard")
-    if user.is_staff or hasattr(user, "staff_profile"):
+    # Staff / physiotherapist
+    if hasattr(user, "staff_profile"):
         return redirect("staff_dashboard")
+    # Regular patient
     return redirect("client_dashboard")
 
 
@@ -470,7 +608,14 @@ def edit_profile(request):
         profile.medical_notes = request.POST.get("medical_notes", "").strip()
         profile.address = request.POST.get("address", "").strip()
         if request.FILES.get("profile_photo"):
-            profile.profile_photo = request.FILES["profile_photo"]
+            photo = request.FILES["profile_photo"]
+            from .file_security import validate_image_file
+            try:
+                validate_image_file(photo, max_size_mb=5, field_name="Profile photo")
+                profile.profile_photo = photo
+            except ValidationError as e:
+                messages.error(request, f"❌ {e.message if hasattr(e, 'message') else str(e)}")
+                return render(request, "client/edit_profile.html", {"profile": profile})
         profile.save()
 
         messages.success(request, "✅ Profile updated successfully.")
@@ -494,7 +639,8 @@ def request_otp(request):
         # Expire old OTPs
         PasswordResetOTP.objects.filter(user=user).delete()
 
-        otp = str(random.randint(100000, 999999))
+        import secrets
+        otp = f"{secrets.SystemRandom().randint(100000, 999999):06d}"
         PasswordResetOTP.objects.create(user=user, otp=otp)
 
         ok = send_otp_email(email, otp, purpose="Password Reset")
@@ -657,9 +803,11 @@ def change_password_request(request):
 @login_required
 def notifications_view(request):
     notifs = Notification.objects.filter(recipient=request.user)
+    is_admin = request.user.is_superuser or _is_clinic_admin(request.user)
+    tpl = "admin/admin_notifications.html" if is_admin else "client/notifications.html"
     return render(
         request,
-        "client/notifications.html",
+        tpl,
         {
             "notifications": notifs,
             "today": timezone.now().date(),
@@ -769,7 +917,9 @@ def razorpay_create_order(request):
         logger.error(f"Razorpay create order error: {e}")
         return JsonResponse({"error": str(e)}, status=400)
 
+    hospital = resolve_hospital(request.user)
     record = PaymentRecord.objects.create(
+        hospital=hospital,
         patient=request.user,
         appointment_id=appt_id if appt_id else None,
         amount=float(amount_str),
@@ -862,7 +1012,9 @@ def record_cash_payment(request):
     amount = request.POST.get("amount", "0")
     appt_id = request.POST.get("appointment_id", "")
     notes = request.POST.get("notes", "")
+    hospital = resolve_hospital(request.user)
     PaymentRecord.objects.create(
+        hospital=hospital,
         patient=request.user,
         appointment_id=appt_id if appt_id else None,
         amount=float(amount) if amount else 0,
@@ -882,7 +1034,9 @@ def record_upi_payment(request):
     amount = request.POST.get("amount", "0")
     appt_id = request.POST.get("appointment_id", "")
     txn_id = request.POST.get("transaction_id", "")
+    hospital = resolve_hospital(request.user)
     PaymentRecord.objects.create(
+        hospital=hospital,
         patient=request.user,
         appointment_id=appt_id if appt_id else None,
         amount=float(amount) if amount else 0,
@@ -897,14 +1051,44 @@ def record_upi_payment(request):
 
 @login_required
 def admin_payments(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
+    
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+        if action == "record_offline":
+            patient_id = request.POST.get("patient_id")
+            amount = request.POST.get("amount", "0")
+            method = request.POST.get("method", "cash")
+            appt_id = request.POST.get("appointment_id", "")
+            notes = request.POST.get("notes", "")
+            txn_id = request.POST.get("transaction_id", "").strip() or f"COUNTER-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+
+            patient = get_object_or_404(User, id=patient_id)
+            pay = PaymentRecord.objects.create(
+                patient=patient,
+                appointment_id=appt_id if appt_id else None,
+                amount=float(amount) if amount else 0,
+                method=method,
+                status="paid",
+                transaction_id=txn_id,
+                notes=notes,
+            )
+            Notification.objects.create(
+                recipient=patient,
+                message=f"✅ Receipt issued: Payment of ₹{pay.amount} ({method.upper()}) recorded by clinic admin.",
+                link="/payments/",
+            )
+            messages.success(request, f"✅ Payment of ₹{pay.amount} successfully recorded for {patient.get_full_name() or patient.username}.")
+            return redirect("admin_payments")
+
     all_payments = PaymentRecord.objects.select_related(
         "patient", "appointment"
     ).order_by("-created_at")
     total_paid = all_payments.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
     pending_count = all_payments.filter(status="pending").count()
     pending_payments = all_payments.filter(status="pending")
+    patients = User.objects.filter(is_superuser=False, is_staff=False).order_by("first_name", "username")
     return render(
         request,
         "admin/admin_payments.html",
@@ -913,14 +1097,16 @@ def admin_payments(request):
             "total_paid": total_paid,
             "pending_count": pending_count,
             "pending_payments": pending_payments,
+            "patients": patients,
         },
     )
+
 
 
 @login_required
 @require_POST
 def confirm_payment(request, payment_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     pay = get_object_or_404(PaymentRecord, id=payment_id)
     pay.status = "paid"
@@ -939,7 +1125,7 @@ def confirm_payment(request, payment_id):
 @login_required
 @require_POST
 def reject_payment(request, payment_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     pay = get_object_or_404(PaymentRecord, id=payment_id)
     pay.status = "failed"
@@ -958,7 +1144,7 @@ def reject_payment(request, payment_id):
 
 @login_required
 def client_dashboard(request):
-    if request.user.is_superuser:
+    if request.user.is_superuser or _is_clinic_admin(request.user):
         return redirect("admin_dashboard")
     appointments = Appointment.objects.filter(patient=request.user)
     upcoming = appointments.filter(status__in=["pending", "confirmed"])
@@ -994,15 +1180,33 @@ def client_dashboard(request):
 
 @login_required
 def admin_dashboard(request):
-    if not request.user.is_superuser:
+    # Allow Django superusers (not platform_admin) AND clinic admins
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    all_appointments = Appointment.objects.all()
+    from django.db.models import Sum
+    from decimal import Decimal
+    hospital = resolve_hospital(request.user)
+    if not request.user.is_superuser and hospital:
+        all_appointments = Appointment.objects.filter(hospital=hospital)
+        total_staff = StaffProfile.objects.filter(hospital=hospital).count()
+        total_users = User.objects.filter(
+            is_superuser=False, is_staff=False, appointments__hospital=hospital
+        ).distinct().count()
+        recent_payments = PaymentRecord.objects.filter(hospital=hospital).order_by("-created_at")[:6]
+        total_paid = PaymentRecord.objects.filter(hospital=hospital, status="paid").aggregate(t=Sum("amount"))["t"] or 0
+        pending_payments_count = PaymentRecord.objects.filter(hospital=hospital, status="pending").count()
+    else:
+        all_appointments = Appointment.objects.all()
+        total_staff = StaffProfile.objects.count()
+        total_users = User.objects.filter(is_superuser=False, is_staff=False).count()
+        recent_payments = PaymentRecord.objects.order_by("-created_at")[:6]
+        total_paid = PaymentRecord.objects.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
+        pending_payments_count = PaymentRecord.objects.filter(status="pending").count()
+
     pending = all_appointments.filter(status="pending").count()
     confirmed = all_appointments.filter(status="confirmed").count()
     completed = all_appointments.filter(status="completed").count()
-    total_users = User.objects.filter(is_superuser=False, is_staff=False).count()
     new_messages = Message.objects.filter(receiver=request.user, is_read=False).count()
-    total_staff = StaffProfile.objects.count()
     blogs = Blog.objects.order_by("-created_at")[:6]
     pending_reviews = Review.objects.filter(is_approved=False).count()
     recent_reviews = Review.objects.filter(is_approved=True).order_by("-created_at")[:4]
@@ -1012,14 +1216,11 @@ def admin_dashboard(request):
         for p in ClinicPromo.objects.filter(is_active=True)
         if p.is_live and str(p.id) not in dismissed
     ]
-    from django.db.models import Sum
-    recent_payments = PaymentRecord.objects.order_by("-created_at")[:6]
-    total_paid = PaymentRecord.objects.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
-    pending_payments_count = PaymentRecord.objects.filter(status="pending").count()
     return render(
         request,
         "admin/admin_dashboard.html",
         {
+            "hospital": hospital,
             "total_users": total_users,
             "all_appointments": all_appointments,
             "total_appointments": all_appointments.count(),
@@ -1046,6 +1247,12 @@ def admin_dashboard(request):
 def book_appointment(request):
     if request.method == "POST":
         hospital = resolve_hospital(request.user)
+        if not hospital:
+            h_id = request.POST.get("hospital_id")
+            if h_id:
+                hospital = Hospital.objects.filter(id=h_id, is_active=True).first()
+            if not hospital:
+                hospital = Hospital.objects.filter(is_active=True).first()
         service = request.POST.get("service", "")
         date = request.POST.get("date", "")
         time = request.POST.get("time", "")
@@ -1088,9 +1295,15 @@ def my_appointments(request):
 
 @login_required
 def admin_appointments(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    all_appointments = Appointment.objects.all().order_by("-created_at")
+    hospital = resolve_hospital(request.user)
+    if hospital:
+        all_appointments = Appointment.objects.filter(hospital=hospital).order_by("-created_at")
+    elif request.user.is_superuser:
+        all_appointments = Appointment.objects.all().order_by("-created_at")
+    else:
+        all_appointments = Appointment.objects.none()
     return render(
         request,
         "admin/admin_appointments.html",
@@ -1106,9 +1319,13 @@ def admin_appointments(request):
 
 @login_required
 def update_appointment(request, appt_id, status):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     appt = get_object_or_404(Appointment, id=appt_id)
+    hospital = resolve_hospital(request.user)
+    if not request.user.is_superuser and hospital and appt.hospital_id != hospital.id:
+        messages.error(request, "Unauthorized: You cannot modify appointments for another clinic.")
+        return redirect("admin_appointments")
     valid = ["pending", "confirmed", "completed", "cancelled"]
     if status not in valid:
         messages.error(request, "Invalid status.")
@@ -1130,13 +1347,28 @@ def update_appointment(request, appt_id, status):
 
 @login_required
 def admin_patients(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    patients = (
-        User.objects.filter(is_superuser=False, is_staff=False)
-        .order_by("-date_joined")
-        .prefetch_related("profile", "appointments", "patient_notes")
-    )
+    hospital = resolve_hospital(request.user)
+    if hospital:
+        patients = (
+            User.objects.filter(
+                is_superuser=False,
+                is_staff=False,
+                appointments__hospital=hospital,
+            )
+            .distinct()
+            .order_by("-date_joined")
+            .prefetch_related("profile", "appointments", "patient_notes")
+        )
+    elif request.user.is_superuser:
+        patients = (
+            User.objects.filter(is_superuser=False, is_staff=False)
+            .order_by("-date_joined")
+            .prefetch_related("profile", "appointments", "patient_notes")
+        )
+    else:
+        patients = User.objects.none()
     patient_data = []
     for p in patients:
         try:
@@ -1177,7 +1409,8 @@ def admin_patients(request):
 
 @login_required
 def client_chat(request):
-    admin = get_admin_user()
+    hospital = resolve_hospital(request.user)
+    admin = get_admin_user(hospital)
     if not admin:
         return render(request, "client/client_chat.html", {"error": "No admin account found."})
 
@@ -1205,7 +1438,7 @@ def client_chat(request):
         request,
         "client/client_chat.html",
         {
-            "messages_list": msgs,
+            "messages_list": list(msgs),
             "admin": admin,
             "admin_online": is_online(admin),
             "admin_last_seen": admin_profile.last_seen if admin_profile else None,
@@ -1215,9 +1448,26 @@ def client_chat(request):
 
 @login_required
 def admin_chat(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("home")
-    patients = User.objects.filter(is_superuser=False, is_staff=False)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        patients = (
+            User.objects.filter(
+                Q(appointments__hospital=hospital)
+                | Q(patient_profile__hospital=hospital)
+                | Q(received_messages__sender=request.user)
+                | Q(sent_messages__receiver=request.user),
+                is_superuser=False,
+                is_staff=False,
+            )
+            .distinct()
+        )
+    elif request.user.is_superuser:
+        patients = User.objects.filter(is_superuser=False, is_staff=False)
+    else:
+        patients = User.objects.none()
+
     patient_chats = []
     for patient in patients:
         last_msg = (
@@ -1243,17 +1493,29 @@ def admin_chat(request):
 
 @login_required
 def admin_chat_detail(request, patient_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     patient = get_object_or_404(User, id=patient_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        belongs = (
+            Appointment.objects.filter(patient=patient, hospital=hospital).exists()
+            or (hasattr(patient, "patient_profile") and patient.patient_profile.hospital_id == hospital.id)
+            or Message.objects.filter(Q(sender=patient, receiver=request.user) | Q(sender=request.user, receiver=patient)).exists()
+        )
+        if not belongs:
+            messages.error(request, "❌ Access denied: Patient does not belong to your clinic.")
+            return redirect("admin_chat")
 
     if request.method == "POST":
         content = request.POST.get("content", "").strip()
         if content:
+            from .file_security import sanitize_html_content
+            clean_content = sanitize_html_content(content)
             Message.objects.create(
                 sender=request.user,
                 receiver=patient,
-                content=content,
+                content=clean_content,
                 status=Message.STATUS_SENT,
             )
         return redirect("admin_chat_detail", patient_id=patient_id)
@@ -1278,6 +1540,85 @@ def admin_chat_detail(request, patient_id):
             "patient_last_seen": patient_profile.last_seen
             if patient_profile
             else None,
+        },
+    )
+
+
+@login_required
+def admin_doctor_chat(request):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        staff_members = StaffProfile.objects.filter(hospital=hospital).select_related("user")
+    else:
+        staff_members = StaffProfile.objects.all().select_related("user")
+    doctor_chats = []
+    for staff in staff_members:
+        doc_user = staff.user
+        last_msg = (
+            Message.objects.filter(
+                Q(sender=doc_user, receiver=request.user)
+                | Q(sender=request.user, receiver=doc_user)
+            )
+            .order_by("-created_at")
+            .first()
+        )
+        unread = Message.objects.filter(
+            sender=doc_user, receiver=request.user, is_read=False
+        ).count()
+        doctor_chats.append(
+            {
+                "doctor": doc_user,
+                "profile": staff,
+                "last_msg": last_msg,
+                "unread_count": unread,
+                "is_online": is_online(doc_user),
+            }
+        )
+    doctor_chats.sort(
+        key=lambda x: x["last_msg"].created_at if x["last_msg"] else timezone.now(),
+        reverse=True,
+    )
+    return render(request, "admin/admin_doctor_chat.html", {"doctor_chats": doctor_chats})
+
+
+@login_required
+def admin_doctor_chat_detail(request, doctor_id):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+    doctor = get_object_or_404(User, id=doctor_id)
+    doc_profile = StaffProfile.objects.filter(user=doctor).first()
+
+    if request.method == "POST":
+        content = request.POST.get("content", "").strip()
+        if content:
+            Message.objects.create(
+                sender=request.user,
+                receiver=doctor,
+                content=content,
+                status=Message.STATUS_SENT,
+            )
+        return redirect("admin_doctor_chat_detail", doctor_id=doctor_id)
+
+    msgs = Message.objects.filter(
+        Q(sender=doctor, receiver=request.user)
+        | Q(sender=request.user, receiver=doctor)
+    ).order_by("created_at")
+
+    Message.objects.filter(sender=doctor, receiver=request.user, is_read=False).update(
+        is_read=True, status=Message.STATUS_READ
+    )
+
+    return render(
+        request,
+        "admin/admin_doctor_chat_detail.html",
+        {
+            "doctor": doctor,
+            "doctor_profile": doc_profile,
+            "messages_list": msgs,
+            "doctor_online": is_online(doctor),
+            "doctor_last_seen": getattr(doctor, "profile", None).last_seen if hasattr(doctor, "profile") and doctor.profile else None,
         },
     )
 
@@ -1334,15 +1675,21 @@ def check_typing(request, user_id):
 
 @login_required
 def admin_staff(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    staff_list = StaffProfile.objects.all().select_related("user")
+    hospital = resolve_hospital(request.user)
+    if hospital:
+        staff_list = StaffProfile.objects.filter(hospital=hospital).select_related("user")
+    elif request.user.is_superuser:
+        staff_list = StaffProfile.objects.all().select_related("user")
+    else:
+        staff_list = StaffProfile.objects.none()
     return render(request, "admin/admin_staff.html", {"staff_list": staff_list})
 
 
 @login_required
 def add_staff(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     if request.method == "POST":
         first_name = request.POST.get("first_name", "").strip()
@@ -1375,6 +1722,7 @@ def add_staff(request):
             return redirect("add_staff")
 
         try:
+            hospital = resolve_hospital(request.user)
             user = User.objects.create_user(
                 username=username,
                 email=email,
@@ -1384,7 +1732,7 @@ def add_staff(request):
                 is_staff=True,
             )
             StaffProfile.objects.create(
-                user=user, role=role, phone=phone, salary=salary
+                user=user, hospital=hospital, role=role, phone=phone, salary=salary
             )
             send_staff_welcome_email(user, password)
             messages.success(
@@ -1405,7 +1753,7 @@ def add_staff(request):
 
 @login_required
 def admin_leaves(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
 
     # ── Auto-approve any expired pending leaves ──
@@ -1443,19 +1791,30 @@ Dr. Dhvani Patalia Physio Rehab
             pass
 
     # existing code continues below ──
-    leaves = LeaveApplication.objects.all().select_related("staff")
+    hospital = resolve_hospital(request.user)
+    if hospital:
+        leaves = LeaveApplication.objects.filter(hospital=hospital).select_related("staff")
+    elif request.user.is_superuser:
+        leaves = LeaveApplication.objects.all().select_related("staff")
+    else:
+        leaves = LeaveApplication.objects.none()
     pending = leaves.filter(status="pending").count()
     return render(request, "admin/admin_leaves.html", {"leaves": leaves, "pending": pending})
 
 
 @login_required
 def update_leave(request, leave_id, status):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     leave = get_object_or_404(LeaveApplication, id=leave_id)
+    hospital = resolve_hospital(request.user)
+    if not request.user.is_superuser and hospital and leave.hospital_id != hospital.id:
+        messages.error(request, "Unauthorized: You cannot modify leave requests for another clinic.")
+        return redirect("admin_leaves")
     if status in ["approved", "rejected"]:
         leave.status = status
         leave.admin_note = request.POST.get("admin_note", "")
+        leave.reviewed_by = request.user
         leave.save()
 
         # Email + notification
@@ -1471,7 +1830,7 @@ def update_leave(request, leave_id, status):
 
 @login_required
 def admin_attendance(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     today = timezone.now().date()
     today_att = Attendance.objects.filter(date=today).select_related("staff")
@@ -1492,7 +1851,7 @@ def admin_attendance(request):
 
 @login_required
 def admin_salary(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     if request.method == "POST":
         staff_id = request.POST.get("staff_id")
@@ -1540,15 +1899,28 @@ def admin_salary(request):
 
 @login_required
 def admin_tasks(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    tasks = DailyTask.objects.all().select_related("assigned_to", "assigned_by")
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        tasks = (
+            DailyTask.objects.filter(
+                Q(hospital=hospital)
+                | Q(assigned_to__staff_profile__hospital=hospital)
+                | Q(assigned_by=request.user)
+                | Q(hospital__isnull=True)
+            )
+            .distinct()
+            .select_related("assigned_to", "assigned_by")
+        )
+    else:
+        tasks = DailyTask.objects.all().select_related("assigned_to", "assigned_by")
     return render(request, "admin/admin_tasks.html", {"tasks": tasks})
 
 
 @login_required
 def add_task(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     if request.method == "POST":
         staff_id = request.POST.get("staff_id")
@@ -1557,8 +1929,10 @@ def add_task(request):
         priority = request.POST.get("priority", "medium")
         due_date = request.POST.get("due_date") or None
 
+        hospital = resolve_hospital(request.user)
         staff_user = get_object_or_404(User, id=staff_id)
         task = DailyTask.objects.create(
+            hospital=hospital,
             assigned_to=staff_user,
             assigned_by=request.user,
             title=title,
@@ -1576,8 +1950,18 @@ def add_task(request):
         )
         return redirect("admin_tasks")
 
-    staff_list = StaffProfile.objects.all().select_related("user")
-    return render(request, "staff/add_task.html", {"staff_list": staff_list})
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        staff_list = (
+            StaffProfile.objects.filter(
+                Q(hospital=hospital) | Q(hospital__isnull=True)
+            )
+            .select_related("user")
+            .distinct()
+        )
+    else:
+        staff_list = StaffProfile.objects.all().select_related("user")
+    return render(request, "admin/add_task.html", {"staff_list": staff_list})
 
 
 # ─── ADMIN – SESSION NOTES ───────────────────────────────────
@@ -1585,9 +1969,17 @@ def add_task(request):
 
 @login_required
 def admin_session_notes(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    notes = SessionNote.objects.all().select_related("staff", "patient")
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        notes = SessionNote.objects.filter(
+            Q(staff__staff_profile__hospital=hospital)
+            | Q(patient__appointments__hospital=hospital)
+            | Q(patient__patient_profile__hospital=hospital)
+        ).distinct().select_related("staff", "patient")
+    else:
+        notes = SessionNote.objects.all().select_related("staff", "patient")
     return render(request, "admin/admin_session_notes.html", {"notes": notes})
 
 
@@ -2084,9 +2476,20 @@ def add_session_note(request):
 
 @login_required
 def add_appointment(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    patients = User.objects.filter(is_superuser=False, is_staff=False)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        patients = (
+            User.objects.filter(
+                Q(appointments__hospital=hospital) | Q(patient_profile__hospital=hospital),
+                is_superuser=False,
+                is_staff=False,
+            )
+            .distinct()
+        )
+    else:
+        patients = User.objects.filter(is_superuser=False, is_staff=False)
     if request.method == "POST":
         patient_id = request.POST.get("patient_id")
         service = request.POST.get("service", "")
@@ -2096,6 +2499,7 @@ def add_appointment(request):
         status = request.POST.get("status", "pending")
         patient = get_object_or_404(User, id=patient_id)
         Appointment.objects.create(
+            hospital=hospital,
             patient=patient,
             name=patient.get_full_name() or patient.username,
             email=patient.email,
@@ -2108,14 +2512,18 @@ def add_appointment(request):
         )
         messages.success(request, "✅ Appointment added successfully!")
         return redirect("admin_appointments")
-    return render(request, "client/add_appointment.html", {"patients": patients})
+    return render(request, "admin/add_appointment.html", {"patients": patients})
 
 
 @login_required
 def edit_appointment(request, appt_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    appt = get_object_or_404(Appointment, id=appt_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        appt = get_object_or_404(Appointment, id=appt_id, hospital=hospital)
+    else:
+        appt = get_object_or_404(Appointment, id=appt_id)
     if request.method == "POST":
         appt.service = request.POST.get("service", appt.service)
         appt.date = request.POST.get("date", str(appt.date))
@@ -2125,14 +2533,18 @@ def edit_appointment(request, appt_id):
         appt.save()
         messages.success(request, "✅ Appointment updated successfully!")
         return redirect("admin_appointments")
-    return render(request, "client/edit_appointment.html", {"appt": appt})
+    return render(request, "admin/edit_appointment.html", {"appt": appt})
 
 
 @login_required
 def delete_appointment(request, appt_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    appt = get_object_or_404(Appointment, id=appt_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        appt = get_object_or_404(Appointment, id=appt_id, hospital=hospital)
+    else:
+        appt = get_object_or_404(Appointment, id=appt_id)
     if request.method == "POST":
         appt.delete()
         messages.success(request, "✅ Appointment deleted.")
@@ -2153,9 +2565,18 @@ def delete_appointment(request, appt_id):
 
 @login_required
 def edit_patient(request, user_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     patient = get_object_or_404(User, id=user_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        belongs = (
+            Appointment.objects.filter(patient=patient, hospital=hospital).exists()
+            or (hasattr(patient, "patient_profile") and patient.patient_profile.hospital_id == hospital.id)
+        )
+        if not belongs:
+            messages.error(request, "❌ Access denied: Patient does not belong to your clinic.")
+            return redirect("admin_patients")
     profile, _ = Profile.objects.get_or_create(user=patient)
     if request.method == "POST":
         patient.first_name = request.POST.get("first_name", "").strip()
@@ -2174,9 +2595,18 @@ def edit_patient(request, user_id):
 
 @login_required
 def delete_patient(request, user_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     patient = get_object_or_404(User, id=user_id, is_superuser=False, is_staff=False)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        belongs = (
+            Appointment.objects.filter(patient=patient, hospital=hospital).exists()
+            or (hasattr(patient, "patient_profile") and patient.patient_profile.hospital_id == hospital.id)
+        )
+        if not belongs:
+            messages.error(request, "❌ Access denied: Patient does not belong to your clinic.")
+            return redirect("admin_patients")
     if request.method == "POST":
         patient.is_active = False
         patient.save()
@@ -2199,9 +2629,18 @@ def delete_patient(request, user_id):
 
 @login_required
 def reactivate_patient(request, user_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     patient = get_object_or_404(User, id=user_id, is_superuser=False, is_staff=False)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        belongs = (
+            Appointment.objects.filter(patient=patient, hospital=hospital).exists()
+            or (hasattr(patient, "patient_profile") and patient.patient_profile.hospital_id == hospital.id)
+        )
+        if not belongs:
+            messages.error(request, "❌ Access denied: Patient does not belong to your clinic.")
+            return redirect("admin_patients")
     patient.is_active = True
     patient.save()
     messages.success(
@@ -2216,9 +2655,13 @@ def reactivate_patient(request, user_id):
 
 @login_required
 def edit_staff(request, staff_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    staff = get_object_or_404(StaffProfile, id=staff_id)
+    hospital = resolve_hospital(request.user)
+    if not request.user.is_superuser and hospital:
+        staff = get_object_or_404(StaffProfile, id=staff_id, hospital=hospital)
+    else:
+        staff = get_object_or_404(StaffProfile, id=staff_id)
     if request.method == "POST":
         staff.user.first_name = request.POST.get("first_name", "").strip()
         staff.user.last_name = request.POST.get("last_name", "").strip()
@@ -2235,9 +2678,13 @@ def edit_staff(request, staff_id):
 
 @login_required
 def delete_staff(request, staff_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    staff = get_object_or_404(StaffProfile, id=staff_id)
+    hospital = resolve_hospital(request.user)
+    if not request.user.is_superuser and hospital:
+        staff = get_object_or_404(StaffProfile, id=staff_id, hospital=hospital)
+    else:
+        staff = get_object_or_404(StaffProfile, id=staff_id)
     if request.method == "POST":
         staff.user.delete()
         messages.success(request, "✅ Staff member deleted.")
@@ -2258,7 +2705,7 @@ def delete_staff(request, staff_id):
 
 @login_required
 def add_attendance(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     staff_list = StaffProfile.objects.all().select_related("user")
     if request.method == "POST":
@@ -2280,12 +2727,12 @@ def add_attendance(request):
         )
         messages.success(request, "✅ Attendance record saved!")
         return redirect("admin_attendance")
-    return render(request, "staff/add_attendance.html", {"staff_list": staff_list})
+    return render(request, "admin/add_attendance.html", {"staff_list": staff_list})
 
 
 @login_required
 def edit_attendance(request, att_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     att = get_object_or_404(Attendance, id=att_id)
     if request.method == "POST":
@@ -2296,14 +2743,28 @@ def edit_attendance(request, att_id):
         att.save()
         messages.success(request, "✅ Attendance updated!")
         return redirect("admin_attendance")
-    return render(request, "staff/edit_attendance.html", {"att": att})
+    return render(request, "admin/edit_attendance.html", {"att": att})
 
 
 @login_required
 def delete_attendance(request, att_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    att = get_object_or_404(Attendance, id=att_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        att = (
+            Attendance.objects.filter(
+                Q(hospital=hospital)
+                | Q(staff__staff_profile__hospital=hospital)
+                | Q(hospital__isnull=True)
+            )
+            .filter(id=att_id)
+            .first()
+        )
+        if not att:
+            raise Http404("No Attendance matches the given query.")
+    else:
+        att = get_object_or_404(Attendance, id=att_id)
     if request.method == "POST":
         att.delete()
         messages.success(request, "✅ Attendance record deleted.")
@@ -2324,9 +2785,23 @@ def delete_attendance(request, att_id):
 
 @login_required
 def delete_leave(request, leave_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    leave = get_object_or_404(LeaveApplication, id=leave_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        leave = (
+            LeaveApplication.objects.filter(
+                Q(hospital=hospital)
+                | Q(staff__staff_profile__hospital=hospital)
+                | Q(hospital__isnull=True)
+            )
+            .filter(id=leave_id)
+            .first()
+        )
+        if not leave:
+            raise Http404("No LeaveApplication matches the given query.")
+    else:
+        leave = get_object_or_404(LeaveApplication, id=leave_id)
     if request.method == "POST":
         leave.delete()
         messages.success(request, "✅ Leave application deleted.")
@@ -2347,9 +2822,23 @@ def delete_leave(request, leave_id):
 
 @login_required
 def edit_salary(request, record_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    record = get_object_or_404(SalaryRecord, id=record_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        record = (
+            SalaryRecord.objects.filter(
+                Q(hospital=hospital)
+                | Q(staff__staff_profile__hospital=hospital)
+                | Q(hospital__isnull=True)
+            )
+            .filter(id=record_id)
+            .first()
+        )
+        if not record:
+            raise Http404("No SalaryRecord matches the given query.")
+    else:
+        record = get_object_or_404(SalaryRecord, id=record_id)
     if request.method == "POST":
         record.month = request.POST.get("month", record.month)
         record.year = request.POST.get("year", record.year)
@@ -2359,17 +2848,33 @@ def edit_salary(request, record_id):
         record.net_salary = (
             float(record.basic_salary) + float(record.bonus) - float(record.deduction)
         )
+        if not record.hospital and hospital:
+            record.hospital = hospital
         record.save()
         messages.success(request, "✅ Salary record updated!")
         return redirect("admin_salary")
-    return render(request, "staff/edit_salary.html", {"record": record})
+    return render(request, "admin/edit_salary.html", {"record": record})
 
 
 @login_required
 def delete_salary(request, record_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    record = get_object_or_404(SalaryRecord, id=record_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        record = (
+            SalaryRecord.objects.filter(
+                Q(hospital=hospital)
+                | Q(staff__staff_profile__hospital=hospital)
+                | Q(hospital__isnull=True)
+            )
+            .filter(id=record_id)
+            .first()
+        )
+        if not record:
+            raise Http404("No SalaryRecord matches the given query.")
+    else:
+        record = get_object_or_404(SalaryRecord, id=record_id)
     if request.method == "POST":
         record.delete()
         messages.success(request, "✅ Salary record deleted.")
@@ -2390,12 +2895,34 @@ def delete_salary(request, record_id):
 
 @login_required
 def edit_task_admin(request, task_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    task = get_object_or_404(DailyTask, id=task_id)
-    staff_list = StaffProfile.objects.all().select_related("user")
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        task = (
+            DailyTask.objects.filter(
+                Q(hospital=hospital)
+                | Q(assigned_to__staff_profile__hospital=hospital)
+                | Q(assigned_by=request.user)
+                | Q(hospital__isnull=True)
+            )
+            .filter(id=task_id)
+            .first()
+        )
+        if not task:
+            raise Http404("No DailyTask matches the given query.")
+        staff_list = (
+            StaffProfile.objects.filter(
+                Q(hospital=hospital) | Q(hospital__isnull=True) | Q(user=task.assigned_to)
+            )
+            .select_related("user")
+            .distinct()
+        )
+    else:
+        task = get_object_or_404(DailyTask, id=task_id)
+        staff_list = StaffProfile.objects.all().select_related("user")
     if request.method == "POST":
-        task.title = request.POST.get("title", task.title)
+        task.title = request.POST.get("title", task.title).strip() or task.title
         task.description = request.POST.get("description", "")
         task.priority = request.POST.get("priority", task.priority)
         task.status = request.POST.get("status", task.status)
@@ -2403,17 +2930,34 @@ def edit_task_admin(request, task_id):
         new_staff_id = request.POST.get("staff_id")
         if new_staff_id:
             task.assigned_to = get_object_or_404(User, id=new_staff_id)
+        if not task.hospital and hospital:
+            task.hospital = hospital
         task.save()
         messages.success(request, "✅ Task updated!")
         return redirect("admin_tasks")
-    return render(request, "staff/edit_task.html", {"task": task, "staff_list": staff_list})
+    return render(request, "admin/edit_task.html", {"task": task, "staff_list": staff_list})
 
 
 @login_required
 def delete_task_admin(request, task_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    task = get_object_or_404(DailyTask, id=task_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        task = (
+            DailyTask.objects.filter(
+                Q(hospital=hospital)
+                | Q(assigned_to__staff_profile__hospital=hospital)
+                | Q(assigned_by=request.user)
+                | Q(hospital__isnull=True)
+            )
+            .filter(id=task_id)
+            .first()
+        )
+        if not task:
+            raise Http404("No DailyTask matches the given query.")
+    else:
+        task = get_object_or_404(DailyTask, id=task_id)
     if request.method == "POST":
         task.delete()
         messages.success(request, "✅ Task deleted.")
@@ -2434,10 +2978,22 @@ def delete_task_admin(request, task_id):
 
 @login_required
 def admin_add_session_note(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    patients = User.objects.filter(is_superuser=False, is_staff=False)
-    staff_list = StaffProfile.objects.all().select_related("user")
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        patients = (
+            User.objects.filter(
+                Q(appointments__hospital=hospital) | Q(patient_profile__hospital=hospital),
+                is_superuser=False,
+                is_staff=False,
+            )
+            .distinct()
+        )
+        staff_list = StaffProfile.objects.filter(hospital=hospital).select_related("user")
+    else:
+        patients = User.objects.filter(is_superuser=False, is_staff=False)
+        staff_list = StaffProfile.objects.all().select_related("user")
     if request.method == "POST":
         staff = get_object_or_404(User, id=request.POST.get("staff_id"))
         patient = get_object_or_404(User, id=request.POST.get("patient_id"))
@@ -2459,11 +3015,31 @@ def admin_add_session_note(request):
 
 @login_required
 def edit_session_note(request, note_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user)
     note = get_object_or_404(SessionNote, id=note_id)
-    patients = User.objects.filter(is_superuser=False, is_staff=False)
-    staff_list = StaffProfile.objects.all().select_related("user")
+    if hospital and not request.user.is_superuser:
+        belongs = (
+            Appointment.objects.filter(patient=note.patient, hospital=hospital).exists()
+            or (hasattr(note.patient, "patient_profile") and note.patient.patient_profile.hospital_id == hospital.id)
+            or (hasattr(note.staff, "staff_profile") and note.staff.staff_profile.hospital_id == hospital.id)
+        )
+        if not belongs:
+            messages.error(request, "❌ Access denied: Session note belongs to another clinic.")
+            return redirect("admin_session_notes")
+        patients = (
+            User.objects.filter(
+                Q(appointments__hospital=hospital) | Q(patient_profile__hospital=hospital),
+                is_superuser=False,
+                is_staff=False,
+            )
+            .distinct()
+        )
+        staff_list = StaffProfile.objects.filter(hospital=hospital).select_related("user")
+    else:
+        patients = User.objects.filter(is_superuser=False, is_staff=False)
+        staff_list = StaffProfile.objects.all().select_related("user")
     if request.method == "POST":
         note.staff = get_object_or_404(User, id=request.POST.get("staff_id"))
         note.patient = get_object_or_404(User, id=request.POST.get("patient_id"))
@@ -2475,16 +3051,26 @@ def edit_session_note(request, note_id):
         return redirect("admin_session_notes")
     return render(
         request,
-        "staff/edit_session_note.html",
+        "admin/edit_session_note.html",
         {"note": note, "patients": patients, "staff_list": staff_list},
     )
 
 
 @login_required
 def delete_session_note(request, note_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user)
     note = get_object_or_404(SessionNote, id=note_id)
+    if hospital and not request.user.is_superuser:
+        belongs = (
+            Appointment.objects.filter(patient=note.patient, hospital=hospital).exists()
+            or (hasattr(note.patient, "patient_profile") and note.patient.patient_profile.hospital_id == hospital.id)
+            or (hasattr(note.staff, "staff_profile") and note.staff.staff_profile.hospital_id == hospital.id)
+        )
+        if not belongs:
+            messages.error(request, "❌ Access denied: Session note belongs to another clinic.")
+            return redirect("admin_session_notes")
     if request.method == "POST":
         note.delete()
         messages.success(request, "✅ Session note deleted.")
@@ -2502,19 +3088,58 @@ def delete_session_note(request, note_id):
 
 @login_required
 def admin_settings(request):
-    settings_obj, created = ClinicSettings.objects.get_or_create(id=1)
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+    from decimal import Decimal
+    hospital = resolve_hospital(request.user) or Hospital.objects.first()
+    if hospital:
+        settings_obj, created = ClinicSettings.objects.get_or_create(
+            hospital=hospital,
+            defaults={
+                "clinic_name": hospital.name,
+                "phone": hospital.phone or "",
+                "email": hospital.email or "",
+                "address": hospital.address or "",
+            },
+        )
+    else:
+        settings_obj, created = ClinicSettings.objects.get_or_create(
+            id=1,
+            defaults={
+                "clinic_name": "PhysioRehab Clinic",
+                "phone": "+91 98765 43210",
+                "email": "contact@physiorehab.com",
+                "address": "Rajkot, Gujarat",
+            },
+        )
+    if not settings_obj.clinic_name and hospital:
+        settings_obj.clinic_name = hospital.name
+        settings_obj.save()
 
     if request.method == "POST":
-        settings_obj.clinic_name = request.POST.get("clinic_name")
-
-        settings_obj.phone = request.POST.get("phone")
-
-        settings_obj.email = request.POST.get("email")
-
-        settings_obj.address = request.POST.get("address")
+        if request.POST.get("clinic_name"):
+            settings_obj.clinic_name = request.POST.get("clinic_name").strip()
+        if request.POST.get("phone"):
+            settings_obj.phone = request.POST.get("phone").strip()
+        if request.POST.get("email"):
+            settings_obj.email = request.POST.get("email").strip()
+        if request.POST.get("address"):
+            settings_obj.address = request.POST.get("address").strip()
+        if request.POST.get("appointment_fee"):
+            try:
+                settings_obj.appointment_fee = Decimal(request.POST.get("appointment_fee"))
+            except Exception:
+                pass
 
         if request.FILES.get("logo"):
-            settings_obj.logo = request.FILES["logo"]
+            logo_file = request.FILES["logo"]
+            from .file_security import validate_image_file
+            try:
+                validate_image_file(logo_file, max_size_mb=5, field_name="Clinic logo")
+                settings_obj.logo = logo_file
+            except ValidationError as e:
+                messages.error(request, f"❌ {e.message if hasattr(e, 'message') else str(e)}")
+                return render(request, "admin/admin_settings.html", {"settings": settings_obj})
 
         settings_obj.save()
 
@@ -2525,6 +3150,7 @@ def admin_settings(request):
     return render(request, "admin/admin_settings.html", {"settings": settings_obj})
 
 
+
 # ════════════════════════════════════════════════════════════
 # Add these two views to your core/views.py
 # ════════════════════════════════════════════════════════════
@@ -2532,7 +3158,8 @@ def admin_settings(request):
 
 @login_required
 def progress_tracking(request):
-    if request.user.is_superuser:
+    is_admin = request.user.is_superuser or _is_clinic_admin(request.user)
+    if is_admin:
         # Admin: can view any patient's progress
         all_patients = User.objects.filter(is_superuser=False, is_staff=False)
         patient_id = request.GET.get("patient_id")
@@ -2604,9 +3231,10 @@ def progress_tracking(request):
             )
     service_breakdown.sort(key=lambda x: x["count"], reverse=True)
 
+    tpl = "admin/admin_progress_tracking.html" if is_admin else "client/progress_tracking.html"
     return render(
         request,
-        "shared/progress_tracking.html",
+        tpl,
         {
             "appointments": appointments,
             "session_notes": session_notes,
@@ -2627,10 +3255,29 @@ def progress_tracking(request):
 
 @login_required
 def reports_analytics(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
 
-    all_appointments = Appointment.objects.all()
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        all_appointments = Appointment.objects.filter(hospital=hospital)
+        tasks_qs = DailyTask.objects.filter(hospital=hospital)
+        notes_qs = SessionNote.objects.filter(hospital=hospital)
+        leaves_qs = LeaveApplication.objects.filter(hospital=hospital)
+        staff_qs = StaffProfile.objects.filter(hospital=hospital)
+        patient_qs = User.objects.filter(
+            is_superuser=False, is_staff=False
+        ).filter(
+            Q(patient_profile__hospital=hospital) | Q(appointments__hospital=hospital)
+        ).distinct()
+    else:
+        all_appointments = Appointment.objects.all()
+        tasks_qs = DailyTask.objects.all()
+        notes_qs = SessionNote.objects.all()
+        leaves_qs = LeaveApplication.objects.all()
+        staff_qs = StaffProfile.objects.all()
+        patient_qs = User.objects.filter(is_superuser=False, is_staff=False)
+
     total_appointments = all_appointments.count()
     completed_appointments = all_appointments.filter(status="completed").count()
     confirmed_appointments = all_appointments.filter(status="confirmed").count()
@@ -2671,12 +3318,12 @@ def reports_analytics(request):
     # ── Performance rates ──
     completion_rate = pct(completed_appointments)
     retention_rate = min(completion_rate + 15, 100)
-    total_tasks = DailyTask.objects.count()
-    completed_tasks = DailyTask.objects.filter(status="completed").count()
+    total_tasks = tasks_qs.count()
+    completed_tasks = tasks_qs.filter(status="completed").count()
     task_completion_rate = (
         round(completed_tasks / total_tasks * 100) if total_tasks else 0
     )
-    total_notes = SessionNote.objects.count()
+    total_notes = notes_qs.count()
     notes_rate = (
         round(total_notes / completed_appointments * 100)
         if completed_appointments
@@ -2687,9 +3334,7 @@ def reports_analytics(request):
         request,
         "admin/reports_analytics.html",
         {
-            "total_patients": User.objects.filter(
-                is_superuser=False, is_staff=False
-            ).count(),
+            "total_patients": patient_qs.count(),
             "total_appointments": total_appointments,
             "completed_appointments": completed_appointments,
             "confirmed_appointments": confirmed_appointments,
@@ -2703,15 +3348,13 @@ def reports_analytics(request):
             "retention_rate": retention_rate,
             "task_completion_rate": task_completion_rate,
             "notes_rate": min(notes_rate, 100),
-            "total_staff": StaffProfile.objects.count(),
+            "total_staff": staff_qs.count(),
             "total_notes": total_notes,
-            "total_leaves": LeaveApplication.objects.count(),
+            "total_leaves": leaves_qs.count(),
             "total_tasks": total_tasks,
-            "recent_patients": User.objects.filter(
-                is_superuser=False, is_staff=False
-            ).order_by("-date_joined")[:6],
+            "recent_patients": patient_qs.order_by("-date_joined")[:6],
             "recent_appointments": all_appointments.order_by("-created_at")[:8],
-            "staff_list": StaffProfile.objects.all().select_related("user"),
+            "staff_list": staff_qs.select_related("user"),
         },
     )
 
@@ -2736,7 +3379,7 @@ from reportlab.lib.enums import TA_CENTER
 
 @login_required
 def export_patients_excel(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
 
     wb = openpyxl.Workbook()
@@ -2772,9 +3415,18 @@ def export_patients_excel(request):
         col.alignment = header_align
         col.border = border
 
-    patients = User.objects.filter(is_superuser=False, is_staff=False).order_by(
-        "-date_joined"
-    )
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        patients = (
+            User.objects.filter(is_superuser=False, is_staff=False)
+            .filter(Q(patient_profile__hospital=hospital) | Q(appointments__hospital=hospital))
+            .distinct()
+            .order_by("-date_joined")
+        )
+    else:
+        patients = User.objects.filter(is_superuser=False, is_staff=False).order_by(
+            "-date_joined"
+        )
     for i, p in enumerate(patients, 1):
         try:
             prof = p.profile
@@ -2826,7 +3478,7 @@ def export_patients_excel(request):
 
 @login_required
 def export_patients_pdf(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
 
     buffer = io.BytesIO()
@@ -2865,9 +3517,18 @@ def export_patients_pdf(request):
         )
     )
 
-    patients = User.objects.filter(is_superuser=False, is_staff=False).order_by(
-        "-date_joined"
-    )
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        patients = (
+            User.objects.filter(is_superuser=False, is_staff=False)
+            .filter(Q(patient_profile__hospital=hospital) | Q(appointments__hospital=hospital))
+            .distinct()
+            .order_by("-date_joined")
+        )
+    else:
+        patients = User.objects.filter(is_superuser=False, is_staff=False).order_by(
+            "-date_joined"
+        )
     data = [
         [
             "#",
@@ -2951,7 +3612,7 @@ def export_patients_pdf(request):
 
 @login_required
 def export_appointments_excel(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
 
     wb = openpyxl.Workbook()
@@ -2983,7 +3644,11 @@ def export_appointments_excel(request):
         col.alignment = header_align
         col.border = border
 
-    appts = Appointment.objects.all().order_by("-created_at")
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        appts = Appointment.objects.filter(hospital=hospital).order_by("-created_at")
+    else:
+        appts = Appointment.objects.all().order_by("-created_at")
     for i, a in enumerate(appts, 1):
         row = [
             i,
@@ -3020,7 +3685,7 @@ def export_appointments_excel(request):
 
 @login_required
 def export_appointments_pdf(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
 
     buffer = io.BytesIO()
@@ -3059,7 +3724,11 @@ def export_appointments_pdf(request):
         )
     )
 
-    appts = Appointment.objects.all().order_by("-created_at")
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        appts = Appointment.objects.filter(hospital=hospital).order_by("-created_at")
+    else:
+        appts = Appointment.objects.all().order_by("-created_at")
     data = [
         ["#", "Patient Name", "Phone", "Service", "Date", "Time", "Status", "Booked On"]
     ]
@@ -3122,7 +3791,7 @@ def export_appointments_pdf(request):
 
 @login_required
 def export_analytics_pdf(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
 
     buffer = io.BytesIO()
@@ -3169,16 +3838,37 @@ def export_analytics_pdf(request):
         )
     )
 
-    total_patients = User.objects.filter(is_superuser=False, is_staff=False).count()
-    active_patients = User.objects.filter(
-        is_superuser=False, is_staff=False, is_active=True
-    ).count()
-    total_appts = Appointment.objects.count()
-    completed = Appointment.objects.filter(status="completed").count()
-    confirmed = Appointment.objects.filter(status="confirmed").count()
-    pending = Appointment.objects.filter(status="pending").count()
-    cancelled = Appointment.objects.filter(status="cancelled").count()
-    total_staff = StaffProfile.objects.count()
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        total_patients = (
+            User.objects.filter(is_superuser=False, is_staff=False)
+            .filter(Q(patient_profile__hospital=hospital) | Q(appointments__hospital=hospital))
+            .distinct()
+            .count()
+        )
+        active_patients = (
+            User.objects.filter(is_superuser=False, is_staff=False, is_active=True)
+            .filter(Q(patient_profile__hospital=hospital) | Q(appointments__hospital=hospital))
+            .distinct()
+            .count()
+        )
+        total_appts = Appointment.objects.filter(hospital=hospital).count()
+        completed = Appointment.objects.filter(hospital=hospital, status="completed").count()
+        confirmed = Appointment.objects.filter(hospital=hospital, status="confirmed").count()
+        pending = Appointment.objects.filter(hospital=hospital, status="pending").count()
+        cancelled = Appointment.objects.filter(hospital=hospital, status="cancelled").count()
+        total_staff = StaffProfile.objects.filter(hospital=hospital).count()
+    else:
+        total_patients = User.objects.filter(is_superuser=False, is_staff=False).count()
+        active_patients = User.objects.filter(
+            is_superuser=False, is_staff=False, is_active=True
+        ).count()
+        total_appts = Appointment.objects.count()
+        completed = Appointment.objects.filter(status="completed").count()
+        confirmed = Appointment.objects.filter(status="confirmed").count()
+        pending = Appointment.objects.filter(status="pending").count()
+        cancelled = Appointment.objects.filter(status="cancelled").count()
+        total_staff = StaffProfile.objects.count()
 
     elements.append(Paragraph("Summary Statistics", section_style))
     summary_data = [
@@ -3219,8 +3909,13 @@ def export_analytics_pdf(request):
     elements.append(Paragraph("Service Breakdown", section_style))
     from django.db.models import Count
 
+    appt_service_qs = (
+        Appointment.objects.filter(hospital=hospital)
+        if (hospital and not request.user.is_superuser)
+        else Appointment.objects.all()
+    )
     service_stats = (
-        Appointment.objects.values("service")
+        appt_service_qs.values("service")
         .annotate(count=Count("id"))
         .order_by("-count")
     )
@@ -3731,6 +4426,7 @@ def super_admin_all_payments(request):
     paid_count = PaymentRecord.objects.filter(status="paid").count()
     failed_count = PaymentRecord.objects.filter(status="failed").count()
     return render(request, "super_admin/super_admin_all_payments.html", {
+        "all_payments": all_payments,
         "payments": all_payments,
         "status_filter": status_filter,
         "method_filter": method_filter,
@@ -3893,7 +4589,7 @@ def send_subscription_reminder(request, hospital_id):
 
 @login_required
 def subscription_page(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     reason = request.GET.get("reason", "")
     if reason == "expired":
@@ -3976,18 +4672,24 @@ def subscription_page(request):
 
 @login_required
 def admin_promos(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    promos = ClinicPromo.objects.all()
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        promos = ClinicPromo.objects.filter(hospital=hospital)
+    else:
+        promos = ClinicPromo.objects.all()
     return render(request, "admin/admin_promos.html", {"promos": promos})
 
 
 @login_required
 def admin_promo_add(request):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user)
     if request.method == "POST":
         ClinicPromo.objects.create(
+            hospital=hospital,
             title=request.POST.get("title", "").strip(),
             message=request.POST.get("message", "").strip(),
             start_date=request.POST.get("start_date") or timezone.now().date(),
@@ -4001,9 +4703,13 @@ def admin_promo_add(request):
 
 @login_required
 def admin_promo_delete(request, promo_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    promo = get_object_or_404(ClinicPromo, id=promo_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        promo = get_object_or_404(ClinicPromo, id=promo_id, hospital=hospital)
+    else:
+        promo = get_object_or_404(ClinicPromo, id=promo_id)
     promo.delete()
     messages.success(request, "🗑️ Promo deleted.")
     return redirect("admin_promos")
@@ -4025,9 +4731,19 @@ def dismiss_promo(request):
 
 @login_required
 def send_exercise_reminder(request, patient_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     patient = get_object_or_404(User, id=patient_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        belongs = (
+            Appointment.objects.filter(patient=patient, hospital=hospital).exists()
+            or (hasattr(patient, "patient_profile") and patient.patient_profile.hospital_id == hospital.id)
+        )
+        if not belongs:
+            messages.error(request, "❌ Access denied: Patient does not belong to your clinic.")
+            return redirect("admin_patients")
+
     last_note = (
         SessionNote.objects.filter(patient=patient).order_by("-created_at").first()
     )
@@ -4061,3 +4777,437 @@ Dr. Dhvani Patalia — PhysioRehab Clinic
         f"✅ Exercise reminder sent to {patient.get_full_name() or patient.username}.",
     )
     return redirect("admin_patients")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BULK IMPORT (Excel Upload)
+# ─────────────────────────────────────────────────────────────────────────────
+
+IMPORT_CONFIGS = {
+    "patients": {
+        "label": "Patients",
+        "columns": [
+            "first_name", "last_name", "email", "phone",
+            "date_of_birth", "gender", "address", "medical_history",
+        ],
+        "required": ["first_name", "last_name", "email"],
+        "description": "Import patient accounts. A Django user + PatientProfile will be created for each row.",
+    },
+    "staff": {
+        "label": "Staff / Physiotherapists",
+        "columns": [
+            "first_name", "last_name", "email", "phone",
+            "role", "specialization", "salary", "join_date",
+        ],
+        "required": ["first_name", "last_name", "email"],
+        "description": "Import staff members. Django user + StaffProfile will be created.",
+    },
+    "appointments": {
+        "label": "Appointments",
+        "columns": [
+            "patient_email", "staff_email", "date", "time",
+            "service", "notes", "status",
+        ],
+        "required": ["patient_email", "date", "time"],
+        "description": "Bulk schedule appointments. patient_email and staff_email must match existing users.",
+    },
+}
+
+
+@login_required
+def download_import_template(request, model_name):
+    """Download an Excel template for the given model."""
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+
+    config = IMPORT_CONFIGS.get(model_name)
+    if not config:
+        messages.error(request, "Unknown import type.")
+        return redirect("bulk_import")
+
+    import openpyxl
+    from django.http import HttpResponse
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = config["label"]
+
+    # Header row
+    header_font = openpyxl.styles.Font(bold=True, color="FFFFFF")
+    header_fill = openpyxl.styles.PatternFill("solid", fgColor="1F2937")
+    for col_idx, col_name in enumerate(config["columns"], start=1):
+        cell = ws.cell(row=1, column=col_idx, value=col_name)
+        cell.font = header_font
+        cell.fill = header_fill
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 22
+
+    # Sample row
+    samples = {
+        "first_name": "Aarav", "last_name": "Sharma", "email": "aarav@example.com",
+        "phone": "9876543210", "date_of_birth": "1990-05-15", "gender": "Male",
+        "address": "Mumbai, Maharashtra", "medical_history": "Back pain",
+        "role": "physiotherapist", "specialization": "Sports Rehab",
+        "salary": "45000", "join_date": "2024-01-10",
+        "patient_email": "patient@example.com", "staff_email": "staff@example.com",
+        "date": "2024-12-01", "time": "10:00", "service": "Physiotherapy",
+        "notes": "First session", "status": "pending",
+    }
+    for col_idx, col_name in enumerate(config["columns"], start=1):
+        ws.cell(row=2, column=col_idx, value=samples.get(col_name, ""))
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = f'attachment; filename="{model_name}_template.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
+def bulk_import(request):
+    """Upload an Excel file and import records into the database."""
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+
+    hospital = resolve_hospital(request.user) or Hospital.objects.first()
+    results = None
+
+    if request.method == "POST":
+        import openpyxl
+        model_name = request.POST.get("model_name", "")
+        excel_file = request.FILES.get("excel_file")
+        config = IMPORT_CONFIGS.get(model_name)
+
+        if not config or not excel_file:
+            messages.error(request, "Please select an import type and upload a file.")
+            return redirect("bulk_import")
+
+        from .file_security import validate_excel_file
+        try:
+            validate_excel_file(excel_file)
+        except ValidationError as e:
+            messages.error(request, e.message if hasattr(e, "message") else str(e))
+            return redirect("bulk_import")
+
+        try:
+            wb = openpyxl.load_workbook(excel_file, data_only=True)
+            ws = wb.active
+            rows = list(ws.iter_rows(values_only=True))
+            if not rows:
+                messages.error(request, "The uploaded file is empty.")
+                return redirect("bulk_import")
+
+            # Parse header
+            header = [str(h).strip().lower() if h else "" for h in rows[0]]
+            data_rows = rows[1:]
+
+            created, skipped_rows, errors = 0, 0, []
+
+            for row_num, row in enumerate(data_rows, start=2):
+                if all(cell is None or str(cell).strip() == "" for cell in row):
+                    continue  # skip blank rows
+
+                row_data = {
+                    col: (str(row[i]).strip() if i < len(row) and row[i] is not None else "")
+                    for i, col in enumerate(header)
+                    if col
+                }
+
+                # Validate required fields
+                missing = [r for r in config["required"] if not row_data.get(r)]
+                if missing:
+                    errors.append(f"Row {row_num}: missing {', '.join(missing)}")
+                    skipped_rows += 1
+                    continue
+
+                try:
+                    if model_name == "patients":
+                        email = row_data["email"]
+                        username = email.split("@")[0] + "_p"
+                        user, u_new = User.objects.get_or_create(
+                            email=email,
+                            defaults={
+                                "username": username,
+                                "first_name": row_data.get("first_name", ""),
+                                "last_name": row_data.get("last_name", ""),
+                                "is_staff": False,
+                                "is_superuser": False,
+                            },
+                        )
+                        if u_new:
+                            user.set_password(User.objects.make_random_password())
+                            user.save()
+                        PatientProfile.objects.get_or_create(
+                            user=user,
+                            defaults={
+                                "hospital": hospital,
+                                "phone": row_data.get("phone", ""),
+                                "patient_status": "active",
+                            },
+                        )
+                        created += 1
+
+                    elif model_name == "staff":
+                        email = row_data["email"]
+                        username = email.split("@")[0] + "_s"
+                        user, u_new = User.objects.get_or_create(
+                            email=email,
+                            defaults={
+                                "username": username,
+                                "first_name": row_data.get("first_name", ""),
+                                "last_name": row_data.get("last_name", ""),
+                                "is_staff": True,
+                                "is_superuser": False,
+                            },
+                        )
+                        if u_new:
+                            user.set_password(User.objects.make_random_password())
+                            user.save()
+                        salary_val = row_data.get("salary", "0") or "0"
+                        try:
+                            salary_val = float(salary_val.replace(",", ""))
+                        except (ValueError, AttributeError):
+                            salary_val = 0
+                        StaffProfile.objects.get_or_create(
+                            user=user,
+                            defaults={
+                                "hospital": hospital,
+                                "role": row_data.get("role", "physiotherapist"),
+                                "phone": row_data.get("phone", ""),
+                                "salary": salary_val,
+                                "is_active": True,
+                            },
+                        )
+                        created += 1
+
+                    elif model_name == "appointments":
+                        patient_email = row_data.get("patient_email", "")
+                        staff_email = row_data.get("staff_email", "")
+                        appt_date = row_data.get("date", "")
+                        appt_time = row_data.get("time", "")
+
+                        try:
+                            patient_user = User.objects.get(email=patient_email)
+                        except User.DoesNotExist:
+                            errors.append(f"Row {row_num}: patient '{patient_email}' not found")
+                            skipped_rows += 1
+                            continue
+
+                        staff_user = None
+                        if staff_email:
+                            try:
+                                staff_user = User.objects.get(email=staff_email)
+                            except User.DoesNotExist:
+                                pass
+
+                        from datetime import date as dt_date, time as dt_time
+                        try:
+                            parsed_date = dt_date.fromisoformat(appt_date)
+                            parsed_time = dt_time.fromisoformat(appt_time)
+                        except (ValueError, TypeError):
+                            errors.append(f"Row {row_num}: invalid date/time format (use YYYY-MM-DD and HH:MM)")
+                            skipped_rows += 1
+                            continue
+
+                        Appointment.objects.get_or_create(
+                            hospital=hospital,
+                            patient=patient_user,
+                            date=parsed_date,
+                            time=parsed_time,
+                            defaults={
+                                "name": patient_user.get_full_name() or patient_user.username,
+                                "email": patient_user.email,
+                                "service": row_data.get("service", "Physiotherapy"),
+                                "notes": row_data.get("notes", ""),
+                                "status": row_data.get("status", "pending"),
+                                "assigned_staff": staff_user,
+                            },
+                        )
+                        created += 1
+
+                except Exception as exc:
+                    errors.append(f"Row {row_num}: {exc}")
+                    skipped_rows += 1
+
+            results = {
+                "created": created,
+                "skipped": skipped_rows,
+                "errors": errors,
+                "model_label": config["label"],
+            }
+
+            if created:
+                messages.success(request, f"Successfully imported {created} {config['label']}.")
+            if errors:
+                messages.warning(request, f"{skipped_rows} rows had errors — see details below.")
+
+        except Exception as exc:
+            messages.error(request, f"Could not read the Excel file: {exc}")
+
+    return render(request, "admin/bulk_import.html", {
+        "import_configs": IMPORT_CONFIGS,
+        "results": results,
+    })
+
+
+# ── AJAX Chat APIs ──
+from django.utils.dateformat import format
+from django.core.serializers.json import DjangoJSONEncoder
+import json
+
+
+def can_user_chat_with(user_a, user_b):
+    """
+    Verify if user_a is authorized to communicate with user_b.
+    - Superusers can communicate with any user.
+    - Users in the same hospital clinic (staff/admin/patients) can communicate.
+    - Patients can communicate with staff/admin of their hospital.
+    - Users with an existing message thread or appointment can communicate.
+    """
+    if user_a.id == user_b.id:
+        return True
+    if user_a.is_superuser or user_b.is_superuser:
+        return True
+
+    # Existing conversation check
+    if Message.objects.filter(
+        Q(sender=user_a, receiver=user_b) | Q(sender=user_b, receiver=user_a)
+    ).exists():
+        return True
+
+    h_a = resolve_hospital(user_a)
+    h_b = resolve_hospital(user_b)
+    if h_a and h_b and h_a.id == h_b.id:
+        return True
+
+    # Patient to clinic staff/admin check
+    for (patient, staff) in [(user_a, user_b), (user_b, user_a)]:
+        h_staff = resolve_hospital(staff)
+        if h_staff:
+            has_appt = Appointment.objects.filter(patient=patient, hospital=h_staff).exists()
+            has_profile = (
+                hasattr(patient, "patient_profile")
+                and patient.patient_profile.hospital_id == h_staff.id
+            )
+            if has_appt or has_profile:
+                return True
+    return False
+
+
+@login_required
+def api_chat_send(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            receiver_id = data.get("receiver_id")
+            content = data.get("content", "").strip()
+            if not receiver_id or not content:
+                return JsonResponse({"error": "Missing data"}, status=400)
+
+            receiver = User.objects.get(id=receiver_id)
+            if not can_user_chat_with(request.user, receiver):
+                return JsonResponse({"error": "Access denied: Cannot message this recipient"}, status=403)
+
+            from .file_security import sanitize_html_content
+            clean_content = sanitize_html_content(content)
+
+            msg = Message.objects.create(
+                sender=request.user,
+                receiver=receiver,
+                content=clean_content,
+                status=Message.STATUS_SENT,
+            )
+            return JsonResponse({
+                "id": msg.id,
+                "content": msg.content,
+                "created_at": format(msg.created_at, "d M Y, h:i A"),
+                "sender_id": msg.sender.id,
+                "status": msg.status
+            })
+        except User.DoesNotExist:
+            return JsonResponse({"error": "Recipient not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+@login_required
+def api_chat_fetch(request, user_id):
+    try:
+        last_id = int(request.GET.get('last_id', 0))
+        other_user = User.objects.get(id=user_id)
+        if not can_user_chat_with(request.user, other_user):
+            return JsonResponse({"error": "Access denied: Cannot access chat history with this user"}, status=403)
+
+        # Mark messages from other_user to request.user as read
+        Message.objects.filter(
+            sender=other_user, receiver=request.user, id__gt=last_id, is_read=False
+        ).update(is_read=True, status=Message.STATUS_READ)
+
+        msgs = Message.objects.filter(
+            Q(sender=request.user, receiver=other_user) | Q(sender=other_user, receiver=request.user),
+            id__gt=last_id
+        ).order_by("created_at")
+
+        data = []
+        for msg in msgs:
+            data.append({
+                "id": msg.id,
+                "content": msg.content,
+                "created_at": format(msg.created_at, "d M Y, h:i A"),
+                "date_label": format(msg.created_at, "d M Y"),
+                "sender_id": msg.sender.id,
+                "status": msg.status
+            })
+        return JsonResponse({"messages": data})
+    except User.DoesNotExist:
+        return JsonResponse({"error": "User not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@csrf_exempt
+def api_inbound_email_webhook(request):
+    """
+    Inbound email webhook endpoint for receiving emails from mail providers
+    (e.g., SendGrid, Mailgun, Postmark, AWS SES, or custom inbound MTA).
+    Validates:
+      - HTTP POST method
+      - Secret authentication token (Bearer token, X-Webhook-Secret header, or HMAC token)
+      - Payload parsing (JSON or form-encoded)
+      - Idempotency & deduplication
+      - HTML sanitization against stored XSS
+      - Multi-tenant clinic routing & in-app notifications
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed. POST required."}, status=405)
+
+    import hmac
+    expected_secret = getattr(settings, "INBOUND_EMAIL_WEBHOOK_SECRET", "")
+    auth_header = request.headers.get("Authorization", "")
+    token_header = request.headers.get("X-Webhook-Secret", "")
+    provided_secret = ""
+    if auth_header.startswith("Bearer "):
+        provided_secret = auth_header[7:].strip()
+    elif token_header:
+        provided_secret = token_header.strip()
+    else:
+        provided_secret = request.GET.get("secret", "").strip()
+
+    if expected_secret:
+        if not provided_secret or not hmac.compare_digest(provided_secret, expected_secret):
+            return JsonResponse({"error": "Unauthorized webhook signature/token"}, status=403)
+
+    try:
+        if request.content_type and "application/json" in request.content_type:
+            payload = json.loads(request.body.decode("utf-8"))
+        else:
+            payload = request.POST.dict()
+    except Exception as e:
+        return JsonResponse({"error": f"Invalid payload: {str(e)}"}, status=400)
+
+    from .email_utils import process_inbound_email_payload
+    result = process_inbound_email_payload(payload, raw_headers=dict(request.headers))
+    if result.get("status") == "rejected":
+        return JsonResponse(result, status=400)
+    return JsonResponse(result, status=200)

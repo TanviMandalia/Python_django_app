@@ -1,781 +1,521 @@
+{% extends "admin/base_admin.html" %}
 {% load static %}
-<!doctype html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Payment Management — Admin</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: "Segoe UI", sans-serif;
-            background: #f5f5f5;
-            color: #222;
-        }
-
-        .layout {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            width: 260px;
-            min-height: 100vh;
-            background: linear-gradient(180deg, #1a1a1a, #2c2c2c);
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-logo {
-            padding: 22px 20px;
-            border-bottom: 1px solid rgba(245, 197, 24, 0.15);
-            text-align: center;
-        }
-
-        .sidebar-logo img {
-            width: 120px;
-            border-radius: 10px;
-        }
-
-        .sidebar-logo p {
-            color: #f5c518;
-            font-size: 0.75rem;
-            margin-top: 6px;
-            font-weight: 600;
-        }
-
-        .sidebar-user {
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .user-avatar {
-            width: 42px;
-            height: 42px;
-            background: #f5c518;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: #2c2c2c;
-        }
-
-        .user-info h4 {
-            color: #fff;
-            font-size: 0.88rem;
-        }
-
-        .user-info span {
-            color: #f5c518;
-            font-size: 0.72rem;
-        }
-
-        .nav-section {
-            padding: 12px 22px 4px;
-            color: #777;
-            font-size: 0.68rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 11px 22px;
-            color: #ccc;
-            text-decoration: none;
-            font-size: 0.88rem;
-            border-left: 3px solid transparent;
-            transition: 0.2s;
-        }
-
-        .nav-item:hover,
-        .nav-item.active {
-            background: rgba(245, 197, 24, 0.08);
-            color: #f5c518;
-            border-left-color: #f5c518;
-        }
-
-        .sidebar-footer {
-            margin-top: auto;
-            padding: 12px;
-        }
-
-        .logout-btn {
-            display: flex;
-            gap: 10px;
-            padding: 11px 16px;
-            background: rgba(220, 53, 69, 0.15);
-            color: #ff6b6b;
-            border-radius: 10px;
-            text-decoration: none;
-            transition: 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(220, 53, 69, 0.3);
-        }
-
-        .main {
-            flex: 1;
-            padding: 28px;
-            overflow-x: hidden;
-        }
-
-        .page-header {
-            margin-bottom: 24px;
-        }
-
-        .page-header h1 {
-            font-size: 1.6rem;
-            font-weight: 700;
-        }
-
-        /* Messages */
-        .msg {
-            padding: 12px 18px;
-            border-radius: 10px;
-            margin-bottom: 16px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .msg-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .msg-warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
-        }
-
-        .msg-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        /* Stats */
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 14px;
-            margin-bottom: 22px;
-        }
-
-        .stat-box {
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07);
-        }
-
-        .stat-box .val {
-            font-size: 1.7rem;
-            font-weight: 800;
-            color: #f5c518;
-        }
-
-        .stat-box .val.green {
-            color: #28a745;
-        }
-
-        .stat-box .val.amber {
-            color: #d97706;
-        }
-
-        .stat-box .lbl {
-            font-size: 0.78rem;
-            color: #666;
-            margin-top: 4px;
-        }
-
-        /* Cards */
-        .card {
-            background: #fff;
-            border-radius: 14px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
-            padding: 24px;
-            margin-bottom: 22px;
-        }
-
-        .card-title {
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin-bottom: 18px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Pending section */
-        .pending-card {
-            background: #fffbeb;
-            border: 2px solid #f5c518;
-            border-radius: 14px;
-            padding: 22px;
-            margin-bottom: 22px;
-            box-shadow: 0 4px 16px rgba(245, 197, 24, 0.15);
-        }
-
-        .pending-card .card-title {
-            color: #92400e;
-        }
-
-        .pending-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            background: #fff;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(245, 197, 24, 0.3);
-            flex-wrap: wrap;
-        }
-
-        .pending-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .pending-info {
-            flex: 1;
-            min-width: 180px;
-        }
-
-        .pending-info .name {
-            font-weight: 700;
-            font-size: 0.92rem;
-            color: #1f2937;
-        }
-
-        .pending-info .meta {
-            font-size: 0.78rem;
-            color: #888;
-            margin-top: 2px;
-        }
-
-        .pending-amount {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: #1f2937;
-            min-width: 70px;
-            text-align: right;
-        }
-
-        .pending-method {
-            font-size: 0.8rem;
-            background: #f0f0f0;
-            padding: 3px 10px;
-            border-radius: 20px;
-            color: #555;
-            white-space: nowrap;
-        }
-
-        .pending-txn {
-            font-family: monospace;
-            font-size: 0.76rem;
-            color: #666;
-            background: #f9f9f9;
-            padding: 3px 8px;
-            border-radius: 6px;
-        }
-
-        .action-btns {
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-
-        .btn-confirm {
-            background: linear-gradient(135deg, #28a745, #1e7e34);
-            color: #fff;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 8px;
-            font-size: 0.84rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: opacity 0.2s;
-        }
-
-        .btn-confirm:hover {
-            opacity: 0.88;
-        }
-
-        .btn-reject {
-            background: linear-gradient(135deg, #dc3545, #b02a37);
-            color: #fff;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 8px;
-            font-size: 0.84rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: opacity 0.2s;
-        }
-
-        .btn-reject:hover {
-            opacity: 0.88;
-        }
-
-        /* Table */
-        .table-wrap {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 760px;
-        }
-
-        th {
-            text-align: left;
-            padding: 12px 14px;
-            background: #fafafa;
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: #555;
-            border-bottom: 2px solid #eee;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        td {
-            padding: 12px 14px;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 0.88rem;
-            vertical-align: middle;
-        }
-
-        tr:hover td {
-            background: #fafff7;
-        }
-
-        .badge {
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 0.74rem;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .badge-paid {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .badge-pending {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .badge-failed {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .badge-refunded {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .tbl-confirm {
-            background: #28a745;
-            color: #fff;
-            border: none;
-            padding: 5px 12px;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            cursor: pointer;
-            margin-right: 4px;
-        }
-
-        .tbl-reject {
-            background: #dc3545;
-            color: #fff;
-            border: none;
-            padding: 5px 12px;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .tbl-confirm:hover {
-            background: #218838;
-        }
-
-        .tbl-reject:hover {
-            background: #c82333;
-        }
-
-        /* Responsive */
-        .hamburger {
-            display: none;
-            position: fixed;
-            top: 14px;
-            left: 14px;
-            z-index: 200;
-            background: #f5c518;
-            border: none;
-            border-radius: 8px;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-        }
-
-        @media (max-width: 420px) {
-            .stats-row {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .stats-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .hamburger {
-                display: flex;
-            }
-
-            .sidebar {
-                position: fixed;
-                top: 0;
-                left: -280px;
-                width: 260px;
-                height: 100%;
-                z-index: 150;
-                transition: 0.3s;
-            }
-
-            .sidebar.open {
-                left: 0;
-            }
-
-            .main {
-                padding: 70px 16px 20px;
-            }
-
-            .pending-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .pending-amount {
-                text-align: left;
-            }
-        }
-
-        @media (max-width: 768px) {
-            table {
-                min-width: 700px;
-            }
-
-            th,
-            td {
-                padding: 10px 8px;
-                font-size: 0.8rem;
-            }
-
-            .card {
-                padding: 16px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .badge {
-                font-size: 0.68rem;
-                padding: 3px 8px;
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
-    <button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">
-        <i class="fas fa-bars"></i>
-    </button>
-    <div class="layout">
-        <!-- ════ SIDEBAR ════ -->
-        <aside class="sidebar">
-            <div class="sidebar-logo">
-                <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
-                <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
-            </div>
-
-            <div class="sidebar-user">
-                <div class="user-avatar">{{ user.username|first|upper }}</div>
-                <div class="user-info">
-                    <h4>{{ user.username }}</h4>
-                    <span><span class="online-dot"></span>Super Admin</span>
-                </div>
-            </div>
-
-            <div class="nav-scroll">
-                <nav>
-                    <div class="nav-section">Overview</div>
-                    <a href="{% url 'admin_dashboard' %}" class="nav-item active"><i class="fas fa-tachometer-alt"></i>
-                        Dashboard</a>
-
-                    <div class="nav-section">Management</div>
-                    <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage
-                        Patients</a>
-                    <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
-                    <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All
-                        Appointments</a>
-                    <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
-
-                    <div class="nav-section">Staff Tools</div>
-                    <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave
-                        Requests</a>
-                    <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
-                    <a href="{% url 'admin_tasks' %}" class="nav-item"><i class="fas fa-tasks"></i> Tasks</a>
-                    <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i>
-                        Session Notes</a>
-
-                    <div class="nav-section">Communication</div>
-                    <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient
-                        Messages</a>
-
-                    <div class="nav-section">Content</div>
-                    <a href="{% url 'admin_payments' %}" class="nav-item"><i class="fas fa-credit-card"></i>
-                        Payments</a>
-                    <a href="{% url 'admin_promos' %}" class="nav-item"><i class="fas fa-bullhorn"></i> Promo
-                        Notifications</a>
-                    <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
-                    <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
-
-                    <div class="nav-section">Reports</div>
-                    <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress
-                        Tracking</a>
-                    <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i>
-                        Analytics</a>
-
-                    <div class="nav-section">System</div>
-                    <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
-                    <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
-                    <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
-                </nav>
-            </div>
-
-            <div class="sidebar-footer">
-                <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-            </div>
-        </aside>
-
-        <main class="main">
-            <div class="page-header">
-                <button class="hamburger" onclick="toggleSidebar()">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <h1>💳 Payment Management</h1>
-                <p style="color:#666;margin-top:4px;">Verify patient payments and view all clinic transactions</p>
-            </div>
-
-            {% if messages %}
-            {% for msg in messages %}
-            <div
-                class="msg {% if 'successfully' in msg.tags or msg.tags == 'success' %}msg-success{% elif msg.tags == 'warning' %}msg-warning{% else %}msg-error{% endif %}">
-                {{ msg }}
-            </div>
-            {% endfor %}
-            {% endif %}
-
-            <!-- STATS -->
-            <div class="stats-row">
-                <div class="stat-box">
-                    <div class="val green">₹{{ total_paid }}</div>
-                    <div class="lbl">Total Collected</div>
-                </div>
-                <div class="stat-box">
-                    <div class="val">{{ payments|length }}</div>
-                    <div class="lbl">All Transactions</div>
-                </div>
-                <div class="stat-box">
-                    <div class="val amber">{{ pending_count }}</div>
-                    <div class="lbl">Pending Verification</div>
-                </div>
-                <div class="stat-box">
-                    <div class="val" style="color:#3395ff;">{{ payments|length|add:"-"|add:pending_count }}</div>
-                    <div class="lbl">Confirmed Payments</div>
-                </div>
-            </div>
-
-            {% if pending_payments %}
-            <!-- PENDING PAYMENTS — NEEDS ACTION -->
-            <div class="pending-card">
-                <div class="card-title">
-                    <i class="fas fa-clock" style="color:#d97706;"></i>
-                    Pending Verification ({{ pending_count }}) — Action Required
-                </div>
-                <p style="font-size:0.82rem;color:#92400e;margin-bottom:16px;">
-                    These payments were submitted by patients via UPI or other manual methods. Review and confirm or
-                    reject each one.
-                </p>
-                {% for pay in pending_payments %}
-                <div class="pending-item">
-
-                    <div class="pending-info">
-                        <div class="name">{{ pay.patient.get_full_name|default:pay.patient.username }}</div>
-                        <div class="meta">
-                            {{ pay.created_at|date:"d M Y, h:i A" }}
-                        </div>
-
-                        <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">
-                            <span class="pending-method">
-                                {{ pay.get_method_display }}
-                            </span>
-
-                            {% if pay.transaction_id %}
-                            <span class="pending-txn">Ref: {{ pay.transaction_id }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="pending-amount">₹{{ pay.amount }}</div>
-                    <div class="action-btns">
-                        <form method="POST" action="{% url 'confirm_payment' pay.id %}" style="display:inline;"
-                            onsubmit="return confirm('Confirm payment of ₹{{ pay.amount }} from {{ pay.patient.get_full_name|default:pay.patient.username }}?');">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-confirm"><i class="fas fa-check"></i> Confirm</button>
-                        </form>
-                        <form method="POST" action="{% url 'reject_payment' pay.id %}" style="display:inline;"
-                            onsubmit="return confirm('Reject this payment? This cannot be undone.');">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-reject"><i class="fas fa-times"></i> Reject</button>
-                        </form>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            <!-- ALL TRANSACTIONS TABLE -->
-            <div class="card">
-                <div class="card-title"><i class="fas fa-list"></i> All Transactions</div>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Patient</th>
-                                <th>Appointment</th>
-                                <th>Amount</th>
-                                <th>Method</th>
-                                <th>Txn ID / Ref</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for pay in payments %}
-                            <tr>
-                                <td>
-                                    <div style="font-weight:600;">{{ pay.created_at|date:"d M Y" }}</div>
-                                    <div style="color:#888;font-size:0.76rem;">{{ pay.created_at|time:"h:i A" }}</div>
-                                </td>
-                                <td>{{ pay.patient.get_full_name|default:pay.patient.username }}</td>
-                                <td>{% if pay.appointment %}{{ pay.appointment.date|date:"d M Y" }}{% else %}<span
-                                        style="color:#aaa;">General</span>{% endif %}</td>
-                                <td><strong>₹{{ pay.amount }}</strong></td>
-                                <td>
-                                    {% if pay.method == 'razorpay' %}<i class="fas fa-bolt" style="color:#f5c518;"></i>
-                                    Razorpay
-                                    {% elif pay.method == 'upi' %}<i class="fas fa-qrcode" style="color:#00b900;"></i>
-                                    UPI
-                                    {% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave"
-                                        style="color:#28a745;"></i> Cash
-                                    {% elif pay.method == 'netbanking' %}<i class="fas fa-university"
-                                        style="color:#1a73e8;"></i> Net Banking
-                                    {% elif pay.method == 'wallet' %}<i class="fas fa-wallet"
-                                        style="color:#9c27b0;"></i> Wallet
-                                    {% else %}<i class="fas fa-credit-card"></i> {{ pay.get_method_display }}{% endif %}
-                                </td>
-                                <td style="font-family:monospace;font-size:0.76rem;color:#666;">{{
-                                    pay.transaction_id|default:"—" }}</td>
-                                <td><span class="badge badge-{{ pay.status }}">{{ pay.get_status_display }}</span></td>
-                                <td>
-                                    {% if pay.status == 'pending' %}
-                                    <form method="POST" action="{% url 'confirm_payment' pay.id %}"
-                                        style="display:inline;"
-                                        onsubmit="return confirm('Confirm ₹{{ pay.amount }}?');">
-                                        {% csrf_token %}
-                                        <button type="submit" class="tbl-confirm"><i class="fas fa-check"></i>
-                                            Confirm</button>
-                                    </form>
-                                    <form method="POST" action="{% url 'reject_payment' pay.id %}"
-                                        style="display:inline;" onsubmit="return confirm('Reject this payment?');">
-                                        {% csrf_token %}
-                                        <button type="submit" class="tbl-reject"><i class="fas fa-times"></i>
-                                            Reject</button>
-                                    </form>
-                                    {% else %}
-                                    <span style="color:#ccc;font-size:0.8rem;">—</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="8" style="text-align:center;padding:40px;color:#aaa;">
-                                    <i class="fas fa-credit-card"
-                                        style="font-size:2em;display:block;margin-bottom:10px;color:#ddd;"></i>
-                                    No payment records yet.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+{% block title %}Payments &amp; Billing Management{% endblock %}
+{% block page_title %}Clinic Payment &amp; Billing Records{% endblock %}
+{% block page_subtitle %}Verify patient fees, reconcile Cash/UPI/Razorpay transactions, and audit clinic billing{% endblock %}
+
+{% block topbar_actions %}
+<button type="button" class="topbar-action-link btn-topbar-primary" onclick="openRecordModal()">
+  <i class="fas fa-plus-circle"></i> <span>Record Payment</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- ════ HEADER SUMMARY ════ -->
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon">
+      <i class="fas fa-credit-card"></i>
     </div>
-    <script>
-        function toggleSidebar() {
-            document.querySelector('.sidebar').classList.toggle('open');
-            document.querySelector('.sidebar-overlay').classList.toggle('active');
-        }
+    <div class="page-header-text">
+      <h2>Payment Management &amp; Invoices</h2>
+      <p>Monitor patient billing, confirm cash/offline collections, and audit completed transactions.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <span class="badge-status badge-info" style="font-size: 0.88rem; padding: 8px 16px;">
+      <i class="fas fa-wallet"></i> Total Volume: ₹{{ total_paid|default:"0" }}
+    </span>
+    <button type="button" class="topbar-action-link btn-topbar-primary" onclick="openRecordModal()">
+      <i class="fas fa-plus"></i> Record Payment
+    </button>
+  </div>
+</div>
 
-        function closeSidebar() {
-            document.querySelector('.sidebar').classList.remove('open');
-            document.querySelector('.sidebar-overlay').classList.remove('active');
-        }
-    </script>
-</body>
+<!-- ════ FINANCIAL STATS CARDS (Responsive 1/2/4 Grid) ════ -->
+<div class="admin-stats-grid">
+  <div class="admin-stat-card">
+    <div class="stat-icon-wrap" style="background: rgba(40, 167, 69, 0.15); color: #28a745;">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <div class="stat-info">
+      <div class="stat-val">₹{{ total_paid|default:"0" }}</div>
+      <div class="stat-lbl">Settled Revenue</div>
+    </div>
+  </div>
 
-</html>
+  <div class="admin-stat-card">
+    <div class="stat-icon-wrap" style="background: rgba(245, 197, 24, 0.2); color: #997400;">
+      <i class="fas fa-clock"></i>
+    </div>
+    <div class="stat-info">
+      <div class="stat-val">{{ pending_count|default:"0" }}</div>
+      <div class="stat-lbl">Pending Approvals</div>
+    </div>
+  </div>
+
+  <div class="admin-stat-card">
+    <div class="stat-icon-wrap" style="background: rgba(23, 162, 184, 0.15); color: #17a2b8;">
+      <i class="fas fa-receipt"></i>
+    </div>
+    <div class="stat-info">
+      <div class="stat-val">{{ payments|length }}</div>
+      <div class="stat-lbl">Total Transactions</div>
+    </div>
+  </div>
+
+  <div class="admin-stat-card">
+    <div class="stat-icon-wrap" style="background: rgba(111, 66, 193, 0.15); color: #6f42c1;">
+      <i class="fas fa-hand-holding-usd"></i>
+    </div>
+    <div class="stat-info">
+      <div class="stat-val">
+        {% if payments|length > 0 %}
+          ₹{{ total_paid|default:"0" }}
+        {% else %}
+          ₹0
+        {% endif %}
+      </div>
+      <div class="stat-lbl">Audited Ledger</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ PENDING VERIFICATION BANNER IF APPLICABLE ════ -->
+{% if pending_payments %}
+<div class="admin-card" style="border-left: 4px solid var(--admin-primary); background: #fffdf2; margin-bottom: 24px;">
+  <div class="admin-card-header" style="border-bottom: 1px solid rgba(245, 197, 24, 0.35); flex-wrap: wrap; gap: 8px;">
+    <h3 style="color: #856404; font-size: 0.98rem;">
+      <i class="fas fa-exclamation-circle text-warning"></i> Action Required: Pending Payment Confirmations ({{ pending_payments|length }})
+    </h3>
+    <span class="badge-status badge-pending">{{ pending_payments|length }} Needs Review</span>
+  </div>
+  <div class="table-responsive-admin">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Amount</th>
+          <th>Method</th>
+          <th>Reference / Transaction ID</th>
+          <th>Date</th>
+          <th style="text-align: right;">Approval Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pending_payments %}
+        <tr>
+          <td>
+            <strong>{{ p.patient.get_full_name|default:p.patient.username }}</strong>
+            <div style="font-size: 0.76rem; color: var(--admin-text-sub);">{{ p.patient.email|default:"No email" }}</div>
+          </td>
+          <td><strong style="color: var(--admin-dark); font-size: 0.95rem;">₹{{ p.amount }}</strong></td>
+          <td>
+            <span class="badge-status badge-info">
+              {% if p.method == "upi" %}<i class="fas fa-qrcode"></i> UPI
+              {% elif p.method == "cash" %}<i class="fas fa-money-bill-wave"></i> Cash
+              {% else %}<i class="fas fa-globe"></i> {{ p.method|upper }}{% endif %}
+            </span>
+          </td>
+          <td>
+            <code style="font-size: 0.8rem; background: #fff; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--admin-border);">
+              {{ p.transaction_id|default:"Pending Reference" }}
+            </code>
+          </td>
+          <td>
+            <div style="font-size: 0.85rem; font-weight: 500;">{{ p.created_at|date:"d M Y" }}</div>
+            <small style="color: var(--admin-text-sub);">{{ p.created_at|date:"H:i" }}</small>
+          </td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 6px; align-items: center;">
+              <form method="POST" action="{% url 'confirm_payment' p.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="topbar-action-link btn-topbar-primary" style="padding: 6px 14px; font-size: 0.8rem; border: none; cursor: pointer;">
+                  <i class="fas fa-check"></i> Confirm
+                </button>
+              </form>
+              <form method="POST" action="{% url 'reject_payment' p.id %}" style="display:inline;" onsubmit="return confirm('Reject this payment record? The patient will be notified.');">
+                {% csrf_token %}
+                <button type="submit" class="btn-action-icon btn-action-delete" style="width: 32px; height: 32px;" title="Reject Payment">
+                  <i class="fas fa-times"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ════ ALL PAYMENTS HISTORY TABLE ════ -->
+<div class="admin-card">
+  <div class="admin-card-header" style="flex-wrap: wrap; gap: 12px;">
+    <h3><i class="fas fa-history text-primary"></i> Complete Transactions Ledger</h3>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <span class="badge-status badge-info" id="ledgerCountBadge">{{ payments|length }} Total</span>
+    </div>
+  </div>
+
+  <!-- Search & Filters (Responsive on Half-Screen) -->
+  <div class="admin-toolbar" style="flex-wrap: wrap; gap: 12px;">
+    <div class="admin-search-box" style="flex: 1 1 240px; min-width: 220px;">
+      <i class="fas fa-search"></i>
+      <input type="text" id="paymentSearch" placeholder="Search by patient, email, transaction ID..." oninput="filterPaymentTable()" />
+    </div>
+
+    <div class="admin-filter-group" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+      <select id="paymentStatusFilter" onchange="filterPaymentTable()" style="padding: 9px 14px; border-radius: 10px; border: 1px solid var(--admin-border); font-size: 0.88rem; background: #fff; color: var(--admin-dark);">
+        <option value="">All Statuses</option>
+        <option value="paid">Paid</option>
+        <option value="pending">Pending</option>
+        <option value="failed">Failed / Rejected</option>
+      </select>
+
+      <select id="paymentMethodFilter" onchange="filterPaymentTable()" style="padding: 9px 14px; border-radius: 10px; border: 1px solid var(--admin-border); font-size: 0.88rem; background: #fff; color: var(--admin-dark);">
+        <option value="">All Methods</option>
+        <option value="cash">Cash</option>
+        <option value="upi">UPI</option>
+        <option value="razorpay">Razorpay / Online</option>
+        <option value="netbanking">Net Banking</option>
+      </select>
+
+      <select id="paymentSort" onchange="sortPaymentTable()" style="padding: 9px 14px; border-radius: 10px; border: 1px solid var(--admin-border); font-size: 0.88rem; background: #fff; color: var(--admin-dark);">
+        <option value="date-desc">Newest First</option>
+        <option value="date-asc">Oldest First</option>
+        <option value="amount-desc">Highest Amount</option>
+        <option value="amount-asc">Lowest Amount</option>
+      </select>
+    </div>
+  </div>
+
+  {% if payments %}
+  <div class="table-responsive-admin">
+    <table class="admin-table" id="allPaymentsTable">
+      <thead>
+        <tr>
+          <th>Transaction ID</th>
+          <th>Patient Details</th>
+          <th>Amount</th>
+          <th>Payment Method</th>
+          <th>Status</th>
+          <th>Timestamp</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="paymentTableBody">
+        {% for pay in payments %}
+        <tr class="payment-row"
+            data-id="{{ pay.id }}"
+            data-txn="{{ pay.transaction_id|default:'—' }}"
+            data-patient="{{ pay.patient.get_full_name|default:pay.patient.username }}"
+            data-email="{{ pay.patient.email|default:'' }}"
+            data-amount="{{ pay.amount }}"
+            data-method="{{ pay.method|lower }}"
+            data-status="{{ pay.status|lower }}"
+            data-date="{{ pay.created_at|date:'d M Y, H:i' }}"
+            data-timestamp="{{ pay.created_at|date:'U' }}"
+            data-notes="{{ pay.notes|default:'' }}"
+            data-service="{% if pay.appointment %}{{ pay.appointment.get_service_display }}{% else %}General Consultation{% endif %}">
+          <td>
+            <code style="font-size: 0.82rem; font-weight: 600; color: #495057; background: #f8f9fa; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--admin-border);">
+              {{ pay.transaction_id|default:"—" }}
+            </code>
+          </td>
+
+          <td>
+            <strong style="color: var(--admin-dark);">{{ pay.patient.get_full_name|default:pay.patient.username }}</strong>
+            <div style="font-size: 0.74rem; color: var(--admin-text-sub);">{{ pay.patient.email|default:"No email" }}</div>
+          </td>
+
+          <td>
+            <strong style="font-size: 0.95rem; color: var(--admin-dark);">₹{{ pay.amount }}</strong>
+          </td>
+
+          <td>
+            <span class="badge-status badge-info">
+              {% if pay.method == "cash" %}<i class="fas fa-money-bill-wave"></i> Cash
+              {% elif pay.method == "upi" %}<i class="fas fa-mobile-alt"></i> UPI
+              {% elif pay.method == "razorpay" %}<i class="fas fa-globe"></i> Razorpay
+              {% else %}<i class="fas fa-university"></i> {{ pay.method|upper }}{% endif %}
+            </span>
+          </td>
+
+          <td>
+            {% if pay.status == 'paid' %}
+              <span class="badge-status badge-success"><i class="fas fa-check-circle"></i> Paid</span>
+            {% elif pay.status == 'pending' %}
+              <span class="badge-status badge-pending"><i class="fas fa-clock"></i> Pending</span>
+            {% else %}
+              <span class="badge-status badge-danger"><i class="fas fa-times-circle"></i> {{ pay.status|upper }}</span>
+            {% endif %}
+          </td>
+
+          <td>
+            <div style="font-weight: 600; font-size: 0.85rem;">{{ pay.created_at|date:"d M Y" }}</div>
+            <small style="color: var(--admin-text-sub);">{{ pay.created_at|date:"H:i" }}</small>
+          </td>
+
+          <td style="text-align: right;">
+            <button type="button" class="topbar-action-link" style="background: rgba(44, 44, 44, 0.07); color: var(--admin-dark); border: none; padding: 5px 12px; font-size: 0.8rem; cursor: pointer;" onclick="openDetailsModal(this.closest('tr'))">
+              <i class="fas fa-receipt"></i> Details
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div id="noMatchState" class="admin-empty-state" style="display: none; padding: 36px 16px;">
+    <div class="empty-icon"><i class="fas fa-search"></i></div>
+    <h4>No Matching Payments Found</h4>
+    <p>Try adjusting your search query or filter options.</p>
+    <button type="button" class="topbar-action-link btn-topbar-primary" onclick="resetPaymentFilters()">Reset Filters</button>
+  </div>
+
+  {% else %}
+  <div class="admin-empty-state">
+    <div class="empty-icon"><i class="fas fa-receipt"></i></div>
+    <h4>No Payment Transactions Found</h4>
+    <p>There are no payment records registered in the billing database.</p>
+    <button type="button" class="topbar-action-link btn-topbar-primary" onclick="openRecordModal()">Record First Payment</button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ════ MODAL: RECORD MANUAL / OFFLINE PAYMENT ════ -->
+<div id="recordPaymentModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:520px; box-shadow:0 20px 40px rgba(0,0,0,0.2); overflow:hidden; animation:modalFadeIn 0.25s ease;">
+    <div style="padding:18px 24px; border-bottom:1px solid var(--admin-border); display:flex; align-items:center; justify-content:space-between; background:#fafafa;">
+      <h3 style="margin:0; font-size:1.1rem; color:var(--admin-dark); display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-plus-circle text-primary"></i> Record Offline / Counter Payment
+      </h3>
+      <button type="button" onclick="closeRecordModal()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+
+    <form method="POST" action="{% url 'admin_payments' %}" style="padding:24px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="record_offline" />
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-weight:600; font-size:0.86rem; margin-bottom:6px; color:var(--admin-dark);">Select Patient *</label>
+        <select name="patient_id" required style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--admin-border); font-size:0.9rem; background:#fff;">
+          <option value="">— Choose Patient —</option>
+          {% for pt in patients %}
+          <option value="{{ pt.id }}">{{ pt.get_full_name|default:pt.username }} ({{ pt.email|default:pt.username }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+        <div>
+          <label style="display:block; font-weight:600; font-size:0.86rem; margin-bottom:6px; color:var(--admin-dark);">Amount (₹) *</label>
+          <input type="number" name="amount" required min="1" step="1" placeholder="e.g. 500" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--admin-border); font-size:0.9rem;" />
+        </div>
+        <div>
+          <label style="display:block; font-weight:600; font-size:0.86rem; margin-bottom:6px; color:var(--admin-dark);">Payment Method *</label>
+          <select name="method" required style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--admin-border); font-size:0.9rem; background:#fff;">
+            <option value="cash">Cash at Counter</option>
+            <option value="upi">Direct UPI Transfer</option>
+            <option value="netbanking">Net Banking / NEFT</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-weight:600; font-size:0.86rem; margin-bottom:6px; color:var(--admin-dark);">Transaction Reference (Optional)</label>
+        <input type="text" name="transaction_id" placeholder="e.g. UPI Ref / Cash Receipt # / Bank UTR" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--admin-border); font-size:0.9rem;" />
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-weight:600; font-size:0.86rem; margin-bottom:6px; color:var(--admin-dark);">Notes / Treatment (Optional)</label>
+        <textarea name="notes" rows="2" placeholder="e.g. Manual payment received for knee physiotherapy session" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--admin-border); font-size:0.9rem; resize:vertical;"></textarea>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="topbar-action-link" style="background:#e9ecef; color:#495057; border:none; cursor:pointer;" onclick="closeRecordModal()">Cancel</button>
+        <button type="submit" class="topbar-action-link btn-topbar-primary" style="border:none; cursor:pointer;">
+          <i class="fas fa-check"></i> Save &amp; Issue Receipt
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ════ MODAL: PAYMENT DETAILS & RECEIPT ════ -->
+<div id="paymentDetailsModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:540px; box-shadow:0 20px 40px rgba(0,0,0,0.2); overflow:hidden; animation:modalFadeIn 0.25s ease;" id="printableReceiptArea">
+    <div style="padding:18px 24px; border-bottom:1px solid var(--admin-border); display:flex; align-items:center; justify-content:space-between; background:#fafafa;">
+      <h3 style="margin:0; font-size:1.1rem; color:var(--admin-dark); display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-receipt text-primary"></i> Clinic Payment Receipt
+      </h3>
+      <button type="button" onclick="closeDetailsModal()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+
+    <div style="padding:24px;">
+      <div style="text-align:center; padding-bottom:16px; border-bottom:1px dashed var(--admin-border); margin-bottom:18px;">
+        <div style="font-size:1.25rem; font-weight:800; color:var(--admin-dark);">PhysioRehab Clinic</div>
+        <div style="font-size:0.8rem; color:var(--admin-text-sub);">Official Consultation Billing &amp; Payment Receipt</div>
+        <div style="font-size:1.8rem; font-weight:800; color:var(--admin-dark); margin:12px 0 4px 0;" id="modalAmount">₹0</div>
+        <div id="modalStatusBadge"></div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; font-size:0.88rem;">
+        <div>
+          <span style="color:var(--admin-text-sub); display:block; font-size:0.78rem;">PATIENT NAME</span>
+          <strong id="modalPatient" style="color:var(--admin-dark);">—</strong>
+        </div>
+        <div>
+          <span style="color:var(--admin-text-sub); display:block; font-size:0.78rem;">TRANSACTION ID</span>
+          <code id="modalTxn" style="font-size:0.82rem; color:#495057; font-weight:700;">—</code>
+        </div>
+        <div>
+          <span style="color:var(--admin-text-sub); display:block; font-size:0.78rem;">PAYMENT METHOD</span>
+          <strong id="modalMethod" style="color:var(--admin-dark); text-transform:capitalize;">—</strong>
+        </div>
+        <div>
+          <span style="color:var(--admin-text-sub); display:block; font-size:0.78rem;">DATE &amp; TIME</span>
+          <span id="modalDate" style="color:var(--admin-dark); font-weight:600;">—</span>
+        </div>
+      </div>
+
+      <div style="background:#f8f9fa; border-radius:10px; padding:12px; margin-bottom:20px; font-size:0.85rem;">
+        <span style="color:var(--admin-text-sub); display:block; font-size:0.76rem; font-weight:600; margin-bottom:2px;">SERVICE / NOTES</span>
+        <div id="modalNotes" style="color:var(--admin-dark);">General Consultation</div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button type="button" class="topbar-action-link" style="background:#f3f4f6; color:var(--admin-dark); border:none; cursor:pointer;" onclick="window.print()">
+          <i class="fas fa-print"></i> Print Receipt
+        </button>
+        <button type="button" class="topbar-action-link btn-topbar-primary" style="border:none; cursor:pointer;" onclick="closeDetailsModal()">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Filter & Search
+function filterPaymentTable() {
+  const query = document.getElementById('paymentSearch').value.toLowerCase().trim();
+  const status = document.getElementById('paymentStatusFilter').value.toLowerCase();
+  const method = document.getElementById('paymentMethodFilter').value.toLowerCase();
+  const rows = document.querySelectorAll('#allPaymentsTable tbody tr.payment-row');
+  let matchCount = 0;
+
+  rows.forEach(row => {
+    const text = (row.getAttribute('data-patient') + ' ' +
+                  row.getAttribute('data-email') + ' ' +
+                  row.getAttribute('data-txn') + ' ' +
+                  row.getAttribute('data-notes')).toLowerCase();
+    const rowStatus = row.getAttribute('data-status');
+    const rowMethod = row.getAttribute('data-method');
+
+    const matchesQuery = !query || text.includes(query);
+    const matchesStatus = !status || rowStatus === status;
+    const matchesMethod = !method || rowMethod === method;
+
+    if (matchesQuery && matchesStatus && matchesMethod) {
+      row.style.display = '';
+      matchCount++;
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  const noMatch = document.getElementById('noMatchState');
+  const countBadge = document.getElementById('ledgerCountBadge');
+  if (countBadge) countBadge.innerText = matchCount + ' Showing';
+
+  if (noMatch) {
+    noMatch.style.display = (matchCount === 0 && rows.length > 0) ? 'block' : 'none';
+  }
+}
+
+function resetPaymentFilters() {
+  document.getElementById('paymentSearch').value = '';
+  document.getElementById('paymentStatusFilter').value = '';
+  document.getElementById('paymentMethodFilter').value = '';
+  filterPaymentTable();
+}
+
+// Sorting
+function sortPaymentTable() {
+  const sortVal = document.getElementById('paymentSort').value;
+  const tbody = document.getElementById('paymentTableBody');
+  if (!tbody) return;
+  const rows = Array.from(tbody.querySelectorAll('tr.payment-row'));
+
+  rows.sort((a, b) => {
+    if (sortVal === 'date-desc') {
+      return parseInt(b.getAttribute('data-timestamp') || 0) - parseInt(a.getAttribute('data-timestamp') || 0);
+    } else if (sortVal === 'date-asc') {
+      return parseInt(a.getAttribute('data-timestamp') || 0) - parseInt(b.getAttribute('data-timestamp') || 0);
+    } else if (sortVal === 'amount-desc') {
+      return parseFloat(b.getAttribute('data-amount') || 0) - parseFloat(a.getAttribute('data-amount') || 0);
+    } else if (sortVal === 'amount-asc') {
+      return parseFloat(a.getAttribute('data-amount') || 0) - parseFloat(b.getAttribute('data-amount') || 0);
+    }
+    return 0;
+  });
+
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+// Modals
+function openRecordModal() {
+  const modal = document.getElementById('recordPaymentModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeRecordModal() {
+  const modal = document.getElementById('recordPaymentModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function openDetailsModal(row) {
+  if (!row) return;
+  document.getElementById('modalPatient').innerText = row.getAttribute('data-patient') || '—';
+  document.getElementById('modalTxn').innerText = row.getAttribute('data-txn') || '—';
+  document.getElementById('modalAmount').innerText = '₹' + (row.getAttribute('data-amount') || '0');
+  document.getElementById('modalMethod').innerText = row.getAttribute('data-method') || '—';
+  document.getElementById('modalDate').innerText = row.getAttribute('data-date') || '—';
+
+  const notes = row.getAttribute('data-notes') || row.getAttribute('data-service') || 'General Consultation';
+  document.getElementById('modalNotes').innerText = notes;
+
+  const status = row.getAttribute('data-status');
+  let badgeHtml = '<span class="badge-status badge-success"><i class="fas fa-check-circle"></i> Paid</span>';
+  if (status === 'pending') {
+    badgeHtml = '<span class="badge-status badge-pending"><i class="fas fa-clock"></i> Pending Approval</span>';
+  } else if (status === 'failed') {
+    badgeHtml = '<span class="badge-status badge-danger"><i class="fas fa-times-circle"></i> Failed</span>';
+  }
+  document.getElementById('modalStatusBadge').innerHTML = badgeHtml;
+
+  const modal = document.getElementById('paymentDetailsModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeDetailsModal() {
+  const modal = document.getElementById('paymentDetailsModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Close modals when clicking backdrop
+window.addEventListener('click', function(e) {
+  const recordModal = document.getElementById('recordPaymentModal');
+  const detailsModal = document.getElementById('paymentDetailsModal');
+  if (e.target === recordModal) closeRecordModal();
+  if (e.target === detailsModal) closeDetailsModal();
+});
+</script>
+{% endblock %}

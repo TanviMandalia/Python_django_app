@@ -1,0 +1,81 @@
+{% load static %}
+{% with url_name=request.resolver_match.url_name %}
+<aside class="sidebar" id="staffSidebar">
+  <!-- Logo & Header -->
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-inner">
+      <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="PhysioRehab Logo" class="sidebar-logo-img" />
+      <div class="sidebar-logo-badge"><i class="fas fa-user-md"></i> <span>STAFF PORTAL</span></div>
+    </div>
+    <button class="sidebar-close-btn" id="closeSidebar" aria-label="Close Sidebar">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- User Profile Widget -->
+  <div class="sidebar-user">
+    <div class="user-avatar" title="{{ user.get_full_name|default:user.username }}">
+      {{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|default:''|upper }}
+    </div>
+    <div class="user-info">
+      <h4>{{ user.get_full_name|default:user.username }}</h4>
+      <span><span class="online-dot"></span> {{ user.staff_profile.get_role_display|default:"Physiotherapist" }}</span>
+    </div>
+  </div>
+
+  <!-- Nav Links -->
+  <div class="nav-scroll">
+    <nav>
+      <div class="nav-section">Main Workspace</div>
+      <a href="{% url 'staff_dashboard' %}" class="nav-item{% if url_name == 'staff_dashboard' %} active{% endif %}" title="Dashboard">
+        <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
+      </a>
+      <a href="{% url 'staff_attendance' %}" class="nav-item{% if url_name == 'staff_attendance' %} active{% endif %}" title="My Attendance">
+        <i class="fas fa-calendar-check"></i> <span>My Attendance</span>
+      </a>
+      <a href="{% url 'staff_tasks' %}" class="nav-item{% if url_name == 'staff_tasks' or url_name == 'update_task' %} active{% endif %}" title="My Tasks">
+        <i class="fas fa-tasks"></i> <span>My Tasks</span>
+      </a>
+      <a href="{% url 'staff_session_notes' %}" class="nav-item{% if url_name == 'staff_session_notes' or url_name == 'add_session_note' %} active{% endif %}" title="Session Notes">
+        <i class="fas fa-notes-medical"></i> <span>Session Notes</span>
+      </a>
+
+      <div class="nav-section">Patients &amp; Progress</div>
+      <a href="{% url 'progress_tracking' %}" class="nav-item{% if url_name == 'progress_tracking' %} active{% endif %}" title="Patient Progress Tracking">
+        <i class="fas fa-chart-line"></i> <span>Progress Tracking</span>
+      </a>
+
+      <div class="nav-section">Finance &amp; Leaves</div>
+      <a href="{% url 'staff_salary' %}" class="nav-item{% if url_name == 'staff_salary' %} active{% endif %}" title="My Salary">
+        <i class="fas fa-rupee-sign"></i> <span>My Salary</span>
+      </a>
+      <a href="{% url 'staff_leave' %}" class="nav-item{% if url_name == 'staff_leave' %} active{% endif %}" title="Leave Request">
+        <i class="fas fa-calendar-minus"></i> <span>Leave Requests</span>
+      </a>
+
+      <div class="nav-section">Communication</div>
+      <a href="{% url 'notifications' %}" class="nav-item{% if url_name == 'notifications' %} active{% endif %}" title="Notifications">
+        <i class="fas fa-bell"></i> <span>Notifications</span>
+      </a>
+      <a href="{% url 'profile' %}" class="nav-item{% if url_name == 'profile' or url_name == 'edit_profile' %} active{% endif %}" title="My Profile">
+        <i class="fas fa-user-circle"></i> <span>My Profile</span>
+      </a>
+
+      <div class="nav-section">Quick Links</div>
+      <a href="{% url 'home' %}" class="nav-item{% if url_name == 'home' %} active{% endif %}" title="Visit Website">
+        <i class="fas fa-globe"></i> <span>Visit Website</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Footer Logout -->
+  <div class="sidebar-footer">
+    <a href="{% url 'logout' %}" class="logout-btn" title="Logout">
+      <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+    </a>
+  </div>
+</aside>
+
+<!-- Mobile backdrop overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+{% endwith %}

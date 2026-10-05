@@ -1,0 +1,553 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Staff Portal - PhysioRehab{% endblock %}</title>
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+  <!-- Master Stylesheet -->
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+
+  <style>
+    :root {
+      --staff-primary: #F5C518;
+      --staff-primary-hover: #e0b010;
+      --staff-dark: #2C2C2C;
+      --staff-dark-hover: #1f1f1f;
+      --staff-bg: #f5f6fa;
+      --staff-card-bg: #ffffff;
+      --staff-border: #e2e8f0;
+      --staff-text-main: #1e293b;
+      --staff-text-sub: #64748b;
+      --staff-success: #28a745;
+      --staff-warning: #fd7e14;
+      --staff-danger: #dc3545;
+      --staff-info: #17a2b8;
+      --staff-sidebar-w: 260px;
+      --staff-sidebar-collapsed-w: 76px;
+      --staff-header-h: 70px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--staff-bg);
+      color: var(--staff-text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Layout wrapper */
+    .staff-wrapper {
+      display: flex;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Main Content Region */
+    .staff-main-panel {
+      flex: 1;
+      margin-left: var(--staff-sidebar-w);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      min-width: 0;
+      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body.sidebar-collapsed .staff-main-panel {
+      margin-left: var(--staff-sidebar-collapsed-w);
+    }
+
+    /* Top Navigation Header */
+    .staff-header {
+      height: var(--staff-header-h);
+      background: #ffffff;
+      border-bottom: 1px solid var(--staff-border);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .staff-header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .topbar-toggle-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--staff-border);
+      background: #ffffff;
+      color: var(--staff-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.05rem;
+      transition: all 0.2s ease;
+    }
+
+    .topbar-toggle-btn:hover {
+      background: var(--staff-bg);
+      border-color: #cbd5e1;
+    }
+
+    .staff-header-title h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--staff-dark);
+      letter-spacing: -0.01em;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .staff-header-title p {
+      font-size: 0.78rem;
+      color: var(--staff-text-sub);
+      margin: 0;
+    }
+
+    .staff-header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .topbar-badge-role {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: rgba(245, 197, 24, 0.15);
+      border: 1px solid rgba(245, 197, 24, 0.4);
+      color: #997400;
+      font-size: 0.76rem;
+      font-weight: 700;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .topbar-action-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-topbar-primary {
+      background: var(--staff-primary);
+      color: #000000;
+      font-weight: 700;
+      border: 1px solid var(--staff-primary);
+    }
+
+    .btn-topbar-primary:hover {
+      background: var(--staff-primary-hover);
+    }
+
+    /* Page Content Body */
+    .staff-page-content {
+      padding: 28px;
+      flex: 1;
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Header Banner Card */
+    .page-header-card {
+      background: #ffffff;
+      border: 1px solid var(--staff-border);
+      border-radius: 14px;
+      padding: 22px 28px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    }
+
+    .page-header-title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .page-header-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .page-header-text h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--staff-dark);
+      margin: 0 0 4px 0;
+    }
+
+    .page-header-text p {
+      font-size: 0.86rem;
+      color: var(--staff-text-sub);
+      margin: 0;
+    }
+
+    .page-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Stat & Metric Cards Grid */
+    .staff-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .staff-stat-card {
+      background: #ffffff;
+      border: 1px solid var(--staff-border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .staff-stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .stat-icon-wrapper {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .icon-gold { background: rgba(245, 197, 24, 0.15); color: #b89008; }
+    .icon-success { background: rgba(40, 167, 69, 0.15); color: #28a745; }
+    .icon-danger { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
+    .icon-info { background: rgba(23, 162, 184, 0.15); color: #17a2b8; }
+    .icon-purple { background: rgba(111, 66, 193, 0.15); color: #6f42c1; }
+
+    .stat-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--staff-text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--staff-dark);
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+
+    .stat-subtext {
+      font-size: 0.78rem;
+      color: var(--staff-text-sub);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Standard Card Container */
+    .staff-card {
+      background: #ffffff;
+      border: 1px solid var(--staff-border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    }
+
+    .staff-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--staff-border);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .staff-card-header h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--staff-dark);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Table System */
+    .staff-table-container {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--staff-border);
+      border-radius: 10px;
+      background: #ffffff;
+    }
+
+    .staff-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    .staff-table th {
+      background: #f8fafc;
+      padding: 13px 18px;
+      font-weight: 700;
+      font-size: 0.78rem;
+      color: var(--staff-text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--staff-border);
+      white-space: nowrap;
+    }
+
+    .staff-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid #f1f5f9;
+      color: var(--staff-text-main);
+      vertical-align: middle;
+    }
+
+    .staff-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .staff-table tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    /* Status Badges */
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+
+    .badge-pending { background: rgba(253, 126, 20, 0.12); color: #d96b00; }
+    .badge-in_progress { background: rgba(23, 162, 184, 0.12); color: #117a8b; }
+    .badge-completed, .badge-approved, .badge-paid { background: rgba(40, 167, 69, 0.12); color: #1e7e34; }
+    .badge-cancelled, .badge-rejected { background: rgba(220, 53, 69, 0.12); color: #bd2130; }
+    .badge-info { background: rgba(245, 197, 24, 0.18); color: #856404; }
+
+    /* Action Buttons */
+    button:not(.topbar-toggle-btn):not(.sidebar-close-btn):not(#menuToggle):not(.menu-btn):not(.btn-action-icon):not(.btn-block):not(.w-100),
+    .btn:not(.btn-block):not(.w-100),
+    .btn-action:not(.btn-action-icon):not(.btn-block):not(.w-100),
+    .btn-topbar-primary:not(.btn-block):not(.w-100),
+    .topbar-action-link:not(.btn-block):not(.w-100) {
+      width: max-content;
+      max-width: 100%;
+    }
+
+    .btn-action-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      border: 1px solid var(--staff-border);
+      background: #ffffff;
+      color: var(--staff-dark);
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .btn-action-icon:hover {
+      background: var(--staff-bg);
+    }
+
+    /* Empty state */
+    .staff-empty-state {
+      text-align: center;
+      padding: 45px 20px;
+      color: var(--staff-text-sub);
+    }
+
+    .staff-empty-state .empty-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      margin: 0 auto 14px;
+    }
+
+    .staff-empty-state h4 {
+      font-size: 1.1rem;
+      color: var(--staff-dark);
+      margin-bottom: 6px;
+    }
+
+    .staff-empty-state p {
+      font-size: 0.86rem;
+      margin-bottom: 16px;
+    }
+
+    /* Half-screen and Mobile off-canvas behavior */
+    @media (max-width: 991px) {
+      .staff-main-panel {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .staff-page-content {
+        padding: 16px;
+      }
+      .page-header-card {
+        padding: 16px;
+      }
+    }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="staff-wrapper">
+    <!-- ════ STAFF SIDEBAR ════ -->
+    {% include "staff/_sidebar.html" %}
+
+    <!-- ════ MAIN WORKSPACE ════ -->
+    <div class="staff-main-panel">
+      <!-- ════ STICKY HEADER ════ -->
+      <header class="staff-header">
+        <div class="staff-header-left">
+          <button class="topbar-toggle-btn" id="mobileMenuBtn" aria-label="Toggle Navigation">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="staff-header-title">
+            <h1>{% block page_title %}Staff Workspace{% endblock %}</h1>
+            <p>{% block page_subtitle %}Physiotherapy &amp; Clinical Operations Portal{% endblock %}</p>
+          </div>
+        </div>
+
+        <div class="staff-header-right">
+          <span class="topbar-badge-role">
+            <i class="fas fa-user-md"></i> {{ user.staff_profile.get_role_display|default:"Staff Member" }}
+          </span>
+
+          <a href="{% url 'notifications' %}" class="topbar-toggle-btn" title="Notifications" style="position: relative;">
+            <i class="fas fa-bell"></i>
+            {% if unread_notifs_count %}
+            <span style="position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: var(--staff-danger); border-radius: 50%;"></span>
+            {% endif %}
+          </a>
+
+          <a href="{% url 'profile' %}" class="topbar-action-link" style="background: #f8fafc; border: 1px solid var(--staff-border); color: var(--staff-dark); padding: 6px 12px;">
+            <i class="fas fa-user-circle"></i>
+            <span style="display: inline-block; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              {{ user.first_name|default:user.username }}
+            </span>
+          </a>
+        </div>
+      </header>
+
+      <!-- ════ FLASH MESSAGES ════ -->
+      {% if messages %}
+      <div style="padding: 16px 28px 0; max-width: 1400px; margin: 0 auto; width: 100%;">
+        {% for message in messages %}
+        <div class="alert-banner alert-{{ message.tags|default:'info' }}" style="padding: 12px 18px; border-radius: 10px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; background: {% if message.tags == 'success' %}#d4edda; color: #155724; border: 1px solid #c3e6cb;{% elif message.tags == 'error' or message.tags == 'danger' %}#f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% else %}#fff3cd; color: #856404; border: 1px solid #ffeeba;{% endif %}">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+          </div>
+          <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-size:1rem;color:inherit;opacity:0.6;">&times;</button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- ════ DYNAMIC PAGE CONTENT ════ -->
+      <main class="staff-page-content">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Shared Layout JavaScript -->
+  <script src="{% static 'js/layout.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

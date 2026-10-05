@@ -1,0 +1,66 @@
+{% load static %}
+{% with url_name=request.resolver_match.url_name %}
+<aside class="sidebar super-admin-sidebar" id="superAdminSidebar">
+  <!-- Logo & Header -->
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-inner">
+      <div class="brand">👑 SUPER ADMIN</div>
+      <div class="sub">Platform Control Panel</div>
+    </div>
+    <button class="sidebar-close-btn" id="closeSidebar" aria-label="Close Sidebar">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <div class="sidebar-badge">Platform Administrator</div>
+
+  <!-- Nav -->
+  <div class="nav-scroll">
+    <nav>
+      <div class="nav-section">Platform</div>
+      <a href="{% url 'super_admin_dashboard' %}" class="nav-item{% if url_name == 'super_admin_dashboard' %} active{% endif %}" title="Dashboard">
+        <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
+      </a>
+      <a href="{% url 'super_admin_hospitals' %}" class="nav-item{% if url_name == 'super_admin_hospitals' or url_name == 'super_admin_add_hospital' or url_name == 'super_admin_edit_hospital' %} active{% endif %}" title="Hospitals">
+        <i class="fas fa-hospital"></i> <span>Hospitals</span>
+      </a>
+      <a href="{% url 'super_admin_subscriptions' %}" class="nav-item{% if url_name == 'super_admin_subscriptions' %} active{% endif %}" title="Subscriptions">
+        <i class="fas fa-file-invoice-dollar"></i> <span>Subscriptions</span>
+      </a>
+
+      <div class="nav-section">Finance</div>
+      <a href="{% url 'super_admin_all_payments' %}" class="nav-item{% if url_name == 'super_admin_all_payments' or url_name == 'super_admin_hospital_payments' %} active{% endif %}" title="All Payments">
+        <i class="fas fa-credit-card"></i> <span>All Payments</span>
+      </a>
+
+      <div class="nav-section">Reports</div>
+      <a href="{% url 'super_admin_analytics' %}" class="nav-item{% if url_name == 'super_admin_analytics' %} active{% endif %}" title="Analytics">
+        <i class="fas fa-chart-bar"></i> <span>Analytics</span>
+      </a>
+
+      <div class="nav-section">Support</div>
+      <a href="{% url 'super_admin_support' %}" class="nav-item{% if url_name == 'super_admin_support' or url_name == 'super_admin_support_reply' %} active{% endif %}" title="Support Tickets">
+        <i class="fas fa-headset"></i> <span>Support Tickets</span>
+        {% if open_tickets > 0 %}
+          <span class="nav-badge badge-purple">{{ open_tickets }}</span>
+        {% endif %}
+      </a>
+
+      <div class="nav-section">System</div>
+      <a href="{% url 'home' %}" class="nav-item{% if url_name == 'home' %} active{% endif %}" title="Visit Website">
+        <i class="fas fa-globe"></i> <span>Visit Website</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Logout -->
+  <div class="sidebar-footer">
+    <a href="{% url 'logout' %}" class="logout-btn" title="Logout">
+      <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+    </a>
+  </div>
+</aside>
+
+<!-- Mobile overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+{% endwith %}

@@ -1,0 +1,109 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Add Appointment - Admin{% endblock %}
+{% block page_title %}Schedule Patient Appointment{% endblock %}
+{% block page_subtitle %}Book a Consultation or Therapy Session for a Registered Patient{% endblock %}
+
+{% block content %}
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon">
+      <i class="fas fa-calendar-plus"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>Add Patient Appointment</h2>
+      <p>Select patient, date, consultation time slot, therapy service, and initial status.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'admin_appointments' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+      <i class="fas fa-arrow-left"></i> Back to Appointments
+    </a>
+  </div>
+</div>
+
+<div class="admin-card" style="max-width: 800px; margin: 0 auto;">
+  <div class="admin-card-header">
+    <h3><i class="fas fa-calendar-alt text-primary"></i> Appointment Scheduling Form</h3>
+    <span class="badge-status badge-info">Admin Booking</span>
+  </div>
+
+  <form method="POST" action="{% url 'add_appointment' %}" style="display: flex; flex-direction: column; gap: 18px;">
+    {% csrf_token %}
+
+    <!-- Patient Selector -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Select Patient <span style="color: var(--admin-danger);">*</span>
+      </label>
+      <select name="patient_id" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+        <option value="">-- Choose Registered Patient --</option>
+        {% for p in patients %}
+        <option value="{{ p.id }}">{{ p.get_full_name|default:p.username }} ({{ p.email }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Service Selection -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Treatment / Service Required <span style="color: var(--admin-danger);">*</span>
+      </label>
+      <input type="text" name="service" placeholder="e.g. Back Pain Physiotherapy, Post-Op Knee Rehab, Stroke Recovery" required
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+    </div>
+
+    <!-- Date & Time -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Appointment Date <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <input type="date" name="date" required
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Time Slot <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <input type="text" name="time" placeholder="e.g. 10:30 AM" required
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <!-- Status & Fee -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Booking Status
+        </label>
+        <select name="status" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          <option value="confirmed" selected>Confirmed</option>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Notes / Chief Complaints
+        </label>
+        <input type="text" name="notes" placeholder="e.g. Acute shoulder pain, first consultation"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+      <a href="{% url 'admin_appointments' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+        Cancel
+      </a>
+      <button type="submit" class="topbar-action-link btn-topbar-primary" style="cursor: pointer; border: none; font-size: 0.9rem;">
+        <i class="fas fa-calendar-check"></i> Book Appointment
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% load static %}
+{% with url_name=request.resolver_match.url_name %}
+<aside class="sidebar" id="clientSidebar">
+  <!-- Logo & Header -->
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-inner">
+      <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="PhysioRehab Logo" class="sidebar-logo-img" />
+      <div class="sidebar-logo-badge"><i class="fas fa-heartbeat"></i> <span>PATIENT PORTAL</span></div>
+    </div>
+    <button class="sidebar-close-btn" id="closeSidebar" aria-label="Close Sidebar">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- User info -->
+  <div class="sidebar-user">
+    <div class="user-avatar" title="{{ user.get_full_name|default:user.username }}">
+      {{ user.first_name|first|default:user.username|first|upper }}{{ user.last_name|first|default:''|upper }}
+    </div>
+    <div class="user-info">
+      <h4>{{ user.get_full_name|default:user.username }}</h4>
+      <span><span class="online-dot"></span> Patient Account</span>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="nav-scroll">
+    <nav>
+      <div class="nav-section">Main Menu</div>
+      <a href="{% url 'client_dashboard' %}" class="nav-item{% if url_name == 'client_dashboard' %} active{% endif %}" title="Dashboard">
+        <i class="fas fa-home"></i> <span>Dashboard</span>
+      </a>
+      <a href="{% url 'book_appointment' %}" class="nav-item{% if url_name == 'book_appointment' or url_name == 'add_appointment' %} active{% endif %}" title="Book Appointment">
+        <i class="fas fa-calendar-plus"></i> <span>Book Appointment</span>
+      </a>
+      <a href="{% url 'my_appointments' %}" class="nav-item{% if url_name == 'my_appointments' or url_name == 'edit_appointment' %} active{% endif %}" title="My Appointments">
+        <i class="fas fa-calendar-check"></i> <span>My Appointments</span>
+      </a>
+      <a href="{% url 'progress_tracking' %}" class="nav-item{% if url_name == 'progress_tracking' %} active{% endif %}" title="My Progress">
+        <i class="fas fa-chart-line"></i> <span>My Progress</span>
+      </a>
+
+      <div class="nav-section">Communication</div>
+      <a href="{% url 'client_chat' %}" class="nav-item{% if url_name == 'client_chat' %} active{% endif %}" title="Chat with Doctor">
+        <i class="fas fa-comments"></i> <span>Chat with Doctor</span>
+      </a>
+      <a href="{% url 'notifications' %}" class="nav-item{% if url_name == 'notifications' or url_name == 'notification' %} active{% endif %}" title="Notifications">
+        <i class="fas fa-bell"></i> <span>Notifications</span>
+      </a>
+
+      <div class="nav-section">Account</div>
+      <a href="{% url 'profile' %}" class="nav-item{% if url_name == 'profile' or url_name == 'edit_profile' %} active{% endif %}" title="My Profile">
+        <i class="fas fa-user"></i> <span>My Profile</span>
+      </a>
+      <a href="{% url 'payments' %}" class="nav-item{% if url_name == 'payments' %} active{% endif %}" title="Payments">
+        <i class="fas fa-credit-card"></i> <span>Payments</span>
+      </a>
+
+      <div class="nav-section">Quick Links</div>
+      <a href="{% url 'home' %}" class="nav-item{% if url_name == 'home' %} active{% endif %}" title="Visit Website">
+        <i class="fas fa-globe"></i> <span>Visit Website</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Logout -->
+  <div class="sidebar-footer">
+    <a href="{% url 'logout' %}" class="logout-btn" title="Logout">
+      <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+    </a>
+  </div>
+</aside>
+
+<!-- Mobile overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+{% endwith %}

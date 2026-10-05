@@ -1,0 +1,261 @@
+{% extends "client/base_client.html" %}
+{% load static %}
+
+{% block title %}My Recovery Progress{% endblock %}
+{% block page_title %}Recovery &amp; Rehabilitation Journey{% endblock %}
+{% block breadcrumb %}My Progress{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'book_appointment' %}" class="client-btn client-btn-primary client-btn-sm" style="font-weight:700;">
+    <i class="fas fa-calendar-plus"></i> Book Next Session
+  </a>
+{% endblock %}
+
+{% block content %}
+<!-- ════ 1. WELCOME BANNER ════ -->
+<div class="client-welcome-banner">
+  <div class="client-welcome-text">
+    <h2>Your <span>Recovery Journey</span></h2>
+    <p>Track your scheduled sessions, completed clinical therapies, adherence velocity, and clinical diagnosis notes recorded by your attending physiotherapist.</p>
+    <div class="client-welcome-actions">
+      <a href="{% url 'book_appointment' %}" class="client-btn client-btn-primary">
+        <i class="fas fa-calendar-plus"></i> Book Next Session
+      </a>
+      <a href="{% url 'client_chat' %}" class="client-btn client-btn-dark">
+        <i class="fas fa-comments"></i> Message Attending Doctor
+      </a>
+    </div>
+  </div>
+  <div class="client-welcome-icon">
+    <i class="fas fa-running"></i>
+  </div>
+</div>
+
+<!-- ════ 2. RECOVERY STAT CARDS ════ -->
+<div class="client-stats-grid">
+  <div class="client-stat-card">
+    <div class="client-stat-icon yellow">
+      <i class="fas fa-tachometer-alt"></i>
+    </div>
+    <div class="client-stat-info">
+      <h3>{{ recovery_pct }}%</h3>
+      <p>Recovery Velocity</p>
+    </div>
+  </div>
+
+  <div class="client-stat-card">
+    <div class="client-stat-icon green">
+      <i class="fas fa-calendar-check"></i>
+    </div>
+    <div class="client-stat-info">
+      <h3>{{ completed_count }}</h3>
+      <p>Sessions Completed</p>
+    </div>
+  </div>
+
+  <div class="client-stat-card">
+    <div class="client-stat-icon blue">
+      <i class="fas fa-calendar-alt"></i>
+    </div>
+    <div class="client-stat-info">
+      <h3>{{ upcoming_count }}</h3>
+      <p>Upcoming Sessions</p>
+    </div>
+  </div>
+
+  <div class="client-stat-card">
+    <div class="client-stat-icon red">
+      <i class="fas fa-notes-medical"></i>
+    </div>
+    <div class="client-stat-info">
+      <h3>{{ session_notes_count }}</h3>
+      <p>Clinical Doctor Notes</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 3. PROGRESS METRICS & SERVICES (2 COLUMNS) ════ -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:24px; margin-bottom:24px;">
+  <!-- Milestones & Adherence -->
+  <div class="client-card" style="margin-bottom:0;">
+    <div class="client-card-header">
+      <div class="client-card-title">
+        <i class="fas fa-award"></i> Treatment Adherence &amp; Milestones
+      </div>
+    </div>
+    <div class="client-card-body" style="padding:20px 24px;">
+      <!-- Overall Program Completion -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.86rem; margin-bottom:8px;">
+          <span style="font-weight:600; color:var(--client-dark);">Overall Program Completion</span>
+          <span style="font-weight:700; color:var(--client-success);">{{ recovery_pct }}%</span>
+        </div>
+        <div style="height:10px; background:#f3f4f6; border-radius:10px; overflow:hidden;">
+          <div style="height:100%; width:{{ recovery_pct }}%; background:linear-gradient(90deg, #22c55e, #16a34a); border-radius:10px; transition:width 0.4s ease;"></div>
+        </div>
+      </div>
+
+      <!-- Session Attendance Rate -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.86rem; margin-bottom:8px;">
+          <span style="font-weight:600; color:var(--client-dark);">Session Attendance Rate</span>
+          <span style="font-weight:700; color:var(--client-primary-dark);">{{ attendance_pct }}%</span>
+        </div>
+        <div style="height:10px; background:#f3f4f6; border-radius:10px; overflow:hidden;">
+          <div style="height:100%; width:{{ attendance_pct }}%; background:linear-gradient(90deg, #F5C518, #dfb00d); border-radius:10px; transition:width 0.4s ease;"></div>
+        </div>
+      </div>
+
+      <!-- Protocol Consistency -->
+      <div>
+        <div style="display:flex; justify-content:space-between; font-size:0.86rem; margin-bottom:8px;">
+          <span style="font-weight:600; color:var(--client-dark);">Prescribed Protocol Adherence</span>
+          <span style="font-weight:700; color:var(--client-info);">{{ consistency_pct }}%</span>
+        </div>
+        <div style="height:10px; background:#f3f4f6; border-radius:10px; overflow:hidden;">
+          <div style="height:100%; width:{{ consistency_pct }}%; background:linear-gradient(90deg, #3b82f6, #1d4ed8); border-radius:10px; transition:width 0.4s ease;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Therapy Services Distribution -->
+  <div class="client-card" style="margin-bottom:0;">
+    <div class="client-card-header">
+      <div class="client-card-title">
+        <i class="fas fa-stethoscope"></i> Therapy Services Received
+      </div>
+    </div>
+    <div class="client-card-body" style="padding:20px 24px;">
+      {% if service_breakdown %}
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          {% for item in service_breakdown %}
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:0.86rem; margin-bottom:6px;">
+                <span style="font-weight:600; color:var(--client-dark);">{{ item.label }}</span>
+                <span style="font-weight:700; color:var(--client-text-muted);">{{ item.count }} ({{ item.pct }}%)</span>
+              </div>
+              <div style="height:8px; background:#f3f4f6; border-radius:8px; overflow:hidden;">
+                <div style="height:100%; width:{{ item.pct }}%; background:var(--client-primary); border-radius:8px;"></div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="client-empty-state" style="padding:28px 16px;">
+          <div class="client-empty-icon" style="width:54px; height:54px; font-size:1.5rem; margin-bottom:10px;">
+            <i class="fas fa-notes-medical"></i>
+          </div>
+          <h4 class="client-empty-title" style="font-size:1rem;">No Service Records</h4>
+          <p class="client-empty-text" style="font-size:0.84rem;">Completed therapy sessions will automatically categorize here.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ════ 4. CLINICAL SESSION NOTES FROM ATTENDING DOCTOR ════ -->
+<div class="client-card">
+  <div class="client-card-header">
+    <div class="client-card-title">
+      <i class="fas fa-user-md"></i> Clinical Session Notes from Attending Physiotherapist
+    </div>
+  </div>
+  <div class="client-card-body">
+    {% if session_notes %}
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:18px;">
+        {% for note in session_notes %}
+          <div style="background:#f9fafb; border:1px solid var(--client-border); border-left:4px solid var(--client-primary); border-radius:12px; padding:18px; box-shadow:var(--client-shadow-sm);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <strong style="font-size:0.92rem; color:var(--client-dark); display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-stethoscope" style="color:var(--client-primary-dark);"></i>
+                Dr. {{ note.staff.get_full_name|default:note.staff.username }}
+              </strong>
+              <small style="color:var(--client-text-muted); font-size:0.78rem;">{{ note.date|date:"d M Y" }}</small>
+            </div>
+            
+            <div style="font-size:0.75rem; font-weight:700; color:var(--client-primary-dark); text-transform:uppercase; letter-spacing:0.04em;">Diagnosis &amp; Assessment</div>
+            <p style="font-size:0.88rem; color:var(--client-dark); font-weight:700; margin:2px 0 10px 0;">
+              {{ note.diagnosis|default:"Physiotherapy Clinical Evaluation" }}
+            </p>
+
+            <div style="font-size:0.75rem; font-weight:700; color:var(--client-text-muted); text-transform:uppercase; letter-spacing:0.04em;">Treatment Plan / Rehabilitation Regimen</div>
+            <p style="font-size:0.84rem; color:var(--client-text); margin:3px 0 0 0; line-height:1.45;">
+              {{ note.treatment }}
+            </p>
+
+            {% if note.next_session %}
+              <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--client-border); font-size:0.8rem; color:var(--client-info); font-weight:600;">
+                <i class="fas fa-calendar-check"></i> Next Recommended Session: {{ note.next_session }}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="client-empty-state" style="padding:32px 16px;">
+        <div class="client-empty-icon" style="width:54px; height:54px; font-size:1.5rem; margin-bottom:10px;">
+          <i class="fas fa-clipboard"></i>
+        </div>
+        <h4 class="client-empty-title" style="font-size:1rem;">No Clinical Notes Yet</h4>
+        <p class="client-empty-text" style="font-size:0.84rem;">Clinical assessment notes written by your physiotherapist after each therapy visit will be archived here.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ════ 5. APPOINTMENTS HISTORY TABLE ════ -->
+<div class="client-card">
+  <div class="client-card-header">
+    <div class="client-card-title">
+      <i class="fas fa-calendar-alt"></i> Complete Appointment History
+    </div>
+  </div>
+  <div class="client-card-body" style="padding:0;">
+    {% if appointments %}
+      <div class="client-table-responsive">
+        <table class="client-table">
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appt in appointments %}
+              <tr>
+                <td>
+                  <strong style="color:var(--client-dark);">{{ appt.get_service_display|default:appt.service }}</strong>
+                </td>
+                <td>{{ appt.date|date:"d M Y" }}</td>
+                <td>{{ appt.time }}</td>
+                <td>
+                  {% if appt.status == 'confirmed' %}
+                    <span class="client-badge client-badge-success">Confirmed</span>
+                  {% elif appt.status == 'pending' %}
+                    <span class="client-badge client-badge-warning">Pending</span>
+                  {% elif appt.status == 'completed' %}
+                    <span class="client-badge client-badge-info">Completed</span>
+                  {% else %}
+                    <span class="client-badge client-badge-danger">{{ appt.status|title }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="client-empty-state">
+        <div class="client-empty-icon">
+          <i class="fas fa-calendar-times"></i>
+        </div>
+        <h4 class="client-empty-title">No Appointments Recorded</h4>
+        <p class="client-empty-text">Your scheduled and past sessions will be catalogued in this table.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

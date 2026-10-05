@@ -1,0 +1,725 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Admin Panel{% endblock %} - PhysioRehab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <style>
+    /* Admin Design System Enhancements (Strictly maintaining existing color palette) */
+    :root {
+      --admin-bg: #f4f6f9;
+      --admin-card-bg: #ffffff;
+      --admin-sidebar-bg: linear-gradient(180deg, #1e1e1e 0%, #2c2c2c 100%);
+      --admin-border: #e9ecef;
+      --admin-text-main: #212529;
+      --admin-text-sub: #6c757d;
+      --admin-primary: #F5C518;
+      --admin-primary-dark: #dfb00d;
+      --admin-dark: #2C2C2C;
+      --admin-success: #28a745;
+      --admin-danger: #dc3545;
+      --admin-info: #17a2b8;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--admin-bg);
+      color: var(--admin-text-main);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .main-wrapper {
+      margin-left: 260px;
+      width: calc(100% - 260px);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+      background: var(--admin-bg);
+    }
+
+    body.sidebar-collapsed .main-wrapper {
+      margin-left: 80px;
+      width: calc(100% - 80px);
+    }
+
+    /* Admin Topbar / Header */
+    .admin-topbar {
+      background: #ffffff;
+      height: 68px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--admin-border);
+      position: sticky;
+      top: 0;
+      z-index: 99;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .topbar-toggle-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #f8f9fa;
+      border: 1px solid var(--admin-border);
+      color: var(--admin-dark);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: all 0.2s ease;
+    }
+
+    .topbar-toggle-btn:hover {
+      background: var(--admin-primary);
+      color: var(--admin-dark);
+      border-color: var(--admin-primary);
+    }
+
+    .topbar-title-wrap h1 {
+      font-size: 1.18rem;
+      font-weight: 700;
+      color: var(--admin-dark);
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .topbar-title-wrap p {
+      font-size: 0.78rem;
+      color: var(--admin-text-sub);
+      margin: 2px 0 0 0;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .topbar-action-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-topbar-primary {
+      background: var(--admin-primary);
+      color: var(--admin-dark);
+    }
+
+    .btn-topbar-primary:hover {
+      background: var(--admin-primary-dark);
+    }
+
+    .topbar-icon-btn {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #f8f9fa;
+      border: 1px solid var(--admin-border);
+      color: var(--admin-dark);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .topbar-icon-btn:hover {
+      background: #e9ecef;
+      color: var(--admin-dark);
+    }
+
+    .topbar-badge-count {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--admin-danger);
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      height: 18px;
+      min-width: 18px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      border: 2px solid #fff;
+    }
+
+    .topbar-user-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 10px 4px 4px;
+      border-radius: 24px;
+      background: #f8f9fa;
+      border: 1px solid var(--admin-border);
+    }
+
+    .topbar-user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--admin-primary);
+      color: var(--admin-dark);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+    }
+
+    .topbar-user-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--admin-dark);
+    }
+
+    /* Page Content Body */
+    .admin-body {
+      flex: 1;
+      padding: 26px 28px;
+    }
+
+    /* Alerts */
+    .admin-alerts-container {
+      margin-bottom: 20px;
+    }
+
+    .admin-alert {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .admin-alert-success {
+      background: rgba(40, 167, 69, 0.12);
+      color: #1e7e34;
+      border: 1px solid rgba(40, 167, 69, 0.25);
+    }
+
+    .admin-alert-error, .admin-alert-danger {
+      background: rgba(220, 53, 69, 0.12);
+      color: #b02a37;
+      border: 1px solid rgba(220, 53, 69, 0.25);
+    }
+
+    .admin-alert-warning {
+      background: rgba(245, 197, 24, 0.18);
+      color: #856404;
+      border: 1px solid rgba(245, 197, 24, 0.35);
+    }
+
+    .admin-alert-info {
+      background: rgba(23, 162, 184, 0.12);
+      color: #117a8b;
+      border: 1px solid rgba(23, 162, 184, 0.25);
+    }
+
+    /* Consistent Page Header Component */
+    .page-header-card {
+      background: #ffffff;
+      border: 1px solid var(--admin-border);
+      border-radius: 14px;
+      padding: 22px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .page-header-title {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .page-header-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(245, 197, 24, 0.18);
+      color: var(--admin-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+    }
+
+    .page-header-text h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--admin-dark);
+      margin: 0;
+    }
+
+    .page-header-text p {
+      font-size: 0.84rem;
+      color: var(--admin-text-sub);
+      margin: 3px 0 0 0;
+    }
+
+    .page-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Stats Cards Grid */
+    .admin-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .admin-stat-card {
+      background: #ffffff;
+      border: 1px solid var(--admin-border);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .admin-stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+    }
+
+    .stat-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .stat-info .stat-val {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--admin-dark);
+      line-height: 1.1;
+    }
+
+    .stat-info .stat-lbl {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--admin-text-sub);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Modern Card */
+    .admin-card {
+      background: #ffffff;
+      border: 1px solid var(--admin-border);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .admin-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding-bottom: 16px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--admin-border);
+    }
+
+    .admin-card-header h3 {
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--admin-dark);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Filter & Search Toolbar */
+    .admin-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .admin-search-box {
+      position: relative;
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .admin-search-box i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      font-size: 0.9rem;
+    }
+
+    .admin-search-box input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      border-radius: 10px;
+      border: 1px solid var(--admin-border);
+      background: #fdfdfd;
+      font-size: 0.88rem;
+      color: var(--admin-dark);
+      box-sizing: border-box;
+    }
+
+    .admin-search-box input:focus {
+      outline: none;
+      border-color: var(--admin-primary);
+      box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.18);
+    }
+
+    .admin-filter-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Responsive Data Tables */
+    .table-responsive-admin {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--admin-border);
+    }
+
+    .admin-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    .admin-table th {
+      background: #f8f9fa;
+      color: #495057;
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--admin-border);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .admin-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--admin-border);
+      color: var(--admin-text-main);
+      vertical-align: middle;
+      background: #fff;
+    }
+
+    .admin-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .admin-table tbody tr:hover td {
+      background: #fafbfc;
+    }
+
+    /* Badges */
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-status.badge-success {
+      background: rgba(40, 167, 69, 0.12);
+      color: #1e7e34;
+    }
+
+    .badge-status.badge-pending, .badge-status.badge-warning {
+      background: rgba(245, 197, 24, 0.18);
+      color: #856404;
+    }
+
+    .badge-status.badge-danger {
+      background: rgba(220, 53, 69, 0.12);
+      color: #b02a37;
+    }
+
+    .badge-status.badge-info {
+      background: rgba(23, 162, 184, 0.12);
+      color: #117a8b;
+    }
+
+    .badge-status.badge-dark {
+      background: #343a40;
+      color: #fff;
+    }
+
+    /* Action Buttons */
+    button:not(.topbar-toggle-btn):not(.sidebar-close-btn):not(#menuToggle):not(.menu-btn):not(.btn-action-icon):not(.btn-block):not(.w-100),
+    .btn:not(.btn-block):not(.w-100),
+    .btn-action:not(.btn-action-icon):not(.btn-block):not(.w-100),
+    .btn-topbar-primary:not(.btn-block):not(.w-100),
+    .topbar-action-link:not(.btn-block):not(.w-100) {
+      width: max-content;
+      max-width: 100%;
+    }
+
+    .btn-action-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .btn-action-edit {
+      background: rgba(245, 197, 24, 0.15);
+      color: #997400;
+    }
+
+    .btn-action-edit:hover {
+      background: var(--admin-primary);
+      color: var(--admin-dark);
+    }
+
+    .btn-action-delete {
+      background: rgba(220, 53, 69, 0.12);
+      color: #dc3545;
+    }
+
+    .btn-action-delete:hover {
+      background: #dc3545;
+      color: #fff;
+    }
+
+    .btn-action-view {
+      background: rgba(23, 162, 184, 0.12);
+      color: #17a2b8;
+    }
+
+    .btn-action-view:hover {
+      background: #17a2b8;
+      color: #fff;
+    }
+
+    /* Empty States */
+    .admin-empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      background: #fff;
+      border-radius: 12px;
+      border: 1px dashed var(--admin-border);
+    }
+
+    .admin-empty-state .empty-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #f8f9fa;
+      color: #adb5bd;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 14px;
+    }
+
+    .admin-empty-state h4 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--admin-dark);
+      margin: 0 0 6px 0;
+    }
+
+    .admin-empty-state p {
+      font-size: 0.85rem;
+      color: var(--admin-text-sub);
+      margin: 0 0 16px 0;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Responsive Media Queries */
+    @media (max-width: 991px) {
+      .main-wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+      }
+      .admin-topbar {
+        padding: 0 16px;
+      }
+      .admin-body {
+        padding: 18px 16px;
+      }
+      .page-header-card {
+        padding: 16px;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .admin-topbar {
+        height: 60px;
+        padding: 0 12px;
+      }
+      .topbar-title-wrap h1 {
+        font-size: 1.02rem;
+      }
+      .topbar-title-wrap p {
+        display: none;
+      }
+      .admin-body {
+        padding: 14px 10px;
+      }
+      .admin-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .page-header-actions {
+        width: 100%;
+      }
+      .page-header-actions a, .page-header-actions button {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <!-- ════ ADMIN SIDEBAR ════ -->
+  {% include "admin/_sidebar.html" %}
+
+  <!-- ════ MAIN CONTENT WRAPPER ════ -->
+  <div class="main-wrapper">
+    <!-- ════ ADMIN TOPBAR / HEADER ════ -->
+    <header class="admin-topbar">
+      <div class="topbar-left">
+        <!-- Mobile Drawer Hamburger & Desktop Collapse Toggle -->
+        <button class="topbar-toggle-btn" id="menuToggle" aria-label="Toggle Navigation">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="topbar-title-wrap">
+          <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+          <p>{% block page_subtitle %}PhysioRehab Clinic Administration Portal{% endblock %}</p>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Quick Link to Notifications -->
+        <a href="{% url 'notifications' %}" class="topbar-icon-btn" title="Notifications">
+          <i class="fas fa-bell"></i>
+          {% if unread_notifications_count %}<span class="topbar-badge-count">{{ unread_notifications_count }}</span>{% endif %}
+        </a>
+
+        <!-- Quick Link to Patient Messages -->
+        <a href="{% url 'admin_chat' %}" class="topbar-icon-btn" title="Patient Messages">
+          <i class="fas fa-comments"></i>
+          {% if unread_messages_count %}<span class="topbar-badge-count">{{ unread_messages_count }}</span>{% endif %}
+        </a>
+
+        <!-- Logged In User Pill -->
+        <div class="topbar-user-pill">
+          <div class="topbar-user-avatar">
+            {{ request.user.first_name|first|default:request.user.username|first|upper }}
+          </div>
+          <span class="topbar-user-name d-none d-sm-inline">{{ request.user.get_full_name|default:request.user.username }}</span>
+        </div>
+
+        {% block topbar_actions %}{% endblock %}
+      </div>
+    </header>
+
+    <!-- ════ ADMIN MAIN BODY ════ -->
+    <main class="admin-body">
+      <!-- Flash / Django Alert Messages -->
+      {% if messages %}
+      <div class="admin-alerts-container">
+        {% for message in messages %}
+        <div class="admin-alert admin-alert-{{ message.tags|default:'info' }}">
+          <span>{{ message }}</span>
+          <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:inherit;font-size:1.1rem;">&times;</button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Block Content -->
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Mobile Overlay Backdrop -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Global Scripts -->
+  <script src="{% static 'js/layout.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

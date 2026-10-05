@@ -21,110 +21,7 @@
             min-height: 100vh;
         }
 
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            background: linear-gradient(180deg, #1a1a1a, #2C2C2C);
-            overflow-y: auto;
-            scrollbar-width: none;
-        }
-
-        .sidebar-logo {
-            padding: 22px 20px;
-            border-bottom: 1px solid rgba(245, 197, 24, 0.2);
-            text-align: center;
-        }
-
-        .sidebar-logo img {
-            width: 130px;
-            border-radius: 10px;
-        }
-
-        .sidebar-logo p {
-            color: #F5C518;
-            font-size: 0.75em;
-            margin-top: 8px;
-            font-weight: 600;
-        }
-
-        .sidebar-user {
-            padding: 18px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .user-avatar {
-            width: 42px;
-            height: 42px;
-            background: #F5C518;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: #2C2C2C;
-        }
-
-        .user-info h4 {
-            color: white;
-            font-size: 0.88em;
-        }
-
-        .user-info span {
-            color: #F5C518;
-            font-size: 0.72em;
-        }
-
-        .nav-section {
-            padding: 12px 22px 5px;
-            color: #555;
-            font-size: 0.7em;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 700;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 22px;
-            color: #bbb;
-            text-decoration: none;
-            font-size: 0.9em;
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
-
-        .nav-item:hover,
-        .nav-item.active {
-            background: rgba(245, 197, 24, 0.1);
-            color: #F5C518;
-            border-left-color: #F5C518;
-        }
-
-        .nav-item i {
-            width: 18px;
-            text-align: center;
-        }
-
-        .logout-btn {
-            margin: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 11px 18px;
-            background: rgba(220, 53, 69, 0.15);
-            color: #ff6b6b;
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 0.86em;
-        }
+        
 
         .main-content {
             margin-left: 260px;
@@ -238,8 +135,9 @@
         }
 
         .btn-submit {
-            width: 100%;
-            padding: 14px;
+            width: max-content;
+            max-width: 100%;
+            padding: 14px 28px;
             background: #F5C518;
             color: #2C2C2C;
             border: none;
@@ -249,6 +147,9 @@
             cursor: pointer;
             transition: all 0.3s;
             margin-top: 5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .btn-submit:hover {
@@ -274,26 +175,7 @@
                 width: 100%;
             }
 
-            .sidebar {
-                transform: translateX(0);
-                transition: 0.3s ease;
-                z-index: 1000;
-            }
-
-            .sidebar.closed {
-                transform: translateX(-100%);
-            }
-        }
-
-        /* ================= TOPBAR (sticky) ================= */
-        .topbar {
-            position: sticky;
-            top: 0;
-            z-index: 999;
-            background: #fff;
-        }
-
-        /* better spacing */
+            
         @media (max-width: 576px) {
             .topbar {
                 padding: 12px 14px;
@@ -425,33 +307,12 @@
    SIDEBAR OVERLAY FIX
 ========================= */
 
-        .sidebar-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.45);
-            opacity: 0;
-            visibility: hidden;
-            transition: 0.3s ease;
-            z-index: 998;
-        }
-
-        .sidebar-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
+        
 
         /* mobile sidebar behavior */
         @media (max-width: 992px) {
 
-            .sidebar {
-                transform: translateX(-100%);
-                transition: 0.3s ease;
-                z-index: 999;
-            }
-
-            .sidebar.show {
-                transform: translateX(0);
-            }
+            
 
             .main-content {
                 margin-left: 0 !important;
@@ -471,59 +332,12 @@
             }
         }
     </style>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 
 <body>
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
-            <div class="sidebar-logo-badge"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
-        </div>
-        <div class="sidebar-user">
-            <div class="user-avatar">{{ user.username|first|upper }}</div>
-            <div class="user-info">
-                <h4>{{ user.username }}</h4>
-                <span><span class="online-dot"></span>Super Admin</span>
-            </div>
-        </div>
-        <div class="nav-scroll">
-            <nav>
-                <div class="nav-section">Overview</div>
-                <a href="{% url 'admin_dashboard' %}" class="nav-item"><i class="fas fa-tachometer-alt"></i>
-                    Dashboard</a>
-                <div class="nav-section">Management</div>
-                <a href="{% url 'admin_patients' %}" class="nav-item"><i class="fas fa-users"></i> Manage Patients</a>
-                <a href="{% url 'admin_staff' %}" class="nav-item"><i class="fas fa-user-md"></i> Manage Staff</a>
-                <a href="{% url 'admin_appointments' %}" class="nav-item"><i class="fas fa-calendar-alt"></i> All
-                    Appointments</a>
-                <a href="{% url 'admin_salary' %}" class="nav-item"><i class="fas fa-rupee-sign"></i> Salary</a>
-                <div class="nav-section">Staff Tools</div>
-                <a href="{% url 'admin_leaves' %}" class="nav-item"><i class="fas fa-calendar-minus"></i> Leave
-                    Requests</a>
-                <a href="{% url 'admin_attendance' %}" class="nav-item"><i class="fas fa-clock"></i> Attendance</a>
-                <a href="{% url 'admin_tasks' %}" class="nav-item active"><i class="fas fa-tasks"></i> Tasks</a>
-                <a href="{% url 'admin_session_notes' %}" class="nav-item"><i class="fas fa-notes-medical"></i> Session
-                    Notes</a>
-                <div class="nav-section">Communication</div>
-                <a href="{% url 'admin_chat' %}" class="nav-item"><i class="fas fa-comments"></i> Patient Messages</a>
-                <div class="nav-section">Content</div>
-                <a href="{% url 'admin_blog_list' %}" class="nav-item"><i class="fas fa-blog"></i> Blog Posts</a>
-                <a href="{% url 'admin_reviews' %}" class="nav-item"><i class="fas fa-star"></i> Patient Reviews</a>
-                <div class="nav-section">Reports</div>
-                <a href="{% url 'progress_tracking' %}" class="nav-item"><i class="fas fa-chart-line"></i> Progress
-                    Tracking</a>
-                <a href="{% url 'reports_analytics' %}" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
-                <div class="nav-section">System</div>
-                <a href="{% url 'admin_settings' %}" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
-                <a href="/admin/" class="nav-item"><i class="fas fa-database"></i> Django Admin</a>
-                <a href="{% url 'home' %}" class="nav-item"><i class="fas fa-globe"></i> Visit Website</a>
-            </nav>
-        </div>
-        <div class="sidebar-footer">
-            <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-        </div>
-    </aside>
+    <!-- === SIDEBAR === -->
+    {% include "staff/_sidebar.html" %}
 
     <div class="main-content">
         <div class="topbar">
@@ -619,6 +433,7 @@
             menu.classList.remove("active");
         });
     </script>
+  <script src="{% static 'js/layout.js' %}"></script>
 </body>
 
 </html>

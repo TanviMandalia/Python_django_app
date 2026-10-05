@@ -332,6 +332,8 @@
       align-items: center;
       justify-content: center;
       transition: .3s;
+      width: max-content;
+      max-width: 100%;
     }
 
     .btn-delete:hover,
@@ -394,7 +396,8 @@
 
       .btn-delete,
       .btn-cancel {
-        width: 100%;
+        width: max-content;
+        max-width: 100%;
         margin: 8px 0;
       }
 
@@ -428,6 +431,7 @@
 
     }
   </style>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 
 <body>
@@ -508,43 +512,7 @@
       </div>
     </div>
   </div>
-  <script>
-    function toggleSidebar() {
-
-      const sidebar = document.querySelector(".sidebar");
-
-      sidebar.classList.toggle("show");
-
-    }
-
-    document.addEventListener("click", function (e) {
-
-      if (window.innerWidth <= 991) {
-
-        const sidebar = document.querySelector(".sidebar");
-
-        const button = document.querySelector(".menu-btn");
-
-        if (!sidebar.contains(e.target) && !button.contains(e.target)) {
-
-          sidebar.classList.remove("show");
-
-        }
-
-      }
-
-    });
-
-    window.addEventListener("resize", function () {
-
-      if (window.innerWidth > 991) {
-
-        document.querySelector(".sidebar").classList.remove("show");
-
-      }
-
-    });
-  </script>
+  <script src="{% static 'js/layout.js' %}"></script>
 </body>
 
 </html>

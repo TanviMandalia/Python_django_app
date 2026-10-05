@@ -1006,3 +1006,61 @@ class AuditEvent(models.Model):
     entity_id = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     metadata = models.JSONField(default=dict, blank=True)
+
+
+class EmailLog(models.Model):
+    STATUS_CHOICES = [
+        ("sent", "Sent"),
+        ("failed", "Failed"),
+        ("retrying", "Retrying"),
+    ]
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="email_logs",
+    )
+    email_type = models.CharField(max_length=60, default="transactional")
+    recipient_email = models.CharField(max_length=254)
+    subject = models.CharField(max_length=500)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="sent")
+    error_category = models.CharField(max_length=100, blank=True)
+    message_id = models.CharField(max_length=255, blank=True)
+    sent_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-sent_at"]
+
+    def __str__(self):
+        return f"[{self.status}] {self.email_type} -> {self.recipient_email}"
+
+
+class InboundEmail(models.Model):
+    STATUS_CHOICES = [
+        ("received", "Received"),
+        ("processed", "Processed"),
+        ("duplicate", "Duplicate"),
+        ("rejected", "Rejected"),
+        ("failed", "Failed"),
+    ]
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="inbound_emails",
+    )
+    message_id = models.CharField(max_length=255, unique=True, db_index=True)
+    sender = models.EmailField()
+    recipient = models.EmailField()
+    subject = models.CharField(max_length=500, blank=True)
+    body_text = models.TextField(blank=True)
+    body_html = models.TextField(blank=True)
+    raw_headers = models.JSONField(default=dict, blank=True)
+    attachments_info = models.JSONField(default=list, blank=True)
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="received")
+    error_message = models.TextField(blank=True)
+    received_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-received_at"]
+
+    def __str__(self):
+        return f"[{self.status}] {self.sender} -> {self.recipient}: {self.subject[:30]}"

@@ -3,6 +3,7 @@
 <html lang="en">
 
 <head>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <title>Verify OTP</title>
@@ -70,8 +71,11 @@
         }
 
         button {
-            width: 100%;
-            padding: 12px;
+            width: max-content;
+            max-width: 100%;
+            margin: 10px auto 0;
+            display: block;
+            padding: 12px 32px;
             background: #F5C518;
             border: none;
             border-radius: 25px;
@@ -186,6 +190,7 @@
             }
         }
     </style>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 
 <body>
@@ -300,6 +305,7 @@
         });
     </script>
 
+  <script src="{% static 'js/layout.js' %}"></script>
 </body>
 
 </html>

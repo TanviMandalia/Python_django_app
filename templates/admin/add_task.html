@@ -1,0 +1,100 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Assign New Task{% endblock %}
+{% block page_title %}Assign Clinic Task{% endblock %}
+{% block page_subtitle %}Delegate Operational Duties &amp; Clinical Responsibilities to Staff{% endblock %}
+
+{% block content %}
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon">
+      <i class="fas fa-plus-circle"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>Create &amp; Assign Task</h2>
+      <p>Assign clinical tasks, follow-ups, inventory checks, or operational workflows.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'admin_tasks' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+      <i class="fas fa-arrow-left"></i> Back to Tasks
+    </a>
+  </div>
+</div>
+
+<div class="admin-card" style="max-width: 750px; margin: 0 auto;">
+  <div class="admin-card-header">
+    <h3><i class="fas fa-clipboard-list text-primary"></i> Task Details</h3>
+    <span class="badge-status badge-info">Task Form</span>
+  </div>
+
+  <form method="POST" action="{% url 'add_task' %}" style="display: flex; flex-direction: column; gap: 18px;">
+    {% csrf_token %}
+
+    <!-- Staff Selection -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Assign To Staff Member <span style="color: var(--admin-danger);">*</span>
+      </label>
+      <select name="staff_id" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+        <option value="">-- Choose Staff Member --</option>
+        {% for staff in staff_list %}
+        <option value="{{ staff.user.id }}">
+          {{ staff.user.get_full_name|default:staff.user.username }} ({{ staff.get_role_display|default:"Staff" }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Task Title -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Task Title <span style="color: var(--admin-danger);">*</span>
+      </label>
+      <input type="text" name="title" placeholder="e.g. Sanitize electrotherapy equipment & inspect cables" required
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+    </div>
+
+    <!-- Description -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Description &amp; Instructions
+      </label>
+      <textarea name="description" rows="4" placeholder="Provide detailed steps or context for this assignment..."
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;"></textarea>
+    </div>
+
+    <!-- Priority & Due Date -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Priority Level <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <select name="priority" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          <option value="medium">Medium Priority</option>
+          <option value="high">High Priority</option>
+          <option value="low">Low Priority</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Due Date
+        </label>
+        <input type="date" name="due_date"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+      <a href="{% url 'admin_tasks' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+        Cancel
+      </a>
+      <button type="submit" class="topbar-action-link btn-topbar-primary" style="cursor: pointer; border: none; font-size: 0.9rem;">
+        <i class="fas fa-paper-plane"></i> Assign Task
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

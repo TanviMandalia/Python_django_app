@@ -512,7 +512,8 @@
       }
 
       .admin-action-btn {
-        width: 100%;
+        width: max-content;
+        max-width: 100%;
         justify-content: center;
       }
 
@@ -544,6 +545,7 @@
     /* Desktop */
     @media (min-width:1025px) {}
   </style>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 
 <body>
@@ -658,20 +660,8 @@
       {% endif %}
     </div>
   </div>
-  <div class="sidebar-overlay"></div>
-  <script>
-    const sidebar = document.querySelector(".sidebar");
-    const overlay = document.querySelector(".sidebar-overlay");
-
-    function toggleSidebar() {
-
-      sidebar.classList.toggle("show");
-      overlay.classList.toggle("show");
-
-    }
-
-    overlay.onclick = toggleSidebar;
-  </script>
+  <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+  <script src="{% static 'js/layout.js' %}"></script>
 </body>
 
 </html>

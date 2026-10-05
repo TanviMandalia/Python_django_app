@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import os
 from dotenv import load_dotenv
 from django.contrib.messages import constants as message_constants
@@ -191,6 +191,7 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", f"PhysioRehab Clinic <{EMAIL_HOST_USER}>")
 SERVER_EMAIL = EMAIL_HOST_USER
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", 15))
+INBOUND_EMAIL_WEBHOOK_SECRET = os.getenv("INBOUND_EMAIL_WEBHOOK_SECRET", "")
 
 # =========================
 # CELERY

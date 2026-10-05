@@ -1,0 +1,141 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Admin Notifications{% endblock %}
+{% block page_title %}Clinic Alerts &amp; Notifications{% endblock %}
+{% block page_subtitle %}Activity stream of patient bookings, payment verifications, and staff requests{% endblock %}
+
+{% block content %}
+<!-- ════ HEADER & ACTIONS ════ -->
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon">
+      <i class="fas fa-bell"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>Notifications &amp; Activity Log</h2>
+      <p>Stay updated on new appointments, payment settlements, staff leave applications, and patient inquiries.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'mark_all_read' %}" class="topbar-action-link btn-topbar-primary">
+      <i class="fas fa-check-double"></i> Mark All as Read
+    </a>
+  </div>
+</div>
+
+<!-- ════ NOTIFICATIONS CONTAINER ════ -->
+<div class="admin-card">
+  <div class="admin-toolbar">
+    <div class="admin-search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" id="notifSearch" placeholder="Search notifications by keyword..." onkeyup="filterNotifications()" />
+    </div>
+
+    <div class="admin-filter-group">
+      <button type="button" class="notif-tab active" onclick="filterNotifTab('all', this)" style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--admin-primary); background: var(--admin-primary); color: var(--admin-dark); font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+        All ({{ notifications|length }})
+      </button>
+      <button type="button" class="notif-tab" onclick="filterNotifTab('unread', this)" style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--admin-border); background: #f8f9fa; color: var(--admin-dark); font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+        Unread
+      </button>
+    </div>
+  </div>
+
+  {% if notifications %}
+  <div style="display: flex; flex-direction: column; gap: 10px;" id="notificationsList">
+    {% for notif in notifications %}
+    <div class="notif-item-card" data-read="{% if notif.is_read %}read{% else %}unread{% endif %}"
+      style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 20px; border-radius: 12px; border: 1px solid var(--admin-border); background: {% if not notif.is_read %}#fffdf0{% else %}#ffffff{% endif %}; border-left: 4px solid {% if not notif.is_read %}var(--admin-primary){% else %}#e9ecef{% endif %}; transition: all 0.2s;">
+      
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="width: 42px; height: 42px; border-radius: 50%; background: {% if not notif.is_read %}rgba(245, 197, 24, 0.25){% else %}#f1f3f5{% endif %}; color: var(--admin-dark); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;">
+          <i class="fas fa-bell"></i>
+        </div>
+
+        <div>
+          <div style="font-size: 0.92rem; font-weight: {% if not notif.is_read %}700{% else %}500{% endif %}; color: var(--admin-dark); line-height: 1.4;">
+            {{ notif.message }}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--admin-text-sub); margin-top: 3px;">
+            <i class="far fa-clock"></i> {{ notif.created_at|timesince }} ago
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        {% if notif.link %}
+        <a href="{{ notif.link }}" class="topbar-action-link" style="background: #f8f9fa; border: 1px solid var(--admin-border); color: var(--admin-dark); font-size: 0.78rem; padding: 6px 12px;">
+          View Details <i class="fas fa-arrow-right" style="font-size: 0.7rem;"></i>
+        </a>
+        {% endif %}
+
+        {% if not notif.is_read %}
+        <button type="button" onclick="markRead('{{ notif.id }}', this)" class="btn-action-icon btn-action-view" title="Mark as Read">
+          <i class="fas fa-check"></i>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="admin-empty-state">
+    <div class="empty-icon"><i class="fas fa-bell-slash"></i></div>
+    <h4>No Notifications</h4>
+    <p>You are all caught up! There are no new clinic activity notifications.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentTab = 'all';
+
+function filterNotifTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.notif-tab').forEach(b => {
+    b.style.background = '#f8f9fa';
+    b.style.borderColor = 'var(--admin-border)';
+  });
+  btn.style.background = 'var(--admin-primary)';
+  btn.style.borderColor = 'var(--admin-primary)';
+  filterNotifications();
+}
+
+function filterNotifications() {
+  const query = document.getElementById('notifSearch').value.toLowerCase();
+  const items = document.querySelectorAll('#notificationsList .notif-item-card');
+
+  items.forEach(item => {
+    const text = item.innerText.toLowerCase();
+    const isRead = item.getAttribute('data-read');
+    const matchesQuery = text.includes(query);
+    const matchesTab = currentTab === 'all' || (currentTab === 'unread' && isRead === 'unread');
+
+    if (matchesQuery && matchesTab) {
+      item.style.display = 'flex';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+function markRead(id, btn) {
+  fetch('/notifications/' + id + '/read/')
+    .then(r => r.json())
+    .then(d => {
+      const card = btn.closest('.notif-item-card');
+      if (card) {
+        card.setAttribute('data-read', 'read');
+        card.style.background = '#ffffff';
+        card.style.borderLeftColor = '#e9ecef';
+        btn.remove();
+      }
+    })
+    .catch(() => {});
+}
+</script>
+{% endblock %}

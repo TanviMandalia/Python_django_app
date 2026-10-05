@@ -236,8 +236,9 @@
     }
 
     .btn-submit {
-      width: 100%;
-      padding: 14px;
+      width: max-content;
+      max-width: 100%;
+      padding: 14px 32px;
       background: #f5c518;
       color: #2c2c2c;
       border: none;
@@ -246,6 +247,9 @@
       font-weight: 700;
       cursor: pointer;
       transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .btn-submit:hover {
@@ -579,7 +583,8 @@
       }
 
       .btn-submit {
-        width: 100%;
+        width: max-content;
+        max-width: 100%;
       }
 
     }
@@ -609,6 +614,7 @@
 
     }
   </style>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 
 <body>
@@ -758,26 +764,7 @@
   </section>
 
   {% include 'shared/footer.html' %}
-  <script>
-    function toggleSidebar() {
-      document.querySelector(".sidebar").classList.toggle("active");
-    }
-
-    document.addEventListener("click", function (e) {
-
-      const sidebar = document.querySelector(".sidebar");
-      const button = document.querySelector(".menu-btn");
-
-      if (window.innerWidth <= 991) {
-
-        if (!sidebar.contains(e.target) && !button.contains(e.target)) {
-          sidebar.classList.remove("active");
-        }
-
-      }
-
-    });
-  </script>
+  <script src="{% static 'js/layout.js' %}"></script>
 </body>
 
 </html>

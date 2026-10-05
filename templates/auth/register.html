@@ -167,8 +167,9 @@
         }
 
         .btn-register {
-            width: 100%;
-            padding: 13px;
+            width: max-content;
+            max-width: 100%;
+            padding: 13px 36px;
             background: #F5C518;
             color: #2C2C2C;
             border: none;
@@ -177,7 +178,8 @@
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
-            margin-top: 5px;
+            margin: 5px auto 0;
+            display: block;
         }
 
         .btn-register:hover {
@@ -411,16 +413,19 @@
 ========================== */
 
         .btn-register {
-            width: 100%;
+            width: max-content;
+            max-width: 100%;
             border: none;
             background: #F5C518;
             color: #2C2C2C;
-            padding: 14px;
+            padding: 14px 36px;
             border-radius: 10px;
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
             transition: .3s;
+            margin: 5px auto 0;
+            display: block;
         }
 
         .btn-register:hover {
@@ -628,6 +633,7 @@
 
         }
     </style>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 
 <body>
@@ -726,6 +732,7 @@
         </div>
 
     </div>
+  <script src="{% static 'js/layout.js' %}"></script>
 </body>
 
 </html>

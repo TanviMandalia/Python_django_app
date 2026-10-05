@@ -147,8 +147,9 @@
         }
 
         .btn-login {
-            width: 100%;
-            padding: 14px;
+            width: max-content;
+            max-width: 100%;
+            padding: 14px 36px;
             background: #F5C518;
             color: #2C2C2C;
             border: none;
@@ -157,7 +158,8 @@
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
-            margin-top: 5px;
+            margin: 5px auto 0;
+            display: block;
         }
 
         .btn-login:hover {
@@ -302,8 +304,9 @@ body {
 
 /* BUTTON */
 .btn-login {
-    width: 100%;
-    padding: 14px;
+    width: max-content;
+    max-width: 100%;
+    padding: 14px 36px;
     background: #F5C518;
     color: #2C2C2C;
     border: none;
@@ -312,6 +315,8 @@ body {
     font-weight: 700;
     cursor: pointer;
     transition: all 0.3s ease;
+    margin: 5px auto 0;
+    display: block;
 }
 
 .btn-login:hover {
@@ -396,6 +401,7 @@ button:focus {
 }
 </style>
 
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 
 <body>
@@ -458,6 +464,7 @@ button:focus {
         </div>
 
     </div>
+  <script src="{% static 'js/layout.js' %}"></script>
 </body>
 
 </html>

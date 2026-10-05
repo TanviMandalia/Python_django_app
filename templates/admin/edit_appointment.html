@@ -1,0 +1,107 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Edit Appointment - {{ appt.name }}{% endblock %}
+{% block page_title %}Edit Patient Appointment{% endblock %}
+{% block page_subtitle %}Update Scheduled Date, Time, Service, and Status{% endblock %}
+
+{% block content %}
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon">
+      <i class="fas fa-edit"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>Edit Appointment: {{ appt.name }}</h2>
+      <p>Modify booking details, service type, or change appointment status.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'admin_appointments' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+      <i class="fas fa-arrow-left"></i> Back to Appointments
+    </a>
+  </div>
+</div>
+
+<div class="admin-card" style="max-width: 800px; margin: 0 auto;">
+  <div class="admin-card-header">
+    <h3><i class="fas fa-calendar-alt text-primary"></i> Appointment Information</h3>
+    <span class="badge-status {% if appt.status == 'confirmed' %}badge-info{% elif appt.status == 'completed' %}badge-success{% elif appt.status == 'cancelled' %}badge-danger{% else %}badge-pending{% endif %}">
+      {{ appt.status|upper }}
+    </span>
+  </div>
+
+  <form method="POST" style="display: flex; flex-direction: column; gap: 18px;">
+    {% csrf_token %}
+
+    <!-- Patient Name (Read only / Display) -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Patient Name
+      </label>
+      <input type="text" value="{{ appt.name }} ({{ appt.email }})" disabled
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #f8f9fa; box-sizing: border-box;" />
+    </div>
+
+    <!-- Service -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Treatment / Service Required <span style="color: var(--admin-danger);">*</span>
+      </label>
+      <input type="text" name="service" value="{{ appt.service }}" required
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+    </div>
+
+    <!-- Date & Time -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Appointment Date <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <input type="date" name="date" value="{{ appt.date|date:'Y-m-d'|default:appt.date }}" required
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Time Slot <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <input type="text" name="time" value="{{ appt.time }}" required
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <!-- Status & Notes -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Booking Status
+        </label>
+        <select name="status" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          <option value="pending" {% if appt.status == "pending" %}selected{% endif %}>Pending</option>
+          <option value="confirmed" {% if appt.status == "confirmed" %}selected{% endif %}>Confirmed</option>
+          <option value="completed" {% if appt.status == "completed" %}selected{% endif %}>Completed</option>
+          <option value="cancelled" {% if appt.status == "cancelled" %}selected{% endif %}>Cancelled</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Notes / Comments
+        </label>
+        <input type="text" name="notes" value="{{ appt.notes|default:'' }}"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+      <a href="{% url 'admin_appointments' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+        Cancel
+      </a>
+      <button type="submit" class="topbar-action-link btn-topbar-primary" style="cursor: pointer; border: none; font-size: 0.9rem;">
+        <i class="fas fa-save"></i> Save Changes
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

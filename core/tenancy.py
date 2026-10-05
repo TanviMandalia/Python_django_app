@@ -3,13 +3,16 @@ from django.core.exceptions import PermissionDenied
 
 def resolve_hospital(user):
     """Resolve a non-platform user's clinic from server-side profile relations."""
-    if not user or not user.is_authenticated or user.is_superuser:
+    if not user or not user.is_authenticated:
         return None
 
-    for relation in ("clinic_admin_profile", "staff_profile"):
+    for relation in ("clinic_admin_profile", "staff_profile", "patient_profile"):
         profile = getattr(user, relation, None)
         if profile is not None and profile.hospital_id:
             return profile.hospital
+
+    if user.is_superuser:
+        return None
 
     appointment = (
         user.appointments.filter(hospital__isnull=False)

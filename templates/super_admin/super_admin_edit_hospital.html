@@ -1,575 +1,139 @@
+{% extends "super_admin/base_super_admin.html" %}
 {% load static %}
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Super Admin — Edit Hospital</title>
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      rel="stylesheet"
-    />
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        font-family: "Segoe UI", sans-serif;
-        background: #f0f2f5;
-        display: flex;
-      }
-      .sidebar {
-        width: 260px;
-        min-height: 100vh;
-        background: linear-gradient(180deg, #0f0f1a, #1a1a2e);
-        position: fixed;
-        top: 0;
-        left: 0;
-        display: flex;
-        flex-direction: column;
-        z-index: 100;
-      }
-      .sidebar-logo {
-        padding: 24px 20px;
-        border-bottom: 1px solid rgba(139, 92, 246, 0.25);
-        text-align: center;
-      }
-      .sidebar-logo .brand {
-        color: #fff;
-        font-size: 1.1em;
-        font-weight: 800;
-      }
-      .sidebar-logo .sub {
-        color: #8b5cf6;
-        font-size: 0.72em;
-        font-weight: 600;
-        margin-top: 2px;
-      }
-      .sidebar-badge {
-        margin: 12px 20px;
-        background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-        color: #fff;
-        padding: 8px 14px;
-        border-radius: 10px;
-        font-size: 0.78em;
-        font-weight: 700;
-        text-align: center;
-      }
-      .nav-section {
-        padding: 12px 22px 5px;
-        color: #444;
-        font-size: 0.68em;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        font-weight: 700;
-      }
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 13px;
-        padding: 12px 22px;
-        color: #aaa;
-        text-decoration: none;
-        font-size: 0.88em;
-        transition: all 0.25s;
-        border-left: 3px solid transparent;
-      }
-      .nav-item:hover,
-      .nav-item.active {
-        background: rgba(139, 92, 246, 0.12);
-        color: #a78bfa;
-        border-left-color: #8b5cf6;
-      }
-      .nav-item i {
-        width: 18px;
-        text-align: center;
-      }
-      .logout-btn {
-        margin: 15px;
-        margin-top: auto;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 18px;
-        background: rgba(220, 53, 69, 0.12);
-        color: #ff6b6b;
-        border-radius: 10px;
-        text-decoration: none;
-        font-size: 0.84em;
-      }
-      .main {
-        margin-left: 260px;
-        min-height: 100vh;
-        width: calc(100% - 260px);
-      }
-      .topbar {
-        background: #fff;
-        padding: 18px 30px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-        position: sticky;
-        top: 0;
-        z-index: 50;
-      }
-      .topbar h1 {
-        font-size: 1.25em;
-        color: #1a1a2e;
-        font-weight: 700;
-      }
-      .topbar-user {
-        background: #f5f5f5;
-        padding: 8px 16px;
-        border-radius: 25px;
-        font-size: 0.86em;
-        font-weight: 600;
-        color: #333;
-      }
-      .body {
-        padding: 28px 30px;
-      }
-      .alert-success {
-        background: #d4edda;
-        border: 1px solid #28a745;
-        color: #155724;
-        padding: 12px 18px;
-        border-radius: 10px;
-        margin-bottom: 16px;
-        font-size: 0.9em;
-      }
-      .alert-error {
-        background: #f8d7da;
-        border: 1px solid #dc3545;
-        color: #721c24;
-        padding: 12px 18px;
-        border-radius: 10px;
-        margin-bottom: 16px;
-        font-size: 0.9em;
-      }
-      .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-      }
-      .card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 28px;
-        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
-      }
-      .section-title {
-        font-size: 1em;
-        font-weight: 700;
-        color: #1a1a2e;
-        margin-bottom: 18px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #f0f0f0;
-      }
-      .section-title i {
-        color: #8b5cf6;
-      }
-      .form-group {
-        margin-bottom: 16px;
-      }
-      .form-group label {
-        display: block;
-        font-size: 0.82em;
-        font-weight: 700;
-        color: #555;
-        margin-bottom: 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      .form-group input,
-      .form-group select,
-      .form-group textarea {
-        width: 100%;
-        padding: 10px 14px;
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        font-size: 0.9em;
-        font-family: inherit;
-        outline: none;
-        transition: border-color 0.2s;
-      }
-      .form-group input:focus,
-      .form-group select:focus,
-      .form-group textarea:focus {
-        border-color: #8b5cf6;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-      }
-      .toggle-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border: 1px solid #ddd;
-        border-radius: 10px;
-      }
-      .toggle-row label {
-        margin: 0;
-        font-size: 0.9em;
-        font-weight: 600;
-        color: #333;
-      }
-      .btn-row {
-        display: flex;
-        gap: 12px;
-        margin-top: 24px;
-      }
-      .btn-primary {
-        background: #8b5cf6;
-        color: #fff;
-        padding: 12px 28px;
-        border-radius: 10px;
-        border: none;
-        font-size: 0.9em;
-        font-weight: 700;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .btn-primary:hover {
-        background: #7c3aed;
-      }
-      .btn-cancel {
-        background: #f0f0f0;
-        color: #555;
-        padding: 12px 24px;
-        border-radius: 10px;
-        text-decoration: none;
-        font-size: 0.9em;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .admin-info {
-        background: #f8f4ff;
-        border: 1px solid rgba(139, 92, 246, 0.2);
-        border-radius: 12px;
-        padding: 14px 18px;
-        margin-bottom: 16px;
-        font-size: 0.87em;
-      }
-      .admin-info strong {
-        color: #7c3aed;
-      }
 
-      /* ===== GLOBAL ===== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+{% block title %}Super Admin — Edit {{ hospital.name }}{% endblock %}
+{% block page_title %}✏️ Edit Hospital Profile{% endblock %}
+{% block page_subtitle %}Update clinic contact details, subscription status, and platform access settings{% endblock %}
 
-body {
-  font-family: "Segoe UI", sans-serif;
-  background: #f0f2f5;
-  display: flex;
-}
+{% block topbar_actions %}
+<a href="{% url 'super_admin_hospitals' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+  <i class="fas fa-arrow-left"></i> <span>Back to Registry</span>
+</a>
+{% endblock %}
 
-/* ===== SIDEBAR ===== */
-.sidebar {
-  width: 260px;
-  min-height: 100vh;
-  background: linear-gradient(180deg, #0f0f1a, #1a1a2e);
-  position: fixed;
-  top: 0;
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  transition: transform 0.3s ease;
-}
-
-/* collapsed state */
-.sidebar.collapsed {
-  transform: translateX(-100%);
-}
-
-/* ===== MAIN ===== */
-.main {
-  margin-left: 260px;
-  min-height: 100vh;
-  width: calc(100% - 260px);
-  transition: all 0.3s ease;
-}
-
-/* full width when sidebar hidden */
-.main.expanded {
-  margin-left: 0;
-  width: 100%;
-}
-
-/* ===== TOPBAR ===== */
-.topbar {
-  background: #fff;
-  padding: 18px 30px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-}
-
-/* hamburger button */
-.menu-toggle {
-  display: none;
-  font-size: 22px;
-  cursor: pointer;
-  background: none;
-  border: none;
-}
-
-/* ===== GRID ===== */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 992px) {
-  .menu-toggle {
-    display: block;
-  }
-
-  .sidebar {
-    transform: translateX(-100%);
-  }
-
-  .sidebar.active {
-    transform: translateX(0);
-  }
-
-  .main {
-    margin-left: 0;
-    width: 100%;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ===== OVERLAY (mobile background blur) ===== */
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.4);
-  display: none;
-  z-index: 90;
-}
-
-.overlay.show {
-  display: block;
-}
-
-/* ===== BUTTONS & ACCESSIBILITY ===== */
-button, a {
-  transition: all 0.2s ease;
-}
-
-button:focus, input:focus, select:focus {
-  outline: 3px solid rgba(139, 92, 246, 0.3);
-}
-    </style>
-  </head>
-  <body>
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <div class="brand">👑 SUPER ADMIN</div>
-        <div class="sub">Platform Control Panel</div>
+{% block content %}
+<form method="POST">
+  {% csrf_token %}
+  <div class="sa-form-grid" style="margin-bottom: 24px;">
+    <!-- Column 1: Hospital Details -->
+    <div class="sa-card" style="margin-bottom: 0;">
+      <div class="sa-card-header">
+        <div class="sa-card-title">
+          <i class="fas fa-hospital" style="color: var(--sa-purple);"></i>
+          <span>Hospital Profile</span>
+        </div>
       </div>
-      <div class="sidebar-badge">Platform Administrator</div>
-      <nav>
-        <div class="nav-section">Platform</div>
-        <a href="{% url 'super_admin_dashboard' %}" class="nav-item"
-          ><i class="fas fa-tachometer-alt"></i> Dashboard</a
-        >
-        <a href="{% url 'super_admin_hospitals' %}" class="nav-item active"
-          ><i class="fas fa-hospital"></i> Hospitals</a
-        >
-        <a href="{% url 'super_admin_subscriptions' %}" class="nav-item"
-          ><i class="fas fa-credit-card"></i> Subscriptions</a
-        >
-        <div class="nav-section">Reports</div>
-        <a href="{% url 'super_admin_analytics' %}" class="nav-item"
-          ><i class="fas fa-chart-bar"></i> Analytics</a
-        >
-        <div class="nav-section">Support</div>
-        <a href="{% url 'super_admin_support' %}" class="nav-item"
-          ><i class="fas fa-headset"></i> Support Tickets</a
-        >
-      </nav>
-      <a href="{% url 'logout' %}" class="logout-btn"
-        ><i class="fas fa-sign-out-alt"></i> Logout</a
-      >
-    </aside>
+      <div class="sa-card-body">
+        <div class="sa-form-group">
+          <label class="sa-label">Hospital / Clinic Name <span class="req">*</span></label>
+          <input type="text" name="name" class="sa-input" value="{{ hospital.name }}" required />
+        </div>
 
-    <div class="main">
-      <div class="topbar">
-        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+        <div class="sa-form-group">
+          <label class="sa-label">City / Region</label>
+          <input type="text" name="city" class="sa-input" value="{{ hospital.city|default:'' }}" />
+        </div>
 
-        <h1>✏️ Edit — {{ hospital.name }}</h1>
-        <div class="topbar-user">👑 {{ user.username }}</div>
-      </div>
-      <div class="body">
-        {% for m in messages %}
-          {% if m.tags == 'success' %}
-            <div class="alert-success">{{ m }}</div>
-          {% else %}
-            <div class="alert-error">{{ m }}</div>
-          {% endif %}
-        {% endfor %}
+        <div class="sa-form-group">
+          <label class="sa-label">Official Phone</label>
+          <input type="text" name="phone" class="sa-input" value="{{ hospital.phone|default:'' }}" />
+        </div>
 
-        <form method="post">
-          {% csrf_token %}
-          <div class="form-grid">
+        <div class="sa-form-group">
+          <label class="sa-label">Official Email</label>
+          <input type="email" name="email" class="sa-input" value="{{ hospital.email|default:'' }}" />
+        </div>
 
-            <!-- Hospital Details Card -->
-            <div class="card">
-              <div class="section-title">
-                <i class="fas fa-hospital"></i> Hospital Details
-              </div>
+        <div class="sa-form-group">
+          <label class="sa-label">Physical Address</label>
+          <textarea name="address" rows="3" class="sa-textarea">{{ hospital.address|default:'' }}</textarea>
+        </div>
 
-              {% if hospital.admins.all %}
-              <div class="admin-info">
-                <strong>Admin accounts:</strong>
-                {% for ca in hospital.admins.all %}
-                  {{ ca.user.username }}{% if not forloop.last %},{% endif %}
-                {% endfor %}
-              </div>
-              {% endif %}
-
-              <div class="form-group">
-                <label>Hospital Name</label>
-                <input type="text" name="name" value="{{ hospital.name }}" required />
-              </div>
-              <div class="form-group">
-                <label>City</label>
-                <input type="text" name="city" value="{{ hospital.city }}" />
-              </div>
-              <div class="form-group">
-                <label>Address</label>
-                <textarea name="address" rows="2">{{ hospital.address }}</textarea>
-              </div>
-              <div class="form-group">
-                <label>Phone</label>
-                <input type="text" name="phone" value="{{ hospital.phone }}" />
-              </div>
-              <div class="form-group">
-                <label>Email</label>
-                <input type="email" name="email" value="{{ hospital.email }}" />
-              </div>
-              <div class="form-group">
-                <label>Active Status</label>
-                <div class="toggle-row">
-                  <input
-                    type="checkbox"
-                    name="is_active"
-                    id="is_active"
-                    {% if hospital.is_active %}checked{% endif %}
-                  />
-                  <label for="is_active" style="text-transform: none; letter-spacing: 0">
-                    Hospital is active and can be accessed by its admin
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <!-- Subscription Card -->
-            <div class="card">
-              <div class="section-title">
-                <i class="fas fa-credit-card"></i> Subscription
-              </div>
-
-              <div class="form-group">
-                <label>Plan</label>
-                <select name="plan">
-                  <option value="">— No Plan / Trial —</option>
-                  {% for p in plans %}
-                  <option
-                    value="{{ p.id }}"
-                    {% if subscription and subscription.plan and subscription.plan.id == p.id %}selected{% endif %}
-                  >
-                    {{ p.get_name_display }} (₹{{ p.price_monthly }}/mo)
-                  </option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Subscription Status</label>
-                <select name="sub_status">
-                  <option value="trial"
-                    {% if subscription and subscription.status == "trial" %}selected{% endif %}>
-                    Trial
-                  </option>
-                  <option value="active"
-                    {% if subscription and subscription.status == "active" %}selected{% endif %}>
-                    Active
-                  </option>
-                  <option value="expired"
-                    {% if subscription and subscription.status == "expired" %}selected{% endif %}>
-                    Expired
-                  </option>
-                  <option value="cancelled"
-                    {% if subscription and subscription.status == "cancelled" %}selected{% endif %}>
-                    Cancelled
-                  </option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Expiry Date</label>
-                <input
-                  type="date"
-                  name="expires_at"
-                  value="{% if subscription and subscription.expires_at %}{{ subscription.expires_at|date:'Y-m-d' }}{% endif %}"
-                />
-              </div>
-            </div>
-
-          </div><!-- /.form-grid -->
-
-          <div class="btn-row">
-            <button type="submit" class="btn-primary">
-              <i class="fas fa-save"></i> Save Changes
-            </button>
-            <a href="{% url 'super_admin_hospitals' %}" class="btn-cancel">
-              <i class="fas fa-times"></i> Cancel
-            </a>
-          </div>
-        </form>
+        <div class="sa-form-group" style="margin-bottom: 0;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; color: var(--sa-dark);">
+            <input type="checkbox" name="is_active" {% if hospital.is_active %}checked{% endif %} style="width: 18px; height: 18px; accent-color: var(--sa-purple);" />
+            <span>Active &amp; Operational on Platform</span>
+          </label>
+          <div class="sa-help-text" style="margin-left: 28px;">If unchecked, staff and clinic admins will be temporarily blocked from signing in.</div>
+        </div>
       </div>
     </div>
-    <div class="overlay" onclick="toggleSidebar()"></div>
-    <script>
-function toggleSidebar() {
-  const sidebar = document.querySelector(".sidebar");
-  const overlay = document.querySelector(".overlay");
-  const main = document.querySelector(".main");
 
-  sidebar.classList.toggle("active");
-  overlay.classList.toggle("show");
+    <!-- Column 2: Subscription & Billing Tier -->
+    <div class="sa-card" style="margin-bottom: 0;">
+      <div class="sa-card-header">
+        <div class="sa-card-title">
+          <i class="fas fa-file-invoice-dollar" style="color: var(--sa-purple);"></i>
+          <span>Subscription Management</span>
+        </div>
+        {% if subscription and subscription.plan %}
+        <span class="sa-badge sa-badge-active">
+          {{ subscription.plan.get_name_display }}
+        </span>
+        {% else %}
+        <span class="sa-badge sa-badge-trial">Trial Tier</span>
+        {% endif %}
+      </div>
+      <div class="sa-card-body">
+        <div class="sa-form-group">
+          <label class="sa-label">Selected Plan</label>
+          <select name="plan" class="sa-select">
+            <option value="">— No Plan / Free Trial —</option>
+            {% for p in plans %}
+            <option value="{{ p.id }}" {% if subscription and subscription.plan_id == p.id %}selected{% endif %}>
+              {{ p.get_name_display }} (₹{{ p.price_monthly }}/month)
+            </option>
+            {% endfor %}
+          </select>
+        </div>
 
-  // optional full-width main adjustment
-  main.classList.toggle("expanded");
-}
-</script>
-  </body>
-</html>
+        <div class="sa-form-group">
+          <label class="sa-label">Subscription Status</label>
+          <select name="sub_status" class="sa-select">
+            <option value="trial" {% if subscription and subscription.status == 'trial' %}selected{% endif %}>Trial</option>
+            <option value="active" {% if subscription and subscription.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="expired" {% if subscription and subscription.status == 'expired' %}selected{% endif %}>Expired</option>
+            <option value="cancelled" {% if subscription and subscription.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+          </select>
+        </div>
+
+        <div class="sa-form-group">
+          <label class="sa-label">Plan Expiry Date</label>
+          <input type="date" name="expires_at" class="sa-input" value="{{ subscription.expires_at|date:'Y-m-d'|default:'' }}" />
+          <div class="sa-help-text">Leave blank for indefinite / ongoing trial periods.</div>
+        </div>
+
+        <!-- Clinic Admins List for Reference -->
+        <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--sa-border);">
+          <div style="font-weight: 700; color: var(--sa-dark); font-size: 0.88rem; margin-bottom: 8px;">
+            <i class="fas fa-users-cog"></i> Associated Clinic Admins
+          </div>
+          {% for ca in hospital.admins.all %}
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: var(--sa-radius-sm); margin-bottom: 6px; font-size: 0.84rem;">
+            <div>
+              <strong>{{ ca.user.get_full_name|default:ca.user.username }}</strong>
+              <span style="color: var(--sa-text-muted);">(@{{ ca.user.username }})</span>
+            </div>
+            <span style="color: var(--sa-text-muted); font-size: 0.78rem;">{{ ca.user.email }}</span>
+          </div>
+          {% empty %}
+          <p style="font-size: 0.82rem; color: var(--sa-text-muted); margin: 0;">No clinic administrator accounts linked.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="sa-card" style="margin-bottom: 0;">
+    <div class="sa-card-body" style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 18px 24px; flex-wrap: wrap;">
+      <a href="{% url 'super_admin_hospitals' %}" class="sa-btn sa-btn-secondary">
+        <i class="fas fa-times"></i> Cancel
+      </a>
+      <button type="submit" class="sa-btn sa-btn-primary">
+        <i class="fas fa-save"></i> Save Hospital Changes
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Blog Posts Management{% endblock %}
+{% block page_title %}Clinic Blog &amp; Articles{% endblock %}
+{% block page_subtitle %}Publish Educational Articles, Patient Recovery Guides &amp; Health Insights{% endblock %}
+
+{% block content %}
+<!-- ════ HEADER ════ -->
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon" style="background: rgba(253, 126, 20, 0.15); color: #fd7e14;">
+      <i class="fas fa-blog"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>Blog Content Management</h2>
+      <p>Manage health and physiotherapy articles published on the public clinic website.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'admin_blog_add' %}" class="topbar-action-link btn-topbar-primary">
+      <i class="fas fa-plus-circle"></i> Create New Article
+    </a>
+    <a href="{% url 'blog_list' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);" target="_blank">
+      <i class="fas fa-external-link-alt"></i> View Public Blog
+    </a>
+  </div>
+</div>
+
+<!-- ════ BLOG STATS ════ -->
+<div class="admin-stats-grid">
+  <div class="admin-stat-card">
+    <div class="stat-icon-wrap" style="background: rgba(253, 126, 20, 0.15); color: #fd7e14;">
+      <i class="fas fa-newspaper"></i>
+    </div>
+    <div class="stat-info">
+      <div class="stat-val">{{ blogs|length }}</div>
+      <div class="stat-lbl">Published Articles</div>
+    </div>
+  </div>
+
+  <div class="admin-stat-card">
+    <div class="stat-icon-wrap" style="background: rgba(40, 167, 69, 0.15); color: #28a745;">
+      <i class="fas fa-globe"></i>
+    </div>
+    <div class="stat-info">
+      <div class="stat-val">Live</div>
+      <div class="stat-lbl">Public Visibility</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ BLOG POSTS GRID & SEARCH ════ -->
+<div class="admin-card">
+  <div class="admin-toolbar">
+    <div class="admin-search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" id="blogSearchInput" placeholder="Search blog articles by title, category, or content..." onkeyup="filterBlogPosts()" />
+    </div>
+  </div>
+
+  {% if blogs %}
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;" id="blogsGrid">
+    {% for blog in blogs %}
+    <div class="blog-post-card" style="background: #ffffff; border: 1px solid var(--admin-border); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.03); transition: all 0.2s;">
+      
+      <div>
+        <!-- Featured Image -->
+        {% if blog.image %}
+        <img src="{{ blog.image.url }}" alt="{{ blog.title }}" style="width: 100%; height: 180px; object-fit: cover; border-bottom: 1px solid var(--admin-border);" />
+        {% else %}
+        <div style="width: 100%; height: 120px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #adb5bd; border-bottom: 1px solid var(--admin-border);">
+          <i class="fas fa-image" style="font-size: 2rem;"></i>
+        </div>
+        {% endif %}
+
+        <div style="padding: 18px;">
+          <!-- Category & Date -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="badge-status badge-info" style="font-size: 0.72rem;">{{ blog.category|default:"General Health" }}</span>
+            <span style="font-size: 0.75rem; color: var(--admin-text-sub);"><i class="far fa-calendar-alt"></i> {{ blog.created_at|date:"d M Y" }}</span>
+          </div>
+
+          <!-- Title -->
+          <h3 style="font-size: 1.08rem; font-weight: 700; color: var(--admin-dark); margin: 0 0 8px 0; line-height: 1.35;">
+            {{ blog.title }}
+          </h3>
+
+          <!-- Excerpt -->
+          <p style="font-size: 0.84rem; color: var(--admin-text-sub); line-height: 1.5; margin: 0 0 14px 0;">
+            {{ blog.excerpt|default:blog.content|truncatechars:110 }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="padding: 12px 18px; background: #fafbfc; border-top: 1px solid var(--admin-border); display: flex; gap: 8px;">
+        <a href="{% url 'admin_blog_edit' blog.id %}" class="topbar-action-link" style="flex: 1; justify-content: center; background: rgba(245, 197, 24, 0.15); color: #997400; font-size: 0.82rem; padding: 7px;">
+          <i class="fas fa-edit"></i> Edit
+        </a>
+        <a href="{% url 'admin_blog_delete' blog.id %}" class="topbar-action-link" style="flex: 1; justify-content: center; background: rgba(220, 53, 69, 0.12); color: #dc3545; font-size: 0.82rem; padding: 7px;">
+          <i class="fas fa-trash"></i> Delete
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="admin-empty-state">
+    <div class="empty-icon"><i class="fas fa-newspaper"></i></div>
+    <h4>No Blog Articles Published</h4>
+    <p>Share patient recovery tips, rehabilitation guidance, and wellness articles with clinic visitors.</p>
+    <a href="{% url 'admin_blog_add' %}" class="topbar-action-link btn-topbar-primary">Write First Article</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterBlogPosts() {
+  const query = document.getElementById('blogSearchInput').value.toLowerCase();
+  const cards = document.querySelectorAll('#blogsGrid .blog-post-card');
+
+  cards.forEach(card => {
+    const text = card.innerText.toLowerCase();
+    card.style.display = text.includes(query) ? 'flex' : 'none';
+  });
+}
+</script>
+{% endblock %}

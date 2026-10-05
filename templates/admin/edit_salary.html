@@ -1,0 +1,107 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Edit Salary Record{% endblock %}
+{% block page_title %}Edit Salary Disbursement{% endblock %}
+{% block page_subtitle %}Update Payroll Entry for {{ record.staff.get_full_name|default:record.staff.username }}{% endblock %}
+
+{% block content %}
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon">
+      <i class="fas fa-edit"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>Edit Salary Slip: {{ record.staff.get_full_name|default:record.staff.username }}</h2>
+      <p>Modify basic pay, month, year, bonuses, and applicable deductions.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'admin_salary' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+      <i class="fas fa-arrow-left"></i> Back to Salary Management
+    </a>
+  </div>
+</div>
+
+<div class="admin-card" style="max-width: 700px; margin: 0 auto;">
+  <div class="admin-card-header">
+    <h3><i class="fas fa-file-invoice-dollar text-primary"></i> Salary Details</h3>
+    <span class="badge-status badge-info">{{ record.month }} {{ record.year }}</span>
+  </div>
+
+  <form method="POST" style="display: flex; flex-direction: column; gap: 16px;">
+    {% csrf_token %}
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+      <!-- Month -->
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Month <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <select name="month" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.88rem; background: #fff;">
+          {% for m in "January,February,March,April,May,June,July,August,September,October,November,December"|make_list %}
+          {% endfor %}
+          <option value="January" {% if record.month == "January" %}selected{% endif %}>January</option>
+          <option value="February" {% if record.month == "February" %}selected{% endif %}>February</option>
+          <option value="March" {% if record.month == "March" %}selected{% endif %}>March</option>
+          <option value="April" {% if record.month == "April" %}selected{% endif %}>April</option>
+          <option value="May" {% if record.month == "May" %}selected{% endif %}>May</option>
+          <option value="June" {% if record.month == "June" %}selected{% endif %}>June</option>
+          <option value="July" {% if record.month == "July" %}selected{% endif %}>July</option>
+          <option value="August" {% if record.month == "August" %}selected{% endif %}>August</option>
+          <option value="September" {% if record.month == "September" %}selected{% endif %}>September</option>
+          <option value="October" {% if record.month == "October" %}selected{% endif %}>October</option>
+          <option value="November" {% if record.month == "November" %}selected{% endif %}>November</option>
+          <option value="December" {% if record.month == "December" %}selected{% endif %}>December</option>
+        </select>
+      </div>
+
+      <!-- Year -->
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Year <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <input type="number" name="year" value="{{ record.year }}" required
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.88rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <!-- Basic Salary -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Basic Salary (₹) <span style="color: var(--admin-danger);">*</span>
+      </label>
+      <input type="number" step="0.01" name="basic_salary" value="{{ record.basic_salary }}" required
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.88rem; box-sizing: border-box;" />
+    </div>
+
+    <!-- Bonus & Deductions -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Bonus (₹)
+        </label>
+        <input type="number" step="0.01" name="bonus" value="{{ record.bonus }}"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.88rem; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Deductions (₹)
+        </label>
+        <input type="number" step="0.01" name="deduction" value="{{ record.deduction }}"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.88rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+      <a href="{% url 'admin_salary' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+        Cancel
+      </a>
+      <button type="submit" class="topbar-action-link btn-topbar-primary" style="cursor: pointer; border: none; font-size: 0.9rem;">
+        <i class="fas fa-save"></i> Update Record
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -230,7 +230,8 @@
 
       .btn-save,
       .btn-back {
-        width: 100%;
+        width: max-content;
+        max-width: 100%;
         text-align: center;
       }
 
@@ -678,11 +679,9 @@
 
       .btn-save,
       .btn-back {
-
-        width: 100%;
-
+        width: max-content;
+        max-width: 100%;
         text-align: center;
-
       }
 
     }
@@ -723,6 +722,7 @@
 
     }
   </style>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 
 <body>
@@ -897,30 +897,8 @@
       </div>
     </div>
   </div>
-  <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
-
-  <script>
-    function toggleSidebar() {
-
-      const sidebar = document.querySelector(".sidebar");
-      const overlay = document.querySelector(".sidebar-overlay");
-
-      sidebar.classList.toggle("show");
-      overlay.classList.toggle("show");
-
-    }
-
-    window.addEventListener("resize", function () {
-
-      if (window.innerWidth > 992) {
-
-        document.querySelector(".sidebar").classList.remove("show");
-        document.querySelector(".sidebar-overlay").classList.remove("show");
-
-      }
-
-    });
-  </script>
+  <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+  <script src="{% static 'js/layout.js' %}"></script>
 </body>
 
 </html>

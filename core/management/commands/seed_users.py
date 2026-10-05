@@ -23,44 +23,44 @@ from core.models import (
 
 USERS = [
     {
-        "username":     "super_admin2",
-        "password":     "0X1-UwAGXiSM03nRbdc4bW_6",
+        "username":     "super_admin_core",
+        "password":     "x0KX#KbokqhqY2JyI8Edr4UR",
         "first_name":   "Super",
         "last_name":    "Admin",
-        "email":        "super_admin2@physiorehab.com",
+        "email":        "super_admin@physiorehab.com",
         "is_superuser": True,
         "is_staff":     True,
         "role_code":    "platform_admin",
         "use_hospital": False,
     },
     {
-        "username":     "clinic_admin2",
-        "password":     "zyYFK1W!dblCfW0!968bOnjP",
+        "username":     "clinic_admin_main",
+        "password":     "f71jQiKG%*hBAeT6DN3tE7XH",
         "first_name":   "Clinic",
         "last_name":    "Admin",
-        "email":        "clinic_admin2@physiorehab.com",
+        "email":        "clinic_admin@physiorehab.com",
         "is_superuser": False,
         "is_staff":     True,
         "role_code":    "clinic_admin",
         "use_hospital": True,
     },
     {
-        "username":     "physio_staff2",
-        "password":     "Leh2!6TdeYh5%IbrMWUUZeUM",
+        "username":     "physio_staff_pro",
+        "password":     "U#NQSzxIvg5axhMHu1u!7V$S",
         "first_name":   "Physio",
         "last_name":    "Staff",
-        "email":        "physio_staff2@physiorehab.com",
+        "email":        "physio_staff@physiorehab.com",
         "is_superuser": False,
         "is_staff":     False,
         "role_code":    "staff",
         "use_hospital": True,
     },
     {
-        "username":     "patient_account2",
-        "password":     "cT4g6mlXwf5DY66NVKysZvJ_",
+        "username":     "patient_user_primary",
+        "password":     "AzzjrOB5eUuugbt$8U8fOHPx",
         "first_name":   "Patient",
         "last_name":    "Account",
-        "email":        "patient_account2@physiorehab.com",
+        "email":        "patient_user@physiorehab.com",
         "is_superuser": False,
         "is_staff":     False,
         "role_code":    "patient",
@@ -160,7 +160,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("\nAll users seeded successfully!"))
         self.stdout.write("-" * 55)
         self.stdout.write(f"  Hospital         : {hospital.name}")
-        self.stdout.write(f"  super_admin2     -> Platform Admin  (superuser=True)")
-        self.stdout.write(f"  clinic_admin2    -> Clinic Admin")
-        self.stdout.write(f"  physio_staff2    -> Staff (Physiotherapist)")
-        self.stdout.write(f"  patient_account2 -> Patient")
+        self.stdout.write(f"  super_admin_core     -> Platform Admin  (superuser=True)")
+        self.stdout.write(f"  clinic_admin_main    -> Clinic Admin")
+        self.stdout.write(f"  physio_staff_pro     -> Staff (Physiotherapist)")
+        self.stdout.write(f"  patient_user_primary -> Patient")
+

@@ -1,0 +1,122 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}{% if blog %}Edit Article: {{ blog.title }}{% else %}Create New Blog Article{% endif %}{% endblock %}
+{% block page_title %}{% if blog %}Edit Blog Article{% else %}New Blog Post{% endif %}{% endblock %}
+{% block page_subtitle %}Compose Educational Health Articles &amp; Physiotherapy Recovery Guides{% endblock %}
+
+{% block content %}
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon" style="background: rgba(253, 126, 20, 0.15); color: #fd7e14;">
+      <i class="fas fa-edit"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>{% if blog %}Edit Article: {{ blog.title }}{% else %}Write New Blog Article{% endif %}</h2>
+      <p>Configure article title, category, featured thumbnail image, and content.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'admin_blog_list' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+      <i class="fas fa-arrow-left"></i> Back to Blog List
+    </a>
+  </div>
+</div>
+
+<div class="admin-card" style="max-width: 850px; margin: 0 auto;">
+  <div class="admin-card-header">
+    <h3><i class="fas fa-pen-fancy text-primary"></i> Article Editor</h3>
+    <span class="badge-status badge-info">{% if blog %}Editing Existing{% else %}New Post{% endif %}</span>
+  </div>
+
+  <form method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 18px;">
+    {% csrf_token %}
+
+    <!-- Title & Category -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Article Title <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <input type="text" name="title" value="{{ blog.title|default:'' }}" placeholder="e.g. 5 Essential Exercises for Sciatica & Lower Back Pain Relief" required
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Category <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <select name="category" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          {% if categories %}
+            {% for cat_val, cat_label in categories %}
+            <option value="{{ cat_val }}" {% if blog.category == cat_val %}selected{% endif %}>{{ cat_label }}</option>
+            {% endfor %}
+          {% else %}
+            <option value="General" {% if blog.category == "General" %}selected{% endif %}>General</option>
+            <option value="Physiotherapy" {% if blog.category == "Physiotherapy" %}selected{% endif %}>Physiotherapy</option>
+            <option value="Spine Health" {% if blog.category == "Spine Health" %}selected{% endif %}>Spine Health</option>
+            <option value="Sports Injuries" {% if blog.category == "Sports Injuries" %}selected{% endif %}>Sports Injuries</option>
+            <option value="Post-Surgery" {% if blog.category == "Post-Surgery" %}selected{% endif %}>Post-Surgery</option>
+          {% endif %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Excerpt / Summary -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Short Summary / Excerpt
+      </label>
+      <input type="text" name="excerpt" value="{{ blog.excerpt|default:'' }}" placeholder="Brief preview sentence displayed on article cards..."
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+    </div>
+
+    <!-- Main Content -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Article Content <span style="color: var(--admin-danger);">*</span>
+      </label>
+      <textarea name="content" rows="10" placeholder="Write the full article body with treatment insights, recovery routines, and advice..." required
+        style="width: 100%; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; line-height: 1.6; box-sizing: border-box;">{{ blog.content|default:'' }}</textarea>
+    </div>
+
+    <!-- Images Upload -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; background: #f8f9fa; padding: 16px; border-radius: 10px; border: 1px solid var(--admin-border);">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.82rem; color: var(--admin-dark); margin-bottom: 6px;">
+          <i class="fas fa-image"></i> Featured Header Image
+        </label>
+        <input type="file" name="image" accept="image/*" style="font-size: 0.82rem;" />
+        {% if blog.image %}
+        <div style="margin-top: 6px; font-size: 0.75rem; color: var(--admin-text-sub);">
+          Current: <a href="{{ blog.image.url }}" target="_blank" style="text-decoration: underline;">View File</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.82rem; color: var(--admin-dark); margin-bottom: 6px;">
+          <i class="fas fa-history"></i> Before Image (Optional)
+        </label>
+        <input type="file" name="before_image" accept="image/*" style="font-size: 0.82rem;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.82rem; color: var(--admin-dark); margin-bottom: 6px;">
+          <i class="fas fa-check"></i> After Image (Optional)
+        </label>
+        <input type="file" name="after_image" accept="image/*" style="font-size: 0.82rem;" />
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+      <a href="{% url 'admin_blog_list' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+        Cancel
+      </a>
+      <button type="submit" class="topbar-action-link btn-topbar-primary" style="cursor: pointer; border: none; font-size: 0.9rem;">
+        <i class="fas fa-save"></i> Save &amp; Publish Article
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

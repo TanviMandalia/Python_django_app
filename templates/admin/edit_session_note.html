@@ -1,0 +1,102 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Edit Session Note{% endblock %}
+{% block page_title %}Edit Consultation Note{% endblock %}
+{% block page_subtitle %}Update Patient Diagnosis, Treatment Protocols &amp; Next Session Plans{% endblock %}
+
+{% block content %}
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon">
+      <i class="fas fa-edit"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>Edit Session Note: {{ note.patient.get_full_name|default:note.patient.username }}</h2>
+      <p>Modify session details logged on {{ note.date|date:"d M Y"|default:note.date }}.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'admin_session_notes' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+      <i class="fas fa-arrow-left"></i> Back to Session Notes
+    </a>
+  </div>
+</div>
+
+<div class="admin-card" style="max-width: 800px; margin: 0 auto;">
+  <div class="admin-card-header">
+    <h3><i class="fas fa-notes-medical text-primary"></i> Consultation Note Information</h3>
+    <span class="badge-status badge-info">{{ note.date|date:"d M Y"|default:note.date }}</span>
+  </div>
+
+  <form method="POST" style="display: flex; flex-direction: column; gap: 18px;">
+    {% csrf_token %}
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+      <!-- Doctor / Staff Selection -->
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Attending Doctor / Staff <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <select name="staff_id" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          {% for s in staff_list %}
+          <option value="{{ s.user.id }}" {% if note.staff.id == s.user.id %}selected{% endif %}>
+            {{ s.user.get_full_name|default:s.user.username }} ({{ s.get_role_display|default:"Staff" }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Patient Selection -->
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Patient <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <select name="patient_id" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          {% for p in patients %}
+          <option value="{{ p.id }}" {% if note.patient.id == p.id %}selected{% endif %}>
+            {{ p.get_full_name|default:p.username }} ({{ p.email }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Diagnosis -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Clinical Diagnosis / Condition <span style="color: var(--admin-danger);">*</span>
+      </label>
+      <input type="text" name="diagnosis" value="{{ note.diagnosis }}" required
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+    </div>
+
+    <!-- Treatment / Clinical Notes -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Treatment Administered &amp; Observations <span style="color: var(--admin-danger);">*</span>
+      </label>
+      <textarea name="treatment" rows="5" required
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;">{{ note.treatment }}</textarea>
+    </div>
+
+    <!-- Next Session Schedule -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Next Recommended Session / Follow-up Plan
+      </label>
+      <input type="text" name="next_session" value="{{ note.next_session|default:'' }}"
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+      <a href="{% url 'admin_session_notes' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+        Cancel
+      </a>
+      <button type="submit" class="topbar-action-link btn-topbar-primary" style="cursor: pointer; border: none; font-size: 0.9rem;">
+        <i class="fas fa-save"></i> Update Session Note
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

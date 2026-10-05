@@ -1,0 +1,112 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Edit Task{% endblock %}
+{% block page_title %}Edit Task Assignment{% endblock %}
+{% block page_subtitle %}Update Task Details, Status, Assignee, Priority &amp; Due Date{% endblock %}
+
+{% block content %}
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon">
+      <i class="fas fa-edit"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>Edit Task: {{ task.title }}</h2>
+      <p>Modify task specifications, reassign to another staff member, or update status.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'admin_tasks' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+      <i class="fas fa-arrow-left"></i> Back to Tasks
+    </a>
+  </div>
+</div>
+
+<div class="admin-card" style="max-width: 750px; margin: 0 auto;">
+  <div class="admin-card-header">
+    <h3><i class="fas fa-tasks text-primary"></i> Task Configuration</h3>
+    <span class="badge-status {% if task.status == 'completed' %}badge-success{% elif task.status == 'in_progress' %}badge-info{% else %}badge-pending{% endif %}">
+      {{ task.get_status_display }}
+    </span>
+  </div>
+
+  <form method="POST" style="display: flex; flex-direction: column; gap: 18px;">
+    {% csrf_token %}
+
+    <!-- Reassign to Staff -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Assignee (Staff Member)
+      </label>
+      <select name="staff_id" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+        {% for staff in staff_list %}
+        <option value="{{ staff.user.id }}" {% if task.assigned_to.id == staff.user.id %}selected{% endif %}>
+          {{ staff.user.get_full_name|default:staff.user.username }} ({{ staff.get_role_display|default:"Staff" }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Task Title -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Task Title <span style="color: var(--admin-danger);">*</span>
+      </label>
+      <input type="text" name="title" value="{{ task.title }}" required
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+    </div>
+
+    <!-- Description -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Description &amp; Instructions
+      </label>
+      <textarea name="description" rows="4"
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;">{{ task.description }}</textarea>
+    </div>
+
+    <!-- Priority, Status, Due Date -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Priority Level
+        </label>
+        <select name="priority" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          <option value="low" {% if task.priority == "low" %}selected{% endif %}>Low Priority</option>
+          <option value="medium" {% if task.priority == "medium" %}selected{% endif %}>Medium Priority</option>
+          <option value="high" {% if task.priority == "high" %}selected{% endif %}>High Priority</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Status
+        </label>
+        <select name="status" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          <option value="pending" {% if task.status == "pending" %}selected{% endif %}>Pending</option>
+          <option value="in_progress" {% if task.status == "in_progress" %}selected{% endif %}>In Progress</option>
+          <option value="completed" {% if task.status == "completed" %}selected{% endif %}>Completed</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Due Date
+        </label>
+        <input type="date" name="due_date" value="{{ task.due_date|date:'Y-m-d'|default:'' }}"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+      <a href="{% url 'admin_tasks' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+        Cancel
+      </a>
+      <button type="submit" class="topbar-action-link btn-topbar-primary" style="cursor: pointer; border: none; font-size: 0.9rem;">
+        <i class="fas fa-save"></i> Save Changes
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
