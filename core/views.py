@@ -2989,7 +2989,9 @@ def add_session_note(request):
         return redirect("client_dashboard")
     if request.method == "POST":
         patient = get_object_or_404(User, id=request.POST.get("patient_id"))
+        hospital = resolve_hospital(request.user)
         SessionNote.objects.create(
+            hospital=hospital,
             staff=request.user,
             patient=patient,
             diagnosis=request.POST.get("diagnosis", ""),
@@ -3811,6 +3813,7 @@ def admin_add_session_note(request):
         staff = get_object_or_404(User, id=request.POST.get("staff_id"))
         patient = get_object_or_404(User, id=request.POST.get("patient_id"))
         SessionNote.objects.create(
+            hospital=hospital,
             staff=staff,
             patient=patient,
             diagnosis=request.POST.get("diagnosis", ""),

@@ -3,7 +3,7 @@
 [![Django](https://img.shields.io/badge/Django-6.0-092E20?logo=django)](https://www.djangoproject.com/)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)](https://www.python.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.6-336791?logo=postgresql)](https://www.postgresql.org/)
-[![Test Suite](https://img.shields.io/badge/Tests-242%20Passed-brightgreen)](tests/)
+[![Test Suite](https://img.shields.io/badge/Tests-261%20Passed-brightgreen)](tests/)
 
 A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tailored for physiotherapy and specialty healthcare centers. The system provides complete clinic operations including multi-role portals, doctor scheduling, patient clinical records, staff attendance and payroll, internal payment logs, multi-account SMTP email governance, and a centralized Super Admin SaaS subscription & feature entitlement engine.
 
@@ -314,6 +314,8 @@ python -c "import py_compile, pathlib; [py_compile.compile(str(p), doraise=True)
 
 ### 9.4 Internal Documentation Location
 All detailed internal technical audits, migration manifesto, QA validation plans, and subscription guides are securely cataloged inside the `md/` directory:
+- `md/DATABASE_AUDIT_REPORT.md` — Complete PostgreSQL 18.6 & pgAdmin 4 connection, schema, and integrity audit
+- `md/CRUD_AUDIT_REPORT.md` — 26-entity CRUD matrix, multi-tenant RBAC verification, and defect remediation report
 - `md/FINAL_PRODUCTION_AUDIT_REPORT.md` — Final deployment verification and evidence report
 - `md/FINAL_PROJECT_AUDIT_CHECKLIST.md` — Complete master audit checklist
 - `md/SUBSCRIPTION_ARCHITECTURE.md` — SaaS subscription model and entitlement logic
