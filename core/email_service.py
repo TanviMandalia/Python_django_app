@@ -340,10 +340,19 @@ def test_account_connection(account: EmailAccount, test_recipient: str, force_sm
         return False, f"❌ SMTP Authentication Failed (Code {code}): {err_str}"
     except smtplib.SMTPServerDisconnected as disc_err:
         logger.warning(f"SMTP Server disconnected for {account.host}:{account.port}: {disc_err}")
+        if "gmail" in account.host.lower() or getattr(account, "provider", "") == "gmail":
+            return False, (
+                f"❌ SMTP Server Disconnected (Gmail Authentication Rejected): The server at "
+                f"{account.host}:{account.port} accepted the connection and TLS handshake, but closed "
+                "the socket during authentication. Google SMTP immediately severs the connection when "
+                "presented with an invalid, expired, or revoked 16-character Google App Password. "
+                "Action needed: Click 'Edit' on this account, paste your newly generated 16-character "
+                "Google App Password into the Password field, click 'Save Account', and then test again."
+            )
         return False, (
-            f"❌ SMTP Server Disconnected: The server at {account.host}:{account.port} unexpectedly closed the connection. "
-            "Common causes: invalid/revoked Google App Password, port/encryption mode mismatch (Port 587 STARTTLS vs Port 465 SSL), "
-            "or security restrictions on the mail host."
+            f"❌ SMTP Server Disconnected: The server at {account.host}:{account.port} unexpectedly "
+            "closed the connection. Common causes: invalid/revoked credentials, port/encryption mode "
+            "mismatch (Port 587 STARTTLS vs Port 465 SSL), or security restrictions on the mail host."
         )
     except smtplib.SMTPConnectError as conn_err:
         logger.warning(f"SMTP connection error for {account.host}:{account.port}: {conn_err}")
