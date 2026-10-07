@@ -3,6 +3,7 @@
 # ════════════════════════════════════════════════════════════
 
 import json
+_json = json
 import random
 import logging
 from datetime import datetime, time as dtime, timedelta  # ← time as dtime ADDED
@@ -15,13 +16,15 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.cache import cache  # ← ADDED
 from django.db.models import Q, Sum
-from django.db import models
-from django.http import JsonResponse, HttpResponse, Http404
+from django.db import models, transaction, IntegrityError
+from django.http import JsonResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.contrib.auth.hashers import check_password
+from decimal import Decimal
+import uuid
 
 from django.core.mail import send_mail
 from django.conf import settings
@@ -35,6 +38,7 @@ from .models import (
     Notification,
     PasswordResetOTP,
     Profile,
+    PatientProfile,
     SalaryRecord,
     SessionNote,
     StaffProfile,
@@ -47,6 +51,32 @@ from .models import (
     HospitalSubscription,
     SupportTicket,
     SupportReply,
+    PaymentRecord,
+    ClinicPromo,
+    ClinicSubscriptionPayment,
+    AuditEvent,
+    EmailAccount,
+    EmailLog,
+    FeatureCategory,
+    Feature,
+    PlanFeature,
+    ClinicFeatureOverride,
+    SubscriptionHistory,
+)
+from .entitlements import (
+    evaluate_entitlement,
+    get_feature_usage,
+    can_access_feature,
+    explain_entitlement,
+    require_feature,
+    log_audit_event,
+)
+from .appointment_slots import (
+    validate_appointment_booking,
+    get_available_slots_for_date,
+    CLINIC_SLOTS,
+    MORNING_SLOTS,
+    EVENING_SLOTS,
 )
 from .email_utils import (
     send_appointment_confirmation,
@@ -834,309 +864,711 @@ def mark_all_read(request):
 
 # ─── PAYMENT ─────────────────────────────────────────────────
 
-import razorpay
-import hmac
-import hashlib
-import json as _json
-
-from .models import PaymentRecord, ClinicPromo, ClinicSubscriptionPayment
 
 
-def _get_patient_hospital(user):
-    """Get the hospital linked to a patient via their appointments."""
-    from .models import Hospital
-    appt = Appointment.objects.filter(patient=user).select_related("hospital").order_by("-date").first()
-    if appt and hasattr(appt, "hospital") and appt.hospital:
-        return appt.hospital
-    return None
+
+def _user_payment_role(user):
+    """Determine the effective payment role and scope for a user.
+    Returns: (role_str, can_manage_bool, hospital_obj)
+    Roles:
+      - 'super_admin': platform-wide management
+      - 'admin': clinic-scoped management
+      - 'staff': clinic-scoped read-only
+      - 'client': own-record read-only
+    """
+    if not user or not user.is_authenticated:
+        return "anonymous", False, None
+    if user.is_superuser or _is_platform_superadmin(user):
+        return "super_admin", True, None
+    if _is_clinic_admin(user):
+        return "admin", True, resolve_hospital(user)
+    if _is_staff(user):
+        return "staff", False, resolve_hospital(user)
+    return "client", False, resolve_hospital(user)
 
 
-def _get_patient_razorpay(user):
-    """Return (client, key_id, key_secret) using the patient's clinic/doctor Razorpay account.
-    Falls back to super-admin keys from settings if the clinic hasn't set theirs."""
-    from .models import Hospital
-    hospital = _get_patient_hospital(user)
-    key_id = (hospital.razorpay_key_id if hospital and hospital.razorpay_key_id
-              else getattr(settings, "RAZORPAY_KEY_ID", ""))
-    key_secret = (hospital.razorpay_key_secret if hospital and hospital.razorpay_key_secret
-                  else getattr(settings, "RAZORPAY_KEY_SECRET", ""))
-    if not key_id or not key_secret:
-        return None, key_id, key_secret
-    return razorpay.Client(auth=(key_id, key_secret)), key_id, key_secret
+def log_payment_audit(actor, action, pay=None, hospital=None, notes="", metadata=None):
+    """Record an audit event for payment creation, mutation, confirmation, or cancellation."""
+    h = hospital or (pay.hospital if pay else None)
+    meta = {
+        "payment_id": pay.id if pay else None,
+        "amount": str(pay.amount) if pay else None,
+        "method": pay.method if pay else None,
+        "status": pay.status if pay else None,
+        "transaction_id": pay.transaction_id if pay else "",
+        "notes": notes,
+    }
+    if metadata:
+        meta.update(metadata)
+    try:
+        AuditEvent.objects.create(
+            hospital=h,
+            actor=actor if actor and actor.is_authenticated else None,
+            action=action,
+            entity_type="PaymentRecord",
+            entity_id=str(pay.id) if pay else "",
+            metadata=meta,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to record payment audit event: {e}")
 
 
 @login_required
 def payments(request):
-    my_payments = PaymentRecord.objects.filter(patient=request.user).order_by("-created_at")
+    """Payment entry point:
+    - Super Admin -> redirect to super_admin_all_payments
+    - Clinic Admin -> redirect to admin_payments
+    - Staff -> redirect to staff_payments (read-only clinic log)
+    - Client -> render read-only personal payment history
+    - POST: Only Super Admin & Clinic Admin may create payments; Staff & Client rejected with 403.
+    """
+    role, can_manage, hospital = _user_payment_role(request.user)
+
+    if request.method == "POST":
+        if not can_manage:
+            if request.headers.get("x-requested-with") == "XMLHttpRequest" or "application/json" in request.META.get("HTTP_ACCEPT", ""):
+                return JsonResponse({"error": "Forbidden: Staff and clients cannot create payment records."}, status=403)
+            return HttpResponseForbidden("Forbidden: Staff and clients cannot create payment records.")
+        return payment_create(request)
+
+    if role == "super_admin":
+        return redirect("super_admin_all_payments")
+    if role == "admin":
+        return redirect("admin_payments")
+    if role == "staff":
+        return redirect("staff_payments")
+
+    # Client (Patient) personal payment history
+    qs = PaymentRecord.objects.filter(patient=request.user).order_by("-created_at")
+    q = request.GET.get("q", "").strip()
+    status_f = request.GET.get("status", "").strip()
+    method_f = request.GET.get("method", "").strip()
+    sort_f = request.GET.get("sort", "").strip()
+
+    if q:
+        qs = qs.filter(Q(transaction_id__icontains=q) | Q(notes__icontains=q))
+    if status_f:
+        qs = qs.filter(status=status_f)
+    if method_f:
+        qs = qs.filter(method=method_f)
+
+    if sort_f == "date-asc":
+        qs = qs.order_by("created_at")
+    elif sort_f == "amount-desc":
+        qs = qs.order_by("-amount")
+    elif sort_f == "amount-asc":
+        qs = qs.order_by("amount")
+    else:
+        qs = qs.order_by("-created_at")
+
+    total_paid = qs.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
+    pending_amount = qs.filter(status="pending").aggregate(t=Sum("amount"))["t"] or 0
     upcoming_appointments = Appointment.objects.filter(
         patient=request.user, status__in=["pending", "confirmed"]
     ).order_by("date")
     clinic = ClinicSettings.objects.first()
-    upi_id = getattr(settings, "CLINIC_UPI_ID", "dhvanipatalia@upi")
-    _, razorpay_key_id, _ = _get_patient_razorpay(request.user)
+
     return render(
         request,
         "client/payments.html",
         {
-            "my_payments": my_payments,
+            "my_payments": qs,
+            "total_paid": total_paid,
+            "pending_amount": pending_amount,
             "upcoming_appointments": upcoming_appointments,
             "clinic": clinic,
-            "razorpay_key_id": razorpay_key_id,
-            "upi_id": upi_id,
+            "q": q,
+            "status_f": status_f,
+            "method_f": method_f,
+            "sort_f": sort_f,
         },
     )
 
 
 @login_required
-@require_POST
-def razorpay_create_order(request):
-    """Create a Razorpay order — money goes to the doctor/clinic account."""
-    amount_str = request.POST.get("amount", "500")
-    appt_id = request.POST.get("appointment_id", "")
-    try:
-        amount_paise = int(float(amount_str) * 100)
-    except (ValueError, TypeError):
-        amount_paise = 50000
+def payment_create(request):
+    """Payment creation view: Super Admin and Clinic Admin only.
+    Staff and Client are strictly forbidden (HTTP 403).
+    """
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if not can_manage:
+        return HttpResponseForbidden("Forbidden: Staff and clients are not authorized to create payment records.")
 
-    client, key_id, _ = _get_patient_razorpay(request.user)
-    if not client:
-        return JsonResponse({"error": "Razorpay is not configured. Contact admin."}, status=400)
+    if request.method == "POST":
+        is_json = (
+            request.content_type == "application/json"
+            or request.headers.get("x-requested-with") == "XMLHttpRequest"
+            or "application/json" in request.META.get("HTTP_ACCEPT", "")
+        )
+        if request.content_type == "application/json" and request.body:
+            try:
+                body_json = _json.loads(request.body.decode("utf-8"))
+            except Exception:
+                body_json = {}
+        else:
+            body_json = {}
 
-    try:
-        order = client.order.create({
-            "amount": amount_paise,
-            "currency": "INR",
-            "receipt": f"rcpt_{request.user.id}_{timezone.now().strftime('%Y%m%d%H%M%S')}",
-            "notes": {
-                "user_id": str(request.user.id),
-                "appointment_id": appt_id,
-                "patient_name": request.user.get_full_name() or request.user.username,
-            },
-        })
-    except Exception as e:
-        logger.error(f"Razorpay create order error: {e}")
-        return JsonResponse({"error": str(e)}, status=400)
+        patient_id = body_json.get("patient_id") or request.POST.get("patient_id")
+        amount_str = body_json.get("amount") or request.POST.get("amount", "0")
+        method = body_json.get("method") or request.POST.get("method", "cash")
+        appt_id = body_json.get("appointment_id") or request.POST.get("appointment_id", "")
+        notes = (body_json.get("notes") or request.POST.get("notes", "")).strip()
+        txn_id = (body_json.get("transaction_id") or request.POST.get("transaction_id", "")).strip() or f"COUNTER-{timezone.now().strftime('%Y%m%d%H%M%S')}"
 
-    hospital = resolve_hospital(request.user)
-    record = PaymentRecord.objects.create(
-        hospital=hospital,
-        patient=request.user,
-        appointment_id=appt_id if appt_id else None,
-        amount=float(amount_str),
-        method="razorpay",
-        status="pending",
-        razorpay_order_id=order["id"],
+        try:
+            amount_val = float(amount_str)
+            if amount_val <= 0:
+                raise ValueError()
+        except (ValueError, TypeError):
+            if is_json:
+                return JsonResponse({"error": "Invalid payment amount. Amount must be positive."}, status=400)
+            messages.error(request, "❌ Invalid payment amount. Amount must be positive.")
+            return redirect("admin_payments")
+
+        valid_methods = [c[0] for c in PaymentRecord.METHOD_CHOICES]
+        if method not in valid_methods:
+            method = "cash"
+
+        patient = get_object_or_404(User, id=patient_id)
+        target_hospital = hospital
+
+        if role == "admin":
+            is_clinic_patient = (
+                (hasattr(patient, "patient_profile") and patient.patient_profile.hospital_id == hospital.id)
+                or patient.appointments.filter(hospital=hospital).exists()
+            )
+            if not is_clinic_patient:
+                return HttpResponseForbidden("Forbidden: Cannot record payment for a patient outside your clinic.")
+        elif role == "super_admin":
+            target_h_id = body_json.get("hospital_id") or request.POST.get("hospital_id")
+            if target_h_id:
+                target_hospital = Hospital.objects.filter(id=target_h_id).first()
+            if not target_hospital:
+                target_hospital = resolve_hospital(patient)
+
+        pay = PaymentRecord.objects.create(
+            hospital=target_hospital,
+            patient=patient,
+            appointment_id=appt_id if appt_id else None,
+            amount=amount_val,
+            method=method,
+            status="paid",
+            transaction_id=txn_id,
+            notes=notes,
+        )
+        log_payment_audit(request.user, "payment_created", pay=pay, hospital=target_hospital, notes=notes)
+        Notification.objects.create(
+            hospital=target_hospital,
+            recipient=patient,
+            message=f"✅ Receipt issued: Payment of ₹{pay.amount} ({method.upper()}) recorded by clinic admin.",
+            link="/payments/",
+        )
+        if is_json:
+            return JsonResponse({"success": True, "payment_id": pay.id, "amount": str(pay.amount)}, status=201)
+
+        messages.success(request, f"✅ Payment of ₹{pay.amount} successfully recorded for {patient.get_full_name() or patient.username}.")
+        return redirect("admin_payments")
+
+    return redirect("admin_payments")
+
+
+@login_required
+def payment_detail(request, payment_id):
+    """Payment detail API and view:
+    - Super Admin: platform-wide access
+    - Admin: clinic-scoped access
+    - Staff: clinic-scoped read-only access (mutations rejected with 403)
+    - Client: own-record read-only access (mutations rejected with 403, other patients rejected with 403)
+    - Prevents IDOR/BOLA and Mass Assignment.
+    """
+    pay = get_object_or_404(
+        PaymentRecord.objects.select_related("patient", "hospital", "appointment"),
+        id=payment_id
     )
+    role, can_manage, hospital = _user_payment_role(request.user)
 
+    # Client (Patient) Authorization Check
+    if role == "client":
+        if pay.patient != request.user:
+            return HttpResponseForbidden("Forbidden: Cannot access another patient's payment record.")
+        if request.method in ("PUT", "PATCH", "DELETE", "POST"):
+            return HttpResponseForbidden("Forbidden: Clients cannot modify or delete payment records.")
+        return JsonResponse({
+            "success": True,
+            "id": pay.id,
+            "amount": str(pay.amount),
+            "method": pay.method,
+            "method_display": pay.get_method_display(),
+            "status": pay.status,
+            "status_display": pay.get_status_display(),
+            "transaction_id": pay.transaction_id,
+            "notes": pay.notes,
+            "created_at": pay.created_at.strftime("%d %b %Y, %H:%M"),
+            "patient_name": pay.patient.get_full_name() or pay.patient.username,
+            "service": pay.appointment.get_service_display() if pay.appointment else "General Consultation",
+            "clinic_name": pay.hospital.name if pay.hospital else "PhysioRehab Clinic",
+            "payment": {
+                "id": pay.id,
+                "amount": float(pay.amount),
+                "method": pay.method,
+                "method_display": pay.get_method_display(),
+                "status": pay.status,
+                "status_display": pay.get_status_display(),
+                "transaction_id": pay.transaction_id,
+                "notes": pay.notes,
+                "created_at": pay.created_at.strftime("%d %b %Y, %H:%M"),
+                "patient_name": pay.patient.get_full_name() or pay.patient.username,
+                "service": pay.appointment.get_service_display() if pay.appointment else "General Consultation",
+                "clinic_name": pay.hospital.name if pay.hospital else "PhysioRehab Clinic",
+            }
+        })
+
+    # Staff Authorization Check
+    if role == "staff":
+        if hospital and pay.hospital != hospital:
+            return HttpResponseForbidden("Forbidden: Cannot access payment records outside your clinic.")
+        if request.method in ("PUT", "PATCH", "DELETE", "POST"):
+            return HttpResponseForbidden("Forbidden: Staff members cannot modify or delete payment records.")
+        return JsonResponse({
+            "success": True,
+            "id": pay.id,
+            "amount": str(pay.amount),
+            "method": pay.method,
+            "method_display": pay.get_method_display(),
+            "status": pay.status,
+            "status_display": pay.get_status_display(),
+            "transaction_id": pay.transaction_id,
+            "notes": pay.notes,
+            "created_at": pay.created_at.strftime("%d %b %Y, %H:%M"),
+            "patient_name": (pay.patient.get_full_name() or pay.patient.username) if pay.patient else "—",
+            "service": pay.appointment.get_service_display() if pay.appointment else "General Consultation",
+            "clinic_name": pay.hospital.name if pay.hospital else "PhysioRehab Clinic",
+            "payment": {
+                "id": pay.id,
+                "amount": float(pay.amount),
+                "method": pay.method,
+                "method_display": pay.get_method_display(),
+                "status": pay.status,
+                "status_display": pay.get_status_display(),
+                "transaction_id": pay.transaction_id,
+                "notes": pay.notes,
+                "created_at": pay.created_at.strftime("%d %b %Y, %H:%M"),
+                "patient_name": (pay.patient.get_full_name() or pay.patient.username) if pay.patient else "—",
+                "service": pay.appointment.get_service_display() if pay.appointment else "General Consultation",
+                "clinic_name": pay.hospital.name if pay.hospital else "PhysioRehab Clinic",
+            }
+        })
+
+    # Admin Authorization Check
+    if role == "admin":
+        if hospital and pay.hospital != hospital:
+            return HttpResponseForbidden("Forbidden: Cannot access payment records outside your clinic.")
+
+    # Mutations (PUT / PATCH / DELETE) for Admin & Super Admin
+    if request.method in ("PUT", "PATCH"):
+        try:
+            body_data = _json.loads(request.body.decode("utf-8")) if request.body else {}
+        except Exception:
+            body_data = {}
+        if not body_data:
+            body_data = request.POST
+
+        # Prevent mass assignment: strictly whitelist allowed fields
+        if "amount" in body_data:
+            try:
+                new_amt = float(body_data["amount"])
+                if new_amt > 0:
+                    pay.amount = new_amt
+            except (ValueError, TypeError):
+                pass
+        if "status" in body_data:
+            new_status = body_data["status"]
+            valid_statuses = [s[0] for s in PaymentRecord.STATUS_CHOICES]
+            if new_status in valid_statuses:
+                pay.status = new_status
+        if "notes" in body_data:
+            pay.notes = str(body_data["notes"]).strip()
+        if "transaction_id" in body_data and body_data["transaction_id"]:
+            pay.transaction_id = str(body_data["transaction_id"]).strip()
+
+        pay.save()
+        log_payment_audit(request.user, "payment_updated", pay=pay, hospital=pay.hospital)
+        return JsonResponse({"success": True, "message": "Payment record updated successfully."})
+
+    if request.method == "DELETE":
+        pay.status = "refunded"
+        pay.save()
+        log_payment_audit(request.user, "payment_deleted", pay=pay, hospital=pay.hospital)
+        return JsonResponse({"success": True, "message": "Payment record cancelled/refunded."})
+
+    # GET response for Admin and Super Admin
     return JsonResponse({
-        "order_id": order["id"],
-        "amount": amount_paise,
-        "currency": "INR",
-        "key_id": key_id,
-        "record_id": record.id,
-        "patient_name": request.user.get_full_name() or request.user.username,
-        "patient_email": request.user.email,
+        "success": True,
+        "id": pay.id,
+        "amount": str(pay.amount),
+        "method": pay.method,
+        "method_display": pay.get_method_display(),
+        "status": pay.status,
+        "status_display": pay.get_status_display(),
+        "transaction_id": pay.transaction_id,
+        "notes": pay.notes,
+        "created_at": pay.created_at.strftime("%d %b %Y, %H:%M"),
+        "patient_name": (pay.patient.get_full_name() or pay.patient.username) if pay.patient else "—",
+        "patient_email": pay.patient.email if pay.patient else "—",
+        "service": pay.appointment.get_service_display() if pay.appointment else "General Consultation",
+        "clinic_name": pay.hospital.name if pay.hospital else "PhysioRehab Clinic",
+        "payment": {
+            "id": pay.id,
+            "amount": float(pay.amount),
+            "method": pay.method,
+            "method_display": pay.get_method_display(),
+            "status": pay.status,
+            "status_display": pay.get_status_display(),
+            "transaction_id": pay.transaction_id,
+            "notes": pay.notes,
+            "created_at": pay.created_at.strftime("%d %b %Y, %H:%M"),
+            "patient_name": (pay.patient.get_full_name() or pay.patient.username) if pay.patient else "—",
+            "service": pay.appointment.get_service_display() if pay.appointment else "General Consultation",
+            "clinic_name": pay.hospital.name if pay.hospital else "PhysioRehab Clinic",
+        }
     })
 
 
 @login_required
-@require_POST
-def razorpay_verify_payment(request):
-    """Verify Razorpay payment signature and mark record as paid."""
-    razorpay_order_id = request.POST.get("razorpay_order_id", "")
-    razorpay_payment_id = request.POST.get("razorpay_payment_id", "")
-    razorpay_signature = request.POST.get("razorpay_signature", "")
-    record_id = request.POST.get("record_id", "")
+def payment_edit(request, payment_id):
+    """Payment edit view: Super Admin and Clinic Admin only."""
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if not can_manage:
+        return HttpResponseForbidden("Forbidden: Staff and clients cannot edit payment records.")
+    pay = get_object_or_404(PaymentRecord, id=payment_id)
+    if role == "admin" and pay.hospital != hospital:
+        return HttpResponseForbidden("Forbidden: Cannot edit payment records belonging to another clinic.")
 
-    _, _, key_secret = _get_patient_razorpay(request.user)
-    if not key_secret:
-        messages.error(request, "⚠️ Payment verification failed — Razorpay not configured.")
-        return redirect("payments")
-
-    generated_sig = hmac.new(
-        key_secret.encode("utf-8"),
-        f"{razorpay_order_id}|{razorpay_payment_id}".encode("utf-8"),
-        hashlib.sha256,
-    ).hexdigest()
-
-    if generated_sig == razorpay_signature:
-        PaymentRecord.objects.filter(id=record_id, patient=request.user).update(
-            status="paid",
-            razorpay_payment_id=razorpay_payment_id,
-            razorpay_signature=razorpay_signature,
-            transaction_id=razorpay_payment_id,
+    if request.method in ("POST", "PUT", "PATCH"):
+        is_json = (
+            request.content_type == "application/json"
+            or request.headers.get("x-requested-with") == "XMLHttpRequest"
+            or "application/json" in request.META.get("HTTP_ACCEPT", "")
         )
-        messages.success(request, "✅ Payment successful! Payment ID: " + razorpay_payment_id)
-    else:
-        PaymentRecord.objects.filter(id=record_id, patient=request.user).update(status="failed")
-        messages.error(request, "❌ Payment verification failed. If money was deducted, contact the clinic.")
+        if request.content_type == "application/json" and request.body:
+            try:
+                body_data = _json.loads(request.body.decode("utf-8"))
+            except Exception:
+                body_data = {}
+        else:
+            body_data = request.POST
 
-    return redirect("payments")
+        # Whitelist updates
+        if "amount" in body_data:
+            try:
+                new_amt = float(body_data["amount"])
+                if new_amt > 0:
+                    pay.amount = new_amt
+            except (ValueError, TypeError):
+                pass
+        valid_statuses = [s[0] for s in PaymentRecord.STATUS_CHOICES]
+        new_status = body_data.get("status")
+        if new_status in valid_statuses:
+            pay.status = new_status
+        notes = body_data.get("notes")
+        if notes is not None:
+            pay.notes = str(notes).strip()
+        txn_id = body_data.get("transaction_id")
+        if txn_id:
+            pay.transaction_id = str(txn_id).strip()
+        pay.save()
+        log_payment_audit(request.user, "payment_updated", pay=pay, hospital=pay.hospital)
 
+        if is_json:
+            return JsonResponse({"success": True, "message": f"Payment #{pay.id} updated."})
 
-@csrf_exempt
-def razorpay_webhook(request):
-    """Razorpay webhook — verifies via HMAC and updates PaymentRecord status."""
-    key_secret = getattr(settings, "RAZORPAY_KEY_SECRET", "")
-    webhook_secret = getattr(settings, "RAZORPAY_WEBHOOK_SECRET", key_secret)
-    payload = request.body
-    sig_header = request.META.get("HTTP_X_RAZORPAY_SIGNATURE", "")
-    if webhook_secret and sig_header:
-        try:
-            generated = hmac.new(
-                webhook_secret.encode("utf-8"), payload, hashlib.sha256
-            ).hexdigest()
-            if generated != sig_header:
-                return HttpResponse(status=400)
-            data = _json.loads(payload)
-            event = data.get("event", "")
-            if event == "payment.captured":
-                payment_id = data["payload"]["payment"]["entity"]["id"]
-                order_id = data["payload"]["payment"]["entity"].get("order_id", "")
-                if order_id:
-                    PaymentRecord.objects.filter(razorpay_order_id=order_id).update(
-                        status="paid",
-                        razorpay_payment_id=payment_id,
-                        transaction_id=payment_id,
-                    )
-        except Exception as e:
-            logger.error(f"Razorpay webhook error: {e}")
-            return HttpResponse(status=400)
-    return HttpResponse(status=200)
+        messages.success(request, f"✅ Payment #{pay.id} updated.")
+        return redirect("admin_payments")
 
-
-@login_required
-def record_cash_payment(request):
-    if request.method != "POST":
-        return redirect("payments")
-    amount = request.POST.get("amount", "0")
-    appt_id = request.POST.get("appointment_id", "")
-    notes = request.POST.get("notes", "")
-    hospital = resolve_hospital(request.user)
-    PaymentRecord.objects.create(
-        hospital=hospital,
-        patient=request.user,
-        appointment_id=appt_id if appt_id else None,
-        amount=float(amount) if amount else 0,
-        method="cash",
-        status="paid",
-        notes=notes,
-        transaction_id=f"CASH-{timezone.now().strftime('%Y%m%d%H%M%S')}",
-    )
-    messages.success(request, "✅ Cash payment recorded.")
-    return redirect("payments")
+    return redirect("admin_payments")
 
 
 @login_required
-def record_upi_payment(request):
-    if request.method != "POST":
-        return redirect("payments")
-    amount = request.POST.get("amount", "0")
-    appt_id = request.POST.get("appointment_id", "")
-    txn_id = request.POST.get("transaction_id", "")
-    hospital = resolve_hospital(request.user)
-    PaymentRecord.objects.create(
-        hospital=hospital,
-        patient=request.user,
-        appointment_id=appt_id if appt_id else None,
-        amount=float(amount) if amount else 0,
-        method="upi",
-        status="pending",
-        transaction_id=txn_id,
-        notes=f"UPI Ref: {txn_id}",
-    )
-    messages.success(request, "✅ UPI payment submitted. The doctor will verify and confirm it shortly.")
-    return redirect("payments")
+def payment_delete(request, payment_id):
+    """Payment cancellation / deletion view: Super Admin and Clinic Admin only."""
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if not can_manage:
+        return HttpResponseForbidden("Forbidden: Staff and clients cannot delete or cancel payments.")
+    pay = get_object_or_404(PaymentRecord, id=payment_id)
+    if role == "admin" and pay.hospital != hospital:
+        return HttpResponseForbidden("Forbidden: Cannot delete payment records belonging to another clinic.")
+
+    pay.status = "refunded"
+    pay.save()
+    log_payment_audit(request.user, "payment_cancelled", pay=pay, hospital=pay.hospital)
+    messages.success(request, f"✅ Payment #{pay.id} cancelled / refunded.")
+    return redirect("admin_payments")
+
+
+@login_required
+def staff_payments(request):
+    """Staff payments endpoint: renders read-only Payment Log / History for staff's clinic."""
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if role == "client":
+        return HttpResponseForbidden("Forbidden: Patients cannot access staff payment logs.")
+    return admin_payments(request)
 
 
 @login_required
 def admin_payments(request):
-    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
-        return redirect("client_dashboard")
-    
+    """Clinic payment records:
+    - Super Admin: full management across clinics
+    - Clinic Admin: full management within own clinic
+    - Staff: read-only payment log & history within clinic (all mutations return 403)
+    - Client: redirected to client personal payments
+    """
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if role == "client":
+        return redirect("payments")
+
     if request.method == "POST":
+        if not can_manage:
+            return HttpResponseForbidden("Forbidden: Staff members cannot create or modify payment records.")
         action = request.POST.get("action", "")
         if action == "record_offline":
-            patient_id = request.POST.get("patient_id")
-            amount = request.POST.get("amount", "0")
-            method = request.POST.get("method", "cash")
-            appt_id = request.POST.get("appointment_id", "")
-            notes = request.POST.get("notes", "")
-            txn_id = request.POST.get("transaction_id", "").strip() or f"COUNTER-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+            return payment_create(request)
 
-            patient = get_object_or_404(User, id=patient_id)
-            pay = PaymentRecord.objects.create(
-                patient=patient,
-                appointment_id=appt_id if appt_id else None,
-                amount=float(amount) if amount else 0,
-                method=method,
-                status="paid",
-                transaction_id=txn_id,
-                notes=notes,
-            )
-            Notification.objects.create(
-                recipient=patient,
-                message=f"✅ Receipt issued: Payment of ₹{pay.amount} ({method.upper()}) recorded by clinic admin.",
-                link="/payments/",
-            )
-            messages.success(request, f"✅ Payment of ₹{pay.amount} successfully recorded for {patient.get_full_name() or patient.username}.")
-            return redirect("admin_payments")
+    if role == "super_admin":
+        qs = PaymentRecord.objects.select_related("patient", "appointment", "hospital").order_by("-created_at")
+        patients = User.objects.filter(is_superuser=False, is_staff=False).order_by("first_name", "username")
+    else:
+        qs = PaymentRecord.objects.filter(hospital=hospital).select_related("patient", "appointment", "hospital").order_by("-created_at")
+        patients = User.objects.filter(
+            is_superuser=False, is_staff=False
+        ).filter(
+            Q(patient_profile__hospital=hospital) | Q(appointments__hospital=hospital)
+        ).distinct().order_by("first_name", "username")
 
-    all_payments = PaymentRecord.objects.select_related(
-        "patient", "appointment"
-    ).order_by("-created_at")
-    total_paid = all_payments.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
-    pending_count = all_payments.filter(status="pending").count()
-    pending_payments = all_payments.filter(status="pending")
-    patients = User.objects.filter(is_superuser=False, is_staff=False).order_by("first_name", "username")
+    total_paid = qs.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
+    pending_count = qs.filter(status="pending").count()
+    pending_payments = qs.filter(status="pending")
+
     return render(
         request,
         "admin/admin_payments.html",
         {
-            "payments": all_payments,
+            "payments": qs,
             "total_paid": total_paid,
             "pending_count": pending_count,
             "pending_payments": pending_payments,
             "patients": patients,
+            "can_manage": can_manage,
+            "is_staff_view": not can_manage,
+            "hospital": hospital,
         },
     )
-
 
 
 @login_required
 @require_POST
 def confirm_payment(request, payment_id):
-    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
-        return redirect("client_dashboard")
+    """Confirm pending payment. Gated to Super Admin and Clinic Admin (scoped to clinic).
+    Staff and Client rejected with HTTP 403.
+    """
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if not can_manage:
+        return HttpResponseForbidden("Forbidden: Staff and clients cannot modify payment status.")
     pay = get_object_or_404(PaymentRecord, id=payment_id)
+    if role == "admin" and pay.hospital != hospital:
+        return HttpResponseForbidden("Forbidden: Cannot modify payment records belonging to another clinic.")
+
     pay.status = "paid"
     if not pay.transaction_id:
         pay.transaction_id = f"CONF-{timezone.now().strftime('%Y%m%d%H%M%S')}"
     pay.save()
-    Notification.objects.create(
-        recipient=pay.patient,
-        message=f"✅ Your payment of ₹{pay.amount} has been confirmed by the clinic. Thank you!",
-        link="/payments/",
-    )
-    messages.success(request, f"✅ Payment of ₹{pay.amount} confirmed for {pay.patient.get_full_name() or pay.patient.username}.")
+    log_payment_audit(request.user, "payment_confirmed", pay=pay, hospital=pay.hospital)
+    if pay.patient:
+        Notification.objects.create(
+            hospital=pay.hospital,
+            recipient=pay.patient,
+            message=f"✅ Your payment of ₹{pay.amount} has been confirmed by the clinic. Thank you!",
+            link="/payments/",
+        )
+    messages.success(request, f"✅ Payment of ₹{pay.amount} confirmed for {pay.patient.get_full_name() or pay.patient.username if pay.patient else 'patient'}.")
     return redirect("admin_payments")
 
 
 @login_required
 @require_POST
 def reject_payment(request, payment_id):
-    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
-        return redirect("client_dashboard")
+    """Reject pending payment. Gated to Super Admin and Clinic Admin (scoped to clinic).
+    Staff and Client rejected with HTTP 403.
+    """
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if not can_manage:
+        return HttpResponseForbidden("Forbidden: Staff and clients cannot modify payment status.")
     pay = get_object_or_404(PaymentRecord, id=payment_id)
+    if role == "admin" and pay.hospital != hospital:
+        return HttpResponseForbidden("Forbidden: Cannot modify payment records belonging to another clinic.")
+
     pay.status = "failed"
     pay.save()
-    Notification.objects.create(
-        recipient=pay.patient,
-        message=f"❌ Your payment of ₹{pay.amount} could not be verified. Please contact the clinic or try again.",
-        link="/payments/",
-    )
-    messages.warning(request, f"❌ Payment of ₹{pay.amount} rejected for {pay.patient.get_full_name() or pay.patient.username}.")
+    log_payment_audit(request.user, "payment_rejected", pay=pay, hospital=pay.hospital)
+    if pay.patient:
+        Notification.objects.create(
+            hospital=pay.hospital,
+            recipient=pay.patient,
+            message=f"❌ Your payment of ₹{pay.amount} could not be verified. Please contact the clinic or try again.",
+            link="/payments/",
+        )
+    messages.warning(request, f"❌ Payment of ₹{pay.amount} rejected for {pay.patient.get_full_name() or pay.patient.username if pay.patient else 'patient'}.")
     return redirect("admin_payments")
+
+
+@login_required
+@require_POST
+def record_cash_payment(request):
+    """Record cash payment. Gated to Super Admin and Clinic Admin.
+    Staff and Client are forbidden from direct entry (HTTP 403).
+    """
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if not can_manage:
+        return HttpResponseForbidden("Forbidden: Staff and patients cannot enter cash payment records directly.")
+
+    amount = request.POST.get("amount", "0")
+    appt_id = request.POST.get("appointment_id", "")
+    notes = request.POST.get("notes", "")
+    patient_id = request.POST.get("patient_id")
+
+    appt = Appointment.objects.filter(id=appt_id).first() if appt_id else None
+    if appt:
+        patient = appt.patient
+        target_hospital = hospital or appt.hospital
+    elif patient_id:
+        patient = get_object_or_404(User, id=patient_id)
+        target_hospital = hospital
+    else:
+        patient = None
+        target_hospital = hospital
+
+    if not patient:
+        messages.error(request, "❌ Valid patient or appointment required.")
+        return redirect("admin_payments")
+
+    if role == "admin" and target_hospital:
+        if appt and appt.hospital_id != target_hospital.id:
+            return HttpResponseForbidden("Forbidden: Cannot record payment for another clinic's appointment.")
+        is_clinic_patient = (
+            (hasattr(patient, "patient_profile") and patient.patient_profile.hospital_id == target_hospital.id)
+            or patient.appointments.filter(hospital=target_hospital).exists()
+        )
+        if not is_clinic_patient:
+            return HttpResponseForbidden("Forbidden: Cannot record payment for patient from another clinic.")
+
+    try:
+        amount_val = float(amount) if amount else 0
+        if amount_val <= 0:
+            raise ValueError()
+    except (ValueError, TypeError):
+        messages.error(request, "❌ Invalid payment amount.")
+        return redirect("admin_payments")
+
+    pay = PaymentRecord.objects.create(
+        hospital=target_hospital,
+        patient=patient,
+        appointment_id=appt.id if appt else (appt_id if appt_id else None),
+        amount=amount_val,
+        method="cash",
+        status="paid",
+        notes=notes,
+        transaction_id=f"CASH-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+    )
+    log_payment_audit(request.user, "payment_cash_recorded", pay=pay, hospital=target_hospital)
+    messages.success(request, "✅ Cash payment recorded.")
+    return redirect("admin_payments")
+
+
+@login_required
+@require_POST
+def record_upi_payment(request):
+    """Record UPI payment. Gated to Super Admin and Clinic Admin.
+    Staff and Client are forbidden from direct entry (HTTP 403).
+    """
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if not can_manage:
+        return HttpResponseForbidden("Forbidden: Staff and patients cannot enter UPI payment records directly.")
+
+    amount = request.POST.get("amount", "0")
+    appt_id = request.POST.get("appointment_id", "")
+    txn_id = request.POST.get("transaction_id", "")
+    patient_id = request.POST.get("patient_id")
+
+    appt = Appointment.objects.filter(id=appt_id).first() if appt_id else None
+    if appt:
+        patient = appt.patient
+        target_hospital = hospital or appt.hospital
+    elif patient_id:
+        patient = get_object_or_404(User, id=patient_id)
+        target_hospital = hospital
+    else:
+        patient = None
+        target_hospital = hospital
+
+    if not patient:
+        messages.error(request, "❌ Valid patient or appointment required.")
+        return redirect("admin_payments")
+
+    if role == "admin" and target_hospital:
+        if appt and appt.hospital_id != target_hospital.id:
+            return HttpResponseForbidden("Forbidden: Cannot record payment for another clinic's appointment.")
+        is_clinic_patient = (
+            (hasattr(patient, "patient_profile") and patient.patient_profile.hospital_id == target_hospital.id)
+            or patient.appointments.filter(hospital=target_hospital).exists()
+        )
+        if not is_clinic_patient:
+            return HttpResponseForbidden("Forbidden: Cannot record payment for patient from another clinic.")
+
+    try:
+        amount_val = float(amount) if amount else 0
+        if amount_val <= 0:
+            raise ValueError()
+    except (ValueError, TypeError):
+        messages.error(request, "❌ Invalid payment amount.")
+        return redirect("admin_payments")
+
+    pay = PaymentRecord.objects.create(
+        hospital=target_hospital,
+        patient=patient,
+        appointment_id=appt.id if appt else (appt_id if appt_id else None),
+        amount=amount_val,
+        method="upi",
+        status="pending",
+        transaction_id=txn_id,
+        notes=f"UPI Ref: {txn_id}",
+    )
+    log_payment_audit(request.user, "payment_upi_recorded", pay=pay, hospital=target_hospital)
+    messages.success(request, "✅ UPI payment submitted for verification.")
+    return redirect("admin_payments")
+
+
+@login_required
+def export_clinic_payments_excel(request):
+    """Export clinic payments to Excel: Admin (own clinic) and Super Admin.
+    Staff and Client rejected with HTTP 403.
+    """
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if not can_manage:
+        return HttpResponseForbidden("Forbidden: You do not have permission to export payment records.")
+    return export_payments_excel(request)
+
+
+@login_required
+def export_clinic_payments_pdf(request):
+    """Export clinic payments to PDF: Admin (own clinic) and Super Admin.
+    Staff and Client rejected with HTTP 403.
+    """
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if not can_manage:
+        return HttpResponseForbidden("Forbidden: You do not have permission to export payment records.")
+    return export_payments_pdf(request)
+
+
+
 
 
 # ─── CLIENT DASHBOARD ────────────────────────────────────────
@@ -1154,7 +1586,6 @@ def client_dashboard(request):
     approved_reviews = Review.objects.filter(is_approved=True).order_by("-created_at")[:6]
     my_payments = PaymentRecord.objects.filter(patient=request.user).order_by("-created_at")[:5]
     upcoming_appointments = upcoming.order_by("date")
-    _, razorpay_key_id, _ = _get_patient_razorpay(request.user)
     return render(
         request,
         "client/client_dashboard.html",
@@ -1170,7 +1601,6 @@ def client_dashboard(request):
             "approved_reviews": approved_reviews,
             "my_payments": my_payments,
             "upcoming_appointments": upcoming_appointments,
-            "razorpay_key_id": razorpay_key_id,
         },
     )
 
@@ -1254,35 +1684,77 @@ def book_appointment(request):
             if not hospital:
                 hospital = Hospital.objects.filter(is_active=True).first()
         service = request.POST.get("service", "")
-        date = request.POST.get("date", "")
-        time = request.POST.get("time", "")
-        notes = request.POST.get("notes", "")
+        date = request.POST.get("date", "").strip()
+        time = request.POST.get("time", "").strip()
+        notes = request.POST.get("notes", "").strip()
         name = request.user.get_full_name() or request.user.username
         email = request.user.email
         phone = getattr(request.user, "profile", None)
         phone = phone.phone_number if phone else ""
 
-        appt = Appointment.objects.create(
+        # Validate appointment slot against clinic shift rules (No Sunday public bookings, only valid Mon-Fri shifts)
+        is_valid, err_msg, normalized_time = validate_appointment_booking(
+            date_str=date,
+            time_str=time,
             hospital=hospital,
-            patient=request.user,
-            name=name,
-            email=email,
-            phone=phone,
-            service=service,
-            date=date,
-            time=time,
-            notes=notes,
-            status="pending",
+            allow_sunday=False,
         )
+        if not is_valid:
+            messages.error(request, f"❌ {err_msg}")
+            return render(request, "client/book_appointment.html", {
+                "selected_service": service,
+                "selected_date": date,
+                "selected_time": time,
+                "notes": notes,
+            })
+
+        try:
+            with transaction.atomic():
+                # Concurrent booking double-check inside transaction
+                is_valid_tx, err_tx, _ = validate_appointment_booking(
+                    date_str=date,
+                    time_str=normalized_time,
+                    hospital=hospital,
+                    allow_sunday=False,
+                )
+                if not is_valid_tx:
+                    messages.error(request, f"❌ {err_tx}")
+                    return render(request, "client/book_appointment.html", {
+                        "selected_service": service,
+                        "selected_date": date,
+                        "selected_time": time,
+                        "notes": notes,
+                    })
+
+                appt = Appointment.objects.create(
+                    hospital=hospital,
+                    patient=request.user,
+                    name=name,
+                    email=email,
+                    phone=phone,
+                    service=service,
+                    date=date,
+                    time=time or normalized_time,
+                    notes=notes,
+                    status="pending",
+                )
+        except IntegrityError:
+            messages.error(request, "❌ This appointment slot has just been booked by another patient. Please choose another time.")
+            return render(request, "client/book_appointment.html", {
+                "selected_service": service,
+                "selected_date": date,
+                "selected_time": time,
+                "notes": notes,
+            })
 
         # Email patient + alert admin
         send_appointment_confirmation(appt)
-        admin = get_admin_user()
+        admin = get_admin_user(hospital)
         if admin:
             send_admin_new_appointment_alert(appt)
             notify_appointment_booked(appt, admin)
 
-        messages.success(request, "✅ Appointment booked! Confirmation email sent.")
+        messages.success(request, f"✅ Appointment booked for {appt.date} at {appt.time}! Confirmation email sent.")
         return redirect("my_appointments")
     return render(request, "client/book_appointment.html")
 
@@ -1350,22 +1822,25 @@ def admin_patients(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     hospital = resolve_hospital(request.user)
-    if hospital:
+    if hospital and not request.user.is_superuser:
         patients = (
             User.objects.filter(
                 is_superuser=False,
                 is_staff=False,
-                appointments__hospital=hospital,
+            )
+            .filter(
+                Q(appointments__hospital=hospital)
+                | Q(patient_profile__hospital=hospital)
             )
             .distinct()
             .order_by("-date_joined")
-            .prefetch_related("profile", "appointments", "patient_notes")
+            .prefetch_related("profile", "patient_profile", "appointments", "patient_notes")
         )
     elif request.user.is_superuser:
         patients = (
             User.objects.filter(is_superuser=False, is_staff=False)
             .order_by("-date_joined")
-            .prefetch_related("profile", "appointments", "patient_notes")
+            .prefetch_related("profile", "patient_profile", "appointments", "patient_notes")
         )
     else:
         patients = User.objects.none()
@@ -1375,6 +1850,7 @@ def admin_patients(request):
             profile = p.profile
         except Exception:
             profile = None
+        patient_profile = getattr(p, "patient_profile", None)
         appts = Appointment.objects.filter(patient=p).order_by("date")
         appt_count = appts.count()
         first_appt = appts.first()
@@ -1388,12 +1864,25 @@ def admin_patients(request):
             phone = profile.phone_number
         elif first_appt and first_appt.phone:
             phone = first_appt.phone
+
+        # Determine joining date priority: patient_profile -> profile -> first_appt -> date_joined
+        joining_date = None
+        if patient_profile and patient_profile.joining_date:
+            joining_date = patient_profile.joining_date
+        elif profile and profile.joining_date:
+            joining_date = profile.joining_date
+        elif first_appt and first_appt.date:
+            joining_date = first_appt.date
+        else:
+            joining_date = p.date_joined.date()
+
         patient_data.append(
             {
                 "user": p,
                 "profile": profile,
+                "patient_profile": patient_profile,
                 "appt_count": appt_count,
-                "joining_date": first_appt.date if first_appt else p.date_joined.date(),
+                "joining_date": joining_date,
                 "completion_date": last_completed.date if last_completed else None,
                 "diagnosis": latest_note.diagnosis if latest_note else None,
                 "treatment": latest_note.treatment if latest_note else None,
@@ -1832,9 +2321,23 @@ def update_leave(request, leave_id, status):
 def admin_attendance(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user)
     today = timezone.now().date()
-    today_att = Attendance.objects.filter(date=today).select_related("staff")
-    all_attendance = Attendance.objects.all().select_related("staff")[:50]
+    if hospital and not request.user.is_superuser:
+        today_att = Attendance.objects.filter(
+            Q(hospital=hospital)
+            | Q(staff__staff_profile__hospital=hospital)
+            | Q(hospital__isnull=True),
+            date=today,
+        ).select_related("staff")
+        all_attendance = Attendance.objects.filter(
+            Q(hospital=hospital)
+            | Q(staff__staff_profile__hospital=hospital)
+            | Q(hospital__isnull=True)
+        ).select_related("staff")[:50]
+    else:
+        today_att = Attendance.objects.filter(date=today).select_related("staff")
+        all_attendance = Attendance.objects.all().select_related("staff")[:50]
     return render(
         request,
         "admin/admin_attendance.html",
@@ -1853,6 +2356,7 @@ def admin_attendance(request):
 def admin_salary(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user)
     if request.method == "POST":
         staff_id = request.POST.get("staff_id")
         month = request.POST.get("month")
@@ -1862,8 +2366,20 @@ def admin_salary(request):
         deduction = request.POST.get("deduction", 0)
         net = float(basic) + float(bonus) - float(deduction)
 
-        staff_user = get_object_or_404(User, id=staff_id)
+        if hospital and not request.user.is_superuser:
+            staff_user = get_object_or_404(
+                User,
+                Q(id=staff_id)
+                & (
+                    Q(staff_profile__hospital=hospital)
+                    | Q(staff_profile__hospital__isnull=True)
+                ),
+            )
+        else:
+            staff_user = get_object_or_404(User, id=staff_id)
+
         record = SalaryRecord.objects.create(
+            hospital=hospital,
             staff=staff_user,
             month=month,
             year=year,
@@ -1882,8 +2398,19 @@ def admin_salary(request):
         messages.success(request, "✅ Salary record saved and email sent!")
         return redirect("admin_salary")
 
-    salary_records = SalaryRecord.objects.all().select_related("staff")
-    staff_list = StaffProfile.objects.all().select_related("user")
+    if hospital and not request.user.is_superuser:
+        salary_records = SalaryRecord.objects.filter(
+            Q(hospital=hospital)
+            | Q(staff__staff_profile__hospital=hospital)
+            | Q(hospital__isnull=True)
+        ).select_related("staff", "hospital")
+        staff_list = StaffProfile.objects.filter(
+            Q(hospital=hospital) | Q(hospital__isnull=True)
+        ).select_related("user")
+    else:
+        salary_records = SalaryRecord.objects.all().select_related("staff", "hospital")
+        staff_list = StaffProfile.objects.all().select_related("user")
+
     return render(
         request,
         "admin/admin_salary.html",
@@ -2492,25 +3019,87 @@ def add_appointment(request):
         patients = User.objects.filter(is_superuser=False, is_staff=False)
     if request.method == "POST":
         patient_id = request.POST.get("patient_id")
-        service = request.POST.get("service", "")
-        date = request.POST.get("date", "")
-        time = request.POST.get("time", "")
-        notes = request.POST.get("notes", "")
+        service = request.POST.get("service", "").strip()
+        date = request.POST.get("date", "").strip()
+        time = request.POST.get("time", "").strip()
+        notes = request.POST.get("notes", "").strip()
         status = request.POST.get("status", "pending")
         patient = get_object_or_404(User, id=patient_id)
-        Appointment.objects.create(
+
+        # Validate appointment slot against clinic shift rules (admin allowed Sunday by appointment)
+        is_valid, err_msg, normalized_time = validate_appointment_booking(
+            date_str=date,
+            time_str=time,
             hospital=hospital,
-            patient=patient,
-            name=patient.get_full_name() or patient.username,
-            email=patient.email,
-            phone=getattr(getattr(patient, "profile", None), "phone_number", ""),
-            service=service,
-            date=date,
-            time=time,
-            notes=notes,
-            status=status,
+            allow_sunday=True,
         )
-        messages.success(request, "✅ Appointment added successfully!")
+        if not is_valid:
+            messages.error(request, f"❌ {err_msg}")
+            return render(
+                request,
+                "admin/add_appointment.html",
+                {
+                    "patients": patients,
+                    "selected_patient_id": patient_id,
+                    "selected_service": service,
+                    "selected_date": date,
+                    "selected_time": time,
+                    "notes": notes,
+                },
+            )
+
+        try:
+            with transaction.atomic():
+                # Concurrent booking double-check inside transaction
+                is_valid_tx, err_tx, _ = validate_appointment_booking(
+                    date_str=date,
+                    time_str=normalized_time,
+                    hospital=hospital,
+                    allow_sunday=True,
+                )
+                if not is_valid_tx:
+                    messages.error(request, f"❌ {err_tx}")
+                    return render(
+                        request,
+                        "admin/add_appointment.html",
+                        {
+                            "patients": patients,
+                            "selected_patient_id": patient_id,
+                            "selected_service": service,
+                            "selected_date": date,
+                            "selected_time": time,
+                            "notes": notes,
+                        },
+                    )
+
+                Appointment.objects.create(
+                    hospital=hospital,
+                    patient=patient,
+                    name=patient.get_full_name() or patient.username,
+                    email=patient.email,
+                    phone=getattr(getattr(patient, "profile", None), "phone_number", ""),
+                    service=service,
+                    date=date,
+                    time=time or normalized_time,
+                    notes=notes,
+                    status=status,
+                )
+        except IntegrityError:
+            messages.error(request, "❌ This appointment slot has just been booked. Please choose another slot.")
+            return render(
+                request,
+                "admin/add_appointment.html",
+                {
+                    "patients": patients,
+                    "selected_patient_id": patient_id,
+                    "selected_service": service,
+                    "selected_date": date,
+                    "selected_time": time,
+                    "notes": notes,
+                },
+            )
+
+        messages.success(request, f"✅ Appointment added successfully for {date} at {normalized_time}!")
         return redirect("admin_appointments")
     return render(request, "admin/add_appointment.html", {"patients": patients})
 
@@ -2525,11 +3114,32 @@ def edit_appointment(request, appt_id):
     else:
         appt = get_object_or_404(Appointment, id=appt_id)
     if request.method == "POST":
-        appt.service = request.POST.get("service", appt.service)
-        appt.date = request.POST.get("date", str(appt.date))
-        appt.time = request.POST.get("time", appt.time)
-        appt.notes = request.POST.get("notes", appt.notes)
-        appt.status = request.POST.get("status", appt.status)
+        new_service = request.POST.get("service", appt.service).strip()
+        new_date = request.POST.get("date", str(appt.date)).strip()
+        new_time = request.POST.get("time", appt.time).strip()
+        new_notes = request.POST.get("notes", appt.notes).strip()
+        new_status = request.POST.get("status", appt.status)
+
+        # Validate if date or time changed
+        if str(new_date) != str(appt.date) or new_time != appt.time:
+            is_valid, err_msg, normalized_time = validate_appointment_booking(
+                date_str=new_date,
+                time_str=new_time,
+                hospital=hospital,
+                exclude_appointment_id=appt.id,
+                allow_sunday=True,
+            )
+            if not is_valid:
+                messages.error(request, f"❌ {err_msg}")
+                return render(request, "admin/edit_appointment.html", {"appt": appt})
+            appt.time = new_time or normalized_time
+        else:
+            appt.time = new_time
+
+        appt.service = new_service
+        appt.date = new_date
+        appt.notes = new_notes
+        appt.status = new_status
         appt.save()
         messages.success(request, "✅ Appointment updated successfully!")
         return redirect("admin_appointments")
@@ -2564,6 +3174,82 @@ def delete_appointment(request, appt_id):
 
 
 @login_required
+def add_patient(request):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user)
+    if request.method == "POST":
+        first_name = request.POST.get("first_name", "").strip()
+        last_name = request.POST.get("last_name", "").strip()
+        email = request.POST.get("email", "").strip().lower()
+        phone_number = request.POST.get("phone_number", "").strip()
+        gender = request.POST.get("gender", "").strip()
+        dob_str = request.POST.get("date_of_birth", "").strip()
+        joining_date_str = request.POST.get("joining_date", "").strip()
+        blood_group = request.POST.get("blood_group", "").strip()
+        emergency_contact = request.POST.get("emergency_contact", "").strip()
+        address = request.POST.get("address", "").strip()
+        medical_notes = request.POST.get("medical_notes", "").strip()
+        username = request.POST.get("username", "").strip() or email or f"patient_{uuid.uuid4().hex[:8]}"
+
+        if not email and not username:
+            messages.error(request, "❌ Username or email is required to register a patient.")
+            return render(request, "admin/add_patient.html")
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f"❌ Username '{username}' already exists. Please choose another.")
+            return render(request, "admin/add_patient.html")
+
+        if email and User.objects.filter(email=email).exists():
+            messages.error(request, f"❌ Email '{email}' is already registered.")
+            return render(request, "admin/add_patient.html")
+
+        # Parse date_of_birth and joining_date as date-only objects
+        dob = None
+        if dob_str:
+            try:
+                dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                pass
+
+        joining_date = timezone.now().date()
+        if joining_date_str:
+            try:
+                joining_date = datetime.strptime(joining_date_str, "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                pass
+
+        user = User.objects.create(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        user.set_password(f"Patient@{uuid.uuid4().hex[:6]}")
+        user.save()
+
+        profile, _ = Profile.objects.get_or_create(user=user)
+        profile.phone_number = phone_number
+        profile.gender = gender
+        profile.date_of_birth = dob
+        profile.joining_date = joining_date
+        profile.blood_group = blood_group
+        profile.emergency_contact = emergency_contact
+        profile.address = address
+        profile.medical_notes = medical_notes
+        profile.save()
+
+        patient_profile, _ = PatientProfile.objects.get_or_create(user=user)
+        patient_profile.hospital = hospital
+        patient_profile.joining_date = joining_date
+        patient_profile.save()
+
+        messages.success(request, f"✅ Patient {user.get_full_name() or user.username} registered successfully!")
+        return redirect("admin_patients")
+    return render(request, "admin/add_patient.html")
+
+
+@login_required
 def edit_patient(request, user_id):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
@@ -2578,18 +3264,65 @@ def edit_patient(request, user_id):
             messages.error(request, "❌ Access denied: Patient does not belong to your clinic.")
             return redirect("admin_patients")
     profile, _ = Profile.objects.get_or_create(user=patient)
+    patient_profile = getattr(patient, "patient_profile", None)
+    if not patient_profile and hospital:
+        patient_profile = PatientProfile.objects.create(user=patient, hospital=hospital)
+
     if request.method == "POST":
         patient.first_name = request.POST.get("first_name", "").strip()
         patient.last_name = request.POST.get("last_name", "").strip()
-        patient.email = request.POST.get("email", "").strip()
+        new_email = request.POST.get("email", "").strip()
+        if new_email and new_email != patient.email:
+            if User.objects.filter(email=new_email).exclude(id=patient.id).exists():
+                messages.error(request, "❌ Email already registered by another account.")
+                return render(request, "admin/edit_patient.html", {"patient": patient, "profile": profile, "patient_profile": patient_profile})
+            patient.email = new_email
         patient.save()
+
         profile.phone_number = request.POST.get("phone_number", "").strip()
-        profile.address = request.POST.get("address", "").strip()
+        profile.gender = request.POST.get("gender", profile.gender).strip()
+        profile.blood_group = request.POST.get("blood_group", profile.blood_group).strip()
+        profile.emergency_contact = request.POST.get("emergency_contact", profile.emergency_contact).strip()
+        profile.medical_notes = request.POST.get("medical_notes", profile.medical_notes).strip()
+        
+        # Address
+        address = request.POST.get("address", "").strip() or request.POST.get("city", "").strip()
+        if address:
+            profile.address = address
+
+        # Date of Birth (date-only)
+        dob_str = request.POST.get("date_of_birth", "").strip()
+        if dob_str:
+            try:
+                profile.date_of_birth = datetime.strptime(dob_str, "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                pass
+        elif "date_of_birth" in request.POST:
+            profile.date_of_birth = None
+
+        # Joining Date (date-only, preventing timezone day-shift)
+        jd_str = request.POST.get("joining_date", "").strip()
+        if jd_str:
+            try:
+                parsed_jd = datetime.strptime(jd_str, "%Y-%m-%d").date()
+                profile.joining_date = parsed_jd
+                if patient_profile:
+                    patient_profile.joining_date = parsed_jd
+                    patient_profile.save()
+            except (ValueError, TypeError):
+                pass
+        elif "joining_date" in request.POST:
+            # Explicitly cleared if optional
+            profile.joining_date = None
+            if patient_profile:
+                patient_profile.joining_date = None
+                patient_profile.save()
+
         profile.save()
         messages.success(request, "✅ Patient updated successfully!")
         return redirect("admin_patients")
     return render(
-        request, "admin/edit_patient.html", {"patient": patient, "profile": profile}
+        request, "admin/edit_patient.html", {"patient": patient, "profile": profile, "patient_profile": patient_profile}
     )
 
 
@@ -2669,7 +3402,19 @@ def edit_staff(request, staff_id):
         staff.user.save()
         staff.role = request.POST.get("role", staff.role)
         staff.phone = request.POST.get("phone", "").strip()
-        staff.salary = request.POST.get("salary", staff.salary)
+        salary_val = request.POST.get("base_salary") or request.POST.get("salary")
+        if salary_val is not None and salary_val != "":
+            try:
+                staff.salary = Decimal(salary_val)
+            except Exception:
+                pass
+        staff.address = request.POST.get("address", staff.address).strip()
+        jd_str = request.POST.get("joining_date", "").strip()
+        if jd_str:
+            try:
+                staff.joining_date = datetime.strptime(jd_str, "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                pass
         staff.save()
         messages.success(request, "✅ Staff member updated successfully!")
         return redirect("admin_staff")
@@ -2707,9 +3452,26 @@ def delete_staff(request, staff_id):
 def add_attendance(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    staff_list = StaffProfile.objects.all().select_related("user")
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        staff_list = StaffProfile.objects.filter(
+            Q(hospital=hospital) | Q(hospital__isnull=True)
+        ).select_related("user")
+    else:
+        staff_list = StaffProfile.objects.all().select_related("user")
     if request.method == "POST":
-        staff_user = get_object_or_404(User, id=request.POST.get("staff_id"))
+        staff_id = request.POST.get("staff_id")
+        if hospital and not request.user.is_superuser:
+            staff_user = get_object_or_404(
+                User,
+                Q(id=staff_id)
+                & (
+                    Q(staff_profile__hospital=hospital)
+                    | Q(staff_profile__hospital__isnull=True)
+                ),
+            )
+        else:
+            staff_user = get_object_or_404(User, id=staff_id)
         date = request.POST.get("date")
         clock_in = request.POST.get("clock_in") or None
         clock_out = request.POST.get("clock_out") or None
@@ -2719,6 +3481,7 @@ def add_attendance(request):
             staff=staff_user,
             date=date,
             defaults={
+                "hospital": hospital,
                 "clock_in": clock_in,
                 "clock_out": clock_out,
                 "total_hours": total_hours,
@@ -2734,12 +3497,34 @@ def add_attendance(request):
 def edit_attendance(request, att_id):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    att = get_object_or_404(Attendance, id=att_id)
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        att = (
+            Attendance.objects.filter(
+                Q(hospital=hospital)
+                | Q(staff__staff_profile__hospital=hospital)
+                | Q(hospital__isnull=True)
+            )
+            .filter(id=att_id)
+            .first()
+        )
+        if not att:
+            if Attendance.objects.filter(id=att_id).exists():
+                messages.error(
+                    request,
+                    "❌ Access denied: You do not have permission to edit this attendance record.",
+                )
+                return redirect("admin_attendance")
+            raise Http404("No Attendance matches the given query.")
+    else:
+        att = get_object_or_404(Attendance, id=att_id)
     if request.method == "POST":
         att.clock_in = request.POST.get("clock_in") or None
         att.clock_out = request.POST.get("clock_out") or None
         att.total_hours = request.POST.get("total_hours", att.total_hours)
         att.notes = request.POST.get("notes", "")
+        if not att.hospital and hospital:
+            att.hospital = hospital
         att.save()
         messages.success(request, "✅ Attendance updated!")
         return redirect("admin_attendance")
@@ -2762,6 +3547,12 @@ def delete_attendance(request, att_id):
             .first()
         )
         if not att:
+            if Attendance.objects.filter(id=att_id).exists():
+                messages.error(
+                    request,
+                    "❌ Access denied: You do not have permission to delete this attendance record.",
+                )
+                return redirect("admin_attendance")
             raise Http404("No Attendance matches the given query.")
     else:
         att = get_object_or_404(Attendance, id=att_id)
@@ -2799,6 +3590,12 @@ def delete_leave(request, leave_id):
             .first()
         )
         if not leave:
+            if LeaveApplication.objects.filter(id=leave_id).exists():
+                messages.error(
+                    request,
+                    "❌ Access denied: You do not have permission to delete this leave application.",
+                )
+                return redirect("admin_leaves")
             raise Http404("No LeaveApplication matches the given query.")
     else:
         leave = get_object_or_404(LeaveApplication, id=leave_id)
@@ -2836,6 +3633,12 @@ def edit_salary(request, record_id):
             .first()
         )
         if not record:
+            if SalaryRecord.objects.filter(id=record_id).exists():
+                messages.error(
+                    request,
+                    "❌ Access denied: You do not have permission to edit this salary record.",
+                )
+                return redirect("admin_salary")
             raise Http404("No SalaryRecord matches the given query.")
     else:
         record = get_object_or_404(SalaryRecord, id=record_id)
@@ -2872,6 +3675,12 @@ def delete_salary(request, record_id):
             .first()
         )
         if not record:
+            if SalaryRecord.objects.filter(id=record_id).exists():
+                messages.error(
+                    request,
+                    "❌ Access denied: You do not have permission to delete this salary record.",
+                )
+                return redirect("admin_salary")
             raise Http404("No SalaryRecord matches the given query.")
     else:
         record = get_object_or_404(SalaryRecord, id=record_id)
@@ -3961,30 +4770,100 @@ def export_analytics_pdf(request):
 @platform_superadmin_required
 def super_admin_dashboard(request):
     from django.db.models import Count, Sum
+    now = timezone.now()
+    today = now.date()
 
+    # Clinic counts & statuses
     total_hospitals = Hospital.objects.count()
     active_hospitals = Hospital.objects.filter(is_active=True).count()
+    trial_hospitals = HospitalSubscription.objects.filter(status="trial").count()
+    paid_hospitals = HospitalSubscription.objects.filter(
+        status="active", plan__price_monthly__gt=0
+    ).count()
+    expired_hospitals = Hospital.objects.filter(
+        Q(subscription__status="expired") | Q(status="expired")
+    ).count()
+    suspended_hospitals = Hospital.objects.filter(
+        Q(status="suspended") | Q(subscription__status="suspended")
+    ).count()
+    new_hospitals_month = Hospital.objects.filter(
+        created_at__year=now.year, created_at__month=now.month
+    ).count()
+
+    # User & clinical resources
     total_patients = User.objects.filter(is_superuser=False, is_staff=False).count()
     total_staff = StaffProfile.objects.count()
     total_appointments = Appointment.objects.count()
     open_tickets = SupportTicket.objects.filter(status="open").count()
+
+    # Subscriptions
     active_subs = HospitalSubscription.objects.filter(status="active").count()
     trial_subs = HospitalSubscription.objects.filter(status="trial").count()
-    recent_hospitals = Hospital.objects.order_by("-created_at")[:6]
+    expired_subs = HospitalSubscription.objects.filter(status="expired").count()
+    upcoming_renewals = HospitalSubscription.objects.filter(
+        status="active",
+        expires_at__gte=today,
+        expires_at__lte=today + timedelta(days=7),
+    ).count()
+
+    # Payments & Revenue
+    has_sub_payments = ClinicSubscriptionPayment.objects.exists()
+    mrr_val = (
+        HospitalSubscription.objects.filter(status="active").aggregate(
+            t=Sum("plan__price_monthly")
+        )["t"]
+        or Decimal("0.00")
+    )
+    total_revenue = (
+        PaymentRecord.objects.filter(status="paid").aggregate(t=Sum("amount"))["t"]
+        or 0
+    )
+    pending_payments = PaymentRecord.objects.filter(status="pending").count()
+    failed_payments = ClinicSubscriptionPayment.objects.filter(status="failed").count()
+
+    # Alert center calculations
+    clinics_near_limit = []
+    for h in Hospital.objects.filter(is_active=True).select_related("subscription__plan"):
+        for fcode in ("patients", "appointments", "staff_management"):
+            u = get_feature_usage(h, fcode)
+            if u.get("limit", 0) > 0 and u.get("percent", 0) >= 80:
+                clinics_near_limit.append({
+                    "hospital": h,
+                    "metric": fcode.replace("_", " ").title(),
+                    "percent": u["percent"],
+                    "current": u["current"],
+                    "limit": u["limit"],
+                    "level": u["warning_level"],
+                })
+                break
+
+    trials_expiring = HospitalSubscription.objects.filter(
+        status="trial",
+        expires_at__lte=today + timedelta(days=3),
+    ).select_related("hospital", "plan")
+
+    impaired_features = Feature.objects.filter(
+        global_status__in=["maintenance", "disabled"], is_active=True
+    ).select_related("category")
+
+    recent_hospitals = Hospital.objects.select_related("subscription__plan").order_by(
+        "-created_at"
+    )[:6]
     recent_tickets = SupportTicket.objects.select_related("hospital").order_by(
         "-created_at"
     )[:5]
     recent_payments = PaymentRecord.objects.select_related(
-        "patient", "appointment"
+        "patient", "appointment", "hospital"
     ).order_by("-created_at")[:15]
-    total_revenue = (
-        PaymentRecord.objects.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
-    )
-    pending_payments = PaymentRecord.objects.filter(status="pending").count()
+    recent_audit_events = AuditEvent.objects.select_related(
+        "actor", "hospital"
+    ).order_by("-created_at")[:8]
+
     return render(
         request,
         "super_admin/super_admin_dashboard.html",
         {
+            # Core counters (backwards-compatible)
             "total_hospitals": total_hospitals,
             "active_hospitals": active_hospitals,
             "total_patients": total_patients,
@@ -3993,19 +4872,101 @@ def super_admin_dashboard(request):
             "open_tickets": open_tickets,
             "active_subs": active_subs,
             "trial_subs": trial_subs,
+            "expired_subs": expired_subs,
             "recent_hospitals": recent_hospitals,
             "recent_tickets": recent_tickets,
             "recent_payments": recent_payments,
             "total_revenue": total_revenue,
             "pending_payments": pending_payments,
+            # SaaS Subscription & Multi-Clinic metrics
+            "trial_hospitals": trial_hospitals,
+            "paid_hospitals": paid_hospitals,
+            "expired_hospitals": expired_hospitals,
+            "suspended_hospitals": suspended_hospitals,
+            "new_hospitals_month": new_hospitals_month,
+            "mrr": mrr_val,
+            "has_billing_data": (mrr_val > 0 or has_sub_payments or total_revenue > 0),
+            "upcoming_renewals": upcoming_renewals,
+            "failed_payments": failed_payments,
+            "clinics_near_limit": clinics_near_limit,
+            "trials_expiring": trials_expiring,
+            "impaired_features": impaired_features,
+            "recent_audit_events": recent_audit_events,
         },
     )
 
 
 @platform_superadmin_required
 def super_admin_hospitals(request):
-    hospitals = Hospital.objects.prefetch_related("subscription", "admins__user").all()
-    return render(request, "super_admin/super_admin_hospitals.html", {"hospitals": hospitals})
+    q = request.GET.get("q", "").strip()
+    status_filter = request.GET.get("status", "").strip()
+    plan_filter = request.GET.get("plan", "").strip()
+
+    hospitals_qs = (
+        Hospital.objects.select_related("subscription__plan")
+        .prefetch_related("admins__user", "staff")
+        .all()
+    )
+
+    if q:
+        hospitals_qs = hospitals_qs.filter(
+            Q(name__icontains=q)
+            | Q(city__icontains=q)
+            | Q(phone__icontains=q)
+            | Q(email__icontains=q)
+            | Q(admins__user__username__icontains=q)
+        ).distinct()
+
+    if status_filter:
+        hospitals_qs = hospitals_qs.filter(status=status_filter)
+
+    if plan_filter:
+        hospitals_qs = hospitals_qs.filter(subscription__plan_id=plan_filter)
+
+    hospitals_data = []
+    now = timezone.now()
+    for h in hospitals_qs:
+        sub = getattr(h, "subscription", None)
+        patient_count = PatientProfile.objects.filter(
+            hospital=h, patient_status="active"
+        ).count()
+        staff_count = StaffProfile.objects.filter(hospital=h, is_active=True).count()
+        monthly_appts = (
+            Appointment.objects.filter(
+                hospital=h, date__year=now.year, date__month=now.month
+            )
+            .exclude(status="cancelled")
+            .count()
+        )
+
+        patient_usage = get_feature_usage(h, "patients")
+        appt_usage = get_feature_usage(h, "appointments")
+
+        hospitals_data.append({
+            "hospital": h,
+            "subscription": sub,
+            "patient_count": patient_count,
+            "staff_count": staff_count,
+            "monthly_appts": monthly_appts,
+            "patient_usage": patient_usage,
+            "appt_usage": appt_usage,
+        })
+
+    plans = SubscriptionPlan.objects.all().order_by("tier_level", "price_monthly")
+
+    return render(
+        request,
+        "super_admin/super_admin_hospitals.html",
+        {
+            "hospitals": [d["hospital"] for d in hospitals_data],
+            "hospitals_data": hospitals_data,
+            "plans": plans,
+            "q": q,
+            "status_filter": status_filter,
+            "plan_filter": plan_filter,
+            "total_count": len(hospitals_data),
+        },
+    )
 
 
 @platform_superadmin_required
@@ -4134,9 +5095,1103 @@ def super_admin_delete_hospital(request, hospital_id):
     hospital = get_object_or_404(Hospital, id=hospital_id)
     if request.method == "POST":
         name = hospital.name
+        log_audit_event(
+            action="clinic.deleted",
+            actor=request.user,
+            entity_type="Hospital",
+            entity_id=hospital.id,
+            metadata={"name": name},
+        )
         hospital.delete()
         messages.success(request, f'Hospital "{name}" deleted.')
     return redirect("super_admin_hospitals")
+
+
+# ════════════════════════════════════════════════════════════
+# SUPER ADMIN SAAS MANAGEMENT SUITE
+# ════════════════════════════════════════════════════════════
+
+
+@platform_superadmin_required
+def super_admin_clinic_detail(request, hospital_id):
+    hospital = get_object_or_404(Hospital, id=hospital_id)
+    active_tab = request.GET.get("tab", "overview").lower()
+    if active_tab not in (
+        "overview",
+        "users",
+        "subscription",
+        "features",
+        "usage",
+        "billing",
+        "audit",
+    ):
+        active_tab = "overview"
+
+    # Tab 1: Overview
+    admins = ClinicAdmin.objects.filter(hospital=hospital).select_related("user")
+    staff_count = StaffProfile.objects.filter(hospital=hospital, is_active=True).count()
+    patient_count = PatientProfile.objects.filter(
+        hospital=hospital, patient_status="active"
+    ).count()
+    appointment_count = Appointment.objects.filter(hospital=hospital).count()
+
+    # Tab 2: Users
+    staff_members = (
+        StaffProfile.objects.filter(hospital=hospital)
+        .select_related("user")
+        .order_by("-joining_date", "-id")
+    )
+    recent_patients = (
+        PatientProfile.objects.filter(hospital=hospital)
+        .select_related("user")
+        .order_by("-created_at")[:20]
+    )
+
+    # Tab 3: Subscription
+    sub = getattr(hospital, "subscription", None)
+    plans = SubscriptionPlan.objects.all().order_by("tier_level", "price_monthly")
+    sub_history = (
+        SubscriptionHistory.objects.filter(hospital=hospital)
+        .select_related("previous_plan", "new_plan", "changed_by")
+        .order_by("-created_at")
+    )
+
+    # Tab 4: Features & Overrides
+    features = (
+        Feature.objects.filter(is_active=True)
+        .select_related("category")
+        .order_by("category__order", "name")
+    )
+    overrides = {
+        o.feature_id: o
+        for o in ClinicFeatureOverride.objects.filter(hospital=hospital).select_related(
+            "feature"
+        )
+    }
+    features_data = []
+    for f in features:
+        ent = evaluate_entitlement(hospital, f.code)
+        override = overrides.get(f.id)
+        usage = get_feature_usage(hospital, f.code) if f.has_usage_limit else None
+        features_data.append({
+            "feature": f,
+            "entitlement": ent,
+            "override": override,
+            "usage": usage,
+        })
+
+    # Tab 5: Usage
+    usage_metrics = [
+        {
+            "name": "Active Patients",
+            "code": "patients",
+            "icon": "fa-user-injured",
+            **get_feature_usage(hospital, "patients"),
+        },
+        {
+            "name": "Monthly Appointments",
+            "code": "appointments",
+            "icon": "fa-calendar-check",
+            **get_feature_usage(hospital, "appointments"),
+        },
+        {
+            "name": "Active Staff",
+            "code": "staff_management",
+            "icon": "fa-user-md",
+            **get_feature_usage(hospital, "staff_management"),
+        },
+        {
+            "name": "Media Storage (MB)",
+            "code": "storage",
+            "icon": "fa-hdd",
+            **get_feature_usage(hospital, "storage"),
+        },
+        {
+            "name": "Blog Articles",
+            "code": "blogs",
+            "icon": "fa-newspaper",
+            **get_feature_usage(hospital, "blogs"),
+        },
+        {
+            "name": "Active Promotions",
+            "code": "promos",
+            "icon": "fa-tags",
+            **get_feature_usage(hospital, "promos"),
+        },
+    ]
+
+    # Tab 6: Billing
+    sub_payments = (
+        ClinicSubscriptionPayment.objects.filter(hospital=hospital)
+        .select_related("plan")
+        .order_by("-created_at")
+    )
+    patient_payments = (
+        PaymentRecord.objects.filter(hospital=hospital)
+        .select_related("patient", "appointment")
+        .order_by("-created_at")[:25]
+    )
+    total_billed = (
+        sub_payments.filter(status="paid").aggregate(t=Sum("amount"))["t"]
+        or Decimal("0.00")
+    )
+
+    # Tab 7: Audit Log
+    audit_logs = (
+        AuditEvent.objects.filter(hospital=hospital)
+        .select_related("actor")
+        .order_by("-created_at")[:50]
+    )
+
+    return render(
+        request,
+        "super_admin/super_admin_clinic_detail.html",
+        {
+            "hospital": hospital,
+            "active_tab": active_tab,
+            "admins": admins,
+            "staff_count": staff_count,
+            "patient_count": patient_count,
+            "appointment_count": appointment_count,
+            "staff_members": staff_members,
+            "recent_patients": recent_patients,
+            "subscription": sub,
+            "plans": plans,
+            "sub_history": sub_history,
+            "features_data": features_data,
+            "usage_metrics": usage_metrics,
+            "sub_payments": sub_payments,
+            "patient_payments": patient_payments,
+            "total_billed": total_billed,
+            "audit_logs": audit_logs,
+        },
+    )
+
+
+@platform_superadmin_required
+@require_POST
+def super_admin_suspend_clinic(request, hospital_id):
+    hospital = get_object_or_404(Hospital, id=hospital_id)
+    reason = request.POST.get("reason", "").strip() or "Suspended by Super Admin"
+
+    hospital.status = "suspended"
+    hospital.is_active = False
+    hospital.suspension_reason = reason
+    hospital.save()
+
+    sub = getattr(hospital, "subscription", None)
+    if sub:
+        old_status = sub.status
+        sub.status = "suspended"
+        sub.suspended_at = timezone.now()
+        sub.suspension_reason = reason
+        sub.save()
+        SubscriptionHistory.objects.create(
+            hospital=hospital,
+            previous_plan=sub.plan,
+            new_plan=sub.plan,
+            previous_status=old_status,
+            new_status="suspended",
+            change_type="status_change",
+            reason=f"Suspension: {reason}",
+            changed_by=request.user,
+        )
+
+    log_audit_event(
+        action="clinic.suspended",
+        actor=request.user,
+        hospital=hospital,
+        entity_type="Hospital",
+        entity_id=hospital.id,
+        metadata={"reason": reason},
+    )
+
+    messages.warning(
+        request,
+        f'Clinic "{hospital.name}" has been suspended. Normal operations are locked.',
+    )
+    return redirect("super_admin_clinic_detail", hospital_id=hospital.id)
+
+
+@platform_superadmin_required
+@require_POST
+def super_admin_activate_clinic(request, hospital_id):
+    hospital = get_object_or_404(Hospital, id=hospital_id)
+
+    hospital.status = "active"
+    hospital.is_active = True
+    hospital.suspension_reason = ""
+    hospital.save()
+
+    sub = getattr(hospital, "subscription", None)
+    if sub:
+        old_status = sub.status
+        sub.status = "active"
+        sub.suspended_at = None
+        sub.suspension_reason = ""
+        sub.save()
+        SubscriptionHistory.objects.create(
+            hospital=hospital,
+            previous_plan=sub.plan,
+            new_plan=sub.plan,
+            previous_status=old_status,
+            new_status="active",
+            change_type="status_change",
+            reason="Reactivation by Super Admin",
+            changed_by=request.user,
+        )
+
+    log_audit_event(
+        action="clinic.activated",
+        actor=request.user,
+        hospital=hospital,
+        entity_type="Hospital",
+        entity_id=hospital.id,
+        metadata={"action": "reactivate"},
+    )
+
+    messages.success(
+        request, f'Clinic "{hospital.name}" has been reactivated successfully.'
+    )
+    return redirect("super_admin_clinic_detail", hospital_id=hospital.id)
+
+
+@platform_superadmin_required
+@require_POST
+def super_admin_update_clinic_subscription(request, hospital_id):
+    hospital = get_object_or_404(Hospital, id=hospital_id)
+    sub = getattr(hospital, "subscription", None)
+    if not sub:
+        sub = HospitalSubscription(hospital=hospital, status="trial")
+
+    action_type = request.POST.get("action_type", "change_plan")
+    today = timezone.now().date()
+
+    if action_type == "change_plan":
+        plan_id = request.POST.get("plan_id")
+        reason = (
+            request.POST.get("reason", "").strip() or "Plan modified by Super Admin"
+        )
+        if plan_id:
+            try:
+                new_plan = SubscriptionPlan.objects.get(id=plan_id)
+                old_plan = sub.plan
+                sub.plan = new_plan
+                sub.save()
+
+                SubscriptionHistory.objects.create(
+                    hospital=hospital,
+                    previous_plan=old_plan,
+                    new_plan=new_plan,
+                    previous_status=sub.status,
+                    new_status=sub.status,
+                    change_type="plan_change",
+                    reason=reason,
+                    changed_by=request.user,
+                )
+                log_audit_event(
+                    action="plan.changed",
+                    actor=request.user,
+                    hospital=hospital,
+                    entity_type="HospitalSubscription",
+                    entity_id=sub.id,
+                    metadata={
+                        "old_plan": getattr(old_plan, "name", None),
+                        "new_plan": new_plan.name,
+                        "reason": reason,
+                    },
+                )
+                messages.success(
+                    request, f'✅ Plan updated to "{new_plan.display_name}".'
+                )
+            except SubscriptionPlan.DoesNotExist:
+                messages.error(request, "Invalid plan selected.")
+
+    elif action_type == "extend_trial":
+        days = int(request.POST.get("extend_days", 7))
+        reason = (
+            request.POST.get("reason", "").strip() or f"Trial extended by {days} days"
+        )
+        current_exp = sub.expires_at or today
+        if current_exp < today:
+            current_exp = today
+        sub.expires_at = current_exp + timedelta(days=days)
+        sub.trial_ends_at = timezone.now() + timedelta(days=days)
+        sub.status = "trial"
+        sub.save()
+
+        SubscriptionHistory.objects.create(
+            hospital=hospital,
+            previous_plan=sub.plan,
+            new_plan=sub.plan,
+            previous_status=sub.status,
+            new_status="trial",
+            change_type="trial_extension",
+            reason=reason,
+            changed_by=request.user,
+        )
+        log_audit_event(
+            action="trial.extended",
+            actor=request.user,
+            hospital=hospital,
+            entity_type="HospitalSubscription",
+            entity_id=sub.id,
+            metadata={
+                "extended_days": days,
+                "new_expiry": str(sub.expires_at),
+                "reason": reason,
+            },
+        )
+        messages.success(
+            request, f"✅ Trial extended by {days} days until {sub.expires_at}."
+        )
+
+    elif action_type == "update_status":
+        new_status = request.POST.get("status", "active")
+        reason = (
+            request.POST.get("reason", "").strip() or f"Status changed to {new_status}"
+        )
+        old_status = sub.status
+        sub.status = new_status
+        sub.save()
+
+        SubscriptionHistory.objects.create(
+            hospital=hospital,
+            previous_plan=sub.plan,
+            new_plan=sub.plan,
+            previous_status=old_status,
+            new_status=new_status,
+            change_type="status_change",
+            reason=reason,
+            changed_by=request.user,
+        )
+        log_audit_event(
+            action="subscription.status_changed",
+            actor=request.user,
+            hospital=hospital,
+            entity_type="HospitalSubscription",
+            entity_id=sub.id,
+            metadata={
+                "old_status": old_status,
+                "new_status": new_status,
+                "reason": reason,
+            },
+        )
+        messages.success(
+            request,
+            f'✅ Subscription status changed to "{sub.get_status_display()}".',
+        )
+
+    return redirect(f"/super-admin/clinics/{hospital.id}/detail/?tab=subscription")
+
+
+@platform_superadmin_required
+@require_POST
+def super_admin_save_feature_override(request, hospital_id):
+    hospital = get_object_or_404(Hospital, id=hospital_id)
+    feature_code = request.POST.get("feature_code", "").strip()
+    override_type = request.POST.get("override_type", "grant").strip()
+    custom_limit_raw = request.POST.get("custom_limit", "0").strip()
+    reason = request.POST.get("reason", "").strip()
+    expires_days_raw = request.POST.get("expires_days", "").strip()
+
+    feature = get_object_or_404(Feature, code=feature_code)
+    try:
+        custom_limit = int(custom_limit_raw) if custom_limit_raw else 0
+    except ValueError:
+        custom_limit = 0
+
+    expires_at = None
+    if expires_days_raw:
+        try:
+            expires_at = timezone.now() + timedelta(days=int(expires_days_raw))
+        except ValueError:
+            expires_at = None
+
+    override, created = ClinicFeatureOverride.objects.update_or_create(
+        hospital=hospital,
+        feature=feature,
+        defaults={
+            "override_type": override_type,
+            "custom_limit": custom_limit,
+            "reason": reason,
+            "expires_at": expires_at,
+            "created_by": request.user,
+        },
+    )
+
+    action_label = "feature.override.created" if created else "feature.override.updated"
+    log_audit_event(
+        action=action_label,
+        actor=request.user,
+        hospital=hospital,
+        entity_type="ClinicFeatureOverride",
+        entity_id=override.id,
+        metadata={
+            "feature": feature.code,
+            "override_type": override_type,
+            "custom_limit": custom_limit,
+            "reason": reason,
+            "expires_at": str(expires_at) if expires_at else None,
+        },
+    )
+
+    messages.success(
+        request,
+        f'✅ Override for "{feature.name}" set to {override.get_override_type_display()}.',
+    )
+    return redirect(f"/super-admin/clinics/{hospital.id}/detail/?tab=features")
+
+
+@platform_superadmin_required
+@require_POST
+def super_admin_delete_feature_override(request, hospital_id, feature_code):
+    hospital = get_object_or_404(Hospital, id=hospital_id)
+    feature = get_object_or_404(Feature, code=feature_code)
+    override = ClinicFeatureOverride.objects.filter(
+        hospital=hospital, feature=feature
+    ).first()
+
+    if override:
+        override.delete()
+        log_audit_event(
+            action="feature.override.removed",
+            actor=request.user,
+            hospital=hospital,
+            entity_type="ClinicFeatureOverride",
+            entity_id=feature.code,
+            metadata={"feature": feature.code},
+        )
+        messages.success(
+            request,
+            f'✅ Override removed for "{feature.name}". Standard plan rules apply.',
+        )
+    else:
+        messages.info(request, "No active override found.")
+
+    return redirect(f"/super-admin/clinics/{hospital.id}/detail/?tab=features")
+
+
+# ─── PLAN MANAGEMENT ─────────────────────────────────────────
+
+
+@platform_superadmin_required
+def super_admin_plans(request):
+    plans = SubscriptionPlan.objects.all().order_by("tier_level", "price_monthly")
+    plans_data = []
+    for p in plans:
+        clinic_count = HospitalSubscription.objects.filter(
+            plan=p, status__in=["active", "trial"]
+        ).count()
+        feature_count = PlanFeature.objects.filter(
+            plan=p, access_type__in=["full", "limited"]
+        ).count()
+        plans_data.append({
+            "plan": p,
+            "clinic_count": clinic_count,
+            "feature_count": feature_count,
+        })
+    return render(
+        request,
+        "super_admin/super_admin_plans.html",
+        {"plans_data": plans_data, "plans": plans},
+    )
+
+
+@platform_superadmin_required
+def super_admin_add_plan(request):
+    features = (
+        Feature.objects.filter(is_active=True)
+        .select_related("category")
+        .order_by("category__order", "name")
+    )
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip().lower()
+        code = request.POST.get("code", "").strip().lower() or name
+        display_name = request.POST.get("display_name", "").strip() or name.title()
+        description = request.POST.get("description", "").strip()
+        price_monthly_raw = request.POST.get("price_monthly", "0").strip()
+        price_annual_raw = request.POST.get("price_annual", "0").strip()
+        trial_days_raw = request.POST.get("trial_days", "14").strip()
+        tier_level_raw = request.POST.get("tier_level", "10").strip()
+        is_public = request.POST.get("is_public") == "on"
+        is_active = request.POST.get("is_active") == "on"
+
+        max_patients_raw = request.POST.get("max_patients", "100").strip()
+        max_appointments_raw = request.POST.get(
+            "max_appointments_monthly", "100"
+        ).strip()
+        max_staff_raw = request.POST.get("max_staff", "3").strip()
+        storage_mb_raw = request.POST.get("storage_mb", "500").strip()
+
+        errors = []
+        if not name:
+            errors.append("Internal name is required.")
+        if SubscriptionPlan.objects.filter(name=name).exists():
+            errors.append(f'Plan with name "{name}" already exists.')
+        if SubscriptionPlan.objects.filter(code=code).exists():
+            errors.append(f'Plan with code "{code}" already exists.')
+
+        try:
+            price_monthly = Decimal(price_monthly_raw or "0")
+            price_annual = Decimal(price_annual_raw or "0")
+        except Exception:
+            errors.append("Invalid price format.")
+
+        if errors:
+            for err in errors:
+                messages.error(request, err)
+            return render(
+                request,
+                "super_admin/super_admin_plan_form.html",
+                {"features": features, "is_edit": False},
+            )
+
+        plan = SubscriptionPlan.objects.create(
+            name=name,
+            code=code,
+            display_name=display_name,
+            description=description,
+            price_monthly=Decimal(price_monthly_raw or "0"),
+            price_annual=Decimal(price_annual_raw or "0"),
+            trial_days=int(trial_days_raw or 14),
+            tier_level=int(tier_level_raw or 10),
+            is_public=is_public,
+            is_active=is_active,
+            max_patients=int(max_patients_raw or 100),
+            max_appointments_monthly=int(max_appointments_raw or 100),
+            max_staff=int(max_staff_raw or 3),
+            storage_mb=int(storage_mb_raw or 500),
+        )
+
+        # Configure PlanFeature entries
+        for f in features:
+            access_type = request.POST.get(f"access_{f.code}", "disabled")
+            limit_raw = request.POST.get(f"limit_{f.code}", "0")
+            try:
+                limit_val = int(limit_raw) if limit_raw else 0
+            except ValueError:
+                limit_val = 0
+            PlanFeature.objects.create(
+                plan=plan,
+                feature=f,
+                access_type=access_type,
+                usage_limit=limit_val,
+                limit_period=(
+                    "monthly" if f.code == "appointments" else "lifetime"
+                ),
+            )
+
+        log_audit_event(
+            action="plan.created",
+            actor=request.user,
+            entity_type="SubscriptionPlan",
+            entity_id=plan.id,
+            metadata={"plan_name": plan.name, "code": plan.code},
+        )
+        messages.success(
+            request, f'✅ Plan "{plan.display_name}" created successfully.'
+        )
+        return redirect("super_admin_plans")
+
+    return render(
+        request,
+        "super_admin/super_admin_plan_form.html",
+        {"features": features, "is_edit": False},
+    )
+
+
+@platform_superadmin_required
+def super_admin_edit_plan(request, plan_id):
+    plan = get_object_or_404(SubscriptionPlan, id=plan_id)
+    features = (
+        Feature.objects.filter(is_active=True)
+        .select_related("category")
+        .order_by("category__order", "name")
+    )
+    existing_pfs = {pf.feature_id: pf for pf in PlanFeature.objects.filter(plan=plan)}
+
+    if request.method == "POST":
+        display_name = (
+            request.POST.get("display_name", "").strip() or plan.name.title()
+        )
+        description = request.POST.get("description", "").strip()
+        price_monthly_raw = request.POST.get("price_monthly", "0").strip()
+        price_annual_raw = request.POST.get("price_annual", "0").strip()
+        trial_days_raw = request.POST.get("trial_days", "14").strip()
+        tier_level_raw = request.POST.get("tier_level", "10").strip()
+        is_public = request.POST.get("is_public") == "on"
+        is_active = request.POST.get("is_active") == "on"
+
+        max_patients_raw = request.POST.get("max_patients", "100").strip()
+        max_appointments_raw = request.POST.get(
+            "max_appointments_monthly", "100"
+        ).strip()
+        max_staff_raw = request.POST.get("max_staff", "3").strip()
+        storage_mb_raw = request.POST.get("storage_mb", "500").strip()
+
+        plan.display_name = display_name
+        plan.description = description
+        plan.price_monthly = Decimal(price_monthly_raw or "0")
+        plan.price_annual = Decimal(price_annual_raw or "0")
+        plan.trial_days = int(trial_days_raw or 14)
+        plan.tier_level = int(tier_level_raw or 10)
+        plan.is_public = is_public
+        plan.is_active = is_active
+        plan.max_patients = int(max_patients_raw or 100)
+        plan.max_appointments_monthly = int(max_appointments_raw or 100)
+        plan.max_staff = int(max_staff_raw or 3)
+        plan.storage_mb = int(storage_mb_raw or 500)
+        plan.save()
+
+        # Update PlanFeature entries
+        for f in features:
+            access_type = request.POST.get(f"access_{f.code}", "disabled")
+            limit_raw = request.POST.get(f"limit_{f.code}", "0")
+            try:
+                limit_val = int(limit_raw) if limit_raw else 0
+            except ValueError:
+                limit_val = 0
+            PlanFeature.objects.update_or_create(
+                plan=plan,
+                feature=f,
+                defaults={
+                    "access_type": access_type,
+                    "usage_limit": limit_val,
+                    "limit_period": (
+                        "monthly" if f.code == "appointments" else "lifetime"
+                    ),
+                },
+            )
+
+        log_audit_event(
+            action="plan.updated",
+            actor=request.user,
+            entity_type="SubscriptionPlan",
+            entity_id=plan.id,
+            metadata={"plan_name": plan.name},
+        )
+        messages.success(
+            request, f'✅ Plan "{plan.display_name}" updated successfully.'
+        )
+        return redirect("super_admin_plans")
+
+    feature_rows = []
+    for f in features:
+        pf = existing_pfs.get(f.id)
+        feature_rows.append({
+            "feature": f,
+            "access_type": (
+                pf.access_type
+                if pf
+                else ("full" if not f.is_paid else "disabled")
+            ),
+            "usage_limit": (
+                pf.usage_limit
+                if pf
+                else (f.default_limit if f.has_usage_limit else 0)
+            ),
+        })
+
+    return render(
+        request,
+        "super_admin/super_admin_plan_form.html",
+        {
+            "plan": plan,
+            "features": features,
+            "feature_rows": feature_rows,
+            "is_edit": True,
+        },
+    )
+
+
+@platform_superadmin_required
+@require_POST
+def super_admin_duplicate_plan(request, plan_id):
+    original = get_object_or_404(SubscriptionPlan, id=plan_id)
+    suffix = uuid.uuid4().hex[:4]
+    new_name = f"{original.name}_{suffix}"
+    new_code = f"{original.code or original.name}_{suffix}"
+
+    clone = SubscriptionPlan.objects.create(
+        name=new_name,
+        code=new_code,
+        display_name=f"{original.display_name} (Copy)",
+        description=original.description,
+        price_monthly=original.price_monthly,
+        price_annual=original.price_annual,
+        trial_days=original.trial_days,
+        tier_level=original.tier_level + 1,
+        is_public=False,
+        is_active=True,
+        max_patients=original.max_patients,
+        max_appointments_monthly=original.max_appointments_monthly,
+        max_staff=original.max_staff,
+        storage_mb=original.storage_mb,
+    )
+
+    for pf in PlanFeature.objects.filter(plan=original):
+        PlanFeature.objects.create(
+            plan=clone,
+            feature=pf.feature,
+            access_type=pf.access_type,
+            usage_limit=pf.usage_limit,
+            limit_period=pf.limit_period,
+        )
+
+    log_audit_event(
+        action="plan.duplicated",
+        actor=request.user,
+        entity_type="SubscriptionPlan",
+        entity_id=clone.id,
+        metadata={"original": original.name, "clone": clone.name},
+    )
+    messages.success(
+        request,
+        f'✅ Plan "{original.display_name}" duplicated as "{clone.display_name}".',
+    )
+    return redirect("super_admin_plans")
+
+
+@platform_superadmin_required
+@require_POST
+def super_admin_toggle_plan(request, plan_id):
+    plan = get_object_or_404(SubscriptionPlan, id=plan_id)
+    plan.is_active = not plan.is_active
+    plan.save()
+    status_str = "activated" if plan.is_active else "deactivated"
+    log_audit_event(
+        action=f"plan.{status_str}",
+        actor=request.user,
+        entity_type="SubscriptionPlan",
+        entity_id=plan.id,
+        metadata={"plan": plan.name, "is_active": plan.is_active},
+    )
+    messages.success(request, f'✅ Plan "{plan.display_name}" {status_str}.')
+    return redirect("super_admin_plans")
+
+
+# ─── FEATURE CATALOG & ACCESS MATRIX ─────────────────────────
+
+
+@platform_superadmin_required
+def super_admin_features(request):
+    categories = FeatureCategory.objects.prefetch_related("features").order_by(
+        "order", "name"
+    )
+    total_features = Feature.objects.count()
+    paid_features = Feature.objects.filter(is_paid=True).count()
+    free_features = Feature.objects.filter(is_paid=False).count()
+    impaired_count = Feature.objects.filter(
+        global_status__in=["maintenance", "disabled"]
+    ).count()
+
+    return render(
+        request,
+        "super_admin/super_admin_features.html",
+        {
+            "categories": categories,
+            "total_features": total_features,
+            "paid_features": paid_features,
+            "free_features": free_features,
+            "impaired_count": impaired_count,
+        },
+    )
+
+
+@platform_superadmin_required
+@require_POST
+def super_admin_feature_global_status(request, feature_code):
+    feature = get_object_or_404(Feature, code=feature_code)
+    status = request.POST.get("global_status", "available").strip()
+    reason = request.POST.get("reason", "").strip()
+    maintenance_message = request.POST.get("maintenance_message", "").strip()
+
+    if status not in ("available", "maintenance", "disabled"):
+        status = "available"
+
+    old_status = feature.global_status
+    feature.global_status = status
+    feature.maintenance_message = maintenance_message
+    feature.save()
+
+    log_audit_event(
+        action="feature.global_status_changed",
+        actor=request.user,
+        entity_type="Feature",
+        entity_id=feature.code,
+        metadata={
+            "feature": feature.code,
+            "old_status": old_status,
+            "new_status": status,
+            "reason": reason,
+        },
+    )
+
+    messages.success(
+        request,
+        f'✅ Feature "{feature.name}" global status changed from {old_status.upper()} to {status.upper()}.',
+    )
+    return redirect("super_admin_features")
+
+
+@platform_superadmin_required
+def super_admin_access_matrix(request):
+    plans = SubscriptionPlan.objects.all().order_by("tier_level", "price_monthly")
+    categories = FeatureCategory.objects.prefetch_related("features").order_by(
+        "order", "name"
+    )
+    pfs = PlanFeature.objects.select_related("plan", "feature")
+    matrix = {}
+    for pf in pfs:
+        matrix[(pf.feature_id, pf.plan_id)] = pf
+
+    category_data = []
+    for cat in categories:
+        feat_list = []
+        for f in cat.features.filter(is_active=True).order_by("name"):
+            plan_cells = []
+            for p in plans:
+                cell = matrix.get((f.id, p.id))
+                plan_cells.append({
+                    "plan": p,
+                    "pf": cell,
+                    "access_type": (
+                        cell.access_type
+                        if cell
+                        else ("full" if not f.is_paid else "disabled")
+                    ),
+                    "usage_limit": cell.usage_limit if cell else 0,
+                })
+            feat_list.append({"feature": f, "plan_cells": plan_cells})
+        if feat_list:
+            category_data.append({"category": cat, "features": feat_list})
+
+    return render(
+        request,
+        "super_admin/super_admin_access_matrix.html",
+        {"plans": plans, "category_data": category_data},
+    )
+
+
+@platform_superadmin_required
+@require_POST
+def super_admin_update_access_matrix(request):
+    plan_id = request.POST.get("plan_id")
+    feature_code = request.POST.get("feature_code")
+    access_type = request.POST.get("access_type", "disabled")
+    limit_raw = request.POST.get("usage_limit", "0")
+
+    plan = get_object_or_404(SubscriptionPlan, id=plan_id)
+    feature = get_object_or_404(Feature, code=feature_code)
+    try:
+        usage_limit = int(limit_raw) if limit_raw else 0
+    except ValueError:
+        usage_limit = 0
+
+    pf, created = PlanFeature.objects.update_or_create(
+        plan=plan,
+        feature=feature,
+        defaults={
+            "access_type": access_type,
+            "usage_limit": usage_limit,
+            "limit_period": (
+                "monthly" if feature.code == "appointments" else "lifetime"
+            ),
+        },
+    )
+
+    log_audit_event(
+        action="access_matrix.updated",
+        actor=request.user,
+        entity_type="PlanFeature",
+        entity_id=pf.id,
+        metadata={
+            "plan": plan.name,
+            "feature": feature.code,
+            "access_type": access_type,
+            "usage_limit": usage_limit,
+        },
+    )
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"status": "ok", "message": "Access updated."})
+
+    messages.success(
+        request,
+        f"✅ Matrix updated: {plan.display_name} → {feature.name}:"
+        f" {pf.get_access_type_display()}.",
+    )
+    return redirect("super_admin_access_matrix")
+
+
+@platform_superadmin_required
+def super_admin_entitlement_debug(request):
+    hospitals = Hospital.objects.all().order_by("name")
+    features = (
+        Feature.objects.filter(is_active=True)
+        .select_related("category")
+        .order_by("category__order", "name")
+    )
+
+    hospital_id = request.GET.get("hospital_id")
+    feature_code = request.GET.get("feature_code")
+
+    explanation = None
+    selected_hospital = None
+    selected_feature = None
+
+    if hospital_id and feature_code:
+        selected_hospital = Hospital.objects.filter(id=hospital_id).first()
+        selected_feature = Feature.objects.filter(code=feature_code).first()
+        if selected_hospital and selected_feature:
+            explanation = explain_entitlement(selected_hospital, feature_code)
+
+    return render(
+        request,
+        "super_admin/super_admin_entitlement_debug.html",
+        {
+            "hospitals": hospitals,
+            "features": features,
+            "selected_hospital": selected_hospital,
+            "selected_feature": selected_feature,
+            "explanation": explanation,
+        },
+    )
+
+
+# ─── USAGE & ALERTS OVERVIEW ─────────────────────────────────
+
+
+@platform_superadmin_required
+def super_admin_usage_overview(request):
+    threshold_filter = request.GET.get("threshold", "all")
+    now = timezone.now()
+
+    # Aggregate platform resources
+    total_clinics = Hospital.objects.filter(is_active=True).count()
+    total_patients = PatientProfile.objects.filter(
+        patient_status="active"
+    ).count()
+    total_staff = StaffProfile.objects.filter(is_active=True).count()
+    monthly_appts = (
+        Appointment.objects.filter(date__year=now.year, date__month=now.month)
+        .exclude(status="cancelled")
+        .count()
+    )
+    total_storage_bytes = (
+        MediaAsset.objects.filter(deleted_at__isnull=True).aggregate(
+            t=Sum("bytes")
+        )["t"]
+        or 0
+    )
+    total_storage_mb = round(total_storage_bytes / (1024 * 1024), 2)
+
+    # Per clinic breakdown and threshold detection
+    clinics_usage = []
+    for h in Hospital.objects.filter(is_active=True).select_related(
+        "subscription__plan"
+    ):
+        p_usage = get_feature_usage(h, "patients")
+        a_usage = get_feature_usage(h, "appointments")
+        s_usage = get_feature_usage(h, "staff_management")
+        st_usage = get_feature_usage(h, "storage")
+
+        max_percent = max(
+            p_usage["percent"],
+            a_usage["percent"],
+            s_usage["percent"],
+            st_usage["percent"],
+        )
+        has_warning_80 = (
+            p_usage["percent"] >= 80
+            or a_usage["percent"] >= 80
+            or s_usage["percent"] >= 80
+            or st_usage["percent"] >= 80
+        )
+        has_limit_reached = (
+            p_usage["is_exceeded"]
+            or a_usage["is_exceeded"]
+            or s_usage["is_exceeded"]
+            or st_usage["is_exceeded"]
+        )
+
+        item = {
+            "hospital": h,
+            "subscription": getattr(h, "subscription", None),
+            "patients": p_usage,
+            "appointments": a_usage,
+            "staff": s_usage,
+            "storage": st_usage,
+            "max_percent": max_percent,
+            "has_warning_80": has_warning_80,
+            "has_limit_reached": has_limit_reached,
+        }
+
+        if threshold_filter == "warning_80" and not has_warning_80:
+            continue
+        if threshold_filter == "limit_reached" and not has_limit_reached:
+            continue
+
+        clinics_usage.append(item)
+
+    clinics_usage.sort(key=lambda x: x["max_percent"], reverse=True)
+
+    return render(
+        request,
+        "super_admin/super_admin_usage_overview.html",
+        {
+            "total_clinics": total_clinics,
+            "total_patients": total_patients,
+            "total_staff": total_staff,
+            "monthly_appts": monthly_appts,
+            "total_storage_mb": total_storage_mb,
+            "clinics_usage": clinics_usage,
+            "threshold_filter": threshold_filter,
+        },
+    )
+
+
+# ─── PLATFORM AUDIT LOGS ──────────────────────────────────────
+
+
+@platform_superadmin_required
+def super_admin_audit_logs(request):
+    action_filter = request.GET.get("action", "")
+    hospital_id = request.GET.get("hospital_id", "")
+    q = request.GET.get("q", "").strip()
+
+    qs = AuditEvent.objects.select_related("actor", "hospital").order_by(
+        "-created_at"
+    )
+    if action_filter:
+        qs = qs.filter(action__icontains=action_filter)
+    if hospital_id:
+        qs = qs.filter(hospital_id=hospital_id)
+    if q:
+        qs = qs.filter(
+            Q(action__icontains=q)
+            | Q(actor__username__icontains=q)
+            | Q(hospital__name__icontains=q)
+            | Q(entity_type__icontains=q)
+        )
+
+    hospitals = Hospital.objects.all().order_by("name")
+    recent_logs = qs[:100]
+
+    return render(
+        request,
+        "super_admin/super_admin_audit_logs.html",
+        {
+            "logs": recent_logs,
+            "hospitals": hospitals,
+            "action_filter": action_filter,
+            "hospital_id": hospital_id,
+            "q": q,
+            "total_count": qs.count(),
+        },
+    )
 
 
 @platform_superadmin_required
@@ -4415,37 +6470,67 @@ def super_admin_all_payments(request):
     from django.db.models import Sum
     status_filter = request.GET.get("status", "")
     method_filter = request.GET.get("method", "")
-    all_payments = PaymentRecord.objects.select_related("patient", "appointment").order_by("-created_at")
+    hospital_filter = request.GET.get("hospital", "")
+    q = request.GET.get("q", "").strip()
+
+    all_payments = PaymentRecord.objects.select_related("patient", "appointment", "hospital").order_by("-created_at")
+    if q:
+        all_payments = all_payments.filter(
+            Q(transaction_id__icontains=q) | Q(notes__icontains=q) |
+            Q(patient__username__icontains=q) | Q(patient__first_name__icontains=q) |
+            Q(patient__last_name__icontains=q) | Q(hospital__name__icontains=q)
+        )
     if status_filter:
         all_payments = all_payments.filter(status=status_filter)
     if method_filter:
         all_payments = all_payments.filter(method=method_filter)
+    if hospital_filter:
+        all_payments = all_payments.filter(hospital_id=hospital_filter)
+
     total_paid = PaymentRecord.objects.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
     total_pending = PaymentRecord.objects.filter(status="pending").aggregate(t=Sum("amount"))["t"] or 0
     pending_count = PaymentRecord.objects.filter(status="pending").count()
     paid_count = PaymentRecord.objects.filter(status="paid").count()
     failed_count = PaymentRecord.objects.filter(status="failed").count()
+    hospitals = Hospital.objects.all().order_by("name")
+    patients = User.objects.filter(is_superuser=False, is_staff=False).order_by("first_name", "username")
+
     return render(request, "super_admin/super_admin_all_payments.html", {
         "all_payments": all_payments,
         "payments": all_payments,
         "status_filter": status_filter,
         "method_filter": method_filter,
+        "hospital_filter": hospital_filter,
+        "q": q,
         "total_paid": total_paid,
         "total_pending": total_pending,
         "pending_count": pending_count,
         "paid_count": paid_count,
         "failed_count": failed_count,
+        "hospitals": hospitals,
+        "patients": patients,
     })
 
 
-@platform_superadmin_required
+@login_required
 def export_payments_excel(request):
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if not can_manage:
+        return HttpResponseForbidden("Forbidden: You do not have permission to export payment records.")
+
     import openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from django.http import HttpResponse
     status_filter = request.GET.get("status", "")
     method_filter = request.GET.get("method", "")
     qs = PaymentRecord.objects.select_related("patient", "appointment").order_by("-created_at")
+
+    if role == "admin":
+        qs = qs.filter(hospital=hospital)
+    elif role == "super_admin":
+        h_id = request.GET.get("hospital_id")
+        if h_id:
+            qs = qs.filter(hospital_id=h_id)
     if status_filter:
         qs = qs.filter(status=status_filter)
     if method_filter:
@@ -4503,8 +6588,12 @@ def export_payments_excel(request):
     return resp
 
 
-@platform_superadmin_required
+@login_required
 def export_payments_pdf(request):
+    role, can_manage, hospital = _user_payment_role(request.user)
+    if not can_manage:
+        return HttpResponseForbidden("Forbidden: You do not have permission to export payment records.")
+
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib import colors
     from reportlab.lib.units import cm
@@ -4517,6 +6606,13 @@ def export_payments_pdf(request):
     status_filter = request.GET.get("status", "")
     method_filter = request.GET.get("method", "")
     qs = PaymentRecord.objects.select_related("patient", "appointment").order_by("-created_at")
+
+    if role == "admin":
+        qs = qs.filter(hospital=hospital)
+    elif role == "super_admin":
+        h_id = request.GET.get("hospital_id")
+        if h_id:
+            qs = qs.filter(hospital_id=h_id)
     if status_filter:
         qs = qs.filter(status=status_filter)
     if method_filter:
@@ -5211,3 +7307,227 @@ def api_inbound_email_webhook(request):
     if result.get("status") == "rejected":
         return JsonResponse(result, status=400)
     return JsonResponse(result, status=200)
+
+
+# ════════════════════════════════════════════════════════════
+# MULTI-PORTAL EMAIL CONFIGURATION & MANAGEMENT VIEWS
+# ════════════════════════════════════════════════════════════
+
+@login_required
+def admin_email_settings(request):
+    """
+    Clinic Admin view to configure their clinic's dedicated SMTP / Email Account.
+    Enforces strict tenant isolation: Clinic Admin can ONLY configure their own hospital.
+    Staff and Client roles are rejected with HTTP 403 Forbidden.
+    """
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return HttpResponseForbidden("Access Denied: Only Clinic Administrators can manage email settings.")
+
+    hospital = resolve_hospital(request.user)
+    if not hospital and not request.user.is_superuser:
+        return HttpResponseForbidden("Access Denied: No hospital association found.")
+
+    hospital = hospital or Hospital.objects.first()
+
+    account = EmailAccount.objects.filter(hospital=hospital, is_default=True).first() or \
+              EmailAccount.objects.filter(hospital=hospital).first()
+
+    if request.method == "POST":
+        action = request.POST.get("action", "save")
+
+        # 1. Real Test Email Dispatch
+        if action == "test":
+            test_recipient = request.POST.get("test_recipient", "").strip()
+            if not test_recipient:
+                messages.error(request, "Please enter a recipient email address for testing.")
+            elif not account:
+                messages.error(request, "Please configure and save email credentials before testing.")
+            else:
+                from .email_service import test_account_connection
+                ok, msg = test_account_connection(account, test_recipient)
+                if ok:
+                    messages.success(request, msg)
+                else:
+                    messages.error(request, msg)
+            return redirect("admin_email_settings")
+
+        # 2. Save Email Account Settings
+        name = request.POST.get("name", "").strip() or f"{hospital.name} Primary SMTP"
+        provider = request.POST.get("provider", "smtp").strip()
+        account_type = request.POST.get("account_type", "CLINIC").strip()
+        host = request.POST.get("host", "").strip()
+        port_raw = request.POST.get("port", "587").strip()
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "").strip()
+        from_email = request.POST.get("from_email", "").strip()
+        from_name = request.POST.get("from_name", "").strip()
+        reply_to = request.POST.get("reply_to", "").strip()
+        use_tls = request.POST.get("use_tls") == "on"
+        use_ssl = request.POST.get("use_ssl") == "on"
+
+        try:
+            port = int(port_raw)
+        except ValueError:
+            port = 587
+
+        if not host or not username or not from_email:
+            messages.error(request, "Host, Username, and From Email are required fields.")
+            return redirect("admin_email_settings")
+
+        if not account:
+            account = EmailAccount(
+                hospital=hospital,
+                scope_type="hospital",
+                account_type=account_type if account_type in ("CLINIC", "NOTIFICATION", "DOCTOR") else "CLINIC",
+                is_default=True,
+            )
+
+        account.name = name
+        account.provider = provider
+        account.account_type = account_type if account_type in ("CLINIC", "NOTIFICATION", "DOCTOR") else "CLINIC"
+        account.host = host
+        account.port = port
+        account.username = username
+        account.from_email = from_email
+        account.from_name = from_name or hospital.name
+        account.reply_to = reply_to
+        account.use_tls = use_tls
+        account.use_ssl = use_ssl
+        account.is_active = True
+
+        if password:
+            account.set_password(password)
+
+        account.save()
+        messages.success(request, f"Email account for {hospital.name} saved successfully.")
+        return redirect("admin_email_settings")
+
+    return render(
+        request,
+        "admin/admin_email_settings.html",
+        {
+            "hospital": hospital,
+            "account": account,
+            "has_password": bool(account and account.encrypted_password),
+        },
+    )
+
+
+@platform_superadmin_required
+def super_admin_email_accounts(request):
+    """
+    Platform Super Admin dashboard for multi-account email governance.
+    Lists all platform-wide, support, notification, and clinic-specific email accounts.
+    """
+    accounts = EmailAccount.objects.select_related("hospital", "user").order_by("scope_type", "hospital__name", "name")
+    hospitals = Hospital.objects.filter(is_active=True).order_by("name")
+    return render(
+        request,
+        "super_admin/super_admin_email_accounts.html",
+        {"accounts": accounts, "hospitals": hospitals},
+    )
+
+
+@platform_superadmin_required
+def super_admin_email_account_save(request):
+    """
+    Create or update any email account (Platform, Support, Clinic) by Super Admin.
+    """
+    if request.method == "POST":
+        account_id = request.POST.get("account_id")
+        name = request.POST.get("name", "").strip()
+        account_type = request.POST.get("account_type", "PLATFORM").strip()
+        scope_type = request.POST.get("scope_type", "platform").strip()
+        hospital_id = request.POST.get("hospital_id", "").strip()
+        provider = request.POST.get("provider", "smtp").strip()
+        host = request.POST.get("host", "").strip()
+        port_raw = request.POST.get("port", "587").strip()
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "").strip()
+        from_email = request.POST.get("from_email", "").strip()
+        from_name = request.POST.get("from_name", "").strip()
+        reply_to = request.POST.get("reply_to", "").strip()
+        use_tls = request.POST.get("use_tls") == "on"
+        use_ssl = request.POST.get("use_ssl") == "on"
+        is_default = request.POST.get("is_default") == "on"
+
+        try:
+            port = int(port_raw)
+        except ValueError:
+            port = 587
+
+        if not name or not host or not username or not from_email:
+            messages.error(request, "Name, Host, Username, and From Email are required.")
+            return redirect("super_admin_email_accounts")
+
+        hospital = None
+        if scope_type == "hospital" and hospital_id:
+            hospital = Hospital.objects.filter(id=hospital_id).first()
+
+        if account_id:
+            account = get_object_or_404(EmailAccount, id=account_id)
+        else:
+            account = EmailAccount()
+
+        account.name = name
+        account.account_type = account_type
+        account.scope_type = scope_type
+        account.hospital = hospital
+        account.provider = provider
+        account.host = host
+        account.port = port
+        account.username = username
+        account.from_email = from_email
+        account.from_name = from_name
+        account.reply_to = reply_to
+        account.use_tls = use_tls
+        account.use_ssl = use_ssl
+        account.is_active = True
+
+        if is_default:
+            if scope_type == "platform":
+                EmailAccount.objects.filter(scope_type="platform").update(is_default=False)
+            elif hospital:
+                EmailAccount.objects.filter(hospital=hospital).update(is_default=False)
+            account.is_default = True
+
+        if password:
+            account.set_password(password)
+
+        account.save()
+        messages.success(request, f"Email account '{account.name}' saved successfully.")
+    return redirect("super_admin_email_accounts")
+
+
+@platform_superadmin_required
+def super_admin_email_account_test(request, account_id):
+    """
+    Test connection for a specific email account by Super Admin.
+    """
+    account = get_object_or_404(EmailAccount, id=account_id)
+    if request.method == "POST":
+        test_recipient = request.POST.get("test_recipient", "").strip()
+        if not test_recipient:
+            messages.error(request, "Please enter a valid test recipient email.")
+        else:
+            from .email_service import test_account_connection
+            ok, msg = test_account_connection(account, test_recipient)
+            if ok:
+                messages.success(request, msg)
+            else:
+                messages.error(request, msg)
+    return redirect("super_admin_email_accounts")
+
+
+@platform_superadmin_required
+def super_admin_email_account_delete(request, account_id):
+    """
+    Delete an email account by Super Admin.
+    """
+    account = get_object_or_404(EmailAccount, id=account_id)
+    if request.method == "POST":
+        name = account.name
+        account.delete()
+        messages.success(request, f"Email account '{name}' deleted successfully.")
+    return redirect("super_admin_email_accounts")
+

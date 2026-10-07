@@ -1,0 +1,783 @@
+{% extends "super_admin/base_super_admin.html" %}
+{% load static %}
+
+{% block title %}Super Admin — Manage {{ hospital.name }}{% endblock %}
+{% block page_title %}🏥 {{ hospital.name }}{% endblock %}
+{% block page_subtitle %}Tenant ID: #{{ hospital.id }} &nbsp;·&nbsp; {{ hospital.city|default:"Location Unspecified" }} &nbsp;·&nbsp; Registered {{ hospital.created_at|date:"M d, Y" }}{% endblock %}
+
+{% block topbar_actions %}
+<div style="display: flex; gap: 8px; align-items: center;">
+  <a href="{% url 'super_admin_hospitals' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+    <i class="fas fa-arrow-left"></i> Clinics List
+  </a>
+  <a href="{% url 'super_admin_edit_hospital' hospital.id %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+    <i class="fas fa-edit"></i> Edit Details
+  </a>
+  {% if hospital.status == 'suspended' or not hospital.is_active %}
+  <form method="post" action="{% url 'super_admin_activate_clinic' hospital.id %}" style="display: inline;">
+    {% csrf_token %}
+    <button type="submit" class="sa-btn sa-btn-sm" style="background: #22c55e; color: #fff;">
+      <i class="fas fa-play"></i> Reactivate Clinic
+    </button>
+  </form>
+  {% else %}
+  <button type="button" class="sa-btn sa-btn-sm" style="background: #f59e0b; color: #fff;" onclick="openSuspendModal()">
+    <i class="fas fa-pause"></i> Suspend Clinic
+  </button>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- ════ CLINIC HEADER SUMMARY CARD ════ -->
+<div class="sa-card" style="margin-bottom: 24px; padding: 22px 28px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: #fff; border: none;">
+  <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800; margin: 0; color: #fff;">
+          {{ hospital.name }}
+        </h2>
+        <span class="sa-badge {% if hospital.status == 'active' and hospital.is_active %}sa-badge-active{% elif hospital.status == 'suspended' %}sa-badge-failed{% else %}sa-badge-trial{% endif %}" style="font-size: 0.8rem; padding: 4px 10px;">
+          {{ hospital.get_status_display }}
+        </span>
+      </div>
+      <div style="color: #c7d2fe; font-size: 0.88rem; display: flex; gap: 16px; flex-wrap: wrap;">
+        <span><i class="fas fa-envelope" style="margin-right: 5px;"></i>{{ hospital.email|default:"No email set" }}</span>
+        <span><i class="fas fa-phone" style="margin-right: 5px;"></i>{{ hospital.phone|default:"No phone set" }}</span>
+        <span><i class="fas fa-map-marker-alt" style="margin-right: 5px;"></i>{{ hospital.address|default:hospital.city|default:"No address" }}</span>
+      </div>
+    </div>
+
+    <!-- Tier & Expiry Tag -->
+    <div style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 12px 20px; text-align: right;">
+      <div style="font-size: 0.76rem; color: #a5b4fc; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Current Subscription</div>
+      <div style="font-size: 1.2rem; font-weight: 800; color: #F5C518; margin: 2px 0;">
+        <i class="fas fa-crown"></i> {{ subscription.plan.display_name|default:"Free Tier" }}
+      </div>
+      <div style="font-size: 0.78rem; color: #e0e7ff;">
+        Status: <strong>{{ subscription.get_status_display|default:"Active" }}</strong>
+        {% if subscription.expires_at %} &nbsp;·&nbsp; Renews: {{ subscription.expires_at|date:"M d, Y" }}{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 7 MANAGEMENT TABS NAVIGATION ════ -->
+<div style="border-bottom: 2px solid var(--sa-border); margin-bottom: 24px; display: flex; gap: 8px; overflow-x: auto;">
+  <a href="?tab=overview" class="sa-tab-link {% if active_tab == 'overview' %}active{% endif %}">
+    <i class="fas fa-info-circle"></i> Overview
+  </a>
+  <a href="?tab=users" class="sa-tab-link {% if active_tab == 'users' %}active{% endif %}">
+    <i class="fas fa-users"></i> Users ({{ staff_count|add:patient_count }})
+  </a>
+  <a href="?tab=subscription" class="sa-tab-link {% if active_tab == 'subscription' %}active{% endif %}">
+    <i class="fas fa-file-invoice-dollar"></i> Subscription &amp; Tier
+  </a>
+  <a href="?tab=features" class="sa-tab-link {% if active_tab == 'features' %}active{% endif %}">
+    <i class="fas fa-sliders-h"></i> Features &amp; Overrides
+  </a>
+  <a href="?tab=usage" class="sa-tab-link {% if active_tab == 'usage' %}active{% endif %}">
+    <i class="fas fa-chart-pie"></i> Usage &amp; Limits
+  </a>
+  <a href="?tab=billing" class="sa-tab-link {% if active_tab == 'billing' %}active{% endif %}">
+    <i class="fas fa-credit-card"></i> Billing History
+  </a>
+  <a href="?tab=audit" class="sa-tab-link {% if active_tab == 'audit' %}active{% endif %}">
+    <i class="fas fa-shield-alt"></i> Audit Log
+  </a>
+</div>
+
+<!-- ════ TAB 1: OVERVIEW ════ -->
+{% if active_tab == 'overview' %}
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+  <div class="sa-card">
+    <div class="sa-card-header">
+      <div class="sa-card-title">
+        <i class="fas fa-info-circle" style="color: var(--sa-purple);"></i>
+        <span>Clinic Profile &amp; Contact</span>
+      </div>
+      <a href="{% url 'super_admin_edit_hospital' hospital.id %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+        <i class="fas fa-edit"></i> Edit
+      </a>
+    </div>
+    <div class="sa-card-body" style="padding: 20px;">
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+        <div>
+          <label style="font-size: 0.76rem; color: var(--sa-text-muted); text-transform: uppercase; font-weight: 700;">Legal / Public Name</label>
+          <div style="font-size: 0.95rem; font-weight: 600; color: var(--sa-dark); margin-top: 2px;">{{ hospital.name }}</div>
+        </div>
+        <div>
+          <label style="font-size: 0.76rem; color: var(--sa-text-muted); text-transform: uppercase; font-weight: 700;">Tenant Slug</label>
+          <div style="font-size: 0.95rem; font-weight: 600; color: var(--sa-dark); margin-top: 2px;"><code>{{ hospital.slug|default:"—" }}</code></div>
+        </div>
+        <div>
+          <label style="font-size: 0.76rem; color: var(--sa-text-muted); text-transform: uppercase; font-weight: 700;">Official Email</label>
+          <div style="font-size: 0.95rem; font-weight: 600; color: var(--sa-dark); margin-top: 2px;">{{ hospital.email|default:"—" }}</div>
+        </div>
+        <div>
+          <label style="font-size: 0.76rem; color: var(--sa-text-muted); text-transform: uppercase; font-weight: 700;">Contact Phone</label>
+          <div style="font-size: 0.95rem; font-weight: 600; color: var(--sa-dark); margin-top: 2px;">{{ hospital.phone|default:"—" }}</div>
+        </div>
+        <div style="grid-column: span 2;">
+          <label style="font-size: 0.76rem; color: var(--sa-text-muted); text-transform: uppercase; font-weight: 700;">Location &amp; Address</label>
+          <div style="font-size: 0.95rem; font-weight: 600; color: var(--sa-dark); margin-top: 2px;">{{ hospital.address|default:"—" }} ({{ hospital.city|default:"Unspecified City" }})</div>
+        </div>
+        <div>
+          <label style="font-size: 0.76rem; color: var(--sa-text-muted); text-transform: uppercase; font-weight: 700;">Created At</label>
+          <div style="font-size: 0.92rem; color: var(--sa-dark); margin-top: 2px;">{{ hospital.created_at|date:"d M Y, H:i" }}</div>
+        </div>
+        <div>
+          <label style="font-size: 0.76rem; color: var(--sa-text-muted); text-transform: uppercase; font-weight: 700;">Current Status</label>
+          <div style="margin-top: 2px;">
+            <span class="sa-badge {% if hospital.status == 'active' and hospital.is_active %}sa-badge-active{% elif hospital.status == 'suspended' %}sa-badge-failed{% else %}sa-badge-trial{% endif %}">
+              {{ hospital.get_status_display }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resource Summary Cards -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div class="sa-card" style="padding: 18px;">
+      <div style="font-size: 0.78rem; color: var(--sa-text-muted); font-weight: 700; text-transform: uppercase;">Active Patients</div>
+      <div style="font-size: 1.8rem; font-weight: 800; color: var(--sa-dark); margin-top: 4px;">{{ patient_count }}</div>
+      <div style="font-size: 0.78rem; color: var(--sa-purple); margin-top: 2px;">Registered clinical profiles</div>
+    </div>
+
+    <div class="sa-card" style="padding: 18px;">
+      <div style="font-size: 0.78rem; color: var(--sa-text-muted); font-weight: 700; text-transform: uppercase;">Clinical Staff</div>
+      <div style="font-size: 1.8rem; font-weight: 800; color: var(--sa-dark); margin-top: 4px;">{{ staff_count }}</div>
+      <div style="font-size: 0.78rem; color: #10b981; margin-top: 2px;">Doctors, therapists &amp; nurses</div>
+    </div>
+
+    <div class="sa-card" style="padding: 18px;">
+      <div style="font-size: 0.78rem; color: var(--sa-text-muted); font-weight: 700; text-transform: uppercase;">Total Appointments</div>
+      <div style="font-size: 1.8rem; font-weight: 800; color: var(--sa-dark); margin-top: 4px;">{{ appointment_count }}</div>
+      <div style="font-size: 0.78rem; color: #f59e0b; margin-top: 2px;">Lifetime bookings handled</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ════ TAB 2: USERS ════ -->
+{% if active_tab == 'users' %}
+<div class="sa-card" style="margin-bottom: 24px;">
+  <div class="sa-card-header">
+    <div class="sa-card-title">
+      <i class="fas fa-user-shield" style="color: var(--sa-purple);"></i>
+      <span>Clinic Administrators</span>
+    </div>
+  </div>
+  <div class="sa-table-responsive">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Last Login</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ca in admins %}
+        <tr>
+          <td><strong>{{ ca.user.get_full_name|default:ca.user.username }}</strong></td>
+          <td><code>@{{ ca.user.username }}</code></td>
+          <td>{{ ca.user.email }}</td>
+          <td><span class="sa-badge sa-badge-active">Clinic Admin</span></td>
+          <td>{{ ca.user.last_login|date:"d M Y, H:i"|default:"Never" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align: center; color: var(--sa-text-muted);">No clinic administrators assigned.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="sa-card">
+  <div class="sa-card-header">
+    <div class="sa-card-title">
+      <i class="fas fa-user-md" style="color: var(--sa-purple);"></i>
+      <span>Clinical Staff Members ({{ staff_count }})</span>
+    </div>
+  </div>
+  <div class="sa-table-responsive">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Staff Name</th>
+          <th>Role / Specialization</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Status</th>
+          <th>Joined</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in staff_members %}
+        <tr>
+          <td><strong>{{ s.user.get_full_name|default:s.user.username }}</strong></td>
+          <td>{{ s.role|default:"Staff" }}</td>
+          <td>{{ s.user.email }}</td>
+          <td>{{ s.phone_number|default:s.user.profile.phone_number|default:"—" }}</td>
+          <td>
+            {% if s.is_active %}
+              <span class="sa-badge sa-badge-active">Active</span>
+            {% else %}
+              <span class="sa-badge sa-badge-inactive">Inactive</span>
+            {% endif %}
+          </td>
+          <td>{{ s.joining_date|date:"d M Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align: center; color: var(--sa-text-muted);">No staff profiles recorded for this clinic.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ════ TAB 3: SUBSCRIPTION & TIER ════ -->
+{% if active_tab == 'subscription' %}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Current Subscription Details -->
+  <div class="sa-card">
+    <div class="sa-card-header">
+      <div class="sa-card-title">
+        <i class="fas fa-crown" style="color: var(--sa-gold);"></i>
+        <span>Current Subscription Plan</span>
+      </div>
+    </div>
+    <div style="padding: 20px;">
+      <div style="margin-bottom: 16px;">
+        <span style="font-size: 0.76rem; color: var(--sa-text-muted); font-weight: 700; text-transform: uppercase;">Active Plan Tier</span>
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--sa-purple); margin: 4px 0;">
+          {{ subscription.plan.display_name|default:"Free Tier" }}
+        </h3>
+        <p style="font-size: 0.88rem; color: var(--sa-text-muted); margin: 0;">{{ subscription.plan.description|default:"Baseline core clinic features." }}</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 20px;">
+        <div style="background: #f8fafc; padding: 10px 14px; border-radius: 8px;">
+          <small style="color: var(--sa-text-muted); font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Monthly Price</small>
+          <div style="font-size: 1.1rem; font-weight: 700; color: var(--sa-dark);">₹{{ subscription.plan.price_monthly|default:"0.00" }}</div>
+        </div>
+        <div style="background: #f8fafc; padding: 10px 14px; border-radius: 8px;">
+          <small style="color: var(--sa-text-muted); font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Annual Price</small>
+          <div style="font-size: 1.1rem; font-weight: 700; color: var(--sa-dark);">₹{{ subscription.plan.price_annual|default:"0.00" }}</div>
+        </div>
+        <div style="background: #f8fafc; padding: 10px 14px; border-radius: 8px;">
+          <small style="color: var(--sa-text-muted); font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Subscription Status</small>
+          <div><span class="sa-badge sa-badge-active">{{ subscription.get_status_display|default:"Active" }}</span></div>
+        </div>
+        <div style="background: #f8fafc; padding: 10px 14px; border-radius: 8px;">
+          <small style="color: var(--sa-text-muted); font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Renewal Date</small>
+          <div style="font-size: 0.92rem; font-weight: 600; color: var(--sa-dark);">{{ subscription.expires_at|date:"d M Y"|default:"Never Expires" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subscription Action Forms -->
+  <div class="sa-card">
+    <div class="sa-card-header">
+      <div class="sa-card-title">
+        <i class="fas fa-edit" style="color: var(--sa-purple);"></i>
+        <span>Modify Subscription</span>
+      </div>
+    </div>
+    <div style="padding: 20px;">
+      <!-- Change Plan Form -->
+      <form method="post" action="{% url 'super_admin_update_clinic_subscription' hospital.id %}" style="margin-bottom: 20px;">
+        {% csrf_token %}
+        <input type="hidden" name="action_type" value="change_plan" />
+        <label style="font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 6px;">Assign New Subscription Plan</label>
+        <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+          <select name="plan_id" class="sa-form-input" style="flex: 1; border-radius: 8px;" required>
+            {% for p in plans %}
+            <option value="{{ p.id }}" {% if subscription.plan_id == p.id %}selected{% endif %}>{{ p.display_name }} (₹{{ p.price_monthly }}/mo)</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="sa-btn sa-btn-primary sa-btn-sm">Change Plan</button>
+        </div>
+        <input type="text" name="reason" placeholder="Reason for plan change (e.g. Customer upgrade, custom contract)..." class="sa-form-input" style="width: 100%; border-radius: 8px; font-size: 0.82rem;" />
+      </form>
+
+      <hr style="border: 0; border-top: 1px solid var(--sa-border); margin: 18px 0;" />
+
+      <!-- Extend Trial Form -->
+      <form method="post" action="{% url 'super_admin_update_clinic_subscription' hospital.id %}" style="margin-bottom: 20px;">
+        {% csrf_token %}
+        <input type="hidden" name="action_type" value="extend_trial" />
+        <label style="font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 6px;">Extend Trial Period</label>
+        <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+          <select name="extend_days" class="sa-form-input" style="width: 150px; border-radius: 8px;">
+            <option value="7">+7 Days</option>
+            <option value="14" selected>+14 Days</option>
+            <option value="30">+30 Days</option>
+            <option value="60">+60 Days</option>
+          </select>
+          <button type="submit" class="sa-btn sa-btn-secondary sa-btn-sm">Extend Trial</button>
+        </div>
+        <input type="text" name="reason" placeholder="Reason (e.g. Sales extension, evaluation demo)..." class="sa-form-input" style="width: 100%; border-radius: 8px; font-size: 0.82rem;" />
+      </form>
+
+      <hr style="border: 0; border-top: 1px solid var(--sa-border); margin: 18px 0;" />
+
+      <!-- Change Status Form -->
+      <form method="post" action="{% url 'super_admin_update_clinic_subscription' hospital.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="action_type" value="update_status" />
+        <label style="font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 6px;">Force Subscription Status</label>
+        <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+          <select name="status" class="sa-form-input" style="flex: 1; border-radius: 8px;">
+            <option value="active" {% if subscription.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="trial" {% if subscription.status == 'trial' %}selected{% endif %}>Trial</option>
+            <option value="grace_period" {% if subscription.status == 'grace_period' %}selected{% endif %}>Grace Period</option>
+            <option value="past_due" {% if subscription.status == 'past_due' %}selected{% endif %}>Past Due</option>
+            <option value="expired" {% if subscription.status == 'expired' %}selected{% endif %}>Expired</option>
+            <option value="suspended" {% if subscription.status == 'suspended' %}selected{% endif %}>Suspended</option>
+          </select>
+          <button type="submit" class="sa-btn sa-btn-secondary sa-btn-sm">Set Status</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Subscription History Log -->
+<div class="sa-card">
+  <div class="sa-card-header">
+    <div class="sa-card-title">
+      <i class="fas fa-history" style="color: var(--sa-purple);"></i>
+      <span>Subscription Audit &amp; Plan Transition History</span>
+    </div>
+  </div>
+  <div class="sa-table-responsive">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Change Type</th>
+          <th>Previous Tier</th>
+          <th>New Tier</th>
+          <th>Reason</th>
+          <th>Changed By</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sh in sub_history %}
+        <tr>
+          <td>{{ sh.created_at|date:"d M Y, H:i" }}</td>
+          <td><span class="sa-badge sa-badge-trial">{{ sh.get_change_type_display }}</span></td>
+          <td>{{ sh.previous_plan.display_name|default:"None" }} ({{ sh.previous_status }})</td>
+          <td><strong>{{ sh.new_plan.display_name|default:"None" }}</strong> ({{ sh.new_status }})</td>
+          <td>{{ sh.reason|default:"—" }}</td>
+          <td>{{ sh.changed_by.username|default:"System" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align: center; color: var(--sa-text-muted);">No subscription changes recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ════ TAB 4: FEATURES & OVERRIDES ════ -->
+{% if active_tab == 'features' %}
+<div class="sa-card">
+  <div class="sa-card-header">
+    <div class="sa-card-title">
+      <i class="fas fa-sliders-h" style="color: var(--sa-purple);"></i>
+      <span>Clinic Feature Access &amp; Overrides Control</span>
+    </div>
+    <div style="font-size: 0.82rem; color: var(--sa-text-muted);">
+      Entitlement Priority: <strong>Kill Switch → Clinic Override → Plan Entitlement → Free Default</strong>
+    </div>
+  </div>
+  <div class="sa-table-responsive">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Feature</th>
+          <th>Type</th>
+          <th>Plan Tier Level</th>
+          <th>Clinic Override</th>
+          <th>Effective Final Access</th>
+          <th>Usage Limit</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in features_data %}
+        {% with f=item.feature ent=item.entitlement o=item.override %}
+        <tr>
+          <td>
+            <span class="sa-badge" style="background: #f1f5f9; color: var(--sa-dark);">
+              <i class="fas {{ f.category.icon|default:'fa-cube' }}"></i> {{ f.category.name }}
+            </span>
+          </td>
+          <td>
+            <div style="font-weight: 700; color: var(--sa-dark);">{{ f.name }}</div>
+            <code style="font-size: 0.72rem; color: var(--sa-text-muted);">{{ f.code }}</code>
+          </td>
+          <td>
+            {% if f.is_paid %}
+              <span class="sa-badge" style="background: #fef3c7; color: #b45309; font-weight: 700;"><i class="fas fa-crown"></i> Paid</span>
+            {% else %}
+              <span class="sa-badge" style="background: #dcfce7; color: #15803d;"><i class="fas fa-check"></i> Free Core</span>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-size: 0.82rem; font-weight: 600;">{{ subscription.plan.display_name|default:"Free" }}</span>
+          </td>
+          <td>
+            {% if o %}
+              {% if o.override_type == 'grant' %}
+                <span class="sa-badge" style="background: #dcfce7; color: #166534;" title="{{ o.reason }}">
+                  <i class="fas fa-gift"></i> Complimentary Grant
+                </span>
+              {% elif o.override_type == 'disable' %}
+                <span class="sa-badge sa-badge-failed" title="{{ o.reason }}">
+                  <i class="fas fa-ban"></i> Hard Disabled
+                </span>
+              {% elif o.override_type == 'custom_limit' %}
+                <span class="sa-badge" style="background: #e0e7ff; color: #3730a3;" title="{{ o.reason }}">
+                  <i class="fas fa-sliders-h"></i> Custom Limit ({{ o.custom_limit }})
+                </span>
+              {% endif %}
+              {% if o.expires_at %}
+                <div style="font-size: 0.7rem; color: #b45309; margin-top: 2px;">Expires: {{ o.expires_at|date:"M d, Y" }}</div>
+              {% endif %}
+            {% else %}
+              <span style="color: var(--sa-text-muted); font-size: 0.78rem;">Standard Plan Rules</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if ent.allowed %}
+              <span class="sa-badge sa-badge-active">
+                <i class="fas fa-check-circle"></i> ALLOWED ({{ ent.access_type|upper }})
+              </span>
+            {% else %}
+              <span class="sa-badge sa-badge-failed">
+                <i class="fas fa-times-circle"></i> DENIED
+              </span>
+            {% endif %}
+            <div style="font-size: 0.72rem; color: var(--sa-text-muted); margin-top: 2px;">{{ ent.reason_text|truncatechars:40 }}</div>
+          </td>
+          <td>
+            {% if ent.limit %}
+              <strong>{{ ent.limit }}</strong> ({{ ent.limit_period }})
+            {% else %}
+              <span style="color: #10b981; font-weight: 600;">Unlimited</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right; white-space: nowrap;">
+            <button type="button" class="sa-btn sa-btn-secondary sa-btn-sm" onclick="openOverrideModal('{{ f.code|escapejs }}', '{{ f.name|escapejs }}', '{{ o.override_type|default:'grant'|escapejs }}', '{{ o.custom_limit|default:0 }}', '{{ o.reason|default:''|escapejs }}')">
+              <i class="fas fa-sliders-h"></i> Override
+            </button>
+            {% if o %}
+            <form method="post" action="{% url 'super_admin_delete_feature_override' hospital.id f.code %}" style="display: inline;" onsubmit="return confirm('Remove custom override for {{ f.name }}?');">
+              {% csrf_token %}
+              <button type="submit" class="sa-btn sa-btn-delete sa-btn-sm" title="Remove Override">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════ OVERRIDE MODAL ════ -->
+<div id="overrideModal" class="sa-modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: #fff; border-radius: 12px; width: 90%; max-width: 520px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+    <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--sa-purple); margin-bottom: 8px;">
+      <i class="fas fa-sliders-h"></i> Configure Clinic Feature Override
+    </h3>
+    <p style="color: var(--sa-text-muted); font-size: 0.88rem; margin-bottom: 16px;">
+      Target Clinic: <strong>{{ hospital.name }}</strong> &nbsp;·&nbsp; Feature: <strong id="overrideFeatureName" style="color: var(--sa-dark);"></strong>
+    </p>
+
+    <form method="post" action="{% url 'super_admin_save_feature_override' hospital.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="feature_code" id="overrideFeatureCode" value="" />
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px;">Override Action Type</label>
+        <select name="override_type" id="overrideType" class="sa-form-input" style="width: 100%; border-radius: 8px;" onchange="toggleOverrideFields()">
+          <option value="grant">Grant Complimentary Access (Bypass Paid Requirement)</option>
+          <option value="disable">Hard Disable (Revoke Even If Included In Plan)</option>
+          <option value="custom_limit">Custom Usage Quota / Limit</option>
+        </select>
+      </div>
+
+      <div id="customLimitField" style="margin-bottom: 14px; display: none;">
+        <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px;">Custom Usage Limit</label>
+        <input type="number" name="custom_limit" id="overrideCustomLimit" value="0" class="sa-form-input" style="width: 100%; border-radius: 8px;" />
+        <small style="color: var(--sa-text-muted);">Set to 0 for unlimited custom access.</small>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px;">Temporary Expiration (Optional)</label>
+        <select name="expires_days" class="sa-form-input" style="width: 100%; border-radius: 8px;">
+          <option value="">Permanent Override (Never Expires)</option>
+          <option value="7">Expires in 7 Days</option>
+          <option value="14">Expires in 14 Days</option>
+          <option value="30">Expires in 30 Days</option>
+          <option value="90">Expires in 90 Days</option>
+          <option value="365">Expires in 1 Year</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px;">Administrative Reason (Required for Audit Log)</label>
+        <textarea name="reason" id="overrideReason" rows="2" class="sa-form-input" required placeholder="E.g. Promotional pilot, customer contract addendum, temporary trial..." style="width: 100%; border-radius: 8px;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="sa-btn sa-btn-secondary" onclick="closeOverrideModal()">Cancel</button>
+        <button type="submit" class="sa-btn sa-btn-primary">Save Feature Override</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openOverrideModal(code, name, type, limit, reason) {
+  document.getElementById('overrideFeatureCode').value = code;
+  document.getElementById('overrideFeatureName').textContent = name;
+  document.getElementById('overrideType').value = type;
+  document.getElementById('overrideCustomLimit').value = limit;
+  document.getElementById('overrideReason').value = reason;
+  toggleOverrideFields();
+  document.getElementById('overrideModal').style.display = 'flex';
+}
+function closeOverrideModal() {
+  document.getElementById('overrideModal').style.display = 'none';
+}
+function toggleOverrideFields() {
+  var t = document.getElementById('overrideType').value;
+  document.getElementById('customLimitField').style.display = (t === 'custom_limit' || t === 'grant') ? 'block' : 'none';
+}
+</script>
+{% endif %}
+
+<!-- ════ TAB 5: USAGE & LIMITS ════ -->
+{% if active_tab == 'usage' %}
+<div class="sa-card">
+  <div class="sa-card-header">
+    <div class="sa-card-title">
+      <i class="fas fa-chart-pie" style="color: var(--sa-purple);"></i>
+      <span>Resource Utilization &amp; Quota Consumption</span>
+    </div>
+  </div>
+  <div style="padding: 24px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+      {% for u in usage_metrics %}
+      <div style="background: #fff; border: 1px solid var(--sa-border); border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fas {{ u.icon }}" style="color: var(--sa-purple); font-size: 1.1rem;"></i>
+            <strong style="color: var(--sa-dark); font-size: 0.95rem;">{{ u.name }}</strong>
+          </div>
+          {% if u.warning_level == 'limit_reached' %}
+            <span class="sa-badge sa-badge-failed">100% Reached</span>
+          {% elif u.warning_level == 'critical_90' %}
+            <span class="sa-badge" style="background: #fed7aa; color: #9a3412;">90% Cap</span>
+          {% elif u.warning_level == 'warning_80' %}
+            <span class="sa-badge" style="background: #fef08a; color: #854d0e;">80% Cap</span>
+          {% else %}
+            <span class="sa-badge sa-badge-active">Normal</span>
+          {% endif %}
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+          <div style="font-size: 1.6rem; font-weight: 800; color: var(--sa-dark);">
+            {{ u.current }}
+            <span style="font-size: 0.85rem; font-weight: 500; color: var(--sa-text-muted);">
+              / {% if u.limit %}{{ u.limit }}{% else %}Unlimited{% endif %}
+            </span>
+          </div>
+          <div style="font-size: 0.88rem; font-weight: 700; color: {% if u.percent >= 90 %}#ef4444{% elif u.percent >= 80 %}#f59e0b{% else %}#10b981{% endif %};">
+            {% if u.limit %}{{ u.percent }}%{% else %}0%{% endif %}
+          </div>
+        </div>
+
+        {% if u.limit %}
+        <div style="background: #f1f5f9; height: 8px; border-radius: 999px; overflow: hidden; margin-bottom: 8px;">
+          <div style="height: 100%; width: {{ u.percent }}%; background: {% if u.percent >= 90 %}#ef4444{% elif u.percent >= 80 %}#f59e0b{% else %}#10b981{% endif %}; border-radius: 999px;"></div>
+        </div>
+        <div style="font-size: 0.76rem; color: var(--sa-text-muted); display: flex; justify-content: space-between;">
+          <span>Remaining: <strong>{{ u.remaining }}</strong></span>
+          <span>Period: {{ u.period }}</span>
+        </div>
+        {% else %}
+        <div style="font-size: 0.78rem; color: #10b981; font-weight: 600;">
+          <i class="fas fa-infinity"></i> Unlimited quota on current plan
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ════ TAB 6: BILLING HISTORY ════ -->
+{% if active_tab == 'billing' %}
+<div class="sa-card" style="margin-bottom: 24px;">
+  <div class="sa-card-header">
+    <div class="sa-card-title">
+      <i class="fas fa-file-invoice-dollar" style="color: var(--sa-purple);"></i>
+      <span>Clinic Subscription Billing Receipts</span>
+    </div>
+    <span class="sa-badge sa-badge-paid" style="font-size: 0.88rem; padding: 6px 14px;">
+      Total Subscription Billed: ₹{{ total_billed }}
+    </span>
+  </div>
+  <div class="sa-table-responsive">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Plan Tier</th>
+          <th>Months</th>
+          <th>Amount</th>
+          <th>Method</th>
+          <th>Reference / Transaction ID</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sp in sub_payments %}
+        <tr>
+          <td>{{ sp.created_at|date:"d M Y, H:i" }}</td>
+          <td><strong>{{ sp.plan.display_name }}</strong></td>
+          <td>{{ sp.duration_months }} mo</td>
+          <td><strong>₹{{ sp.amount }}</strong></td>
+          <td>{{ sp.get_payment_method_display }}</td>
+          <td><code>{{ sp.transaction_id|default:"—" }}</code></td>
+          <td>
+            {% if sp.status == 'paid' %}
+              <span class="sa-badge sa-badge-paid">Paid</span>
+            {% elif sp.status == 'pending' %}
+              <span class="sa-badge sa-badge-pending">Pending</span>
+            {% else %}
+              <span class="sa-badge sa-badge-failed">Failed</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align: center; color: var(--sa-text-muted);">No subscription payment receipts recorded for this clinic.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ════ TAB 7: AUDIT LOG ════ -->
+{% if active_tab == 'audit' %}
+<div class="sa-card">
+  <div class="sa-card-header">
+    <div class="sa-card-title">
+      <i class="fas fa-shield-alt" style="color: var(--sa-purple);"></i>
+      <span>Clinic Administrative Audit Trail</span>
+    </div>
+  </div>
+  <div class="sa-table-responsive">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Action</th>
+          <th>Actor</th>
+          <th>Entity</th>
+          <th>Details &amp; Metadata</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in audit_logs %}
+        <tr>
+          <td style="white-space: nowrap; font-size: 0.82rem;">{{ a.created_at|date:"d M Y, H:i:s" }}</td>
+          <td><code>{{ a.action }}</code></td>
+          <td><strong>{{ a.actor.username|default:"System" }}</strong></td>
+          <td>{{ a.entity_type }} #{{ a.entity_id }}</td>
+          <td style="font-size: 0.8rem; color: var(--sa-text-muted);">{{ a.metadata }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align: center; color: var(--sa-text-muted);">No audit log events recorded for this clinic.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ════ SUSPEND MODAL ════ -->
+<div id="clinicSuspendModal" class="sa-modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: #fff; border-radius: 12px; width: 90%; max-width: 480px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+    <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: #b91c1c; margin-bottom: 8px;">
+      <i class="fas fa-ban"></i> Suspend {{ hospital.name }}
+    </h3>
+    <p style="color: var(--sa-text-muted); font-size: 0.88rem; margin-bottom: 16px;">
+      This action immediately locks out clinic staff and patients. Patient medical records and appointment history are preserved.
+    </p>
+    <form method="post" action="{% url 'super_admin_suspend_clinic' hospital.id %}">
+      {% csrf_token %}
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px;">Suspension Reason (Required)</label>
+        <textarea name="reason" rows="3" class="sa-form-input" required placeholder="E.g. Invoice payment past due, security audit, compliance violation..." style="width: 100%; border-radius: 8px;"></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="sa-btn sa-btn-secondary" onclick="closeSuspendModal()">Cancel</button>
+        <button type="submit" class="sa-btn" style="background: #b91c1c; color: #fff;">Confirm Suspension</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.sa-tab-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--sa-text-muted);
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.sa-tab-link:hover {
+  color: var(--sa-purple);
+}
+.sa-tab-link.active {
+  color: var(--sa-purple);
+  border-bottom-color: var(--sa-purple);
+}
+</style>
+
+<script>
+function openSuspendModal() {
+  document.getElementById('clinicSuspendModal').style.display = 'flex';
+}
+function closeSuspendModal() {
+  document.getElementById('clinicSuspendModal').style.display = 'none';
+}
+</script>
+{% endblock %}

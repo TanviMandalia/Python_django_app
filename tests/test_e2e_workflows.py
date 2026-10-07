@@ -132,8 +132,11 @@ class E2EHospitalWorkflowsTestSuite(BaseHospitalTestCase):
             first_name="Carl",
             last_name="Johnson",
         )
+        d = timezone.now().date() + timedelta(days=1)
+        while d.weekday() >= 5:
+            d += timedelta(days=1)
+        target_date = d.strftime("%Y-%m-%d")
         self.client.force_login(patient_user)
-        target_date = (timezone.now() + timedelta(days=3)).strftime("%Y-%m-%d")
         booking_payload = {
             "hospital_id": hospital.id,
             "service": "Cervical Spondylosis Rehabilitation",
@@ -174,7 +177,7 @@ class E2EHospitalWorkflowsTestSuite(BaseHospitalTestCase):
         self.assertIsNotNone(note.id)
         self.client.logout()
 
-        # Step 9: Patient logs in & settles payment
+        # Step 9: Patient attempts to record cash payment directly -> Forbidden (403)
         self.client.force_login(patient_user)
         pay_payload = {
             "amount": "700.00",
@@ -182,10 +185,23 @@ class E2EHospitalWorkflowsTestSuite(BaseHospitalTestCase):
             "notes": "Paid full consultation fee",
         }
         pay_resp = self.client.post(reverse("record_cash_payment"), pay_payload, follow=False)
+        self.assertEqual(pay_resp.status_code, 403)
+        self.client.logout()
+
+        # Admin logs in and records the cash settlement
+        self.client.force_login(admin_user)
+        pay_resp = self.client.post(reverse("record_cash_payment"), pay_payload, follow=False)
         self.assertEqual(pay_resp.status_code, 302)
         payment_record = PaymentRecord.objects.get(patient=patient_user, appointment_id=appointment.id)
         self.assertEqual(payment_record.status, "paid")
         self.assertEqual(payment_record.hospital, hospital)
+        self.client.logout()
+
+        # Patient logs in and views their own payment history
+        self.client.force_login(patient_user)
+        hist_resp = self.client.get(reverse("payments"))
+        self.assertEqual(hist_resp.status_code, 200)
+        self.assertContains(hist_resp, "700.00")
 
         # Step 10: Patient submits review & Admin approves it
         rev_payload = {

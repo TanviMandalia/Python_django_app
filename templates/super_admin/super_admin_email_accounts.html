@@ -1,0 +1,391 @@
+{% extends "super_admin/base_super_admin.html" %}
+{% load static %}
+
+{% block title %}Super Admin — Email Accounts &amp; Multi-Tenant SMTP Governance{% endblock %}
+{% block page_title %}📧 Email Accounts Governance{% endblock %}
+{% block page_subtitle %}Central multi-account email architecture: configure platform, clinic, support, and notification mailers with zero credential leakage{% endblock %}
+
+{% block topbar_actions %}
+<button class="sa-btn sa-btn-primary sa-btn-sm" onclick="openAddAccountModal()">
+  <i class="fas fa-plus-circle"></i> <span>Add Email Account</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- SUMMARY CARDS -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div class="sa-card" style="margin: 0; padding: 18px;">
+    <div style="font-size: 0.82rem; color: var(--sa-text-muted); font-weight: 600; text-transform: uppercase;">Total Configured Accounts</div>
+    <div style="font-size: 1.8rem; font-weight: 800; color: var(--sa-dark); margin-top: 4px;">{{ accounts|length }}</div>
+    <div style="font-size: 0.78rem; color: #10b981; margin-top: 4px;"><i class="fas fa-shield-alt"></i> AES-128 Encrypted at rest</div>
+  </div>
+  <div class="sa-card" style="margin: 0; padding: 18px;">
+    <div style="font-size: 0.82rem; color: var(--sa-text-muted); font-weight: 600; text-transform: uppercase;">Platform / System Senders</div>
+    <div style="font-size: 1.8rem; font-weight: 800; color: #6366f1; margin-top: 4px;">
+      {% with count=0 %}
+        {% for a in accounts %}{% if a.scope_type == 'platform' %}{% with count=count|add:1 %}{% endwith %}{% endif %}{% endfor %}
+      {% endwith %}
+      Active
+    </div>
+    <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Password Resets &amp; Subscriptions</div>
+  </div>
+  <div class="sa-card" style="margin: 0; padding: 18px;">
+    <div style="font-size: 0.82rem; color: var(--sa-text-muted); font-weight: 600; text-transform: uppercase;">Clinic-Dedicated Mailers</div>
+    <div style="font-size: 1.8rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
+      Isolated
+    </div>
+    <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Tenant-isolated outbound SMTP</div>
+  </div>
+</div>
+
+<!-- EMAIL ACCOUNTS TABLE -->
+<div class="sa-card">
+  <div class="sa-card-header">
+    <div class="sa-card-title">
+      <i class="fas fa-mail-bulk" style="color: var(--sa-purple);"></i>
+      <span>Configured Outbound Mailers &amp; SMTP Gateways ({{ accounts|length }})</span>
+    </div>
+    <button class="sa-btn sa-btn-primary sa-btn-sm" onclick="openAddAccountModal()">
+      <i class="fas fa-plus"></i> Add Account
+    </button>
+  </div>
+
+  {% if accounts %}
+  <div class="sa-table-responsive">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Account Label &amp; Type</th>
+          <th>Scope / Hospital</th>
+          <th>Host &amp; Port</th>
+          <th>Sender Identity</th>
+          <th>Security</th>
+          <th>Status</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in accounts %}
+        <tr>
+          <td><span style="color: var(--sa-text-muted); font-weight: 700;">{{ forloop.counter }}</span></td>
+          <td>
+            <div style="font-weight: 700; color: var(--sa-dark); font-size: 0.92rem;">
+              {{ a.name }}
+              {% if a.is_default %}
+                <span class="badge" style="background:#10b981; color:#fff; font-size:0.68rem; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">Default</span>
+              {% endif %}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--sa-text-muted); margin-top: 2px;">
+              Type: <strong style="color: #6366f1;">{{ a.account_type }}</strong> &bull; Provider: {{ a.provider|upper }}
+            </div>
+          </td>
+          <td>
+            {% if a.scope_type == 'platform' %}
+              <span class="badge" style="background:#e0e7ff; color:#3730a3; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.78rem;">
+                <i class="fas fa-globe"></i> Platform-Wide
+              </span>
+            {% elif a.hospital %}
+              <span class="badge" style="background:#e0f2fe; color:#0369a1; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.78rem;">
+                <i class="fas fa-hospital"></i> {{ a.hospital.name }}
+              </span>
+            {% else %}
+              <span style="color: var(--sa-text-muted); font-size: 0.8rem;">General</span>
+            {% endif %}
+          </td>
+          <td>
+            <code style="font-size: 0.8rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #0f172a;">{{ a.host }}:{{ a.port }}</code>
+            <div style="font-size: 0.74rem; color: var(--sa-text-muted); margin-top: 2px;">User: {{ a.username }}</div>
+          </td>
+          <td>
+            <div style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark);">{{ a.from_name }}</div>
+            <div style="font-size: 0.78rem; color: var(--sa-text-muted);">&lt;{{ a.from_email }}&gt;</div>
+            {% if a.reply_to %}
+              <div style="font-size: 0.72rem; color: #64748b;">Reply-To: {{ a.reply_to }}</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.use_ssl %}
+              <span style="font-size: 0.75rem; color: #059669; font-weight: 600;"><i class="fas fa-lock"></i> SSL (Port 465)</span>
+            {% elif a.use_tls %}
+              <span style="font-size: 0.75rem; color: #0284c7; font-weight: 600;"><i class="fas fa-shield-alt"></i> STARTTLS (Port 587)</span>
+            {% else %}
+              <span style="font-size: 0.75rem; color: #94a3b8;">Plain</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.is_active %}
+              <span style="color: #10b981; font-weight: 600; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Active</span>
+            {% else %}
+              <span style="color: #ef4444; font-weight: 600; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> Inactive</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+              <!-- TEST CONNECTION BUTTON -->
+              <button type="button" class="sa-btn sa-btn-sm" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;"
+                      onclick="openTestModal('{{ a.id }}', '{{ a.name|escapejs }}', '{{ a.from_email|escapejs }}')">
+                <i class="fas fa-paper-plane"></i> Test
+              </button>
+
+              <!-- EDIT BUTTON -->
+              <button type="button" class="sa-btn sa-btn-sm" style="background: #f8fafc; color: var(--sa-dark); border: 1px solid var(--sa-border);"
+                      onclick="openEditAccountModal('{{ a.id }}', '{{ a.name|escapejs }}', '{{ a.account_type }}', '{{ a.scope_type }}', '{{ a.hospital_id|default:'' }}', '{{ a.provider }}', '{{ a.host|escapejs }}', '{{ a.port }}', '{{ a.username|escapejs }}', '{{ a.from_email|escapejs }}', '{{ a.from_name|escapejs }}', '{{ a.reply_to|escapejs }}', {{ a.use_tls|yesno:'true,false' }}, {{ a.use_ssl|yesno:'true,false' }}, {{ a.is_default|yesno:'true,false' }})">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+
+              <!-- DELETE FORM -->
+              <form method="POST" action="{% url 'super_admin_email_account_delete' a.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete email account {{ a.name|escapejs }}?');">
+                {% csrf_token %}
+                <button type="submit" class="sa-btn sa-btn-sm" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 40px; text-align: center; color: var(--sa-text-muted);">
+    <i class="fas fa-envelope-open" style="font-size: 2.5rem; margin-bottom: 12px; color: #cbd5e1; display: block;"></i>
+    <p style="font-size: 1rem; font-weight: 600; margin: 0 0 6px 0; color: var(--sa-dark);">No Email Accounts Configured</p>
+    <p style="font-size: 0.85rem; margin: 0 0 16px 0;">Configure platform and clinic outbound SMTP servers to enable real isolated delivery.</p>
+    <button class="sa-btn sa-btn-primary" onclick="openAddAccountModal()">
+      <i class="fas fa-plus"></i> Configure First Account
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- MODAL: ADD / EDIT ACCOUNT -->
+<div id="accountModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+  <div style="background: #fff; width: 100%; max-width: 650px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
+    <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+      <h3 id="modalTitle" style="margin: 0; font-size: 1.1rem; color: var(--sa-dark); display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-server" style="color: var(--sa-purple);"></i> Configure Email Account
+      </h3>
+      <button onclick="closeModal('accountModal')" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;">&times;</button>
+    </div>
+
+    <form method="POST" action="{% url 'super_admin_email_account_save' %}" style="padding: 20px; overflow-y: auto; flex: 1;">
+      {% csrf_token %}
+      <input type="hidden" name="account_id" id="modalAccountId">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">Account Label *</label>
+          <input type="text" name="name" id="modalName" class="form-control" required placeholder="e.g. Platform Main SMTP">
+        </div>
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">Account Purpose / Type *</label>
+          <select name="account_type" id="modalAccountType" class="form-control">
+            <option value="PLATFORM">PLATFORM (Password Reset, Super Admin)</option>
+            <option value="CLINIC">CLINIC (Clinic Invoices &amp; Appointments)</option>
+            <option value="SUPPORT">SUPPORT (Support Tickets &amp; Help Desk)</option>
+            <option value="NOTIFICATION">NOTIFICATION (System Alerts &amp; Triggers)</option>
+            <option value="SYSTEM">SYSTEM (Cron &amp; Background Automation)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">Scope Type *</label>
+          <select name="scope_type" id="modalScopeType" class="form-control" onchange="toggleHospitalDropdown()">
+            <option value="platform">Platform-Wide</option>
+            <option value="hospital">Hospital / Clinic Dedicated</option>
+          </select>
+        </div>
+        <div id="hospitalSelectGroup" style="display: none;">
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">Associated Clinic *</label>
+          <select name="hospital_id" id="modalHospitalId" class="form-control">
+            <option value="">-- Select Clinic --</option>
+            {% for h in hospitals %}
+              <option value="{{ h.id }}">{{ h.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">SMTP Host *</label>
+          <input type="text" name="host" id="modalHost" class="form-control" required placeholder="smtp.gmail.com / mail.domain.com">
+        </div>
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">Port *</label>
+          <input type="number" name="port" id="modalPort" class="form-control" required value="587">
+        </div>
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">Provider</label>
+          <select name="provider" id="modalProvider" class="form-control">
+            <option value="smtp">SMTP</option>
+            <option value="gmail">Gmail / Workspace</option>
+            <option value="office365">Office 365</option>
+            <option value="sendgrid">SendGrid</option>
+            <option value="ses">Amazon SES</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; gap: 20px;">
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">
+          <input type="checkbox" name="use_tls" id="modalUseTls" checked>
+          <span>Enable TLS (Port 587)</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">
+          <input type="checkbox" name="use_ssl" id="modalUseSsl">
+          <span>Enable SSL (Port 465)</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">
+          <input type="checkbox" name="is_default" id="modalIsDefault">
+          <span>Set as Default for Scope</span>
+        </label>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">SMTP Username *</label>
+          <input type="text" name="username" id="modalUsername" class="form-control" required placeholder="username or login email">
+        </div>
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">SMTP Password / Token</label>
+          <input type="password" name="password" id="modalPassword" class="form-control" placeholder="Leave blank to keep existing password">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">From Email *</label>
+          <input type="email" name="from_email" id="modalFromEmail" class="form-control" required placeholder="noreply@domain.com">
+        </div>
+        <div>
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">From Name</label>
+          <input type="text" name="from_name" id="modalFromName" class="form-control" placeholder="e.g. Platform System">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">Reply-To Email (Optional)</label>
+        <input type="email" name="reply_to" id="modalReplyTo" class="form-control" placeholder="support@domain.com">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+        <button type="button" class="sa-btn" onclick="closeModal('accountModal')">Cancel</button>
+        <button type="submit" class="sa-btn sa-btn-primary">Save Account</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: TEST CONNECTION -->
+<div id="testModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+  <div style="background: #fff; width: 100%; max-width: 480px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); overflow: hidden;">
+    <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #eff6ff;">
+      <h3 style="margin: 0; font-size: 1.05rem; color: #1e40af; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-paper-plane"></i> Live SMTP Connection Test
+      </h3>
+      <button onclick="closeModal('testModal')" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;">&times;</button>
+    </div>
+
+    <form id="testForm" method="POST" action="" style="padding: 20px;">
+      {% csrf_token %}
+      <div style="margin-bottom: 14px;">
+        <p style="font-size: 0.85rem; color: #334155; margin: 0 0 6px 0;">
+          Testing Account: <strong id="testAccountName" style="color: var(--sa-dark);"></strong>
+        </p>
+        <p style="font-size: 0.8rem; color: #64748b; margin: 0;">
+          Authorized Sender: &lt;<span id="testAccountSender"></span>&gt;
+        </p>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">
+          Send Real Test Message To Recipient:
+        </label>
+        <input type="email" name="test_recipient" class="form-control" placeholder="e.g. mandaliatanvi1504@gmail.com" required>
+        <small style="color: #64748b; font-size: 0.76rem; display: block; margin-top: 4px;">
+          This executes a real TCP/TLS handshake against the remote SMTP server and dispatches an authentic test email.
+        </small>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="sa-btn" onclick="closeModal('testModal')">Cancel</button>
+        <button type="submit" class="sa-btn sa-btn-primary" style="background: #2563eb;">
+          <i class="fas fa-paper-plane" style="margin-right: 6px;"></i> Send Live Test Email
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  function toggleHospitalDropdown() {
+    const scope = document.getElementById('modalScopeType').value;
+    const group = document.getElementById('hospitalSelectGroup');
+    group.style.display = (scope === 'hospital') ? 'block' : 'none';
+  }
+
+  function openAddAccountModal() {
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--sa-purple);"></i> Add New Email Account';
+    document.getElementById('modalAccountId').value = '';
+    document.getElementById('modalName').value = '';
+    document.getElementById('modalAccountType').value = 'PLATFORM';
+    document.getElementById('modalScopeType').value = 'platform';
+    document.getElementById('modalHospitalId').value = '';
+    document.getElementById('modalProvider').value = 'smtp';
+    document.getElementById('modalHost').value = '';
+    document.getElementById('modalPort').value = '587';
+    document.getElementById('modalUsername').value = '';
+    document.getElementById('modalPassword').value = '';
+    document.getElementById('modalFromEmail').value = '';
+    document.getElementById('modalFromName').value = '';
+    document.getElementById('modalReplyTo').value = '';
+    document.getElementById('modalUseTls').checked = true;
+    document.getElementById('modalUseSsl').checked = false;
+    document.getElementById('modalIsDefault').checked = false;
+    toggleHospitalDropdown();
+    openModal('accountModal');
+  }
+
+  function openEditAccountModal(id, name, accountType, scopeType, hospitalId, provider, host, port, username, fromEmail, fromName, replyTo, useTls, useSsl, isDefault) {
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--sa-purple);"></i> Edit Email Account';
+    document.getElementById('modalAccountId').value = id;
+    document.getElementById('modalName').value = name;
+    document.getElementById('modalAccountType').value = accountType;
+    document.getElementById('modalScopeType').value = scopeType;
+    document.getElementById('modalHospitalId').value = hospitalId || '';
+    document.getElementById('modalProvider').value = provider;
+    document.getElementById('modalHost').value = host;
+    document.getElementById('modalPort').value = port;
+    document.getElementById('modalUsername').value = username;
+    document.getElementById('modalPassword').value = '';
+    document.getElementById('modalFromEmail').value = fromEmail;
+    document.getElementById('modalFromName').value = fromName;
+    document.getElementById('modalReplyTo').value = replyTo;
+    document.getElementById('modalUseTls').checked = useTls;
+    document.getElementById('modalUseSsl').checked = useSsl;
+    document.getElementById('modalIsDefault').checked = isDefault;
+    toggleHospitalDropdown();
+    openModal('accountModal');
+  }
+
+  function openTestModal(accountId, accountName, fromEmail) {
+    document.getElementById('testAccountName').innerText = accountName;
+    document.getElementById('testAccountSender').innerText = fromEmail;
+    document.getElementById('testForm').action = '/super-admin/email-accounts/' + accountId + '/test/';
+    openModal('testModal');
+  }
+</script>
+{% endblock %}

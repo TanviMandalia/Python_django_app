@@ -25,6 +25,7 @@ import os
 import re
 import uuid
 import logging
+from django.db.models import Q
 from django.core.mail import send_mail, get_connection, EmailMultiAlternatives
 from django.core.validators import validate_email as django_validate_email
 from django.core.exceptions import ValidationError
@@ -179,11 +180,19 @@ def send_clinic_email(
     email_type="transactional",
     html_message=None,
     attachments=None,
+    in_reply_to=None,
+    thread_id=None,
+    reply_to=None,
+    doctor=None,
 ):
     """
     Send an isolated email to a single recipient (or small list of recipients)
     with full validation, HTML rendering, safe logging, and EmailLog recording.
+    Dynamically resolves the authoritative EmailAccount per clinic, role, or purpose.
+    Supports RFC threading headers (In-Reply-To, References, X-Thread-ID) and Reply-To.
     """
+    from .email_service import resolve_email_account
+
     raw_recipients = recipient_list if isinstance(recipient_list, list) else [recipient_list]
     valid_recipients = []
 
@@ -198,21 +207,48 @@ def send_clinic_email(
         return False
 
     clean_subject = sanitize_header_value(subject)
-    from_email = settings.DEFAULT_FROM_EMAIL
+    
+    # Resolve authoritative EmailAccount dynamically
+    account = resolve_email_account(purpose=email_type, hospital=hospital, doctor=doctor)
+
+    display_clinic_name = account.from_name or (hospital.name if hospital else getattr(settings, "CLINIC_NAME", "PhysioRehab Clinic"))
+    clean_display_name = sanitize_header_value(display_clinic_name)
+    from_email = f"{clean_display_name} <{account.from_email}>" if clean_display_name else account.from_email
+
     if not html_message:
         escaped_body = escape(message_text).replace("\n", "<br>")
         html_message = render_html_wrapper(clean_subject, f"<p>{escaped_body}</p>")
 
+    effective_reply_to = reply_to or account.reply_to
+    reply_to_list = [sanitize_header_value(effective_reply_to)] if effective_reply_to else None
+
+    # Obtain dynamic connection configured for this account
+    connection = account.get_connection(fail_silently=False)
+
     success_all = True
     for recipient in valid_recipients:
-        msg_id = f"{uuid.uuid4().hex}@{getattr(settings, 'EMAIL_HOST', 'localhost')}"
+        msg_id = f"{uuid.uuid4().hex}@{getattr(account, 'host', 'localhost')}"
+        clean_thread_id = str(thread_id or msg_id).strip("<> ")
+        headers = {
+            "Message-ID": f"<{msg_id}>",
+            "X-Thread-ID": clean_thread_id,
+        }
+        if in_reply_to:
+            clean_in_reply_to = sanitize_header_value(in_reply_to).strip("<> ")
+            headers["In-Reply-To"] = f"<{clean_in_reply_to}>"
+            headers["References"] = f"<{clean_in_reply_to}>"
+        if effective_reply_to:
+            headers["Reply-To"] = sanitize_header_value(effective_reply_to)
+
         try:
             email_msg = EmailMultiAlternatives(
-                subject=f"[{CLINIC_NAME}] {clean_subject}",
+                subject=f"[{clean_display_name}] {clean_subject}",
                 body=message_text,
                 from_email=from_email,
                 to=[recipient],
-                headers={"Message-ID": f"<{msg_id}>"},
+                headers=headers,
+                reply_to=reply_to_list,
+                connection=connection,
             )
             email_msg.attach_alternative(html_message, "text/html")
 
@@ -230,35 +266,43 @@ def send_clinic_email(
             try:
                 from .models import EmailLog
                 EmailLog.objects.create(
-                    hospital=hospital,
+                    account=account if getattr(account, "pk", None) else None,
+                    sender_email=account.from_email,
+                    hospital=hospital or account.hospital,
                     email_type=email_type,
                     recipient_email=recipient,
                     subject=clean_subject,
                     status="sent",
                     message_id=msg_id,
+                    thread_id=clean_thread_id,
+                    sent_at=timezone.now(),
                 )
             except Exception as log_err:
                 logger.debug(f"EmailLog record failed: {log_err}")
 
             safe_log_subject = clean_subject.encode("ascii", errors="backslashreplace").decode("ascii")
-            logger.info(f"Email sent successfully to {mask_email_for_logging(recipient)}: '{safe_log_subject}'")
+            logger.info(f"Email sent successfully via account '{account.name}' ({account.from_email}) to {mask_email_for_logging(recipient)}: '{safe_log_subject}'")
 
         except Exception as exc:
             success_all = False
             err_category = exc.__class__.__name__
             safe_err = str(exc).encode("ascii", errors="backslashreplace").decode("ascii")
-            logger.error(f"Email failed to {mask_email_for_logging(recipient)}: {err_category} - {safe_err}")
+            logger.error(f"Email failed via account '{account.name}' to {mask_email_for_logging(recipient)}: {err_category} - {safe_err}")
 
             try:
                 from .models import EmailLog
                 EmailLog.objects.create(
-                    hospital=hospital,
+                    account=account if getattr(account, "pk", None) else None,
+                    sender_email=account.from_email,
+                    hospital=hospital or account.hospital,
                     email_type=email_type,
                     recipient_email=recipient,
                     subject=clean_subject,
                     status="failed",
                     error_category=err_category,
                     message_id=msg_id,
+                    thread_id=clean_thread_id,
+                    sent_at=timezone.now(),
                 )
             except Exception:
                 pass
@@ -786,21 +830,66 @@ def process_inbound_email_payload(payload_dict, raw_headers=None):
     Process incoming untrusted emails from webhooks or mail receivers.
     Verifies:
       - Required metadata (sender, recipient, subject, body, message_id)
-      - Email recipient syntax
+      - Email recipient syntax & RFC 5321 length
       - Message deduplication (idempotency via unique message_id)
       - HTML sanitization against stored XSS
+      - RFC threading headers: In-Reply-To, References, X-Thread-ID
       - Safe attachment parsing
       - Tenant hospital association
-      - Dynamic routing: support ticket replies or clinic inquiry notifications
+      - Intelligent Dynamic Routing:
+        * Doctor/Staff inbound reply -> Message chat & Admin/Doctor notifications
+        * Patient inbound communication -> Clinic Admin notification
+        * Support ticket replies -> SupportTicket & SupportReply routing
     """
-    from .models import Hospital, InboundEmail, SupportTicket, SupportReply, Notification, User
+    from .models import Hospital, InboundEmail, SupportTicket, SupportReply, Notification, User, EmailLog, Message
 
     sender = payload_dict.get("sender") or payload_dict.get("from", "")
     recipient = payload_dict.get("recipient") or payload_dict.get("to", "")
     subject = payload_dict.get("subject", "").strip()
     body_text = payload_dict.get("body_text") or payload_dict.get("text", "")
     raw_html = payload_dict.get("body_html") or payload_dict.get("html", "")
-    message_id = payload_dict.get("message_id") or payload_dict.get("Message-Id") or f"inbound_{uuid.uuid4().hex}"
+
+    # Headers dictionary normalization
+    headers_dict = dict(raw_headers or {})
+
+    # Extract Message-ID
+    raw_msg_id = (
+        payload_dict.get("message_id")
+        or payload_dict.get("Message-Id")
+        or payload_dict.get("Message-ID")
+        or headers_dict.get("Message-ID")
+        or headers_dict.get("message-id")
+        or f"inbound_{uuid.uuid4().hex}"
+    )
+    clean_msg_id = sanitize_header_value(raw_msg_id).strip("<> ")
+
+    # Extract RFC Threading Headers
+    raw_in_reply_to = (
+        payload_dict.get("in_reply_to")
+        or payload_dict.get("In-Reply-To")
+        or headers_dict.get("In-Reply-To")
+        or headers_dict.get("in-reply-to")
+        or ""
+    )
+    clean_in_reply_to = sanitize_header_value(raw_in_reply_to).strip("<> ")
+
+    raw_refs = (
+        payload_dict.get("references")
+        or payload_dict.get("References")
+        or headers_dict.get("References")
+        or headers_dict.get("references")
+        or ""
+    )
+    clean_refs = sanitize_header_value(raw_refs).strip()
+
+    raw_thread_id = (
+        payload_dict.get("thread_id")
+        or payload_dict.get("Thread-Id")
+        or headers_dict.get("X-Thread-ID")
+        or headers_dict.get("Thread-Index")
+        or ""
+    )
+    clean_thread_id = sanitize_header_value(raw_thread_id).strip()
 
     # 1. Validation
     try:
@@ -814,10 +903,10 @@ def process_inbound_email_payload(payload_dict, raw_headers=None):
         return {"status": "rejected", "error": f"Invalid recipient address: {err}"}
 
     # 2. Duplicate Detection / Idempotency
-    existing = InboundEmail.objects.filter(message_id=message_id).first()
+    existing = InboundEmail.objects.filter(message_id=clean_msg_id).first()
     if existing:
-        logger.info(f"Duplicate incoming email ignored (message_id={message_id})")
-        return {"status": "duplicate", "message_id": message_id, "id": existing.id}
+        logger.info(f"Duplicate incoming email ignored (message_id={clean_msg_id})")
+        return {"status": "duplicate", "message_id": clean_msg_id, "id": existing.id}
 
     # 3. HTML Sanitization
     sanitized_html = sanitize_html_content(raw_html) if raw_html else ""
@@ -829,7 +918,24 @@ def process_inbound_email_payload(payload_dict, raw_headers=None):
         or Hospital.objects.filter(is_active=True).first()
     )
 
-    # 5. Process Attachments Metadata
+    # 5. Thread Association & Original Email Lookup
+    orig_log = None
+    if clean_in_reply_to:
+        orig_log = EmailLog.objects.filter(message_id=clean_in_reply_to).first()
+    if not orig_log and clean_refs:
+        ref_tokens = [r.strip("<> ") for r in clean_refs.split()]
+        orig_log = EmailLog.objects.filter(message_id__in=ref_tokens).first()
+
+    if orig_log:
+        if not clean_thread_id:
+            clean_thread_id = orig_log.thread_id or orig_log.message_id
+        if not matched_hospital and orig_log.hospital:
+            matched_hospital = orig_log.hospital
+
+    if not clean_thread_id:
+        clean_thread_id = clean_in_reply_to or clean_msg_id
+
+    # 6. Process Attachments Metadata
     raw_attachments = payload_dict.get("attachments", [])
     safe_attachments = []
     if isinstance(raw_attachments, list):
@@ -841,21 +947,27 @@ def process_inbound_email_payload(payload_dict, raw_headers=None):
                     "content_type": sanitize_header_value(att.get("content_type", "application/octet-stream")),
                 })
 
-    # 6. Persist InboundEmail record
+    # 7. Persist InboundEmail record with threading fields
     inbound_obj = InboundEmail.objects.create(
         hospital=matched_hospital,
-        message_id=message_id,
+        message_id=clean_msg_id,
+        in_reply_to=clean_in_reply_to,
+        references=clean_refs,
+        thread_id=clean_thread_id,
         sender=clean_sender,
         recipient=clean_recipient,
         subject=clean_subject,
         body_text=body_text,
         body_html=sanitized_html,
-        raw_headers=raw_headers or {},
+        raw_headers=headers_dict,
         attachments_info=safe_attachments,
         status="processed",
     )
 
-    # 7. Intelligent Routing & Action Dispatching
+    # 8. Intelligent Routing & Action Dispatching
+    from .views import get_admin_user
+    admin_user = get_admin_user(matched_hospital) if matched_hospital else None
+
     # Case A: Support Ticket Reply (Subject matching '[Ticket #<id>]')
     ticket_match = re.search(r"\[Ticket\s*#?(\d+)\]", clean_subject, re.IGNORECASE)
     if ticket_match:
@@ -871,19 +983,73 @@ def process_inbound_email_payload(payload_dict, raw_headers=None):
             )
             ticket.status = "in_progress"
             ticket.save(update_fields=["status", "updated_at"])
-            logger.info(f"Routed inbound email {message_id} to SupportTicket #{ticket_id}")
+            logger.info(f"Routed inbound email {clean_msg_id} to SupportTicket #{ticket_id}")
 
-    # Case B: In-App Notification to Hospital Admin
-    if matched_hospital:
-        from .views import get_admin_user
-        admin_user = get_admin_user(matched_hospital)
-        if admin_user:
-            Notification.objects.create(
-                hospital=matched_hospital,
-                recipient=admin_user,
-                message=f"📧 New inbound email from {clean_sender}: {clean_subject[:40]}",
-                link="/admin-chat/",
-            )
+    # Case B: Doctor / Medical Staff Communication
+    # Check if sender is a registered doctor/staff member in the hospital
+    sender_doctor = (
+        User.objects.filter(email__iexact=clean_sender)
+        .filter(Q(staff_profile__isnull=False) | Q(is_staff=True))
+        .first()
+    )
+    is_doctor_reply = sender_doctor is not None
 
-    logger.info(f"Successfully processed inbound email {message_id} from {mask_email_for_logging(clean_sender)}")
-    return {"status": "processed", "message_id": message_id, "id": inbound_obj.id}
+    if is_doctor_reply and admin_user:
+        # Create Message record in the doctor communication thread
+        msg_content = (body_text or sanitized_html or clean_subject).strip()
+        Message.objects.create(
+            hospital=matched_hospital,
+            sender=sender_doctor,
+            receiver=admin_user,
+            content=msg_content,
+            status=Message.STATUS_SENT,
+        )
+        # Notify Clinic Administrator of the doctor's communication
+        Notification.objects.create(
+            hospital=matched_hospital,
+            recipient=admin_user,
+            message=f"💬 Doctor reply from {sender_doctor.get_full_name() or sender_doctor.username}: {clean_subject[:40]}",
+            link=f"/admin-doctor-chat/{sender_doctor.id}/",
+        )
+        # Create confirmation notification for Doctor
+        Notification.objects.create(
+            hospital=matched_hospital,
+            recipient=sender_doctor,
+            message=f"✅ Reply received and delivered to Clinic Administration: {clean_subject[:40]}",
+            link="/chat/",
+        )
+        logger.info(f"Routed inbound doctor email from {clean_sender} to admin chat ({admin_user.username})")
+
+    # Case C: Inbound email sent TO a Doctor / Staff Member
+    recipient_doctor = (
+        User.objects.filter(email__iexact=clean_recipient)
+        .filter(Q(staff_profile__isnull=False) | Q(is_staff=True))
+        .first()
+    )
+    if recipient_doctor and not is_doctor_reply:
+        Notification.objects.create(
+            hospital=matched_hospital,
+            recipient=recipient_doctor,
+            message=f"📧 Inbound email from {clean_sender}: {clean_subject[:40]}",
+            link="/chat/",
+        )
+        logger.info(f"Routed inbound email notification to doctor {recipient_doctor.username}")
+
+    # Case D: General Inbound Communication (Patient or inquiry to clinic)
+    if admin_user and not is_doctor_reply and not ticket_match and not recipient_doctor:
+        Notification.objects.create(
+            hospital=matched_hospital,
+            recipient=admin_user,
+            message=f"📧 New inbound email from {clean_sender}: {clean_subject[:40]}",
+            link="/admin-chat/",
+        )
+
+    logger.info(f"Successfully processed inbound email {clean_msg_id} from {mask_email_for_logging(clean_sender)} (thread={clean_thread_id})")
+    return {
+        "status": "processed",
+        "message_id": clean_msg_id,
+        "id": inbound_obj.id,
+        "thread_id": clean_thread_id,
+        "in_reply_to": clean_in_reply_to,
+        "is_doctor_reply": is_doctor_reply,
+    }

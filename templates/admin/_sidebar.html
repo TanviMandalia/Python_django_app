@@ -112,6 +112,9 @@
       <a href="{% url 'admin_settings' %}" class="nav-item{% if url_name == 'admin_settings' %} active{% endif %}" title="Settings">
         <i class="fas fa-cog"></i> <span>Settings</span>
       </a>
+      <a href="{% url 'admin_email_settings' %}" class="nav-item{% if url_name == 'admin_email_settings' %} active{% endif %}" title="Email Settings">
+        <i class="fas fa-envelope-open-text"></i> <span>Email Settings</span>
+      </a>
       {% if request.user.is_superuser %}
       <a href="/admin/" class="nav-item" title="Django Admin" target="_blank">
         <i class="fas fa-database"></i> <span>Django Admin</span>

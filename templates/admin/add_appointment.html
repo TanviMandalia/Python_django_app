@@ -66,10 +66,29 @@
 
       <div>
         <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
-          Time Slot <span style="color: var(--admin-danger);">*</span>
+          Time Slot (Clinic Shifts) <span style="color: var(--admin-danger);">*</span>
         </label>
-        <input type="text" name="time" placeholder="e.g. 10:30 AM" required
-          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+        <select name="time" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          <option value="">-- Choose Shift &amp; Slot --</option>
+          <optgroup label="Morning Shift (10:00 AM – 1:00 PM)">
+            <option value="10:00 AM">10:00 AM</option>
+            <option value="10:30 AM">10:30 AM</option>
+            <option value="11:00 AM">11:00 AM</option>
+            <option value="11:30 AM">11:30 AM</option>
+            <option value="12:00 PM">12:00 PM</option>
+            <option value="12:30 PM">12:30 PM</option>
+          </optgroup>
+          <optgroup label="Evening Shift (4:00 PM – 8:00 PM)">
+            <option value="04:00 PM">04:00 PM</option>
+            <option value="04:30 PM">04:30 PM</option>
+            <option value="05:00 PM">05:00 PM</option>
+            <option value="05:30 PM">05:30 PM</option>
+            <option value="06:00 PM">06:00 PM</option>
+            <option value="06:30 PM">06:30 PM</option>
+            <option value="07:00 PM">07:00 PM</option>
+            <option value="07:30 PM">07:30 PM</option>
+          </optgroup>
+        </select>
       </div>
     </div>
 

@@ -1,11 +1,14 @@
 {% extends "client/base_client.html" %}
 {% load static %}
 
-{% block title %}Payments &amp; Billing{% endblock %}
-{% block page_title %}Payments &amp; Billing{% endblock %}
-{% block breadcrumb %}Billing Portal{% endblock %}
+{% block title %}Payment History &amp; Receipts{% endblock %}
+{% block page_title %}Payment History &amp; Receipts{% endblock %}
+{% block breadcrumb %}Payment History{% endblock %}
 
 {% block topbar_actions %}
+  <a href="{% url 'my_appointments' %}" class="client-btn client-btn-outline client-btn-sm" style="font-weight:600;">
+    <i class="fas fa-calendar-check"></i> My Appointments
+  </a>
   <a href="{% url 'book_appointment' %}" class="client-btn client-btn-primary client-btn-sm" style="font-weight:700;">
     <i class="fas fa-calendar-plus"></i> Book Session
   </a>
@@ -20,7 +23,7 @@
     </div>
     <div class="client-stat-info">
       <h3>₹{{ total_paid|default:"0" }}</h3>
-      <p>Total Settled</p>
+      <p>Total Settled Fees</p>
     </div>
   </div>
 
@@ -36,11 +39,11 @@
 
   <div class="client-stat-card">
     <div class="client-stat-icon blue">
-      <i class="fas fa-file-invoice"></i>
+      <i class="fas fa-file-invoice-dollar"></i>
     </div>
     <div class="client-stat-info">
       <h3>{{ my_payments|length }}</h3>
-      <p>Payment Records</p>
+      <p>Total Receipts</p>
     </div>
   </div>
 
@@ -49,274 +52,123 @@
       <i class="fas fa-shield-alt"></i>
     </div>
     <div class="client-stat-info">
-      <h3 style="font-size:1.15rem; color:var(--client-success);"><i class="fas fa-check-circle"></i> 100% Secure</h3>
-      <p>Encrypted Checkout</p>
+      <h3 style="font-size:1.15rem; color:var(--client-success);"><i class="fas fa-check-circle"></i> Verified Ledger</h3>
+      <p>Official Patient History</p>
     </div>
   </div>
 </div>
 
-<!-- ════ 2. PAYMENT METHODS TABS & FORM CARDS ════ -->
+<!-- ════ 2. PAYMENT HISTORY & INVOICES (READ-ONLY) ════ -->
 <div class="client-card">
-  <div class="client-card-header">
+  <div class="client-card-header" style="flex-wrap:wrap; gap:12px; align-items:center;">
     <div class="client-card-title">
-      <i class="fas fa-credit-card"></i> Make a Consultation Payment
+      <i class="fas fa-history" style="color:var(--client-primary-dark);"></i> Personal Payment History &amp; Official Receipts
     </div>
-    <span class="client-badge client-badge-warning"><i class="fas fa-bolt"></i> Instant Settlement</span>
+    <span class="client-badge client-badge-info" id="clientRecordCountBadge">{{ my_payments|length }} Total Records</span>
   </div>
 
-  <div class="client-card-body">
-    <!-- Tabs Header -->
-    <div style="display:flex; gap:10px; border-bottom:1px solid var(--client-border); padding-bottom:14px; margin-bottom:24px; overflow-x:auto; -webkit-overflow-scrolling:touch;">
-      <button class="client-btn client-btn-primary client-btn-sm tab-btn active" id="tab-razorpay" onclick="switchMethodTab('razorpay', this)">
-        <i class="fas fa-bolt"></i> Instant Online (Cards/UPI)
-      </button>
-      <button class="client-btn client-btn-outline client-btn-sm tab-btn" id="tab-upi" onclick="switchMethodTab('upi', this)">
-        <i class="fas fa-qrcode"></i> Scan QR Code
-      </button>
-      <button class="client-btn client-btn-outline client-btn-sm tab-btn" id="tab-cash" onclick="switchMethodTab('cash', this)">
-        <i class="fas fa-money-bill-wave"></i> Cash at Clinic
-      </button>
-      <button class="client-btn client-btn-outline client-btn-sm tab-btn" id="tab-bank" onclick="switchMethodTab('bank', this)">
-        <i class="fas fa-university"></i> Bank Transfer (NEFT)
-      </button>
-    </div>
+  <div class="client-card-body" style="padding: 20px 24px;">
+    <!-- Filter and Search Toolbar -->
+    <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:20px; align-items:center; justify-content:space-between;">
+      <div style="flex:1 1 240px; min-width:200px; position:relative;">
+        <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--client-text-muted);"></i>
+        <input type="text" id="clientPaymentSearch" placeholder="Search by transaction ID, notes, treatment..."
+               oninput="filterClientPayments()"
+               style="width:100%; padding:9px 12px 9px 36px; border-radius:10px; border:1px solid var(--client-border); font-size:0.88rem; outline:none; background:#fff;" />
+      </div>
 
-    <!-- 1. RAZORPAY INSTANT ONLINE -->
-    <div class="method-panel active" id="panel-razorpay">
-      <div style="background:var(--client-primary-subtle); border-radius:14px; border:1px solid rgba(245,197,24,0.35); padding:24px; max-width:640px; margin:0 auto;">
-        <div style="display:flex; gap:16px; align-items:flex-start; margin-bottom:18px;">
-          <div style="width:48px; height:48px; border-radius:12px; background:var(--client-primary); color:var(--client-dark); display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0;">
-            <i class="fas fa-shield-alt"></i>
-          </div>
-          <div>
-            <h4 style="margin:0 0 4px 0; color:var(--client-dark); font-size:1.05rem; font-weight:700;">Secure Razorpay Gateway</h4>
-            <p style="font-size:0.86rem; color:var(--client-text-muted); margin:0;">Pay instantly using Debit/Credit Cards, Net Banking, or UPI apps (GPay, PhonePe, Paytm).</p>
-          </div>
-        </div>
+      <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+        <select id="clientStatusFilter" onchange="filterClientPayments()"
+                style="padding:9px 14px; border-radius:10px; border:1px solid var(--client-border); font-size:0.88rem; background:#fff; color:var(--client-dark); cursor:pointer;">
+          <option value="">All Statuses</option>
+          <option value="paid">Paid</option>
+          <option value="pending">Pending</option>
+          <option value="failed">Failed</option>
+          <option value="refunded">Refunded</option>
+        </select>
 
-        {% if razorpay_key_id %}
-          <div style="display:flex; flex-direction:column; gap:16px;">
-            <div>
-              <label class="client-label">Select Appointment to Pay For</label>
-              <select id="rzp-appointment-select" class="client-select">
-                <option value="">— General Consultation —</option>
-                {% for appt in upcoming_appointments %}
-                  <option value="{{ appt.id }}" {% if appt.consultation_fee %}data-fee="{{ appt.consultation_fee }}"{% endif %}>
-                    {{ appt.date|date:"d M Y" }} — {{ appt.get_service_display }} ({{ appt.time }})
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
+        <select id="clientMethodFilter" onchange="filterClientPayments()"
+                style="padding:9px 14px; border-radius:10px; border:1px solid var(--client-border); font-size:0.88rem; background:#fff; color:var(--client-dark); cursor:pointer;">
+          <option value="">All Methods</option>
+          <option value="cash">Cash</option>
+          <option value="upi">UPI</option>
+          <option value="online">Online / Card</option>
+          <option value="netbanking">Net Banking</option>
+        </select>
 
-            <div>
-              <label class="client-label">Amount (₹) <span style="color:var(--client-danger);">*</span></label>
-              <input type="number" id="rzp-amount" class="client-input" value="500" min="1" placeholder="Enter consultation fee" />
-            </div>
-
-            <button type="button" onclick="initiateRazorpay()" class="client-btn client-btn-primary" style="width:max-content; max-width:100%; padding:14px 28px; font-weight:700; font-size:0.95rem;">
-              <i class="fas fa-lock"></i> Proceed to Pay Online
-            </button>
-          </div>
-        {% else %}
-          <div style="text-align:center; padding:20px; background:#ffffff; border-radius:10px; border:1px solid var(--client-border);">
-            <i class="fas fa-info-circle" style="color:var(--client-primary-dark); font-size:1.5rem; margin-bottom:8px; display:block;"></i>
-            <p style="font-size:0.88rem; color:var(--client-text); margin:0 0 6px 0;">Online payment gateway is temporarily unavailable.</p>
-            <small style="color:var(--client-text-muted);">Please use the <strong>Scan QR Code</strong> or <strong>Cash at Clinic</strong> options above.</small>
-          </div>
-        {% endif %}
-
-        <div id="rzpLoading" style="display:none; text-align:center; padding:16px 0 0 0; color:var(--client-dark); font-size:0.86rem; font-weight:600;">
-          <i class="fas fa-spinner fa-spin" style="color:var(--client-primary-dark);"></i> Connecting to secure payment server...
-        </div>
+        <select id="clientSortOrder" onchange="sortClientPayments()"
+                style="padding:9px 14px; border-radius:10px; border:1px solid var(--client-border); font-size:0.88rem; background:#fff; color:var(--client-dark); cursor:pointer;">
+          <option value="date-desc">Newest First</option>
+          <option value="date-asc">Oldest First</option>
+          <option value="amount-desc">Highest Amount</option>
+          <option value="amount-asc">Lowest Amount</option>
+        </select>
       </div>
     </div>
 
-    <!-- 2. UPI / QR CODE -->
-    <div class="method-panel" id="panel-upi" style="display:none;">
-      <div style="background:#f9fafb; border-radius:14px; border:1px solid var(--client-border); padding:24px; max-width:640px; margin:0 auto;">
-        <div style="text-align:center; margin-bottom:20px;">
-          <h4 style="margin:0 0 6px 0; color:var(--client-dark); font-size:1.05rem; font-weight:700;">Scan QR Code via any UPI App</h4>
-          <p style="font-size:0.84rem; color:var(--client-text-muted); margin:0;">GPay, PhonePe, Paytm, BHIM, or any banking app.</p>
-        </div>
-
-        <div style="display:flex; justify-content:center; margin-bottom:18px;">
-          <div style="background:#ffffff; border:1px solid var(--client-border); border-radius:16px; padding:16px; box-shadow:var(--client-shadow-sm); text-align:center;">
-            {% if clinic_qr_code %}
-              <img src="{{ clinic_qr_code.url }}" alt="Clinic UPI QR Code" style="width:190px; height:190px; object-fit:contain; border-radius:8px;" />
-            {% else %}
-              <div style="width:190px; height:190px; background:#f3f4f6; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--client-text-muted); gap:8px;">
-                <i class="fas fa-qrcode" style="font-size:3.5rem; color:var(--client-primary-dark);"></i>
-                <span style="font-size:0.75rem; font-weight:600;">PhysioRehab Clinic QR</span>
-              </div>
-            {% endif %}
-            <div style="margin-top:12px; font-size:0.85rem; font-weight:700; color:var(--client-dark);" id="upiIdText">
-              {{ clinic_upi_id|default:"physiorehab@okaxis" }}
-            </div>
-            <button type="button" onclick="copyUpiId()" class="client-btn client-btn-outline client-btn-sm" style="margin-top:6px;">
-              <i class="fas fa-copy"></i> <span id="copyUpiLabel">Copy UPI ID</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Confirm UPI Payment Form -->
-        <form method="POST" action="{% url 'record_upi_payment' %}" style="border-top:1px solid var(--client-border); padding-top:18px;">
-          {% csrf_token %}
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
-            <div>
-              <label class="client-label">Amount Paid (₹) <span style="color:var(--client-danger);">*</span></label>
-              <input type="number" class="client-input" name="amount" placeholder="e.g. 500" required min="1" />
-            </div>
-            <div>
-              <label class="client-label">UPI Reference / UTR Number <span style="color:var(--client-danger);">*</span></label>
-              <input type="text" class="client-input" name="transaction_id" placeholder="12-digit UTR number" required />
-            </div>
-          </div>
-          <button type="submit" class="client-btn client-btn-primary" style="width:max-content; max-width:100%; padding:12px 24px; font-weight:700;">
-            <i class="fas fa-check-circle"></i> Submit Payment Verification Request
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- 3. CASH AT CLINIC -->
-    <div class="method-panel" id="panel-cash" style="display:none;">
-      <div style="background:#f9fafb; border-radius:14px; border:1px solid var(--client-border); padding:24px; max-width:640px; margin:0 auto;">
-        <div style="display:flex; gap:16px; align-items:flex-start; margin-bottom:18px;">
-          <div style="width:48px; height:48px; border-radius:12px; background:rgba(34,197,94,0.15); color:#16a34a; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0;">
-            <i class="fas fa-money-bill-wave"></i>
-          </div>
-          <div>
-            <h4 style="margin:0 0 4px 0; color:var(--client-dark); font-size:1.05rem; font-weight:700;">In-Person Cash Payment</h4>
-            <p style="font-size:0.86rem; color:var(--client-text-muted); margin:0;">Settle your consultation fee in cash directly at the clinic reception desk during your visit.</p>
-          </div>
-        </div>
-
-        <form method="POST" action="{% url 'record_cash_payment' %}">
-          {% csrf_token %}
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:14px;">
-            <div>
-              <label class="client-label">Appointment</label>
-              <select class="client-select" name="appointment_id">
-                <option value="">— General Consultation —</option>
-                {% for appt in upcoming_appointments %}
-                  <option value="{{ appt.id }}">{{ appt.date|date:"d M Y" }} — {{ appt.get_service_display }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div>
-              <label class="client-label">Amount (₹) <span style="color:var(--client-danger);">*</span></label>
-              <input type="number" class="client-input" name="amount" placeholder="e.g. 500" required min="1" />
-            </div>
-          </div>
-
-          <div class="client-form-group">
-            <label class="client-label">Receipt / Counter Note <small style="color:var(--client-text-muted);">(Optional)</small></label>
-            <input type="text" class="client-input" name="notes" placeholder="e.g. Paid at reception counter desk" />
-          </div>
-
-          <button type="submit" class="client-btn client-btn-primary" style="width:max-content; max-width:100%; padding:12px 24px; font-weight:700;">
-            <i class="fas fa-receipt"></i> Record Cash Settlement
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- 4. NET BANKING / NEFT -->
-    <div class="method-panel" id="panel-bank" style="display:none;">
-      <div style="background:#f9fafb; border-radius:14px; border:1px solid var(--client-border); padding:24px; max-width:640px; margin:0 auto;">
-        <h4 style="margin:0 0 12px 0; color:var(--client-dark); font-size:1.05rem; font-weight:700; display:flex; align-items:center; gap:8px;">
-          <i class="fas fa-university" style="color:var(--client-primary-dark);"></i> Official Clinic Bank Account
-        </h4>
-        <div style="background:#ffffff; border-radius:10px; border:1px solid var(--client-border); padding:16px; margin-bottom:18px; font-size:0.86rem; display:flex; flex-direction:column; gap:8px;">
-          <div style="display:flex; justify-content:space-between;">
-            <span style="color:var(--client-text-muted);">Account Holder:</span>
-            <strong style="color:var(--client-dark);">Dr. Dhvani Patalia PhysioRehab</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between;">
-            <span style="color:var(--client-text-muted);">Account Nature:</span>
-            <strong style="color:var(--client-dark);">Current Account</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between;">
-            <span style="color:var(--client-text-muted);">Direct NEFT/RTGS:</span>
-            <strong style="color:var(--client-dark);">Contact Clinic Desk for IFSC details</strong>
-          </div>
-        </div>
-
-        <form method="POST" action="{% url 'record_upi_payment' %}">
-          {% csrf_token %}
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
-            <div>
-              <label class="client-label">Amount Transferred (₹) <span style="color:var(--client-danger);">*</span></label>
-              <input type="number" class="client-input" name="amount" placeholder="e.g. 1500" required min="1" />
-            </div>
-            <div>
-              <label class="client-label">Bank UTR / Transaction # <span style="color:var(--client-danger);">*</span></label>
-              <input type="text" class="client-input" name="transaction_id" placeholder="Bank UTR Number" required />
-            </div>
-          </div>
-          <button type="submit" class="client-btn client-btn-primary" style="width:max-content; max-width:100%; padding:12px 24px; font-weight:700;">
-            <i class="fas fa-paper-plane"></i> Submit Bank Transfer Confirmation
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ════ 3. PAYMENT TRANSACTION HISTORY TABLE ════ -->
-<div class="client-card">
-  <div class="client-card-header">
-    <div class="client-card-title">
-      <i class="fas fa-history"></i> Your Payment Transactions
-    </div>
-    <span class="client-badge client-badge-info">{{ my_payments|length }} Total Transactions</span>
-  </div>
-
-  <div class="client-card-body" style="padding:0;">
     {% if my_payments %}
-      <div class="client-table-responsive">
-        <table class="client-table">
+      <div class="client-table-responsive" style="overflow-x:auto;">
+        <table class="client-table" id="clientPaymentsTable" style="width:100%; min-width:680px;">
           <thead>
             <tr>
               <th>Date &amp; Time</th>
-              <th>Appointment / Session</th>
+              <th>Service / Appointment</th>
               <th>Amount</th>
               <th>Method</th>
               <th>Transaction ID</th>
               <th>Status</th>
+              <th style="text-align:right;">Receipt / Details</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="clientPaymentBody">
             {% for pay in my_payments %}
-              <tr>
+              <tr class="client-payment-row"
+                  data-id="{{ pay.id }}"
+                  data-txn="{{ pay.transaction_id|default:'—' }}"
+                  data-amount="{{ pay.amount }}"
+                  data-method="{{ pay.method|lower }}"
+                  data-method-name="{{ pay.get_method_display }}"
+                  data-status="{{ pay.status|lower }}"
+                  data-status-name="{{ pay.get_status_display }}"
+                  data-date="{{ pay.created_at|date:'d M Y' }}"
+                  data-time="{{ pay.created_at|date:'h:i A' }}"
+                  data-timestamp="{{ pay.created_at|date:'U' }}"
+                  data-service="{% if pay.appointment %}{{ pay.appointment.get_service_display|default:pay.appointment.service }}{% else %}General Consultation{% endif %}"
+                  data-notes="{{ pay.notes|default:'Standard consultation session' }}"
+                  data-clinic="{% if pay.hospital %}{{ pay.hospital.name }}{% else %}PhysioRehab Clinic{% endif %}"
+                  data-patient="{{ user.get_full_name|default:user.username }}">
                 <td>
                   <div style="font-weight:700; color:var(--client-dark);">{{ pay.created_at|date:"d M Y" }}</div>
                   <small style="color:var(--client-text-muted);">{{ pay.created_at|date:"h:i A" }}</small>
                 </td>
                 <td>
-                  {% if pay.appointment %}
-                    <div style="font-weight:600; color:var(--client-dark);">{{ pay.appointment.get_service_display|default:pay.appointment.service }}</div>
-                    <small style="color:var(--client-text-muted);">{{ pay.appointment.date|date:"d M Y" }}</small>
-                  {% else %}
-                    <span style="color:var(--client-text-muted);">General Consultation</span>
-                  {% endif %}
+                  <div style="font-weight:600; color:var(--client-dark);">
+                    {% if pay.appointment %}
+                      {{ pay.appointment.get_service_display|default:pay.appointment.service }}
+                    {% else %}
+                      General Consultation
+                    {% endif %}
+                  </div>
+                  <small style="color:var(--client-text-muted);">
+                    {% if pay.appointment %}{{ pay.appointment.date|date:"d M Y" }}{% else %}Walk-in Consultation{% endif %}
+                  </small>
                 </td>
                 <td>
-                  <strong style="font-size:0.95rem; color:var(--client-dark);">₹{{ pay.amount }}</strong>
+                  <strong style="font-size:0.96rem; color:var(--client-dark);">₹{{ pay.amount }}</strong>
                 </td>
                 <td>
-                  {% if pay.method == 'razorpay' %}
-                    <span class="client-badge client-badge-info"><i class="fas fa-globe"></i> Online</span>
+                  {% if pay.method == 'razorpay' or pay.method == 'online' %}
+                    <span class="client-badge client-badge-info"><i class="fas fa-globe"></i> Online / Card</span>
                   {% elif pay.method == 'upi' %}
                     <span class="client-badge client-badge-warning"><i class="fas fa-qrcode"></i> UPI</span>
                   {% elif pay.method == 'cash' %}
                     <span class="client-badge client-badge-success"><i class="fas fa-money-bill-wave"></i> Cash</span>
                   {% else %}
-                    <span class="client-badge client-badge-secondary"><i class="fas fa-university"></i> Bank</span>
+                    <span class="client-badge client-badge-secondary"><i class="fas fa-university"></i> {{ pay.get_method_display }}</span>
                   {% endif %}
                 </td>
                 <td>
-                  <code style="font-size:0.8rem; background:#f3f4f6; padding:3px 8px; border-radius:6px;">
+                  <code style="font-size:0.8rem; background:#f3f4f6; padding:3px 8px; border-radius:6px; border:1px solid var(--client-border);">
                     {{ pay.transaction_id|default:"—" }}
                   </code>
                 </td>
@@ -324,142 +176,212 @@
                   {% if pay.status == 'paid' %}
                     <span class="client-badge client-badge-success"><i class="fas fa-check-circle"></i> Paid</span>
                   {% elif pay.status == 'pending' %}
-                    <span class="client-badge client-badge-warning"><i class="fas fa-clock"></i> Pending Approval</span>
+                    <span class="client-badge client-badge-warning"><i class="fas fa-clock"></i> Pending</span>
+                  {% elif pay.status == 'refunded' %}
+                    <span class="client-badge client-badge-info"><i class="fas fa-undo"></i> Refunded</span>
                   {% else %}
                     <span class="client-badge client-badge-danger"><i class="fas fa-times-circle"></i> {{ pay.status|upper }}</span>
                   {% endif %}
+                </td>
+                <td style="text-align:right;">
+                  <button type="button" class="client-btn client-btn-outline client-btn-sm"
+                          onclick="openClientReceiptModal(this.closest('tr'))"
+                          style="padding:5px 12px; font-size:0.82rem; font-weight:600;">
+                    <i class="fas fa-receipt"></i> View Receipt
+                  </button>
                 </td>
               </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
+
+      <!-- No matching search state -->
+      <div id="clientNoMatchState" style="display:none; text-align:center; padding:36px 16px;">
+        <i class="fas fa-search" style="font-size:2rem; color:var(--client-text-muted); margin-bottom:10px;"></i>
+        <h4 style="margin:0 0 6px 0; color:var(--client-dark);">No Matching Records Found</h4>
+        <p style="font-size:0.86rem; color:var(--client-text-muted); margin:0 0 14px 0;">Try adjusting your search keywords or filter dropdowns.</p>
+        <button type="button" class="client-btn client-btn-primary client-btn-sm" onclick="resetClientFilters()">Reset Filters</button>
+      </div>
+
     {% else %}
-      <div class="client-empty-state">
-        <div class="client-empty-icon">
-          <i class="fas fa-receipt"></i>
+      <div class="client-empty-state" style="padding:48px 16px; text-align:center;">
+        <div class="client-empty-icon" style="font-size:2.5rem; color:var(--client-text-muted); margin-bottom:12px;">
+          <i class="fas fa-file-invoice"></i>
         </div>
-        <h4 class="client-empty-title">No Payment Records Found</h4>
-        <p class="client-empty-text">You haven't recorded any payments yet. When you settle consultation fees, your receipts and status updates will appear here.</p>
+        <h4 class="client-empty-title" style="color:var(--client-dark); margin:0 0 8px 0;">No Payment Records On File</h4>
+        <p class="client-empty-text" style="color:var(--client-text-muted); max-width:440px; margin:0 auto; font-size:0.9rem;">
+          You currently have no recorded payments in your personal billing ledger. Once payments are recorded for your consultations, official receipts and transaction details will appear here.
+        </p>
       </div>
     {% endif %}
   </div>
 </div>
 
-<!-- Hidden Razorpay Verification Form -->
-<form method="POST" action="{% url 'razorpay_verify_payment' %}" id="rzpVerifyForm" style="display:none;">
-  {% csrf_token %}
-  <input type="hidden" name="razorpay_order_id" id="rzp_order_id" />
-  <input type="hidden" name="razorpay_payment_id" id="rzp_payment_id" />
-  <input type="hidden" name="razorpay_signature" id="rzp_signature" />
-  <input type="hidden" name="record_id" id="rzp_record_id" />
-</form>
+<!-- ════ 3. OFFICIAL PAYMENT RECEIPT MODAL (READ-ONLY) ════ -->
+<div id="clientReceiptModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:2000; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:520px; box-shadow:0 24px 48px rgba(0,0,0,0.22); overflow:hidden; animation:modalFadeIn 0.25s ease;" id="printableReceiptCard">
+    <div style="padding:16px 22px; border-bottom:1px solid var(--client-border); display:flex; align-items:center; justify-content:space-between; background:#fafafa;">
+      <h3 style="margin:0; font-size:1.05rem; color:var(--client-dark); display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-receipt" style="color:var(--client-primary-dark);"></i> Official Consultation Receipt
+      </h3>
+      <button type="button" onclick="closeClientReceiptModal()" style="background:none; border:none; font-size:1.3rem; cursor:pointer; color:#666;" aria-label="Close">&times;</button>
+    </div>
+
+    <div style="padding:22px 24px;">
+      <!-- Header Banner -->
+      <div style="text-align:center; padding-bottom:16px; border-bottom:1px dashed var(--client-border); margin-bottom:16px;">
+        <div style="font-size:1.2rem; font-weight:800; color:var(--client-dark);" id="modalClinicName">PhysioRehab Clinic</div>
+        <div style="font-size:0.78rem; color:var(--client-text-muted);">Official Payment Receipt &amp; Billing Acknowledgment</div>
+        <div style="font-size:1.9rem; font-weight:800; color:var(--client-dark); margin:10px 0 4px 0;" id="modalReceiptAmount">₹0</div>
+        <div id="modalReceiptStatus"></div>
+      </div>
+
+      <!-- Details Grid -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; font-size:0.86rem;">
+        <div>
+          <span style="color:var(--client-text-muted); display:block; font-size:0.75rem; font-weight:600; text-transform:uppercase;">Patient Name</span>
+          <strong id="modalPatientName" style="color:var(--client-dark);">—</strong>
+        </div>
+        <div>
+          <span style="color:var(--client-text-muted); display:block; font-size:0.75rem; font-weight:600; text-transform:uppercase;">Transaction / Ref ID</span>
+          <code id="modalReceiptTxn" style="font-size:0.82rem; color:#495057; font-weight:700;">—</code>
+        </div>
+        <div>
+          <span style="color:var(--client-text-muted); display:block; font-size:0.75rem; font-weight:600; text-transform:uppercase;">Payment Method</span>
+          <strong id="modalReceiptMethod" style="color:var(--client-dark);">—</strong>
+        </div>
+        <div>
+          <span style="color:var(--client-text-muted); display:block; font-size:0.75rem; font-weight:600; text-transform:uppercase;">Date &amp; Time</span>
+          <span id="modalReceiptDate" style="color:var(--client-dark); font-weight:600;">—</span>
+        </div>
+      </div>
+
+      <!-- Notes / Service Box -->
+      <div style="background:#f8f9fa; border-radius:10px; padding:12px; margin-bottom:20px; font-size:0.84rem; border:1px solid #edf2f7;">
+        <span style="color:var(--client-text-muted); display:block; font-size:0.74rem; font-weight:600; text-transform:uppercase; margin-bottom:3px;">Service / Notes</span>
+        <div id="modalReceiptService" style="color:var(--client-dark); font-weight:500;">General Consultation</div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button type="button" class="client-btn client-btn-outline client-btn-sm" onclick="window.print()" style="font-weight:600;">
+          <i class="fas fa-print"></i> Print Receipt
+        </button>
+        <button type="button" class="client-btn client-btn-primary client-btn-sm" onclick="closeClientReceiptModal()" style="font-weight:600;">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
-<!-- Razorpay SDK -->
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
 <script>
-  const CSRF_TOKEN = '{{ csrf_token }}';
+// Filter & Search Client Payments
+function filterClientPayments() {
+  const query = (document.getElementById('clientPaymentSearch').value || '').toLowerCase().trim();
+  const status = (document.getElementById('clientStatusFilter').value || '').toLowerCase();
+  const method = (document.getElementById('clientMethodFilter').value || '').toLowerCase();
+  const rows = document.querySelectorAll('#clientPaymentsTable tbody tr.client-payment-row');
+  let matchCount = 0;
 
-  function switchMethodTab(tabName, btn) {
-    document.querySelectorAll('.method-panel').forEach(p => p.style.display = 'none');
-    document.querySelectorAll('.tab-btn').forEach(b => {
-      b.classList.remove('active', 'client-btn-primary');
-      b.classList.add('client-btn-outline');
-    });
-    const target = document.getElementById('panel-' + tabName);
-    if (target) target.style.display = 'block';
-    if (btn) {
-      btn.classList.remove('client-btn-outline');
-      btn.classList.add('active', 'client-btn-primary');
+  rows.forEach(row => {
+    const text = (
+      row.getAttribute('data-txn') + ' ' +
+      row.getAttribute('data-service') + ' ' +
+      row.getAttribute('data-notes')
+    ).toLowerCase();
+    const rowStatus = row.getAttribute('data-status');
+    const rowMethod = row.getAttribute('data-method');
+
+    const matchesQuery = !query || text.includes(query);
+    const matchesStatus = !status || rowStatus === status;
+    const matchesMethod = !method || rowMethod === method || (method === 'online' && (rowMethod === 'online' || rowMethod === 'razorpay'));
+
+    if (matchesQuery && matchesStatus && matchesMethod) {
+      row.style.display = '';
+      matchCount++;
+    } else {
+      row.style.display = 'none';
     }
-  }
+  });
 
-  // Auto-fill fee on appointment select
-  const apptSel = document.getElementById('rzp-appointment-select');
-  if (apptSel) {
-    apptSel.addEventListener('change', function () {
-      const fee = this.options[this.selectedIndex].dataset.fee;
-      if (fee) document.getElementById('rzp-amount').value = fee;
-    });
+  const noMatch = document.getElementById('clientNoMatchState');
+  const countBadge = document.getElementById('clientRecordCountBadge');
+  if (countBadge) countBadge.innerText = matchCount + ' Showing';
+  if (noMatch) {
+    noMatch.style.display = (matchCount === 0 && rows.length > 0) ? 'block' : 'none';
   }
+}
 
-  // Copy UPI ID
-  function copyUpiId() {
-    const upiText = document.getElementById('upiIdText').innerText.trim();
-    navigator.clipboard.writeText(upiText).then(() => {
-      const lbl = document.getElementById('copyUpiLabel');
-      lbl.innerText = 'Copied!';
-      setTimeout(() => { lbl.innerText = 'Copy UPI ID'; }, 2200);
-    });
-  }
+function resetClientFilters() {
+  document.getElementById('clientPaymentSearch').value = '';
+  document.getElementById('clientStatusFilter').value = '';
+  document.getElementById('clientMethodFilter').value = '';
+  filterClientPayments();
+}
 
-  // Razorpay Checkout Launcher
-  function initiateRazorpay() {
-    if (typeof Razorpay === 'undefined') {
-      alert('Payment gateway is loading. Please check your connection and retry.');
-      return;
+// Sorting
+function sortClientPayments() {
+  const sortVal = document.getElementById('clientSortOrder').value;
+  const tbody = document.getElementById('clientPaymentBody');
+  if (!tbody) return;
+  const rows = Array.from(tbody.querySelectorAll('tr.client-payment-row'));
+
+  rows.sort((a, b) => {
+    if (sortVal === 'date-desc') {
+      return parseInt(b.getAttribute('data-timestamp') || 0) - parseInt(a.getAttribute('data-timestamp') || 0);
+    } else if (sortVal === 'date-asc') {
+      return parseInt(a.getAttribute('data-timestamp') || 0) - parseInt(b.getAttribute('data-timestamp') || 0);
+    } else if (sortVal === 'amount-desc') {
+      return parseFloat(b.getAttribute('data-amount') || 0) - parseFloat(a.getAttribute('data-amount') || 0);
+    } else if (sortVal === 'amount-asc') {
+      return parseFloat(a.getAttribute('data-amount') || 0) - parseFloat(b.getAttribute('data-amount') || 0);
     }
-    const amount = document.getElementById('rzp-amount').value || '500';
-    const apptId = document.getElementById('rzp-appointment-select').value || '';
+    return 0;
+  });
 
-    if (parseFloat(amount) < 1) {
-      alert('Please enter a valid payment amount.');
-      return;
-    }
+  rows.forEach(r => tbody.appendChild(r));
+}
 
-    const overlay = document.getElementById('rzpLoading');
-    if (overlay) overlay.style.display = 'block';
+// Modal Logic
+function openClientReceiptModal(row) {
+  if (!row) return;
+  document.getElementById('modalClinicName').innerText = row.getAttribute('data-clinic') || 'PhysioRehab Clinic';
+  document.getElementById('modalReceiptAmount').innerText = '₹' + (row.getAttribute('data-amount') || '0');
+  document.getElementById('modalPatientName').innerText = row.getAttribute('data-patient') || '—';
+  document.getElementById('modalReceiptTxn').innerText = row.getAttribute('data-txn') || '—';
+  document.getElementById('modalReceiptMethod').innerText = row.getAttribute('data-method-name') || '—';
+  document.getElementById('modalReceiptDate').innerText = (row.getAttribute('data-date') || '—') + ', ' + (row.getAttribute('data-time') || '');
 
-    const fd = new FormData();
-    fd.append('amount', amount);
-    fd.append('appointment_id', apptId);
-    fd.append('csrfmiddlewaretoken', CSRF_TOKEN);
+  const notes = row.getAttribute('data-notes') || row.getAttribute('data-service') || 'General Consultation';
+  document.getElementById('modalReceiptService').innerText = notes;
 
-    fetch('{% url "razorpay_create_order" %}', { method: 'POST', body: fd })
-      .then(res => res.json())
-      .then(data => {
-        if (overlay) overlay.style.display = 'none';
-        if (data.error) {
-          alert('Error: ' + data.error);
-          return;
-        }
-
-        const options = {
-          key: data.key_id,
-          amount: data.amount,
-          currency: data.currency,
-          name: 'PhysioRehab Clinic',
-          description: 'Consultation Fee Payment',
-          order_id: data.order_id,
-          prefill: {
-            name: data.patient_name,
-            email: data.patient_email
-          },
-          theme: { color: '#F5C518' },
-          modal: { ondismiss: function() {} },
-          handler: function(response) {
-            document.getElementById('rzp_order_id').value = response.razorpay_order_id;
-            document.getElementById('rzp_payment_id').value = response.razorpay_payment_id;
-            document.getElementById('rzp_signature').value = response.razorpay_signature;
-            document.getElementById('rzp_record_id').value = data.record_id;
-            document.getElementById('rzpVerifyForm').submit();
-          }
-        };
-
-        const rzp = new Razorpay(options);
-        rzp.on('payment.failed', function(resp) {
-          alert('Payment failed: ' + resp.error.description);
-        });
-        rzp.open();
-      })
-      .catch(err => {
-        if (overlay) overlay.style.display = 'none';
-        alert('Network communication error. Please try again.');
-        console.error(err);
-      });
+  const status = row.getAttribute('data-status');
+  let badgeHtml = '<span class="client-badge client-badge-success"><i class="fas fa-check-circle"></i> Paid / Settled</span>';
+  if (status === 'pending') {
+    badgeHtml = '<span class="client-badge client-badge-warning"><i class="fas fa-clock"></i> Pending Verification</span>';
+  } else if (status === 'refunded') {
+    badgeHtml = '<span class="client-badge client-badge-info"><i class="fas fa-undo"></i> Refunded</span>';
+  } else if (status === 'failed') {
+    badgeHtml = '<span class="client-badge client-badge-danger"><i class="fas fa-times-circle"></i> Failed</span>';
   }
+  document.getElementById('modalReceiptStatus').innerHTML = badgeHtml;
+
+  const modal = document.getElementById('clientReceiptModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeClientReceiptModal() {
+  const modal = document.getElementById('clientReceiptModal');
+  if (modal) modal.style.display = 'none';
+}
+
+window.addEventListener('click', function(e) {
+  const modal = document.getElementById('clientReceiptModal');
+  if (e.target === modal) closeClientReceiptModal();
+});
 </script>
 {% endblock %}

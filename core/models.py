@@ -16,6 +16,13 @@ from django.utils.text import slugify
 
 
 class Hospital(models.Model):
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("trial", "Trial"),
+        ("suspended", "Suspended"),
+        ("expired", "Expired"),
+        ("archived", "Archived"),
+    ]
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
     address = models.TextField(blank=True)
@@ -28,15 +35,10 @@ class Hospital(models.Model):
         related_name="hospital_logos",
     )
     is_active = models.BooleanField(default=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+    suspension_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    razorpay_key_id = models.CharField(
-        max_length=200,
-        blank=True,
-        help_text="Doctor/Clinic Razorpay Key ID — patient payments go to this account",
-    )
-    razorpay_key_secret = models.CharField(
-        max_length=200, blank=True, help_text="Doctor/Clinic Razorpay Key Secret"
-    )
+    # payment_key_id and payment_key_secret intentionally removed (Razorpay removed).
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -56,29 +58,143 @@ class Hospital(models.Model):
         ordering = ["-created_at"]
 
 
-class SubscriptionPlan(models.Model):
-    PLAN_CHOICES = [
-        ("basic", "Basic"),
-        ("standard", "Standard"),
-        ("premium", "Premium"),
-    ]
-    name = models.CharField(max_length=50, choices=PLAN_CHOICES, unique=True)
-    price_monthly = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    max_staff = models.IntegerField(default=5)
-    max_patients = models.IntegerField(default=500)
-    features = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
+# ─── SAAS SUBSCRIPTION & FEATURE ENTITLEMENT ARCHITECTURE ──────
+
+
+class FeatureCategory(models.Model):
+    code = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    icon = models.CharField(max_length=50, default="fas fa-cubes")
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "name"]
+        verbose_name_plural = "Feature Categories"
 
     def __str__(self):
-        return self.get_name_display()
+        return self.name
+
+
+class Feature(models.Model):
+    GLOBAL_STATUS_CHOICES = [
+        ("available", "Available"),
+        ("maintenance", "Maintenance"),
+        ("disabled", "Disabled (Global Kill Switch)"),
+    ]
+    category = models.ForeignKey(
+        FeatureCategory, on_delete=models.CASCADE, related_name="features"
+    )
+    code = models.CharField(max_length=60, unique=True)
+    name = models.CharField(max_length=120)
+    description = models.TextField(blank=True)
+    is_paid = models.BooleanField(default=False, help_text="True if considered a premium/paid feature")
+    has_usage_limit = models.BooleanField(default=False)
+    default_limit = models.IntegerField(default=0, help_text="0 means unlimited or not applicable")
+    limit_unit = models.CharField(max_length=50, blank=True, help_text="e.g. records, per month, MB")
+    global_status = models.CharField(
+        max_length=20, choices=GLOBAL_STATUS_CHOICES, default="available"
+    )
+    maintenance_message = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["category__order", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+
+class SubscriptionPlan(models.Model):
+    PLAN_CHOICES = [
+        ("free", "Free"),
+        ("basic", "Basic"),
+        ("standard", "Standard"),
+        ("professional", "Professional"),
+        ("premium", "Premium"),
+        ("enterprise", "Enterprise"),
+    ]
+    code = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    name = models.CharField(max_length=100, unique=True)
+    display_name = models.CharField(max_length=120, blank=True)
+    description = models.TextField(blank=True)
+    price_monthly = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    price_annual = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    trial_days = models.PositiveIntegerField(default=14)
+    max_staff = models.IntegerField(default=5, help_text="Maximum allowed staff accounts (0 = unlimited)")
+    max_patients = models.IntegerField(default=500, help_text="Maximum allowed patient records (0 = unlimited)")
+    max_appointments_monthly = models.IntegerField(default=100, help_text="Maximum appointments per month (0 = unlimited)")
+    storage_mb = models.IntegerField(default=500, help_text="File & document storage in MB (0 = unlimited)")
+    tier_level = models.PositiveIntegerField(default=1, help_text="1=Free, 2=Basic, 3=Professional, 4=Enterprise")
+    features = models.TextField(blank=True, help_text="Legacy text summary of plan features")
+    is_active = models.BooleanField(default=True)
+    is_public = models.BooleanField(default=True, help_text="Visible on public pricing / signup pages")
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = slugify(self.name)
+        if not self.display_name:
+            self.display_name = self.name.title()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.display_name or self.name.title()
+
+    class Meta:
+        ordering = ["tier_level", "price_monthly"]
+
+
+class PlanFeature(models.Model):
+    ACCESS_CHOICES = [
+        ("full", "Full Access"),
+        ("limited", "Limited Access"),
+        ("read_only", "Read Only"),
+        ("disabled", "Disabled"),
+    ]
+    LIMIT_PERIOD_CHOICES = [
+        ("lifetime", "Lifetime / Absolute"),
+        ("monthly", "Monthly Rolling"),
+        ("annual", "Annual"),
+    ]
+    plan = models.ForeignKey(
+        SubscriptionPlan, on_delete=models.CASCADE, related_name="plan_features"
+    )
+    feature = models.ForeignKey(
+        Feature, on_delete=models.CASCADE, related_name="plan_features"
+    )
+    access_type = models.CharField(max_length=20, choices=ACCESS_CHOICES, default="full")
+    usage_limit = models.IntegerField(default=0, help_text="0 means unlimited")
+    limit_period = models.CharField(
+        max_length=20, choices=LIMIT_PERIOD_CHOICES, default="lifetime"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["plan", "feature"], name="uniq_plan_feature"
+            )
+        ]
+        ordering = ["feature__category__order", "feature__name"]
+
+    def __str__(self):
+        return f"{self.plan.name} → {self.feature.code}: {self.access_type}"
 
 
 class HospitalSubscription(models.Model):
     STATUS_CHOICES = [
         ("trial", "Trial"),
         ("active", "Active"),
-        ("expired", "Expired"),
+        ("past_due", "Past Due"),
+        ("grace_period", "Grace Period"),
         ("cancelled", "Cancelled"),
+        ("expired", "Expired"),
+        ("suspended", "Suspended"),
+    ]
+    INTERVAL_CHOICES = [
+        ("monthly", "Monthly"),
+        ("annual", "Annual"),
     ]
     hospital = models.OneToOneField(
         "Hospital", on_delete=models.CASCADE, related_name="subscription"
@@ -89,6 +205,13 @@ class HospitalSubscription(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="trial")
     started_at = models.DateField(default=timezone.now)
     expires_at = models.DateField(null=True, blank=True)
+    trial_ends_at = models.DateField(null=True, blank=True)
+    grace_period_ends_at = models.DateField(null=True, blank=True)
+    billing_interval = models.CharField(max_length=20, choices=INTERVAL_CHOICES, default="monthly")
+    auto_renew = models.BooleanField(default=True)
+    suspended_at = models.DateTimeField(null=True, blank=True)
+    suspension_reason = models.TextField(blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
 
     @property
@@ -97,8 +220,100 @@ class HospitalSubscription(models.Model):
             return timezone.now().date() > self.expires_at
         return False
 
+    @property
+    def is_trial_active(self):
+        if self.status == "trial":
+            if self.trial_ends_at:
+                return timezone.now().date() <= self.trial_ends_at
+            if self.expires_at:
+                return timezone.now().date() <= self.expires_at
+            return True
+        return False
+
+    @property
+    def trial_days_left(self):
+        if not self.is_trial_active:
+            return 0
+        end = self.trial_ends_at or self.expires_at
+        if end:
+            delta = (end - timezone.now().date()).days
+            return max(0, delta)
+        return 0
+
+    @property
+    def is_in_grace_period(self):
+        if self.status == "grace_period" and self.grace_period_ends_at:
+            return timezone.now().date() <= self.grace_period_ends_at
+        return False
+
     def __str__(self):
-        return f"{self.hospital.name} — {self.plan}"
+        return f"{self.hospital.name} — {self.plan} [{self.status}]"
+
+
+class ClinicFeatureOverride(models.Model):
+    OVERRIDE_CHOICES = [
+        ("grant", "Grant (Complimentary / Promo)"),
+        ("disable", "Disable / Block"),
+        ("custom_limit", "Custom Usage Limit"),
+    ]
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.CASCADE, related_name="feature_overrides"
+    )
+    feature = models.ForeignKey(
+        Feature, on_delete=models.CASCADE, related_name="clinic_overrides"
+    )
+    override_type = models.CharField(max_length=20, choices=OVERRIDE_CHOICES, default="grant")
+    custom_limit = models.IntegerField(null=True, blank=True, help_text="Custom limit value when override_type is custom_limit")
+    reason = models.CharField(max_length=255, blank=True)
+    expires_at = models.DateField(null=True, blank=True, help_text="Optional expiration date for temporary promo access")
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="created_feature_overrides"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["hospital", "feature"], name="uniq_hospital_feature_override"
+            )
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.hospital.name} → {self.feature.code} override: {self.override_type}"
+
+    @property
+    def is_expired(self):
+        if self.expires_at:
+            return timezone.now().date() > self.expires_at
+        return False
+
+
+class SubscriptionHistory(models.Model):
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.CASCADE, related_name="subscription_history"
+    )
+    previous_plan = models.ForeignKey(
+        SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    new_plan = models.ForeignKey(
+        SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    previous_status = models.CharField(max_length=30, blank=True)
+    new_status = models.CharField(max_length=30, blank=True)
+    change_type = models.CharField(max_length=50)
+    reason = models.TextField(blank=True)
+    changed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="subscription_changes"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.hospital.name}: {self.change_type} on {self.created_at.strftime('%Y-%m-%d %H:%M')}"
 
 
 class SupportTicket(models.Model):
@@ -168,13 +383,37 @@ class Appointment(models.Model):
     ]
 
     TIME_CHOICES = [
-        
+        # Canonical 24h codes
         ("10:00", "10:00 AM"),
         ("10:30", "10:30 AM"),
-        ("11:00", "11:00 PM"),
-        ("11:30", "11:30 PM"),
+        ("11:00", "11:00 AM"),
+        ("11:30", "11:30 AM"),
         ("12:00", "12:00 PM"),
         ("12:30", "12:30 PM"),
+        ("16:00", "04:00 PM"),
+        ("16:30", "04:30 PM"),
+        ("17:00", "05:00 PM"),
+        ("17:30", "05:30 PM"),
+        ("18:00", "06:00 PM"),
+        ("18:30", "06:30 PM"),
+        ("19:00", "07:00 PM"),
+        ("19:30", "07:30 PM"),
+        # Canonical 12h display codes
+        ("10:00 AM", "10:00 AM"),
+        ("10:30 AM", "10:30 AM"),
+        ("11:00 AM", "11:00 AM"),
+        ("11:30 AM", "11:30 AM"),
+        ("12:00 PM", "12:00 PM"),
+        ("12:30 PM", "12:30 PM"),
+        ("04:00 PM", "04:00 PM"),
+        ("04:30 PM", "04:30 PM"),
+        ("05:00 PM", "05:00 PM"),
+        ("05:30 PM", "05:30 PM"),
+        ("06:00 PM", "06:00 PM"),
+        ("06:30 PM", "06:30 PM"),
+        ("07:00 PM", "07:00 PM"),
+        ("07:30 PM", "07:30 PM"),
+        # Common variations
         ("04:00", "04:00 PM"),
         ("04:30", "04:30 PM"),
         ("05:00", "05:00 PM"),
@@ -183,6 +422,14 @@ class Appointment(models.Model):
         ("06:30", "06:30 PM"),
         ("07:00", "07:00 PM"),
         ("07:30", "07:30 PM"),
+        ("4:00 PM", "04:00 PM"),
+        ("4:30 PM", "04:30 PM"),
+        ("5:00 PM", "05:00 PM"),
+        ("5:30 PM", "05:30 PM"),
+        ("6:00 PM", "06:00 PM"),
+        ("6:30 PM", "06:30 PM"),
+        ("7:00 PM", "07:00 PM"),
+        ("7:30 PM", "07:30 PM"),
     ]
 
     # Clinic this appointment belongs to
@@ -497,6 +744,7 @@ class Profile(models.Model):
         blank=True,
     )
     date_of_birth = models.DateField(null=True, blank=True)
+    joining_date = models.DateField(default=timezone.now, null=True, blank=True)
 
     # Medical Info
     blood_group = models.CharField(max_length=5, blank=True)
@@ -678,6 +926,8 @@ class Review(models.Model):
     rating = models.PositiveIntegerField(choices=RATING_CHOICES, default=5)
     message = models.TextField()
     is_approved = models.BooleanField(default=False)
+    source = models.CharField(max_length=50, default="Verified Patient", blank=True)
+    is_verified = models.BooleanField(default=True)
     added_by_admin = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -693,7 +943,7 @@ class PaymentRecord(models.Model):
         ("cash", "Cash"),
         ("upi", "UPI / QR Code"),
         ("netbanking", "Net Banking"),
-        ("razorpay", "Online (Razorpay)"),
+        ("online", "Online / Card"),
         ("wallet", "Wallet"),
     ]
     STATUS_CHOICES = [
@@ -736,11 +986,6 @@ class PaymentRecord(models.Model):
             models.CheckConstraint(
                 condition=Q(amount__gt=0), name="payment_record_amount_positive"
             ),
-            models.UniqueConstraint(
-                fields=["razorpay_payment_id"],
-                condition=~Q(razorpay_payment_id=""),
-                name="uniq_payment_record_razorpay_payment_id",
-            ),
         ]
         ordering = ["-created_at"]
 
@@ -753,7 +998,7 @@ class ClinicSubscriptionPayment(models.Model):
         ("upi", "UPI / QR Code"),
         ("cash", "Cash"),
         ("netbanking", "Net Banking / NEFT"),
-        ("razorpay", "Online (Razorpay)"),
+        ("online", "Online / Card"),
     ]
     STATUS_CHOICES = [
         ("pending", "Pending Verification"),
@@ -849,6 +1094,7 @@ class PatientProfile(models.Model):
         related_name="patient_profiles",
     )
     patient_status = models.CharField(max_length=20, default="active")
+    joining_date = models.DateField(default=timezone.now, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -980,7 +1226,7 @@ class PaymentEvent(models.Model):
     hospital = models.ForeignKey(
         Hospital, on_delete=models.PROTECT, related_name="payment_events"
     )
-    provider = models.CharField(max_length=30, default="razorpay")
+    provider = models.CharField(max_length=30, default="manual")
     provider_event_id = models.CharField(max_length=255, unique=True)
     payment_record = models.ForeignKey(
         PaymentRecord, on_delete=models.PROTECT, null=True, blank=True,
@@ -1008,12 +1254,100 @@ class AuditEvent(models.Model):
     metadata = models.JSONField(default=dict, blank=True)
 
 
+class EmailAccount(models.Model):
+    SCOPE_CHOICES = [
+        ("platform", "Platform-Wide"),
+        ("hospital", "Clinic-Specific"),
+        ("user", "Doctor / User-Specific"),
+    ]
+    ACCOUNT_TYPE_CHOICES = [
+        ("PLATFORM", "Platform System Account"),
+        ("CLINIC", "Clinic Account"),
+        ("DOCTOR", "Doctor / Specialist Account"),
+        ("SUPPORT", "Support & Helpdesk Account"),
+        ("NOTIFICATION", "Patient Notification Account"),
+        ("SYSTEM", "System Transactional Account"),
+    ]
+    PROVIDER_CHOICES = [
+        ("smtp", "Custom SMTP Server"),
+        ("gmail", "Google Workspace / Gmail SMTP"),
+        ("office365", "Microsoft 365 / Outlook"),
+        ("api", "Transactional Email API"),
+    ]
+
+    name = models.CharField(max_length=150, help_text="Human-readable label for this account")
+    account_type = models.CharField(max_length=30, choices=ACCOUNT_TYPE_CHOICES, default="CLINIC")
+    scope_type = models.CharField(max_length=20, choices=SCOPE_CHOICES, default="hospital")
+    hospital = models.ForeignKey(
+        Hospital, on_delete=models.CASCADE, null=True, blank=True, related_name="email_accounts"
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=True, blank=True, related_name="email_accounts"
+    )
+
+    provider = models.CharField(max_length=30, choices=PROVIDER_CHOICES, default="smtp")
+    host = models.CharField(max_length=255, default="smtp.gmail.com")
+    port = models.PositiveIntegerField(default=587)
+    use_tls = models.BooleanField(default=True)
+    use_ssl = models.BooleanField(default=False)
+
+    username = models.CharField(max_length=255, help_text="SMTP / Mailbox login username")
+    encrypted_password = models.TextField(help_text="Encrypted credentials at rest (Fernet AES-128-CBC + HMAC)")
+
+    from_email = models.EmailField(help_text="Authoritative From: address")
+    from_name = models.CharField(max_length=150, blank=True, help_text="Authoritative From: display name")
+    reply_to = models.EmailField(blank=True, help_text="Optional default Reply-To: address")
+
+    is_active = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False, help_text="Default sender for this tenant scope")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_default", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_account_type_display()}) <{self.from_email}>"
+
+    def set_password(self, raw_password):
+        from .crypto import encrypt_credential
+        self.encrypted_password = encrypt_credential(raw_password)
+
+    def get_password(self):
+        from .crypto import decrypt_credential
+        return decrypt_credential(self.encrypted_password)
+
+    def get_connection(self, fail_silently=False, timeout=15):
+        from django.conf import settings
+        from django.core.mail import get_connection
+        backend = getattr(settings, "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+        if "console" in backend or "locmem" in backend:
+            return get_connection(backend=backend)
+        return get_connection(
+            backend="django.core.mail.backends.smtp.EmailBackend",
+            host=self.host,
+            port=self.port,
+            username=self.username,
+            password=self.get_password(),
+            use_tls=self.use_tls,
+            use_ssl=self.use_ssl,
+            timeout=timeout,
+            fail_silently=fail_silently,
+        )
+
+
 class EmailLog(models.Model):
     STATUS_CHOICES = [
         ("sent", "Sent"),
         ("failed", "Failed"),
         ("retrying", "Retrying"),
     ]
+    account = models.ForeignKey(
+        EmailAccount, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="email_logs",
+    )
+    sender_email = models.CharField(max_length=254, blank=True)
     hospital = models.ForeignKey(
         Hospital, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="email_logs",
@@ -1023,7 +1357,8 @@ class EmailLog(models.Model):
     subject = models.CharField(max_length=500)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="sent")
     error_category = models.CharField(max_length=100, blank=True)
-    message_id = models.CharField(max_length=255, blank=True)
+    message_id = models.CharField(max_length=255, blank=True, db_index=True)
+    thread_id = models.CharField(max_length=255, blank=True, db_index=True)
     sent_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -1047,6 +1382,9 @@ class InboundEmail(models.Model):
         related_name="inbound_emails",
     )
     message_id = models.CharField(max_length=255, unique=True, db_index=True)
+    in_reply_to = models.CharField(max_length=255, blank=True, db_index=True)
+    references = models.TextField(blank=True)
+    thread_id = models.CharField(max_length=255, blank=True, db_index=True)
     sender = models.EmailField()
     recipient = models.EmailField()
     subject = models.CharField(max_length=500, blank=True)

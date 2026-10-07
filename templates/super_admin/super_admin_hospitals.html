@@ -1,118 +1,270 @@
 {% extends "super_admin/base_super_admin.html" %}
 {% load static %}
 
-{% block title %}Super Admin — All Registered Hospitals &amp; Clinics{% endblock %}
-{% block page_title %}🏥 Hospitals &amp; Clinics Registry{% endblock %}
-{% block page_subtitle %}Manage partner healthcare facilities, subscription tiers, and clinic administrative credentials{% endblock %}
+{% block title %}Super Admin — Clinics &amp; Hospitals Management{% endblock %}
+{% block page_title %}🏥 Clinics &amp; Hospitals Management{% endblock %}
+{% block page_subtitle %}Centrally oversee multi-clinic operations, subscription tiers, and feature entitlements{% endblock %}
 
 {% block topbar_actions %}
 <a href="{% url 'super_admin_add_hospital' %}" class="sa-btn sa-btn-primary sa-btn-sm">
-  <i class="fas fa-plus-circle"></i> <span>Add Hospital</span>
+  <i class="fas fa-plus-circle"></i> <span>Add Clinic</span>
 </a>
 {% endblock %}
 
 {% block content %}
+<!-- ════ SEARCH & FILTER CONTROLS ════ -->
+<div class="sa-card" style="margin-bottom: 20px; padding: 18px 24px;">
+  <form method="get" action="{% url 'super_admin_hospitals' %}" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+    <div style="display: flex; gap: 12px; flex: 1; min-width: 280px; flex-wrap: wrap;">
+      <!-- Search Input -->
+      <div style="position: relative; flex: 1; min-width: 220px;">
+        <i class="fas fa-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--sa-text-muted);"></i>
+        <input type="text" name="q" value="{{ q }}" placeholder="Search clinic name, city, phone, email..." class="sa-form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;" />
+      </div>
+
+      <!-- Status Filter -->
+      <select name="status" class="sa-form-input" style="width: auto; min-width: 140px; border-radius: 8px;">
+        <option value="">All Statuses</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="trial" {% if status_filter == 'trial' %}selected{% endif %}>Trial</option>
+        <option value="suspended" {% if status_filter == 'suspended' %}selected{% endif %}>Suspended</option>
+        <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+        <option value="archived" {% if status_filter == 'archived' %}selected{% endif %}>Archived</option>
+      </select>
+
+      <!-- Plan Filter -->
+      <select name="plan" class="sa-form-input" style="width: auto; min-width: 150px; border-radius: 8px;">
+        <option value="">All Plans</option>
+        {% for p in plans %}
+        <option value="{{ p.id }}" {% if plan_filter == p.id|stringformat:"s" %}selected{% endif %}>{{ p.display_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <button type="submit" class="sa-btn sa-btn-primary sa-btn-sm">
+        <i class="fas fa-filter"></i> Apply Filters
+      </button>
+      {% if q or status_filter or plan_filter %}
+      <a href="{% url 'super_admin_hospitals' %}" class="sa-btn sa-btn-secondary sa-btn-sm" title="Clear Filters">
+        <i class="fas fa-times"></i> Clear
+      </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- ════ CLINICS DIRECTORY TABLE ════ -->
 <div class="sa-card">
   <div class="sa-card-header">
     <div class="sa-card-title">
       <i class="fas fa-hospital" style="color: var(--sa-purple);"></i>
-      <span>All Healthcare Centers ({{ hospitals|length }})</span>
+      <span>Registered Clinics ({{ total_count }})</span>
     </div>
-    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    <div style="display: flex; gap: 10px; align-items: center;">
       <a href="{% url 'super_admin_add_hospital' %}" class="sa-btn sa-btn-primary sa-btn-sm">
-        <i class="fas fa-plus"></i> Add New Hospital
+        <i class="fas fa-plus"></i> Add New Clinic
       </a>
     </div>
   </div>
 
-  {% if hospitals %}
+  {% if hospitals_data %}
   <div class="sa-table-responsive">
     <table class="sa-table">
       <thead>
         <tr>
-          <th>#</th>
-          <th>Hospital Name &amp; Contact</th>
-          <th>Location</th>
-          <th>Clinic Administrator</th>
-          <th>Plan &amp; Tier</th>
+          <th>Clinic Name &amp; Location</th>
+          <th>Admin</th>
+          <th>Plan &amp; Subscription</th>
           <th>Status</th>
+          <th>Scale (Patients / Staff)</th>
+          <th>Appt Usage (Month)</th>
           <th>Registered</th>
-          <th style="text-align: right;">Management Actions</th>
+          <th style="text-align: right;">Actions</th>
         </tr>
       </thead>
       <tbody>
-        {% for h in hospitals %}
+        {% for item in hospitals_data %}
+        {% with h=item.hospital sub=item.subscription %}
         <tr>
-          <td><span style="color: var(--sa-text-muted); font-weight: 700;">{{ forloop.counter }}</span></td>
+          <!-- Name & Location -->
           <td>
-            <div style="font-weight: 700; color: var(--sa-dark); font-size: 0.95rem;">{{ h.name }}</div>
-            <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 2px;">
-              {% if h.email %}<i class="fas fa-envelope" style="margin-right: 4px;"></i>{{ h.email }}{% endif %}
-              {% if h.phone %} &nbsp;·&nbsp; <i class="fas fa-phone" style="margin-right: 4px;"></i>{{ h.phone }}{% endif %}
+            <div style="font-weight: 700; color: var(--sa-dark); font-size: 0.95rem;">
+              <a href="{% url 'super_admin_clinic_detail' h.id %}" style="color: var(--sa-dark); text-decoration: none;">
+                {{ h.name }}
+              </a>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 3px;">
+              <i class="fas fa-map-marker-alt" style="color: #ef4444; margin-right: 4px;"></i>{{ h.city|default:'Unspecified' }}
+              {% if h.phone %} &nbsp;·&nbsp; <i class="fas fa-phone" style="margin-right: 3px;"></i>{{ h.phone }}{% endif %}
             </div>
           </td>
-          <td>
-            <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
-              <i class="fas fa-map-marker-alt" style="color: #ef4444; font-size: 0.8rem;"></i>
-              {{ h.city|default:'—' }}
-            </span>
-          </td>
+
+          <!-- Admin -->
           <td>
             {% for ca in h.admins.all %}
-              <div style="font-weight: 600; color: var(--sa-dark);">{{ ca.user.get_full_name|default:ca.user.username }}</div>
-              <div style="font-size: 0.76rem; color: var(--sa-text-muted);">@{{ ca.user.username }}</div>
+              <div style="font-weight: 600; color: var(--sa-dark); font-size: 0.88rem;">{{ ca.user.get_full_name|default:ca.user.username }}</div>
+              <div style="font-size: 0.76rem; color: var(--sa-text-muted);">{{ ca.user.email|default:ca.user.username }}</div>
             {% empty %}
-              <span style="color: #bbb; font-style: italic;">No Admin Assigned</span>
+              <span style="color: #bbb; font-style: italic; font-size: 0.82rem;">Unassigned</span>
             {% endfor %}
           </td>
+
+          <!-- Plan & Subscription -->
           <td>
-            {% if h.subscription and h.subscription.plan %}
-              <span class="sa-badge" style="background: rgba(139, 92, 246, 0.12); color: var(--sa-purple); font-weight: 700;">
-                <i class="fas fa-gem"></i> {{ h.subscription.plan.get_name_display }}
+            {% if sub and sub.plan %}
+              <div style="display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: var(--sa-purple); font-size: 0.86rem;">
+                <i class="fas fa-crown" style="color: var(--sa-gold);"></i> {{ sub.plan.display_name }}
+              </div>
+              <div style="font-size: 0.76rem; color: var(--sa-text-muted); margin-top: 2px;">
+                {% if sub.status == 'trial' %}
+                  <span style="color: #d97706; font-weight: 600;">Trial ({{ sub.trial_days_left }}d left)</span>
+                {% elif sub.expires_at %}
+                  Renews: {{ sub.expires_at|date:"d M Y" }}
+                {% else %}
+                  Active Tier
+                {% endif %}
+              </div>
+            {% else %}
+              <span class="sa-badge sa-badge-trial"><i class="fas fa-clock"></i> No Active Tier</span>
+            {% endif %}
+          </td>
+
+          <!-- Status -->
+          <td>
+            {% if h.status == 'suspended' or not h.is_active %}
+              <span class="sa-badge sa-badge-failed" title="{{ h.suspension_reason }}">
+                <i class="fas fa-ban"></i> Suspended
               </span>
-            {% else %}
-              <span class="sa-badge sa-badge-trial"><i class="fas fa-clock"></i> Trial</span>
-            {% endif %}
-          </td>
-          <td>
-            {% if h.is_active %}
+            {% elif sub and sub.status == 'trial' %}
+              <span class="sa-badge sa-badge-trial"><i class="fas fa-stopwatch"></i> Trial</span>
+            {% elif h.status == 'active' %}
               <span class="sa-badge sa-badge-active"><i class="fas fa-check-circle"></i> Active</span>
+            {% elif h.status == 'expired' %}
+              <span class="sa-badge sa-badge-inactive"><i class="fas fa-exclamation-circle"></i> Expired</span>
             {% else %}
-              <span class="sa-badge sa-badge-inactive"><i class="fas fa-ban"></i> Suspended</span>
+              <span class="sa-badge sa-badge-inactive">{{ h.get_status_display }}</span>
             {% endif %}
           </td>
+
+          <!-- Patients & Staff -->
+          <td>
+            <div style="font-size: 0.85rem; font-weight: 600; color: var(--sa-dark);">
+              <i class="fas fa-user-injured" style="color: var(--sa-purple); margin-right: 4px;"></i> {{ item.patient_count }} Patients
+            </div>
+            <div style="font-size: 0.76rem; color: var(--sa-text-muted); margin-top: 2px;">
+              <i class="fas fa-user-md" style="margin-right: 4px;"></i> {{ item.staff_count }} Staff Members
+            </div>
+          </td>
+
+          <!-- Monthly Appointments & Usage % -->
+          <td style="min-width: 140px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 600; margin-bottom: 3px;">
+              <span>{{ item.appt_usage.current }} appts</span>
+              <span>
+                {% if item.appt_usage.limit %}
+                  {{ item.appt_usage.percent }}%
+                {% else %}
+                  Unlimited
+                {% endif %}
+              </span>
+            </div>
+            {% if item.appt_usage.limit %}
+            <div style="background: #e2e8f0; height: 6px; border-radius: 999px; overflow: hidden;">
+              <div style="height: 100%; width: {{ item.appt_usage.percent }}%; background: {% if item.appt_usage.percent >= 90 %}#ef4444{% elif item.appt_usage.percent >= 80 %}#f59e0b{% else %}#10b981{% endif %};"></div>
+            </div>
+            {% endif %}
+          </td>
+
+          <!-- Created Date -->
           <td>
             <div style="font-size: 0.82rem; font-weight: 500;">{{ h.created_at|date:"d M Y" }}</div>
             <small style="color: var(--sa-text-muted);">{{ h.created_at|timesince }} ago</small>
           </td>
-          <td style="text-align: right;">
+
+          <!-- Actions -->
+          <td style="text-align: right; white-space: nowrap;">
             <div style="display: inline-flex; align-items: center; gap: 6px;">
-              <a href="{% url 'super_admin_hospital_payments' h.id %}" class="sa-btn sa-btn-secondary sa-btn-sm" title="View Invoices &amp; Payments">
-                <i class="fas fa-receipt"></i>
+              <!-- Detail View -->
+              <a href="{% url 'super_admin_clinic_detail' h.id %}" class="sa-btn sa-btn-primary sa-btn-sm" title="Manage Clinic Detail">
+                <i class="fas fa-sliders-h"></i> Manage
               </a>
-              <a href="{% url 'super_admin_edit_hospital' h.id %}" class="sa-btn sa-btn-secondary sa-btn-sm" title="Edit Hospital Settings">
-                <i class="fas fa-edit"></i> Edit
+
+              <!-- Edit -->
+              <a href="{% url 'super_admin_edit_hospital' h.id %}" class="sa-btn sa-btn-secondary sa-btn-sm" title="Edit Settings">
+                <i class="fas fa-edit"></i>
               </a>
-              <form method="post" action="{% url 'super_admin_delete_hospital' h.id %}" style="display: inline;" onsubmit="return confirm('Delete {{ h.name }}? This will remove all associated clinic records.');">
+
+              <!-- Suspend / Activate Toggle -->
+              {% if h.status == 'suspended' or not h.is_active %}
+              <form method="post" action="{% url 'super_admin_activate_clinic' h.id %}" style="display: inline;">
                 {% csrf_token %}
-                <button type="submit" class="sa-btn sa-btn-delete sa-btn-sm" title="Delete Hospital">
+                <button type="submit" class="sa-btn sa-btn-sm" style="background: #22c55e; color: #fff;" title="Reactivate Clinic">
+                  <i class="fas fa-play"></i>
+                </button>
+              </form>
+              {% else %}
+              <button type="button" class="sa-btn sa-btn-sm" style="background: #f59e0b; color: #fff;" title="Suspend Clinic" onclick="openSuspendModal({{ h.id }}, '{{ h.name|escapejs }}')">
+                <i class="fas fa-pause"></i>
+              </button>
+              {% endif %}
+
+              <!-- Delete -->
+              <form method="post" action="{% url 'super_admin_delete_hospital' h.id %}" style="display: inline;" onsubmit="return confirm('⚠️ Are you sure you want to permanently delete {{ h.name }}? This will purge all associated clinic records.');">
+                {% csrf_token %}
+                <button type="submit" class="sa-btn sa-btn-delete sa-btn-sm" title="Delete Clinic">
                   <i class="fas fa-trash-alt"></i>
                 </button>
               </form>
             </div>
           </td>
         </tr>
+        {% endwith %}
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% else %}
-  <div class="sa-empty-state">
+  <div class="sa-empty-state" style="padding: 48px 24px;">
     <i class="fas fa-hospital"></i>
-    <h3>No Hospitals or Clinics Registered</h3>
-    <p>There are no hospitals registered yet. Start by onboarding the first clinic to the multi-tenant system.</p>
-    <a href="{% url 'super_admin_add_hospital' %}" class="sa-btn sa-btn-primary">+ Add First Hospital</a>
+    <h3>No Clinics Found</h3>
+    <p>No clinic facilities match your search query or filter criteria.</p>
+    <a href="{% url 'super_admin_add_hospital' %}" class="sa-btn sa-btn-primary">+ Add New Clinic</a>
   </div>
   {% endif %}
 </div>
+
+<!-- ════ SUSPEND MODAL ════ -->
+<div id="suspendModal" class="sa-modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: #fff; border-radius: 12px; width: 90%; max-width: 480px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+    <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: #b91c1c; margin-bottom: 8px;">
+      <i class="fas fa-ban"></i> Suspend Clinic
+    </h3>
+    <p style="color: var(--sa-text-muted); font-size: 0.88rem; margin-bottom: 16px;">
+      Suspending <strong id="suspendClinicName" style="color: var(--sa-dark);"></strong> will immediately block clinical staff and patients from logging in or using the clinic portal. All data is preserved.
+    </p>
+    <form id="suspendForm" method="post" action="">
+      {% csrf_token %}
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px;">Suspension Reason (Required)</label>
+        <textarea name="reason" rows="3" class="sa-form-input" required placeholder="E.g. Past due payment, compliance review, violation of terms..." style="width: 100%; border-radius: 8px;"></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="sa-btn sa-btn-secondary" onclick="closeSuspendModal()">Cancel</button>
+        <button type="submit" class="sa-btn" style="background: #b91c1c; color: #fff;">Confirm Suspension</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openSuspendModal(clinicId, clinicName) {
+  document.getElementById('suspendClinicName').textContent = clinicName;
+  document.getElementById('suspendForm').action = '/super-admin/clinics/' + clinicId + '/suspend/';
+  document.getElementById('suspendModal').style.display = 'flex';
+}
+function closeSuspendModal() {
+  document.getElementById('suspendModal').style.display = 'none';
+}
+</script>
 {% endblock %}

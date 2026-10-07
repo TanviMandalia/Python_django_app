@@ -1,105 +1,299 @@
 {% extends "super_admin/base_super_admin.html" %}
 {% load static %}
 
-{% block title %}Super Admin — Platform Overview Dashboard{% endblock %}
-{% block page_title %}👑 Platform Dashboard{% endblock %}
-{% block page_subtitle %}Comprehensive overview and multi-clinic operations{% endblock %}
+{% block title %}Super Admin — SaaS Platform Control Center{% endblock %}
+{% block page_title %}👑 SaaS Platform Control Center{% endblock %}
+{% block page_subtitle %}Centrally manage clinics, subscription tiers, features, limits, and platform governance{% endblock %}
 
 {% block topbar_actions %}
-<a href="{% url 'super_admin_add_hospital' %}" class="sa-btn sa-btn-primary sa-btn-sm">
-  <i class="fas fa-plus"></i> <span>Add Hospital</span>
-</a>
+<div style="display: flex; gap: 8px; flex-wrap: wrap;">
+  <a href="{% url 'super_admin_add_hospital' %}" class="sa-btn sa-btn-primary sa-btn-sm">
+    <i class="fas fa-plus"></i> <span>Add Clinic</span>
+  </a>
+  <a href="{% url 'super_admin_add_plan' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+    <i class="fas fa-layer-group"></i> <span>New Plan</span>
+  </a>
+  <a href="{% url 'super_admin_entitlement_debug' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+    <i class="fas fa-search-dollar"></i> <span>Debug Access</span>
+  </a>
+</div>
 {% endblock %}
 
 {% block content %}
-<!-- ════ PLATFORM WELCOME BANNER ════ -->
+<!-- ════ PLATFORM WELCOME & QUICK ACTIONS BANNER ════ -->
 <div class="sa-card" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: #ffffff; border: none; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(49, 46, 129, 0.25);">
-  <div style="padding: clamp(20px, 3vw, 32px); display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
-    <div style="max-width: 680px;">
+  <div style="padding: clamp(20px, 3vw, 30px); display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
+    <div style="max-width: 720px;">
       <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(245, 197, 24, 0.2); color: #F5C518; padding: 4px 12px; border-radius: 9999px; font-size: 0.76rem; font-weight: 700; margin-bottom: 12px; letter-spacing: 0.5px;">
-        👑 PLATFORM HEADQUARTERS
+        👑 MULTI-TENANT SAAS HEADQUARTERS
       </div>
       <h2 style="font-family: 'Outfit', sans-serif; font-size: clamp(1.4rem, 2.2vw, 1.85rem); font-weight: 800; margin-bottom: 8px; line-height: 1.2;">
         Welcome back, <span style="color: #F5C518;">{{ user.first_name|default:user.username }}</span>!
       </h2>
       <p style="color: #c7d2fe; font-size: 0.92rem; line-height: 1.5; margin: 0;">
-        You have central governance over all registered hospitals, subscription tier billings, and platform support tickets.
+        Full SaaS administrative authority over clinic tenants, tiered plans, feature access entitlements, usage quotas, and audit events.
       </p>
     </div>
     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
       <a href="{% url 'super_admin_hospitals' %}" class="sa-btn" style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25);">
-        <i class="fas fa-hospital"></i> Manage Clinics
+        <i class="fas fa-hospital"></i> Clinics Directory
       </a>
-      <a href="{% url 'super_admin_subscriptions' %}" class="sa-btn" style="background: var(--sa-gold); color: #000; font-weight: 700;">
-        <i class="fas fa-file-invoice-dollar"></i> Subscriptions
+      <a href="{% url 'super_admin_plans' %}" class="sa-btn" style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25);">
+        <i class="fas fa-layer-group"></i> Pricing &amp; Plans
+      </a>
+      <a href="{% url 'super_admin_features' %}" class="sa-btn" style="background: var(--sa-gold); color: #000; font-weight: 700;">
+        <i class="fas fa-cubes"></i> Feature Catalog
       </a>
     </div>
   </div>
 </div>
 
-<!-- ════ 8 PLATFORM KPI METRIC CARDS ════ -->
-<div class="sa-stats-grid">
+<!-- ════ ALERT CENTER PANEL ════ -->
+{% if clinics_near_limit or trials_expiring or failed_payments or suspended_hospitals or impaired_features %}
+<div class="sa-card" style="border-left: 4px solid var(--sa-warning); margin-bottom: 24px;">
+  <div class="sa-card-header" style="background: #fffbeb;">
+    <div class="sa-card-title" style="color: #b45309;">
+      <i class="fas fa-bell"></i>
+      <span>Platform Alert Center</span>
+    </div>
+    <span class="sa-badge" style="background: #fde68a; color: #92400e; font-weight: 700;">Action Required</span>
+  </div>
+  <div style="padding: 16px 20px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+      {% if clinics_near_limit %}
+        {% for alert in clinics_near_limit %}
+        <div style="background: #fff; border: 1px solid #fed7aa; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div>
+            <div style="font-weight: 700; color: #9a3412; font-size: 0.88rem;">
+              <i class="fas fa-exclamation-triangle" style="margin-right: 4px;"></i> {{ alert.hospital.name }}
+            </div>
+            <div style="font-size: 0.78rem; color: #78350f; margin-top: 2px;">
+              {{ alert.metric }}: {{ alert.current }} / {{ alert.limit }} (<strong>{{ alert.percent }}%</strong> capacity)
+            </div>
+          </div>
+          <a href="{% url 'super_admin_clinic_detail' alert.hospital.id %}?tab=usage" class="sa-btn sa-btn-sm sa-btn-secondary" style="font-size: 0.76rem; padding: 4px 8px;">
+            Inspect →
+          </a>
+        </div>
+        {% endfor %}
+      {% endif %}
+
+      {% if trials_expiring %}
+        {% for tsub in trials_expiring %}
+        <div style="background: #fff; border: 1px solid #fecdd3; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div>
+            <div style="font-weight: 700; color: #9f1239; font-size: 0.88rem;">
+              <i class="fas fa-clock" style="margin-right: 4px;"></i> Trial Expiring: {{ tsub.hospital.name }}
+            </div>
+            <div style="font-size: 0.78rem; color: #881337; margin-top: 2px;">
+              Expires: {{ tsub.expires_at|date:"M d, Y" }} ({{ tsub.trial_days_left }}d left)
+            </div>
+          </div>
+          <a href="{% url 'super_admin_clinic_detail' tsub.hospital.id %}?tab=subscription" class="sa-btn sa-btn-sm sa-btn-secondary" style="font-size: 0.76rem; padding: 4px 8px;">
+            Extend / Upgrade →
+          </a>
+        </div>
+        {% endfor %}
+      {% endif %}
+
+      {% if impaired_features %}
+        {% for feat in impaired_features %}
+        <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div>
+            <div style="font-weight: 700; color: #475569; font-size: 0.88rem;">
+              <i class="fas fa-tools" style="margin-right: 4px;"></i> Feature: {{ feat.name }}
+            </div>
+            <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
+              Global Status: <span class="sa-badge sa-badge-failed" style="font-size: 0.72rem;">{{ feat.get_global_status_display }}</span>
+            </div>
+          </div>
+          <a href="{% url 'super_admin_features' %}" class="sa-btn sa-btn-sm sa-btn-secondary" style="font-size: 0.76rem; padding: 4px 8px;">
+            Catalog →
+          </a>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ════ SAAS PLATFORM OVERVIEW KPI CARDS ════ -->
+<div class="sa-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 24px;">
+  <!-- Total Clinics -->
   <div class="sa-stat-card">
     <div class="sa-stat-icon purple"><i class="fas fa-hospital"></i></div>
     <div class="sa-stat-info">
       <h3>{{ total_hospitals|default:"0" }}</h3>
       <p>Total Clinics</p>
+      <span style="font-size: 0.72rem; color: var(--sa-text-muted);">+{{ new_hospitals_month }} new this month</span>
     </div>
   </div>
 
+  <!-- Active Clinics -->
   <div class="sa-stat-card">
     <div class="sa-stat-icon green"><i class="fas fa-check-circle"></i></div>
     <div class="sa-stat-info">
       <h3>{{ active_hospitals|default:"0" }}</h3>
       <p>Active Clinics</p>
+      <span style="font-size: 0.72rem; color: #15803d;">Operational</span>
     </div>
   </div>
 
+  <!-- Paid Clinics -->
   <div class="sa-stat-card">
-    <div class="sa-stat-icon blue"><i class="fas fa-users"></i></div>
+    <div class="sa-stat-icon gold"><i class="fas fa-crown"></i></div>
     <div class="sa-stat-info">
-      <h3>{{ total_patients|default:"0" }}</h3>
-      <p>Total Patients</p>
+      <h3>{{ paid_hospitals|default:"0" }}</h3>
+      <p>Paid Clinics</p>
+      <span style="font-size: 0.72rem; color: #b45309;">Active Tier Customers</span>
     </div>
   </div>
 
+  <!-- Trial Clinics -->
   <div class="sa-stat-card">
-    <div class="sa-stat-icon orange"><i class="fas fa-user-md"></i></div>
-    <div class="sa-stat-info">
-      <h3>{{ total_staff|default:"0" }}</h3>
-      <p>Clinical Staff</p>
-    </div>
-  </div>
-
-  <div class="sa-stat-card">
-    <div class="sa-stat-icon teal"><i class="fas fa-calendar-check"></i></div>
-    <div class="sa-stat-info">
-      <h3>{{ total_appointments|default:"0" }}</h3>
-      <p>Appointments</p>
-    </div>
-  </div>
-
-  <div class="sa-stat-card">
-    <div class="sa-stat-icon gold"><i class="fas fa-gem"></i></div>
-    <div class="sa-stat-info">
-      <h3>{{ active_subs|default:"0" }}</h3>
-      <p>Active Plans</p>
-    </div>
-  </div>
-
-  <div class="sa-stat-card">
-    <div class="sa-stat-icon pink"><i class="fas fa-clock"></i></div>
+    <div class="sa-stat-icon pink"><i class="fas fa-stopwatch"></i></div>
     <div class="sa-stat-info">
       <h3>{{ trial_subs|default:"0" }}</h3>
-      <p>On Trial</p>
+      <p>Trial Clinics</p>
+      <span style="font-size: 0.72rem; color: #be185d;">In Evaluation</span>
     </div>
   </div>
 
+  <!-- Suspended / Expired -->
   <div class="sa-stat-card">
-    <div class="sa-stat-icon red"><i class="fas fa-headset"></i></div>
+    <div class="sa-stat-icon red"><i class="fas fa-ban"></i></div>
     <div class="sa-stat-info">
-      <h3>{{ open_tickets|default:"0" }}</h3>
-      <p>Open Tickets</p>
+      <h3>{{ suspended_hospitals|default:"0" }} / {{ expired_hospitals|default:"0" }}</h3>
+      <p>Suspended / Expired</p>
+      <span style="font-size: 0.72rem; color: #b91c1c;">Restricted Access</span>
+    </div>
+  </div>
+
+  <!-- MRR / Revenue -->
+  <div class="sa-stat-card">
+    <div class="sa-stat-icon teal"><i class="fas fa-receipt"></i></div>
+    <div class="sa-stat-info">
+      {% if has_billing_data %}
+        <h3 style="color: #047857;">₹{{ mrr }}</h3>
+        <p>Monthly Recurring (MRR)</p>
+        <span style="font-size: 0.72rem; color: #047857;">Total: ₹{{ total_revenue }} collected</span>
+      {% else %}
+        <h4 style="font-size: 1rem; color: var(--sa-text-muted); margin: 4px 0;">No billing data</h4>
+        <p>Monthly Recurring (MRR)</p>
+        <span style="font-size: 0.72rem; color: var(--sa-text-muted);">No active paid tiers yet</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Upcoming Renewals -->
+  <div class="sa-stat-card">
+    <div class="sa-stat-icon blue"><i class="fas fa-calendar-alt"></i></div>
+    <div class="sa-stat-info">
+      <h3>{{ upcoming_renewals|default:"0" }}</h3>
+      <p>Upcoming Renewals</p>
+      <span style="font-size: 0.72rem; color: #1d4ed8;">Next 7 Days</span>
+    </div>
+  </div>
+
+  <!-- Near Limit Violations -->
+  <div class="sa-stat-card">
+    <div class="sa-stat-icon orange"><i class="fas fa-chart-line"></i></div>
+    <div class="sa-stat-info">
+      <h3>{{ clinics_near_limit|length }}</h3>
+      <p>Clinics Near Limit</p>
+      <span style="font-size: 0.72rem; color: #c2410c;">&gt;80% Resource Capacity</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MAIN 2-COLUMN SECTION: RECENT CLINICS & AUDIT STREAM ════ -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Recent Registered Clinics -->
+  <div class="sa-card">
+    <div class="sa-card-header">
+      <div class="sa-card-title">
+        <i class="fas fa-hospital" style="color: var(--sa-purple);"></i>
+        <span>Registered Clinics Directory</span>
+      </div>
+      <a href="{% url 'super_admin_hospitals' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+        All Clinics ({{ total_hospitals }}) →
+      </a>
+    </div>
+
+    <div class="sa-card-body" style="padding: 16px 20px;">
+      {% if recent_hospitals %}
+        {% for h in recent_hospitals %}
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
+          <div>
+            <a href="{% url 'super_admin_clinic_detail' h.id %}" style="font-weight: 700; color: var(--sa-dark); font-size: 0.94rem; text-decoration: none;">
+              {{ h.name }}
+            </a>
+            <div style="color: var(--sa-text-muted); font-size: 0.78rem; margin-top: 2px;">
+              <i class="fas fa-map-marker-alt" style="margin-right: 4px;"></i> {{ h.city|default:'Unspecified City' }} &nbsp;·&nbsp;
+              <span class="sa-badge" style="background: #ede9fe; color: #6d28d9; padding: 1px 6px; font-size: 0.72rem;">
+                {{ h.subscription.plan.display_name|default:'No Plan' }}
+              </span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="sa-badge {% if h.status == 'active' and h.is_active %}sa-badge-active{% elif h.status == 'suspended' %}sa-badge-failed{% else %}sa-badge-trial{% endif %}">
+              {{ h.get_status_display }}
+            </span>
+            <a href="{% url 'super_admin_clinic_detail' h.id %}" class="sa-btn sa-btn-secondary sa-btn-sm" style="padding: 4px 8px; font-size: 0.76rem;">
+              Manage
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="sa-empty-state" style="padding: 32px 16px;">
+          <i class="fas fa-hospital"></i>
+          <h3>No Clinics Registered</h3>
+          <p>Onboard hospital and clinic facilities to the platform.</p>
+          <a href="{% url 'super_admin_add_hospital' %}" class="sa-btn sa-btn-primary sa-btn-sm">+ Add First Clinic</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Real-time Platform Audit Log Stream -->
+  <div class="sa-card">
+    <div class="sa-card-header">
+      <div class="sa-card-title">
+        <i class="fas fa-shield-alt" style="color: var(--sa-purple);"></i>
+        <span>Recent Administrative Audit Events</span>
+      </div>
+      <a href="{% url 'super_admin_audit_logs' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+        Full Audit Logs →
+      </a>
+    </div>
+
+    <div class="sa-card-body" style="padding: 16px 20px;">
+      {% if recent_audit_events %}
+        {% for evt in recent_audit_events %}
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f1f5f9;">
+          <div style="min-width: 0; flex: 1;">
+            <div style="font-weight: 600; color: var(--sa-dark); font-size: 0.88rem;">
+              <code>{{ evt.action }}</code>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 2px;">
+              {% if evt.hospital %}<i class="fas fa-hospital"></i> {{ evt.hospital.name }} &nbsp;·&nbsp;{% endif %}
+              By: <strong>{{ evt.actor.username|default:"System" }}</strong>
+            </div>
+          </div>
+          <div style="font-size: 0.74rem; color: var(--sa-text-muted); white-space: nowrap;">
+            {{ evt.created_at|date:"M d, H:i" }}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="sa-empty-state" style="padding: 32px 16px;">
+          <i class="fas fa-history"></i>
+          <h3>No Audit Events Yet</h3>
+          <p>Administrative actions such as plan changes, overrides, and suspensions will be logged here immutably.</p>
+        </div>
+      {% endif %}
     </div>
   </div>
 </div>
@@ -109,7 +303,7 @@
   <div class="sa-card-header">
     <div class="sa-card-title">
       <i class="fas fa-receipt" style="color: var(--sa-purple);"></i>
-      <span>Recent Platform Revenue</span>
+      <span>Recent Platform Revenue &amp; Payments</span>
     </div>
     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
       <span class="sa-badge sa-badge-paid" style="font-size: 0.82rem; padding: 6px 12px;">
@@ -132,10 +326,10 @@
       <thead>
         <tr>
           <th>Date &amp; Time</th>
-          <th>Patient</th>
+          <th>Clinic</th>
+          <th>Patient / Reference</th>
           <th>Amount</th>
           <th>Method</th>
-          <th>Transaction Reference</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -147,11 +341,14 @@
             <div style="color: var(--sa-text-muted); font-size: 0.78rem;">{{ pay.created_at|time:"h:i A" }}</div>
           </td>
           <td>
+            <strong>{{ pay.hospital.name|default:"General Platform" }}</strong>
+          </td>
+          <td>
             {% if pay.patient %}
             <strong style="color: var(--sa-dark);">{{ pay.patient.get_full_name|default:pay.patient.username }}</strong>
-            <div style="font-size: 0.76rem; color: var(--sa-text-muted);">{{ pay.patient.email|default:"" }}</div>
+            <div style="font-size: 0.76rem; color: var(--sa-text-muted);">{{ pay.transaction_id|default:"" }}</div>
             {% else %}
-            <span style="color: #bbb;">—</span>
+            <span style="color: #bbb;">{{ pay.transaction_id|default:"—" }}</span>
             {% endif %}
           </td>
           <td>
@@ -159,17 +356,8 @@
           </td>
           <td>
             <span class="sa-badge" style="background: #f1f5f9; color: var(--sa-dark);">
-              {% if pay.method == 'razorpay' %}<i class="fas fa-bolt" style="color: #F5C518"></i> Razorpay
-              {% elif pay.method == 'upi' %}<i class="fas fa-qrcode" style="color: #00B900"></i> UPI
-              {% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color: #28a745"></i> Cash
-              {% elif pay.method == 'netbanking' %}<i class="fas fa-university" style="color: #1a73e8"></i> Net Banking
-              {% else %}<i class="fas fa-credit-card"></i> {{ pay.get_method_display }}{% endif %}
+              {{ pay.get_method_display }}
             </span>
-          </td>
-          <td>
-            <code style="background: #f8fafc; border: 1px solid var(--sa-border); padding: 3px 8px; border-radius: 6px; font-size: 0.8rem;">
-              {{ pay.transaction_id|default:"—" }}
-            </code>
           </td>
           <td>
             {% if pay.status == 'paid' %}
@@ -196,90 +384,9 @@
   {% endif %}
 </div>
 
-<!-- ════ TWO-COLUMN ACTIVITY ROW: RECENT HOSPITALS & SUPPORT TICKETS ════ -->
-<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
-  <!-- Recent Hospitals -->
-  <div class="sa-card">
-    <div class="sa-card-header">
-      <div class="sa-card-title">
-        <i class="fas fa-hospital" style="color: var(--sa-purple);"></i>
-        <span>Registered Clinics</span>
-      </div>
-      <a href="{% url 'super_admin_hospitals' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
-        All Clinics →
-      </a>
-    </div>
-
-    <div class="sa-card-body" style="padding: 16px 20px;">
-      {% if recent_hospitals %}
-        {% for h in recent_hospitals %}
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
-          <div>
-            <div style="font-weight: 700; color: var(--sa-dark); font-size: 0.94rem;">{{ h.name }}</div>
-            <div style="color: var(--sa-text-muted); font-size: 0.78rem; margin-top: 2px;">
-              <i class="fas fa-map-marker-alt" style="margin-right: 4px;"></i> {{ h.city|default:'Unspecified City' }} &nbsp;·&nbsp;
-              <i class="fas fa-calendar" style="margin-right: 4px;"></i> {{ h.created_at|date:'M d, Y' }}
-            </div>
-          </div>
-          <span class="sa-badge {% if h.is_active %}sa-badge-active{% else %}sa-badge-inactive{% endif %}">
-            {% if h.is_active %}Active{% else %}Inactive{% endif %}
-          </span>
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="sa-empty-state" style="padding: 32px 16px;">
-          <i class="fas fa-hospital"></i>
-          <h3>No Hospitals Added</h3>
-          <p>Start onboarding clinic facilities to the platform.</p>
-          <a href="{% url 'super_admin_add_hospital' %}" class="sa-btn sa-btn-primary sa-btn-sm">+ Add First Hospital</a>
-        </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- Recent Support Tickets -->
-  <div class="sa-card">
-    <div class="sa-card-header">
-      <div class="sa-card-title">
-        <i class="fas fa-headset" style="color: var(--sa-purple);"></i>
-        <span>Support Tickets</span>
-      </div>
-      <a href="{% url 'super_admin_support' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
-        View All Tickets →
-      </a>
-    </div>
-
-    <div class="sa-card-body" style="padding: 16px 20px;">
-      {% if recent_tickets %}
-        {% for t in recent_tickets %}
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
-          <div style="min-width: 0; flex: 1;">
-            <a href="{% url 'super_admin_support_reply' t.id %}" style="text-decoration: none; font-weight: 600; color: var(--sa-dark); font-size: 0.92rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              {{ t.subject|truncatechars:45 }}
-            </a>
-            <div style="color: var(--sa-text-muted); font-size: 0.78rem; margin-top: 2px;">
-              {{ t.hospital.name|default:'Platform Question' }} &nbsp;·&nbsp; {{ t.created_at|date:'M d, Y' }}
-            </div>
-          </div>
-          <span class="sa-badge {% if t.status == 'open' %}sa-badge-open{% elif t.status == 'in_progress' %}sa-badge-pending{% else %}sa-badge-closed{% endif %}">
-            {{ t.get_status_display }}
-          </span>
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="sa-empty-state" style="padding: 32px 16px;">
-          <i class="fas fa-headset"></i>
-          <h3>No Support Requests</h3>
-          <p>No open clinic support tickets currently pending resolution.</p>
-        </div>
-      {% endif %}
-    </div>
-  </div>
-</div>
-
 <style>
-  @media (max-width: 900px) {
-    div[style*="grid-template-columns: repeat(2, 1fr)"] {
+  @media (max-width: 991px) {
+    div[style*="grid-template-columns: 1fr 1fr"] {
       grid-template-columns: 1fr !important;
     }
   }

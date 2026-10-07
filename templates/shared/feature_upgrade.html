@@ -1,0 +1,81 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Feature Locked — {{ feature.name|default:"Feature Unavailable" }}{% endblock %}
+
+{% block content %}
+<div style="min-height: 75vh; display: flex; align-items: center; justify-content: center; padding: 24px;">
+  <div style="background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01); max-width: 580px; width: 100%; text-align: center; padding: 48px 36px; position: relative; overflow: hidden;">
+    <!-- Top Accent Bar -->
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #8b5cf6, #3b82f6);"></div>
+
+    <!-- Icon -->
+    <div style="width: 72px; height: 72px; border-radius: 50%; background: #f5f3ff; color: #7c3aed; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 20px;">
+      {% if entitlement.reason_code == 'maintenance_mode' %}
+        <i class="fas fa-tools"></i>
+      {% elif entitlement.reason_code == 'global_kill_switch' %}
+        <i class="fas fa-power-off"></i>
+      {% elif entitlement.reason_code == 'usage_limit_reached' %}
+        <i class="fas fa-tachometer-alt"></i>
+      {% else %}
+        <i class="fas fa-lock"></i>
+      {% endif %}
+    </div>
+
+    <!-- Title -->
+    <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800; color: #1e1b4b; margin-bottom: 12px;">
+      {% if entitlement.reason_code == 'maintenance_mode' %}
+        Feature Under Maintenance
+      {% elif entitlement.reason_code == 'global_kill_switch' %}
+        Feature Temporarily Unavailable
+      {% elif entitlement.reason_code == 'usage_limit_reached' %}
+        Resource Limit Reached
+      {% else %}
+        {{ feature.name|default:"Feature Locked" }}
+      {% endif %}
+    </h2>
+
+    <!-- Explanation Message -->
+    <p style="color: #64748b; font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px;">
+      {% if entitlement.reason_code == 'maintenance_mode' %}
+        {{ entitlement.reason_text|default:"This feature is temporarily unavailable due to scheduled platform maintenance. Please check back shortly." }}
+      {% elif entitlement.reason_code == 'global_kill_switch' %}
+        This module is temporarily disabled platform-wide by platform operations. Please contact support for updates.
+      {% elif entitlement.reason_code == 'usage_limit_reached' %}
+        Your clinic has utilized 100% of the included quota for this resource. Upgrade your subscription tier to expand your capacity.
+      {% else %}
+        The <strong>{{ feature.name }}</strong> module is a premium capability that is not included in your clinic's current subscription tier.
+      {% endif %}
+    </p>
+
+    <!-- Plan Summary Pill -->
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; text-align: left;">
+      <div>
+        <div style="font-size: 0.74rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Current Plan</div>
+        <div style="font-size: 1rem; font-weight: 800; color: #1e1b4b;">
+          {{ subscription.plan.display_name|default:"Free Core Plan" }}
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <span class="sa-badge" style="background: #ede9fe; color: #6d28d9; font-weight: 700;">
+          {{ hospital.name }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Action CTAs -->
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+      <a href="javascript:history.back()" class="sa-btn sa-btn-secondary" style="padding: 10px 20px;">
+        <i class="fas fa-arrow-left"></i> Go Back
+      </a>
+      <a href="{% url 'admin_dashboard' %}" class="sa-btn" style="background: #7c3aed; color: #ffffff; padding: 10px 24px; font-weight: 700; text-decoration: none; border-radius: 8px;">
+        <i class="fas fa-tachometer-alt"></i> Clinic Dashboard
+      </a>
+    </div>
+
+    <div style="margin-top: 24px; font-size: 0.8rem; color: #94a3b8;">
+      Need this unlocked right away? Contact your platform administrator to request complimentary access or upgrade your plan tier.
+    </div>
+  </div>
+</div>
+{% endblock %}

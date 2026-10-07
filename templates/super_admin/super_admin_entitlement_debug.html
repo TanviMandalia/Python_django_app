@@ -1,0 +1,138 @@
+{% extends "super_admin/base_super_admin.html" %}
+{% load static %}
+
+{% block title %}Super Admin — "Why Can't This Clinic Access This Feature?" Entitlement Debugger{% endblock %}
+{% block page_title %}🔍 Entitlement Inspector &amp; Access Debugger{% endblock %}
+{% block page_subtitle %}Real-time root cause analysis for subscription entitlement and permission disputes{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'super_admin_features' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+  <i class="fas fa-cubes"></i> Feature Catalog
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- ════ SELECTION PANEL ════ -->
+<div class="sa-card" style="margin-bottom: 24px; padding: 22px 28px;">
+  <form method="get" action="{% url 'super_admin_entitlement_debug' %}" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;">
+    <!-- Clinic Selector -->
+    <div style="flex: 1; min-width: 250px;">
+      <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Select Clinic / Tenant</label>
+      <select name="hospital_id" class="sa-form-input" style="width: 100%; border-radius: 8px;" required>
+        <option value="">-- Choose Clinic --</option>
+        {% for h in hospitals %}
+        <option value="{{ h.id }}" {% if selected_hospital.id == h.id %}selected{% endif %}>{{ h.name }} ({{ h.city|default:"Unspecified" }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Feature Selector -->
+    <div style="flex: 1; min-width: 250px;">
+      <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Select Feature Module</label>
+      <select name="feature_code" class="sa-form-input" style="width: 100%; border-radius: 8px;" required>
+        <option value="">-- Choose Feature --</option>
+        {% for f in features %}
+        <option value="{{ f.code }}" {% if selected_feature.code == f.code %}selected{% endif %}>{{ f.name }} ({{ f.code }}) - {% if f.is_paid %}Paid{% else %}Free Core{% endif %}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="sa-btn sa-btn-primary" style="padding: 10px 24px; font-weight: 700;">
+      <i class="fas fa-microscope"></i> Run Resolution Trace
+    </button>
+  </form>
+</div>
+
+<!-- ════ DIAGNOSTIC TRACE RESULTS ════ -->
+{% if explanation %}
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Resolution Steps Timeline -->
+  <div class="sa-card">
+    <div class="sa-card-header">
+      <div class="sa-card-title">
+        <i class="fas fa-sitemap" style="color: var(--sa-purple);"></i>
+        <span>Evaluation Hierarchy Decision Trace</span>
+      </div>
+      <span class="sa-badge {% if explanation.final_decision == 'ALLOWED' %}sa-badge-active{% else %}sa-badge-failed{% endif %}" style="font-size: 0.86rem; padding: 6px 14px;">
+        FINAL: {{ explanation.final_decision }}
+      </span>
+    </div>
+
+    <div style="padding: 24px;">
+      <div style="position: relative; padding-left: 28px; border-left: 3px solid var(--sa-border);">
+        {% for step in explanation.resolution_steps %}
+        <div style="position: relative; margin-bottom: 24px;">
+          <!-- Node Indicator -->
+          <div style="position: absolute; left: -36px; top: 0; width: 18px; height: 18px; border-radius: 50%; background: {% if step.status == 'PASS' or step.status == 'FREE PASS' %}#22c55e{% elif step.status == 'BLOCKED' or step.status == 'FAIL' %}#ef4444{% elif step.status == 'OVERRIDE ACTIVE' %}#8b5cf6{% else %}#f59e0b{% endif %}; border: 3px solid #fff; box-shadow: 0 0 0 2px rgba(0,0,0,0.1);"></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <strong style="color: var(--sa-dark); font-size: 0.95rem;">{{ step.step }}</strong>
+            <span class="sa-badge" style="font-size: 0.72rem; {% if step.status == 'PASS' or step.status == 'FREE PASS' %}background: #dcfce7; color: #15803d;{% elif step.status == 'BLOCKED' or step.status == 'FAIL' %}background: #fee2e2; color: #b91c1c;{% elif step.status == 'OVERRIDE ACTIVE' %}background: #ede9fe; color: #6d28d9;{% else %}background: #fef3c7; color: #b45309;{% endif %}">
+              {{ step.status }}
+            </span>
+          </div>
+          <div style="font-size: 0.86rem; color: var(--sa-text-muted);">
+            {{ step.details }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Final Access Card -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div class="sa-card" style="padding: 24px; {% if explanation.final_decision == 'ALLOWED' %}border-top: 4px solid #22c55e;{% else %}border-top: 4px solid #ef4444;{% endif %}">
+      <div style="font-size: 0.76rem; color: var(--sa-text-muted); font-weight: 700; text-transform: uppercase;">Final Decision</div>
+      <h2 style="font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; margin: 4px 0 8px 0; color: {% if explanation.final_decision == 'ALLOWED' %}#15803d{% else %}#b91c1c{% endif %};">
+        {{ explanation.final_decision }}
+      </h2>
+      <p style="font-size: 0.92rem; color: var(--sa-dark); margin-bottom: 16px;">
+        <strong>Reason:</strong> {{ explanation.final_reason }}
+      </p>
+
+      <div style="background: #f8fafc; border: 1px solid var(--sa-border); border-radius: 8px; padding: 12px 14px; font-size: 0.8rem; margin-bottom: 16px;">
+        <div><strong>Clinic:</strong> {{ selected_hospital.name }}</div>
+        <div><strong>Plan:</strong> {{ explanation.plan.display_name|default:"None" }}</div>
+        <div><strong>Source:</strong> <code>{{ explanation.entitlement.source }}</code></div>
+        <div><strong>Access Level:</strong> {{ explanation.entitlement.access_type }}</div>
+        <div><strong>Limit:</strong> {% if explanation.entitlement.limit %}{{ explanation.entitlement.limit }}{% else %}Unlimited{% endif %}</div>
+      </div>
+
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="{% url 'super_admin_clinic_detail' selected_hospital.id %}?tab=features" class="sa-btn sa-btn-secondary sa-btn-sm" style="flex: 1; text-align: center;">
+          <i class="fas fa-sliders-h"></i> Set Override
+        </a>
+        <a href="{% url 'super_admin_clinic_detail' selected_hospital.id %}?tab=subscription" class="sa-btn sa-btn-primary sa-btn-sm" style="flex: 1; text-align: center;">
+          <i class="fas fa-crown"></i> Change Plan
+        </a>
+      </div>
+    </div>
+
+    {% if explanation.usage %}
+    <div class="sa-card" style="padding: 18px 22px;">
+      <h4 style="font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 8px;">
+        <i class="fas fa-chart-pie" style="color: var(--sa-purple);"></i> Current Resource Usage
+      </h4>
+      <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 6px;">
+        <span>Current: <strong>{{ explanation.usage.current }}</strong></span>
+        <span>Cap: <strong>{{ explanation.usage.limit }}</strong></span>
+      </div>
+      <div style="background: #f1f5f9; height: 8px; border-radius: 999px; overflow: hidden; margin-bottom: 6px;">
+        <div style="height: 100%; width: {{ explanation.usage.percent }}%; background: {% if explanation.usage.percent >= 90 %}#ef4444{% elif explanation.usage.percent >= 80 %}#f59e0b{% else %}#10b981{% endif %};"></div>
+      </div>
+      <small style="color: var(--sa-text-muted);">{{ explanation.usage.percent }}% utilized &nbsp;·&nbsp; {{ explanation.usage.remaining }} remaining</small>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<div class="sa-card">
+  <div class="sa-empty-state" style="padding: 56px 20px;">
+    <i class="fas fa-search" style="font-size: 2.4rem; color: var(--sa-purple);"></i>
+    <h3 style="margin-top: 14px;">Select Clinic &amp; Feature To Inspect</h3>
+    <p>Choose any registered clinic tenant and feature module above to execute a real-time diagnostic evaluation trace.</p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

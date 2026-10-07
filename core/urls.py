@@ -22,6 +22,7 @@ urlpatterns = [
     path("edit-profile/", views.edit_profile, name="edit_profile"),
     # ── Settings ──────────────────────────────────────────────
     path("admin-settings/", views.admin_settings, name="admin_settings"),
+    path("admin-email-settings/", views.admin_email_settings, name="admin_email_settings"),
     # ── Password System ───────────────────────────────────────
     path("change-password/", views.change_password_request, name="change_password"),
     path("forgot-password/", views.request_otp, name="request_otp"),
@@ -38,14 +39,18 @@ urlpatterns = [
     ),
     # ── Payments ──────────────────────────────────────────────
     path("payments/", views.payments, name="payments"),
-    path("payments/razorpay-create-order/", views.razorpay_create_order, name="razorpay_create_order"),
-    path("payments/razorpay-verify/", views.razorpay_verify_payment, name="razorpay_verify_payment"),
-    path("payments/razorpay-webhook/", views.razorpay_webhook, name="razorpay_webhook"),
-    path("payments/record-cash/", views.record_cash_payment, name="record_cash_payment"),
-    path("payments/record-upi/", views.record_upi_payment, name="record_upi_payment"),
+    path("payments/create/", views.payment_create, name="payment_create"),
+    path("payments/<int:payment_id>/", views.payment_detail, name="payment_detail"),
+    path("payments/<int:payment_id>/edit/", views.payment_edit, name="payment_edit"),
+    path("payments/<int:payment_id>/delete/", views.payment_delete, name="payment_delete"),
     path("payments/admin/", views.admin_payments, name="admin_payments"),
+    path("staff-payments/", views.staff_payments, name="staff_payments"),
     path("payments/confirm/<int:payment_id>/", views.confirm_payment, name="confirm_payment"),
     path("payments/reject/<int:payment_id>/", views.reject_payment, name="reject_payment"),
+    path("payments/record-cash/", views.record_cash_payment, name="record_cash_payment"),
+    path("payments/record-upi/", views.record_upi_payment, name="record_upi_payment"),
+    path("payments/admin/export/excel/", views.export_clinic_payments_excel, name="export_clinic_payments_excel"),
+    path("payments/admin/export/pdf/", views.export_clinic_payments_pdf, name="export_clinic_payments_pdf"),
     # ── Subscription ──────────────────────────────────────────
     path("subscription/", views.subscription_page, name="subscription_page"),
     # ── Promo Management ──────────────────────────────────────
@@ -119,6 +124,7 @@ urlpatterns = [
         name="delete_appointment",
     ),
     # ── Admin Patients CRUD ───────────────────────────────────
+    path("admin-patients/add/", views.add_patient, name="add_patient"),
     path("admin-patients/edit/<int:user_id>/", views.edit_patient, name="edit_patient"),
     path(
         "admin-patients/delete/<int:user_id>/",
@@ -267,6 +273,100 @@ urlpatterns = [
         views.super_admin_delete_hospital,
         name="super_admin_delete_hospital",
     ),
+    # ── SaaS Clinic Detail & Management ───────────────────────
+    path(
+        "super-admin/clinics/<int:hospital_id>/detail/",
+        views.super_admin_clinic_detail,
+        name="super_admin_clinic_detail",
+    ),
+    path(
+        "super-admin/clinics/<int:hospital_id>/suspend/",
+        views.super_admin_suspend_clinic,
+        name="super_admin_suspend_clinic",
+    ),
+    path(
+        "super-admin/clinics/<int:hospital_id>/activate/",
+        views.super_admin_activate_clinic,
+        name="super_admin_activate_clinic",
+    ),
+    path(
+        "super-admin/clinics/<int:hospital_id>/subscription/update/",
+        views.super_admin_update_clinic_subscription,
+        name="super_admin_update_clinic_subscription",
+    ),
+    path(
+        "super-admin/clinics/<int:hospital_id>/override/save/",
+        views.super_admin_save_feature_override,
+        name="super_admin_save_feature_override",
+    ),
+    path(
+        "super-admin/clinics/<int:hospital_id>/override/<str:feature_code>/delete/",
+        views.super_admin_delete_feature_override,
+        name="super_admin_delete_feature_override",
+    ),
+    # ── SaaS Plans & Pricing ───────────────────────────────────
+    path(
+        "super-admin/plans/",
+        views.super_admin_plans,
+        name="super_admin_plans",
+    ),
+    path(
+        "super-admin/plans/add/",
+        views.super_admin_add_plan,
+        name="super_admin_add_plan",
+    ),
+    path(
+        "super-admin/plans/<int:plan_id>/edit/",
+        views.super_admin_edit_plan,
+        name="super_admin_edit_plan",
+    ),
+    path(
+        "super-admin/plans/<int:plan_id>/duplicate/",
+        views.super_admin_duplicate_plan,
+        name="super_admin_duplicate_plan",
+    ),
+    path(
+        "super-admin/plans/<int:plan_id>/toggle/",
+        views.super_admin_toggle_plan,
+        name="super_admin_toggle_plan",
+    ),
+    # ── SaaS Features Catalog & Matrix ────────────────────────
+    path(
+        "super-admin/features/",
+        views.super_admin_features,
+        name="super_admin_features",
+    ),
+    path(
+        "super-admin/features/<str:feature_code>/global-status/",
+        views.super_admin_feature_global_status,
+        name="super_admin_feature_global_status",
+    ),
+    path(
+        "super-admin/access-matrix/",
+        views.super_admin_access_matrix,
+        name="super_admin_access_matrix",
+    ),
+    path(
+        "super-admin/access-matrix/update/",
+        views.super_admin_update_access_matrix,
+        name="super_admin_update_access_matrix",
+    ),
+    path(
+        "super-admin/entitlement-debug/",
+        views.super_admin_entitlement_debug,
+        name="super_admin_entitlement_debug",
+    ),
+    # ── SaaS Usage & Platform Audit Logs ──────────────────────
+    path(
+        "super-admin/usage/",
+        views.super_admin_usage_overview,
+        name="super_admin_usage_overview",
+    ),
+    path(
+        "super-admin/audit-logs/",
+        views.super_admin_audit_logs,
+        name="super_admin_audit_logs",
+    ),
     path(
         "super-admin/subscriptions/",
         views.super_admin_subscriptions,
@@ -301,6 +401,27 @@ urlpatterns = [
         "super-admin/support/reply/<int:ticket_id>/",
         views.super_admin_support_reply,
         name="super_admin_support_reply",
+    ),
+    # ── Super Admin Multi-Account Email Governance ────────────
+    path(
+        "super-admin/email-accounts/",
+        views.super_admin_email_accounts,
+        name="super_admin_email_accounts",
+    ),
+    path(
+        "super-admin/email-accounts/save/",
+        views.super_admin_email_account_save,
+        name="super_admin_email_account_save",
+    ),
+    path(
+        "super-admin/email-accounts/<int:account_id>/test/",
+        views.super_admin_email_account_test,
+        name="super_admin_email_account_test",
+    ),
+    path(
+        "super-admin/email-accounts/<int:account_id>/delete/",
+        views.super_admin_email_account_delete,
+        name="super_admin_email_account_delete",
     ),
     # ── Bulk Import (Excel) ────────────────────────────────────
     path("bulk-import/", views.bulk_import, name="bulk_import"),

@@ -1,0 +1,225 @@
+{% extends "super_admin/base_super_admin.html" %}
+{% load static %}
+
+{% block title %}Super Admin — {% if is_edit %}Edit Plan: {{ plan.display_name }}{% else %}Create New Subscription Plan{% endif %}{% endblock %}
+{% block page_title %}💎 {% if is_edit %}Edit Plan: {{ plan.display_name }}{% else %}Create Subscription Plan{% endif %}{% endblock %}
+{% block page_subtitle %}Define tier parameters, resource thresholds, and feature entitlement policies{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'super_admin_plans' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+  <i class="fas fa-arrow-left"></i> Back to Plans
+</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" action="">
+  {% csrf_token %}
+
+  <!-- ════ CORE PLAN ATTRIBUTES ════ -->
+  <div class="sa-card" style="margin-bottom: 24px;">
+    <div class="sa-card-header">
+      <div class="sa-card-title">
+        <i class="fas fa-layer-group" style="color: var(--sa-purple);"></i>
+        <span>Plan Details &amp; Pricing</span>
+      </div>
+    </div>
+    <div style="padding: 24px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 20px;">
+        <!-- Internal Name / Code -->
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Internal Code (Unique)</label>
+          <input type="text" name="code" value="{% if is_edit %}{{ plan.code|default:plan.name }}{% endif %}" placeholder="e.g. enterprise_plus" class="sa-form-input" style="width: 100%; border-radius: 8px;" required {% if is_edit %}readonly{% endif %} />
+          <small style="color: var(--sa-text-muted);">Lowercase identifier used by API and entitlement engine.</small>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Plan Internal Name</label>
+          <input type="text" name="name" value="{% if is_edit %}{{ plan.name }}{% endif %}" placeholder="e.g. enterprise" class="sa-form-input" style="width: 100%; border-radius: 8px;" required {% if is_edit %}readonly{% endif %} />
+        </div>
+
+        <!-- Display Name -->
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Public Display Name</label>
+          <input type="text" name="display_name" value="{% if is_edit %}{{ plan.display_name }}{% endif %}" placeholder="e.g. Enterprise Tier" class="sa-form-input" style="width: 100%; border-radius: 8px;" required />
+        </div>
+
+        <!-- Tier Level -->
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Tier Level (Hierarchy Weight)</label>
+          <input type="number" name="tier_level" value="{% if is_edit %}{{ plan.tier_level }}{% else %}20{% endif %}" class="sa-form-input" style="width: 100%; border-radius: 8px;" />
+          <small style="color: var(--sa-text-muted);">Higher numbers represent higher-level tiers.</small>
+        </div>
+
+        <!-- Monthly Price -->
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Monthly Price (₹)</label>
+          <input type="number" step="0.01" name="price_monthly" value="{% if is_edit %}{{ plan.price_monthly }}{% else %}0.00{% endif %}" class="sa-form-input" style="width: 100%; border-radius: 8px;" required />
+        </div>
+
+        <!-- Annual Price -->
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Annual Price (₹)</label>
+          <input type="number" step="0.01" name="price_annual" value="{% if is_edit %}{{ plan.price_annual }}{% else %}0.00{% endif %}" class="sa-form-input" style="width: 100%; border-radius: 8px;" required />
+        </div>
+
+        <!-- Trial Days -->
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Trial Period (Days)</label>
+          <input type="number" name="trial_days" value="{% if is_edit %}{{ plan.trial_days }}{% else %}14{% endif %}" class="sa-form-input" style="width: 100%; border-radius: 8px;" />
+        </div>
+
+        <!-- Checkboxes -->
+        <div style="display: flex; align-items: center; gap: 20px; padding-top: 24px;">
+          <label style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">
+            <input type="checkbox" name="is_public" {% if not is_edit or plan.is_public %}checked{% endif %} />
+            <span>Publicly Visible</span>
+          </label>
+          <label style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">
+            <input type="checkbox" name="is_active" {% if not is_edit or plan.is_active %}checked{% endif %} />
+            <span>Active Tier</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Marketing Description</label>
+        <textarea name="description" rows="2" class="sa-form-input" placeholder="Summary of target clinics, scale, and high-level perks..." style="width: 100%; border-radius: 8px;">{% if is_edit %}{{ plan.description }}{% endif %}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ CORE RESOURCE CAPACITY QUOTAS ════ -->
+  <div class="sa-card" style="margin-bottom: 24px;">
+    <div class="sa-card-header">
+      <div class="sa-card-title">
+        <i class="fas fa-tachometer-alt" style="color: var(--sa-purple);"></i>
+        <span>Tier Resource Capacity Quotas</span>
+      </div>
+    </div>
+    <div style="padding: 24px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px;">
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Max Patients (Active Profiles)</label>
+          <input type="number" name="max_patients" value="{% if is_edit %}{{ plan.max_patients }}{% else %}250{% endif %}" class="sa-form-input" style="width: 100%; border-radius: 8px;" />
+          <small style="color: var(--sa-text-muted);">0 = Unlimited capacity</small>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Monthly Appointments</label>
+          <input type="number" name="max_appointments_monthly" value="{% if is_edit %}{{ plan.max_appointments_monthly }}{% else %}200{% endif %}" class="sa-form-input" style="width: 100%; border-radius: 8px;" />
+          <small style="color: var(--sa-text-muted);">Monthly reset limit</small>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Max Clinical Staff</label>
+          <input type="number" name="max_staff" value="{% if is_edit %}{{ plan.max_staff }}{% else %}5{% endif %}" class="sa-form-input" style="width: 100%; border-radius: 8px;" />
+          <small style="color: var(--sa-text-muted);">Doctors, therapists &amp; nurses</small>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">Media &amp; File Storage (MB)</label>
+          <input type="number" name="storage_mb" value="{% if is_edit %}{{ plan.storage_mb }}{% else %}1000{% endif %}" class="sa-form-input" style="width: 100%; border-radius: 8px;" />
+          <small style="color: var(--sa-text-muted);">Patient scans, reports, uploads</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ FEATURE ENTITLEMENTS MATRIX FOR THIS PLAN ════ -->
+  <div class="sa-card" style="margin-bottom: 24px;">
+    <div class="sa-card-header">
+      <div class="sa-card-title">
+        <i class="fas fa-cubes" style="color: var(--sa-purple);"></i>
+        <span>Included Feature Entitlements &amp; Access Policies</span>
+      </div>
+    </div>
+    <div class="sa-table-responsive">
+      <table class="sa-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Feature Name &amp; Code</th>
+            <th>Default Type</th>
+            <th>Access Level For This Plan</th>
+            <th>Custom Feature Limit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if is_edit %}
+            {% for row in feature_rows %}
+            {% with f=row.feature %}
+            <tr>
+              <td>
+                <span class="sa-badge" style="background: #f1f5f9; color: var(--sa-dark);">
+                  <i class="fas {{ f.category.icon|default:'fa-cube' }}"></i> {{ f.category.name }}
+                </span>
+              </td>
+              <td>
+                <strong>{{ f.name }}</strong>
+                <div><code style="font-size: 0.72rem; color: var(--sa-text-muted);">{{ f.code }}</code></div>
+              </td>
+              <td>
+                {% if f.is_paid %}
+                  <span class="sa-badge" style="background: #fef3c7; color: #b45309;">Paid</span>
+                {% else %}
+                  <span class="sa-badge" style="background: #dcfce7; color: #15803d;">Free Core</span>
+                {% endif %}
+              </td>
+              <td>
+                <select name="access_{{ f.code }}" class="sa-form-input" style="border-radius: 8px; font-weight: 600;">
+                  <option value="full" {% if row.access_type == 'full' %}selected{% endif %}>Full Access</option>
+                  <option value="limited" {% if row.access_type == 'limited' %}selected{% endif %}>Limited Access (Subject to Limit)</option>
+                  <option value="read_only" {% if row.access_type == 'read_only' %}selected{% endif %}>Read-Only Access</option>
+                  <option value="disabled" {% if row.access_type == 'disabled' %}selected{% endif %}>Disabled (Upgrade Required)</option>
+                </select>
+              </td>
+              <td>
+                <input type="number" name="limit_{{ f.code }}" value="{{ row.usage_limit }}" class="sa-form-input" style="width: 120px; border-radius: 8px;" />
+              </td>
+            </tr>
+            {% endwith %}
+            {% endfor %}
+          {% else %}
+            {% for f in features %}
+            <tr>
+              <td>
+                <span class="sa-badge" style="background: #f1f5f9; color: var(--sa-dark);">
+                  <i class="fas {{ f.category.icon|default:'fa-cube' }}"></i> {{ f.category.name }}
+                </span>
+              </td>
+              <td>
+                <strong>{{ f.name }}</strong>
+                <div><code style="font-size: 0.72rem; color: var(--sa-text-muted);">{{ f.code }}</code></div>
+              </td>
+              <td>
+                {% if f.is_paid %}
+                  <span class="sa-badge" style="background: #fef3c7; color: #b45309;">Paid</span>
+                {% else %}
+                  <span class="sa-badge" style="background: #dcfce7; color: #15803d;">Free Core</span>
+                {% endif %}
+              </td>
+              <td>
+                <select name="access_{{ f.code }}" class="sa-form-input" style="border-radius: 8px; font-weight: 600;">
+                  <option value="full" {% if not f.is_paid %}selected{% endif %}>Full Access</option>
+                  <option value="limited">Limited Access (Subject to Limit)</option>
+                  <option value="read_only">Read-Only Access</option>
+                  <option value="disabled" {% if f.is_paid %}selected{% endif %}>Disabled (Upgrade Required)</option>
+                </select>
+              </td>
+              <td>
+                <input type="number" name="limit_{{ f.code }}" value="{{ f.default_limit }}" class="sa-form-input" style="width: 120px; border-radius: 8px;" />
+              </td>
+            </tr>
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 40px;">
+    <a href="{% url 'super_admin_plans' %}" class="sa-btn sa-btn-secondary">Cancel</a>
+    <button type="submit" class="sa-btn sa-btn-primary" style="padding: 10px 24px; font-weight: 700;">
+      <i class="fas fa-save"></i> {% if is_edit %}Save Changes{% else %}Create Plan Tier{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}

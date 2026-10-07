@@ -171,7 +171,10 @@ class ClinicAdminTestSuite(BaseHospitalTestCase):
 
     def test_clinic_admin_add_appointment(self):
         """TC-CA-009: Clinic admin schedules an appointment for a patient."""
-        appt_date = (timezone.now() + timedelta(days=3)).strftime("%Y-%m-%d")
+        d = timezone.now().date() + timedelta(days=1)
+        while d.weekday() >= 5:
+            d += timedelta(days=1)
+        appt_date = d.strftime("%Y-%m-%d")
         payload = {
             "patient_id": self.patient.id,
             "service": "orthopedic",

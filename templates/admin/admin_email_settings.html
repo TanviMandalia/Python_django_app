@@ -1,0 +1,264 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Email SMTP Configuration — {{ hospital.name }}{% endblock %}
+{% block page_title %}Clinic Email &amp; SMTP Settings{% endblock %}
+{% block page_subtitle %}Manage dedicated outbound email server, sender identity, and test real mailbox delivery{% endblock %}
+
+{% block content %}
+<!-- ════ HEADER CARD ════ -->
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon" style="background: rgba(14, 165, 233, 0.15); color: #0284c7;">
+      <i class="fas fa-envelope-open-text"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>{{ hospital.name }} — Email &amp; SMTP Configuration</h2>
+      <p>Configure your clinic's real SMTP account so patient appointment emails, doctor messages, and receipts are delivered from your clinic's domain.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'admin_settings' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+      <i class="fas fa-arrow-left"></i> Clinic Settings
+    </a>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+  <!-- MAIN CONFIGURATION CARD -->
+  <div class="admin-card" style="margin: 0;">
+    <div style="margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--admin-border);">
+      <h3 style="font-size: 1.15rem; color: var(--admin-dark); margin: 0 0 6px 0; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-server" style="color: var(--admin-primary);"></i> Dedicated SMTP Sender Credentials
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--admin-text-sub); margin: 0;">
+        All credentials are encrypted at rest with military-grade AES encryption. Stored secrets are never displayed or logged in plain text.
+      </p>
+    </div>
+
+    <form method="POST" action="{% url 'admin_email_settings' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+        <div class="form-group">
+          <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
+            Account Display Label
+          </label>
+          <input type="text" name="name" class="form-control"
+                 value="{{ account.name|default:hospital.name|add:' Primary SMTP' }}"
+                 placeholder="e.g. Apex Health Primary Mailer" required>
+        </div>
+
+        <div class="form-group">
+          <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
+            Provider Profile
+          </label>
+          <select name="provider" class="form-control" id="providerSelect">
+            <option value="smtp" {% if not account or account.provider == 'smtp' %}selected{% endif %}>Custom SMTP Server</option>
+            <option value="gmail" {% if account.provider == 'gmail' %}selected{% endif %}>Google Workspace / Gmail (App Password)</option>
+            <option value="office365" {% if account.provider == 'office365' %}selected{% endif %}>Microsoft 365 / Outlook</option>
+            <option value="sendgrid" {% if account.provider == 'sendgrid' %}selected{% endif %}>SendGrid SMTP Relay</option>
+            <option value="ses" {% if account.provider == 'ses' %}selected{% endif %}>Amazon SES</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 18px;">
+        <div class="form-group">
+          <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
+            SMTP Host Server <span style="color:#ef4444;">*</span>
+          </label>
+          <input type="text" name="host" id="hostInput" class="form-control"
+                 value="{{ account.host|default:'' }}"
+                 placeholder="smtp.gmail.com / smtp.office365.com / mail.yourdomain.com" required>
+        </div>
+
+        <div class="form-group">
+          <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
+            Port <span style="color:#ef4444;">*</span>
+          </label>
+          <input type="number" name="port" id="portInput" class="form-control"
+                 value="{{ account.port|default:'587' }}"
+                 placeholder="587" required>
+        </div>
+      </div>
+
+      <!-- TLS / SSL TOGGLES -->
+      <div style="background: #f8fafc; border: 1px solid var(--admin-border); border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: flex; gap: 24px; align-items: center;">
+        <label style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.88rem; font-weight: 600; color: var(--admin-dark); cursor: pointer;">
+          <input type="checkbox" name="use_tls" id="useTls" {% if not account or account.use_tls %}checked{% endif %}>
+          <span>Enable STARTTLS (Port 587 recommended)</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.88rem; font-weight: 600; color: var(--admin-dark); cursor: pointer;">
+          <input type="checkbox" name="use_ssl" id="useSsl" {% if account.use_ssl %}checked{% endif %}>
+          <span>Enable SSL (Port 465)</span>
+        </label>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+        <div class="form-group">
+          <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
+            SMTP Username / Account Email <span style="color:#ef4444;">*</span>
+          </label>
+          <input type="text" name="username" class="form-control"
+                 value="{{ account.username|default:'' }}"
+                 placeholder="clinic.notifications@yourdomain.com" required>
+        </div>
+
+        <div class="form-group">
+          <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
+            SMTP Password / App Password
+            {% if has_password %}
+              <span class="badge" style="background:#10b981; color:#fff; font-size:0.72rem; padding: 2px 6px; border-radius: 4px; margin-left:6px;">Configured</span>
+            {% endif %}
+          </label>
+          <input type="password" name="password" class="form-control"
+                 placeholder="{% if has_password %}•••••••••••• (Leave blank to keep existing password){% else %}Enter SMTP password or App Password{% endif %}">
+          <small style="color: var(--admin-text-sub); font-size: 0.76rem; display: block; margin-top: 4px;">
+            For Gmail/Workspace accounts, use a dedicated 16-character App Password.
+          </small>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+        <div class="form-group">
+          <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
+            Authorized "From" Email Address <span style="color:#ef4444;">*</span>
+          </label>
+          <input type="email" name="from_email" class="form-control"
+                 value="{{ account.from_email|default:'' }}"
+                 placeholder="appointments@yourdomain.com" required>
+        </div>
+
+        <div class="form-group">
+          <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
+            Sender Display Name
+          </label>
+          <input type="text" name="from_name" class="form-control"
+                 value="{{ account.from_name|default:hospital.name }}"
+                 placeholder="e.g. Apex Health Clinic">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 24px;">
+        <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
+          Reply-To Email Address (Optional)
+        </label>
+        <input type="email" name="reply_to" class="form-control"
+               value="{{ account.reply_to|default:'' }}"
+               placeholder="support@yourdomain.com / doctor@yourdomain.com">
+        <small style="color: var(--admin-text-sub); font-size: 0.76rem; display: block; margin-top: 4px;">
+          Replies from patients will be directed to this address instead of the system notification mailbox.
+        </small>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <button type="submit" class="btn btn-primary" style="padding: 10px 24px; font-weight: 600;">
+          <i class="fas fa-save" style="margin-right: 6px;"></i> Save SMTP Configuration
+        </button>
+        {% if account %}
+          <span style="font-size: 0.82rem; color: #10b981; font-weight: 600;">
+            <i class="fas fa-check-circle"></i> Active Account Configured (Last updated {{ account.updated_at|date:"M d, Y H:i" }})
+          </span>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- SIDEBAR: REAL MAILBOX TEST & SECURITY INFO -->
+  <div>
+    <!-- TEST EMAIL CARD -->
+    <div class="admin-card" style="margin: 0 0 20px 0; border: 1px solid #bfdbfe; background: #eff6ff;">
+      <h3 style="font-size: 1.05rem; color: #1e40af; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-paper-plane" style="color: #2563eb;"></i> Live Mailbox Delivery Test
+      </h3>
+      <p style="font-size: 0.82rem; color: #3b82f6; margin-bottom: 14px;">
+        Dispatch a live test email directly through this configured SMTP connection to verify TLS handshakes, socket authentication, and mailbox delivery.
+      </p>
+
+      {% if not account or not has_password %}
+        <div style="background: #fff; border: 1px dashed #93c5fd; padding: 12px; border-radius: 8px; font-size: 0.82rem; color: #64748b; text-align: center;">
+          <i class="fas fa-info-circle"></i> Please configure and save your SMTP server credentials before sending a test email.
+        </div>
+      {% else %}
+        <form method="POST" action="{% url 'admin_email_settings' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="test">
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="font-size: 0.82rem; font-weight: 600; color: #1e3a8a; display: block; margin-bottom: 4px;">
+              Destination Recipient Mailbox:
+            </label>
+            <input type="email" name="test_recipient" class="form-control"
+                   placeholder="e.g. your-email@gmail.com" required
+                   style="background: #fff; border-color: #93c5fd;">
+          </div>
+          <button type="submit" class="btn btn-secondary" style="width: 100%; background: #2563eb; color: #fff; border: none; padding: 9px 16px; font-size: 0.88rem; font-weight: 600;">
+            <i class="fas fa-bolt" style="margin-right: 6px;"></i> Send Live Test Email
+          </button>
+        </form>
+      {% endif %}
+    </div>
+
+    <!-- SECURITY GUARANTEES CARD -->
+    <div class="admin-card" style="margin: 0; background: #fafafa;">
+      <h4 style="font-size: 0.95rem; color: var(--admin-dark); margin: 0 0 12px 0;">
+        <i class="fas fa-shield-alt" style="color: #10b981; margin-right: 6px;"></i> Security &amp; Tenant Isolation
+      </h4>
+      <ul style="margin: 0; padding-left: 20px; font-size: 0.82rem; color: var(--admin-text-sub); line-height: 1.6;">
+        <li><strong>Clinic Isolation:</strong> Your credentials are dedicated solely to <em>{{ hospital.name }}</em> and cannot be accessed or used by any other clinic.</li>
+        <li><strong>Role-Based Access:</strong> Staff and Clients are strictly blocked from viewing or modifying email configurations.</li>
+        <li><strong>Encryption at Rest:</strong> Passwords are encrypted with Fernet AES-128 and never stored in plain text.</li>
+        <li><strong>Authoritative From:</strong> Outgoing headers strictly enforce your configured clinic identity.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Dynamic host/port helper when selecting known provider templates
+  const providerSelect = document.getElementById('providerSelect');
+  const hostInput = document.getElementById('hostInput');
+  const portInput = document.getElementById('portInput');
+  const useTls = document.getElementById('useTls');
+  const useSsl = document.getElementById('useSsl');
+
+  providerSelect.addEventListener('change', function() {
+    if (this.value === 'gmail') {
+      hostInput.value = 'smtp.gmail.com';
+      portInput.value = '587';
+      useTls.checked = true;
+      useSsl.checked = false;
+    } else if (this.value === 'office365') {
+      hostInput.value = 'smtp.office365.com';
+      portInput.value = '587';
+      useTls.checked = true;
+      useSsl.checked = false;
+    } else if (this.value === 'sendgrid') {
+      hostInput.value = 'smtp.sendgrid.net';
+      portInput.value = '587';
+      useTls.checked = true;
+      useSsl.checked = false;
+    } else if (this.value === 'ses') {
+      hostInput.value = 'email-smtp.us-east-1.amazonaws.com';
+      portInput.value = '587';
+      useTls.checked = true;
+      useSsl.checked = false;
+    }
+  });
+
+  useSsl.addEventListener('change', function() {
+    if (this.checked) {
+      useTls.checked = false;
+      if (portInput.value === '587') portInput.value = '465';
+    }
+  });
+
+  useTls.addEventListener('change', function() {
+    if (this.checked) {
+      useSsl.checked = false;
+      if (portInput.value === '465') portInput.value = '587';
+    }
+  });
+</script>
+{% endblock %}

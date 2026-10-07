@@ -1,0 +1,111 @@
+{% extends "super_admin/base_super_admin.html" %}
+{% load static %}
+
+{% block title %}Super Admin — Platform Administrative Audit Trail{% endblock %}
+{% block page_title %}🛡️ Platform Administrative Audit Trail{% endblock %}
+{% block page_subtitle %}Immutable chronological ledger of plan modifications, clinic suspensions, feature overrides, and security events{% endblock %}
+
+{% block content %}
+<!-- ════ FILTERS ════ -->
+<div class="sa-card" style="margin-bottom: 20px; padding: 18px 24px;">
+  <form method="get" action="{% url 'super_admin_audit_logs' %}" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+    <div style="display: flex; gap: 12px; flex: 1; min-width: 280px; flex-wrap: wrap;">
+      <!-- Search Input -->
+      <div style="position: relative; flex: 1; min-width: 220px;">
+        <i class="fas fa-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--sa-text-muted);"></i>
+        <input type="text" name="q" value="{{ q }}" placeholder="Search action, user, clinic, entity..." class="sa-form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;" />
+      </div>
+
+      <!-- Action Filter -->
+      <select name="action" class="sa-form-input" style="width: auto; min-width: 170px; border-radius: 8px;">
+        <option value="">All Actions</option>
+        <option value="clinic.suspended" {% if action_filter == 'clinic.suspended' %}selected{% endif %}>clinic.suspended</option>
+        <option value="clinic.activated" {% if action_filter == 'clinic.activated' %}selected{% endif %}>clinic.activated</option>
+        <option value="plan.changed" {% if action_filter == 'plan.changed' %}selected{% endif %}>plan.changed</option>
+        <option value="trial.extended" {% if action_filter == 'trial.extended' %}selected{% endif %}>trial.extended</option>
+        <option value="feature.override.created" {% if action_filter == 'feature.override.created' %}selected{% endif %}>feature.override.created</option>
+        <option value="feature.override.removed" {% if action_filter == 'feature.override.removed' %}selected{% endif %}>feature.override.removed</option>
+        <option value="feature.global_status_changed" {% if action_filter == 'feature.global_status_changed' %}selected{% endif %}>feature.global_status_changed</option>
+      </select>
+
+      <!-- Clinic Filter -->
+      <select name="hospital_id" class="sa-form-input" style="width: auto; min-width: 170px; border-radius: 8px;">
+        <option value="">All Clinics</option>
+        {% for h in hospitals %}
+        <option value="{{ h.id }}" {% if hospital_id == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <button type="submit" class="sa-btn sa-btn-primary sa-btn-sm">
+        <i class="fas fa-filter"></i> Filter Logs
+      </button>
+      {% if q or action_filter or hospital_id %}
+      <a href="{% url 'super_admin_audit_logs' %}" class="sa-btn sa-btn-secondary sa-btn-sm" title="Clear Filters">
+        <i class="fas fa-times"></i> Clear
+      </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- ════ AUDIT LOGS TABLE ════ -->
+<div class="sa-card">
+  <div class="sa-card-header">
+    <div class="sa-card-title">
+      <i class="fas fa-shield-alt" style="color: var(--sa-purple);"></i>
+      <span>Audit Trail Records ({{ total_count }})</span>
+    </div>
+  </div>
+  <div class="sa-table-responsive">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Action Type</th>
+          <th>Actor (Super Admin)</th>
+          <th>Affected Clinic</th>
+          <th>Entity</th>
+          <th>Metadata &amp; Parameters</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in logs %}
+        <tr>
+          <td style="white-space: nowrap; font-size: 0.82rem; font-weight: 500;">
+            {{ a.created_at|date:"d M Y, H:i:s" }}
+          </td>
+          <td>
+            <span class="sa-badge" style="background: #f1f5f9; color: var(--sa-dark); font-family: monospace; font-size: 0.78rem;">
+              {{ a.action }}
+            </span>
+          </td>
+          <td>
+            <div style="font-weight: 600; color: var(--sa-dark);">{{ a.actor.username|default:"System Engine" }}</div>
+            <div style="font-size: 0.72rem; color: var(--sa-text-muted);">{{ a.actor.email|default:"" }}</div>
+          </td>
+          <td>
+            {% if a.hospital %}
+              <a href="{% url 'super_admin_clinic_detail' a.hospital.id %}" style="font-weight: 600; color: var(--sa-purple); text-decoration: none;">
+                {{ a.hospital.name }}
+              </a>
+            {% else %}
+              <span style="color: var(--sa-text-muted);">Platform-Wide</span>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-size: 0.82rem;">{{ a.entity_type }} #{{ a.entity_id }}</span>
+          </td>
+          <td style="max-width: 320px; font-size: 0.78rem; color: var(--sa-text-muted); font-family: monospace;">
+            {{ a.metadata }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align: center; color: var(--sa-text-muted); padding: 40px;">No audit events found matching the specified filters.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

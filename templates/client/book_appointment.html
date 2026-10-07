@@ -1,7 +1,7 @@
 {% extends "client/base_client.html" %}
 {% load static %}
 
-{% block title %}Book Appointment{% endblock %}
+{% block title %}Book Appointment - Dr. Dhvani Patalia Physio Rehab{% endblock %}
 {% block page_title %}Schedule Appointment{% endblock %}
 {% block breadcrumb %}Book Session{% endblock %}
 
@@ -12,6 +12,84 @@
 {% endblock %}
 
 {% block content %}
+<style>
+  .slot-picker-container {
+    margin-top: 10px;
+    margin-bottom: 20px;
+  }
+  .shift-label {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--client-dark, #2C2C2C);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .slot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .slot-btn {
+    padding: 10px 8px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e293b;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    user-select: none;
+    display: block;
+    width: 100%;
+  }
+  .slot-btn:hover:not(.disabled) {
+    border-color: #F5C518;
+    background: #fffdf5;
+  }
+  .slot-btn.selected {
+    background: #F5C518 !important;
+    border-color: #e6b800 !important;
+    color: #2C2C2C !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(245, 197, 24, 0.4);
+  }
+  .slot-btn.disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+  .shift-tag-badge {
+    background: #f1f5f9;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #475569;
+  }
+  .day-notice-box {
+    display: none;
+    background: #fffbeb;
+    border: 1px solid #fef08a;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    color: #854d0e;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 480px) {
+    .slot-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>
+
 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:24px;">
   <!-- LEFT: Booking Form -->
   <div class="client-card">
@@ -19,65 +97,129 @@
       <div class="client-card-title">
         <i class="fas fa-calendar-plus"></i> Appointment Reservation
       </div>
-      <span class="client-badge client-badge-warning"><i class="fas fa-clock"></i> Quick Booking</span>
+      <span class="client-badge client-badge-warning"><i class="fas fa-clock"></i> Dr. Dhvani Patalia Physio Rehab</span>
     </div>
     <div class="client-card-body">
-      <p style="color:var(--client-text-muted); font-size:0.88rem; margin-bottom:22px; line-height:1.45;">
-        Select your therapy service, preferred clinical date, and convenient time slot to schedule with Dr. Dhvani Patalia.
+      <p style="color:var(--client-text-muted); font-size:0.88rem; margin-bottom:20px; line-height:1.45;">
+        Select your required physical therapy service, clinical consultation date, and an available shift time slot.
       </p>
 
-      <form action="{% url 'book_appointment' %}" method="POST">
+      {% if messages %}
+        {% for message in messages %}
+          <div style="padding: 12px 16px; border-radius: 8px; margin-bottom: 18px; font-size: 0.9rem; {% if message.tags == 'error' %}background:#fee2e2; border:1px solid #f87171; color:#991b1b;{% else %}background:#ecfdf5; border:1px solid #6ee7b7; color:#065f46;{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form action="{% url 'book_appointment' %}" method="POST" id="appointmentBookingForm">
         {% csrf_token %}
 
+        <!-- 1. Therapy Service -->
         <div class="client-form-group">
           <label class="client-label">
             Therapy Service <span style="color:var(--client-danger);">*</span>
           </label>
           <select name="service" class="client-select" required>
             <option value="">-- Choose a Service --</option>
-            <option value="orthopedic">🦴 Orthopedic Therapy (Joint, Spine & Posture)</option>
-            <option value="neurological">🧠 Neurological Rehab (Stroke, Paralysis & Motor)</option>
-            <option value="sports">⚽ Sports Injury Rehabilitation & Conditioning</option>
-            <option value="pediatric">👶 Pediatric Physiotherapy & Motor Skills</option>
-            <option value="womens">👩 Women's Health & Post-Natal Care</option>
-            <option value="home_visit">🏠 Specialized Home Care Visit</option>
+            <option value="orthopedic" {% if selected_service == 'orthopedic' %}selected{% endif %}>🦴 Orthopedic Therapy (Joint, Spine &amp; Posture)</option>
+            <option value="neurological" {% if selected_service == 'neurological' %}selected{% endif %}>🧠 Neurological Rehab (Stroke, Paralysis &amp; Motor)</option>
+            <option value="sports" {% if selected_service == 'sports' %}selected{% endif %}>⚽ Sports Injury Rehabilitation &amp; Conditioning</option>
+            <option value="pediatric" {% if selected_service == 'pediatric' %}selected{% endif %}>👶 Pediatric Physiotherapy &amp; Motor Skills</option>
+            <option value="womens" {% if selected_service == 'womens' %}selected{% endif %}>👩 Women's Health &amp; Post-Natal Care</option>
+            <option value="home_visit" {% if selected_service == 'home_visit' %}selected{% endif %}>🏠 Specialized Home Care Visit</option>
           </select>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;">
-          <div>
-            <label class="client-label">
-              Preferred Date <span style="color:var(--client-danger);">*</span>
-            </label>
-            <input type="date" name="date" class="client-input" required min="{{ today }}" />
+        <!-- 2. Date Selection -->
+        <div class="client-form-group">
+          <label class="client-label">
+            Preferred Date <span style="color:var(--client-danger);">*</span>
+            <small style="color:#64748b; font-weight:normal; margin-left:6px;">(Mon – Fri: Standard slots | Sun: By Appointment)</small>
+          </label>
+          <input type="date" name="date" id="bookingDateInput" class="client-input" required 
+                 min="{% now 'Y-m-d' %}" value="{% if selected_date %}{{ selected_date }}{% else %}{% now 'Y-m-d' %}{% endif %}" onchange="handleDateChange()" />
+        </div>
+
+        <!-- Day Notice Warning -->
+        <div id="dayNoticeBox" class="day-notice-box">
+          <i class="fas fa-info-circle"></i> <span id="dayNoticeText"></span>
+        </div>
+
+        <!-- 3. Shifts & Available Slots -->
+        <div class="slot-picker-container">
+          <label class="client-label" style="margin-bottom: 8px;">
+            Select Appointment Slot <span style="color:var(--client-danger);">*</span>
+          </label>
+
+          <!-- Hidden Input bound to POST -->
+          <input type="hidden" name="time" id="selectedTimeInput" value="{{ selected_time|default:'' }}" required />
+
+          <!-- Fallback Native Select for Accessibility & direct validation -->
+          <div style="margin-bottom: 14px;">
+            <select id="accessibleTimeSelect" class="client-select" onchange="syncFromSelect(this.value)">
+              <option value="">-- Select Time Slot --</option>
+              <optgroup label="🌅 Morning Shift (10:00 AM – 1:00 PM)">
+                <option value="10:00">10:00 AM</option>
+                <option value="10:30">10:30 AM</option>
+                <option value="11:00">11:00 AM</option>
+                <option value="11:30">11:30 AM</option>
+                <option value="12:00">12:00 PM</option>
+                <option value="12:30">12:30 PM</option>
+              </optgroup>
+              <optgroup label="🌇 Evening Shift (4:00 PM – 8:00 PM)">
+                <option value="16:00">04:00 PM</option>
+                <option value="16:30">04:30 PM</option>
+                <option value="17:00">05:00 PM</option>
+                <option value="17:30">05:30 PM</option>
+                <option value="18:00">06:00 PM</option>
+                <option value="18:30">06:30 PM</option>
+                <option value="19:00">07:00 PM</option>
+                <option value="19:30">07:30 PM</option>
+              </optgroup>
+            </select>
           </div>
 
-          <div>
-            <label class="client-label">
-              Preferred Time Slot <span style="color:var(--client-danger);">*</span>
-            </label>
-            <select name="time" class="client-select" required>
-              <option value="">-- Choose Slot --</option>
-              <option value="09:00">🌅 09:00 AM</option>
-              <option value="10:00">☀️ 10:00 AM</option>
-              <option value="11:00">☀️ 11:00 AM</option>
-              <option value="12:00">🌞 12:00 PM</option>
-              <option value="14:00">🌤️ 02:00 PM</option>
-              <option value="15:00">🌤️ 03:00 PM</option>
-              <option value="16:00">🌇 04:00 PM</option>
-              <option value="17:00">🌆 05:00 PM</option>
-            </select>
+          <!-- Interactive Slot Buttons: Morning Shift -->
+          <div class="shift-label">
+            <span>🌅 Morning Shift</span>
+            <span class="shift-tag-badge">10:00 AM – 1:00 PM</span>
+          </div>
+          <div class="slot-grid" id="morningSlotGrid">
+            <button type="button" class="slot-btn" data-slot="10:00" onclick="chooseSlot('10:00', this)">10:00 AM</button>
+            <button type="button" class="slot-btn" data-slot="10:30" onclick="chooseSlot('10:30', this)">10:30 AM</button>
+            <button type="button" class="slot-btn" data-slot="11:00" onclick="chooseSlot('11:00', this)">11:00 AM</button>
+            <button type="button" class="slot-btn" data-slot="11:30" onclick="chooseSlot('11:30', this)">11:30 AM</button>
+            <button type="button" class="slot-btn" data-slot="12:00" onclick="chooseSlot('12:00', this)">12:00 PM</button>
+            <button type="button" class="slot-btn" data-slot="12:30" onclick="chooseSlot('12:30', this)">12:30 PM</button>
+          </div>
+
+          <!-- Interactive Slot Buttons: Evening Shift -->
+          <div class="shift-label" style="margin-top: 14px;">
+            <span>🌇 Evening Shift</span>
+            <span class="shift-tag-badge">4:00 PM – 8:00 PM</span>
+          </div>
+          <div class="slot-grid" id="eveningSlotGrid">
+            <button type="button" class="slot-btn" data-slot="16:00" onclick="chooseSlot('16:00', this)">04:00 PM</button>
+            <button type="button" class="slot-btn" data-slot="16:30" onclick="chooseSlot('16:30', this)">04:30 PM</button>
+            <button type="button" class="slot-btn" data-slot="17:00" onclick="chooseSlot('17:00', this)">05:00 PM</button>
+            <button type="button" class="slot-btn" data-slot="17:30" onclick="chooseSlot('17:30', this)">05:30 PM</button>
+            <button type="button" class="slot-btn" data-slot="18:00" onclick="chooseSlot('18:00', this)">06:00 PM</button>
+            <button type="button" class="slot-btn" data-slot="18:30" onclick="chooseSlot('18:30', this)">06:30 PM</button>
+            <button type="button" class="slot-btn" data-slot="19:00" onclick="chooseSlot('19:00', this)">07:00 PM</button>
+            <button type="button" class="slot-btn" data-slot="19:30" onclick="chooseSlot('19:30', this)">07:30 PM</button>
           </div>
         </div>
 
+        <!-- 4. Symptoms & Notes -->
         <div class="client-form-group">
           <label class="client-label">
             Symptoms &amp; Clinical Notes <small style="color:var(--client-text-muted); font-weight:normal;">(Optional)</small>
           </label>
-          <textarea name="notes" class="client-textarea" placeholder="Describe symptoms, affected joints, duration of pain, or specific requirements..."></textarea>
+          <textarea name="notes" class="client-textarea" placeholder="Describe pain symptoms, affected joints, duration, or previous diagnosis...">{{ notes|default:'' }}</textarea>
         </div>
 
-        <button type="submit" class="client-btn client-btn-primary" style="width:max-content; max-width:100%; padding:14px 28px; font-size:0.95rem; font-weight:700;">
+        <button type="submit" class="client-btn client-btn-primary" style="width:100%; justify-content:center; padding:14px 28px; font-size:1rem; font-weight:700;">
           <i class="fas fa-calendar-check"></i> Confirm Appointment Reservation
         </button>
       </form>
@@ -86,39 +228,34 @@
 
   <!-- RIGHT: Information & Clinic Guidance -->
   <div style="display:flex; flex-direction:column; gap:24px;">
-    <!-- Available Services Overview -->
+    <!-- Working Hours Card -->
     <div class="client-card" style="margin-bottom:0;">
       <div class="client-card-header">
         <div class="client-card-title">
-          <i class="fas fa-stethoscope"></i> Clinical Specialties
+          <i class="fas fa-clock"></i> Clinical Hours &amp; Shifts
         </div>
       </div>
       <div class="client-card-body" style="padding:16px 20px;">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-          <div style="display:flex; align-items:center; gap:10px; padding:10px; background:#f9fafb; border-radius:10px; border:1px solid var(--client-border);">
-            <i class="fas fa-bone" style="color:var(--client-primary-dark);"></i>
-            <span style="font-size:0.82rem; font-weight:600; color:var(--client-dark);">Orthopedic</span>
+        <div style="display:flex; flex-direction:column; gap:10px; font-size:0.86rem;">
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f1f5f9;">
+            <span style="font-weight:700;">Mon – Fri (Morning):</span>
+            <span style="color:#0284c7; font-weight:600;">10:00 AM – 1:00 PM</span>
           </div>
-          <div style="display:flex; align-items:center; gap:10px; padding:10px; background:#f9fafb; border-radius:10px; border:1px solid var(--client-border);">
-            <i class="fas fa-brain" style="color:var(--client-primary-dark);"></i>
-            <span style="font-size:0.82rem; font-weight:600; color:var(--client-dark);">Neurological</span>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f1f5f9;">
+            <span style="font-weight:700;">Mon – Fri (Evening):</span>
+            <span style="color:#0284c7; font-weight:600;">4:00 PM – 8:00 PM</span>
           </div>
-          <div style="display:flex; align-items:center; gap:10px; padding:10px; background:#f9fafb; border-radius:10px; border:1px solid var(--client-border);">
-            <i class="fas fa-running" style="color:var(--client-primary-dark);"></i>
-            <span style="font-size:0.82rem; font-weight:600; color:var(--client-dark);">Sports Rehab</span>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f1f5f9;">
+            <span style="font-weight:700;">Saturday:</span>
+            <span style="color:#94a3b8;">Closed</span>
           </div>
-          <div style="display:flex; align-items:center; gap:10px; padding:10px; background:#f9fafb; border-radius:10px; border:1px solid var(--client-border);">
-            <i class="fas fa-baby" style="color:var(--client-primary-dark);"></i>
-            <span style="font-size:0.82rem; font-weight:600; color:var(--client-dark);">Pediatric</span>
+          <div style="display:flex; justify-content:space-between; padding:8px 0;">
+            <span style="font-weight:700;">Sunday:</span>
+            <span style="color:#d49e00; font-weight:600;">By Appointment Only</span>
           </div>
-          <div style="display:flex; align-items:center; gap:10px; padding:10px; background:#f9fafb; border-radius:10px; border:1px solid var(--client-border);">
-            <i class="fas fa-female" style="color:var(--client-primary-dark);"></i>
-            <span style="font-size:0.82rem; font-weight:600; color:var(--client-dark);">Women's Care</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:10px; padding:10px; background:#f9fafb; border-radius:10px; border:1px solid var(--client-border);">
-            <i class="fas fa-home" style="color:var(--client-primary-dark);"></i>
-            <span style="font-size:0.82rem; font-weight:600; color:var(--client-dark);">Home Visit</span>
-          </div>
+        </div>
+        <div style="margin-top:14px; padding-top:12px; border-top:1px solid #e2e8f0; font-size:0.82rem; color:#64748b;">
+          <i class="fab fa-whatsapp" style="color:#10b981;"></i> For Sunday sessions or immediate queries, call / WhatsApp: <a href="tel:9409510501" style="font-weight:700; color:#1e293b;">94095 10501</a>
         </div>
       </div>
     </div>
@@ -134,23 +271,78 @@
         <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px; font-size:0.84rem; color:var(--client-text);">
           <li style="display:flex; align-items:flex-start; gap:10px;">
             <i class="fas fa-check-circle" style="color:var(--client-success); margin-top:2px;"></i>
-            <span>Arrive 10 minutes prior to your scheduled time for initial assessment.</span>
+            <span>Arrive 10 minutes prior to your scheduled slot for registration.</span>
           </li>
           <li style="display:flex; align-items:flex-start; gap:10px;">
             <i class="fas fa-check-circle" style="color:var(--client-success); margin-top:2px;"></i>
-            <span>Wear comfortable, loose clothing facilitating joint and muscle examination.</span>
+            <span>Wear comfortable, loose clothing to facilitate musculoskeletal evaluation.</span>
           </li>
           <li style="display:flex; align-items:flex-start; gap:10px;">
             <i class="fas fa-check-circle" style="color:var(--client-success); margin-top:2px;"></i>
-            <span>Bring past diagnostic reports, MRI/X-ray films, or surgical summaries.</span>
-          </li>
-          <li style="display:flex; align-items:flex-start; gap:10px;">
-            <i class="fas fa-check-circle" style="color:var(--client-success); margin-top:2px;"></i>
-            <span>Stay adequately hydrated before your scheduled manual therapy sessions.</span>
+            <span>Bring past diagnostic reports, MRI/X-ray films, or surgical notes.</span>
           </li>
         </ul>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  function chooseSlot(slotCode, btnElement) {
+    document.getElementById('selectedTimeInput').value = slotCode;
+    const selectEl = document.getElementById('accessibleTimeSelect');
+    if (selectEl) selectEl.value = slotCode;
+
+    document.querySelectorAll('.slot-btn').forEach(btn => btn.classList.remove('selected'));
+    if (btnElement) {
+      btnElement.classList.add('selected');
+    }
+  }
+
+  function syncFromSelect(slotCode) {
+    document.getElementById('selectedTimeInput').value = slotCode;
+    document.querySelectorAll('.slot-btn').forEach(btn => {
+      if (btn.getAttribute('data-slot') === slotCode) {
+        btn.classList.add('selected');
+      } else {
+        btn.classList.remove('selected');
+      }
+    });
+  }
+
+  function handleDateChange() {
+    const input = document.getElementById('bookingDateInput');
+    if (!input || !input.value) return;
+
+    // Parse date in YYYY-MM-DD
+    const parts = input.value.split('-');
+    if (parts.length !== 3) return;
+    const dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    const dayOfWeek = dateObj.getDay(); // 0 is Sunday, 6 is Saturday
+
+    const noticeBox = document.getElementById('dayNoticeBox');
+    const noticeText = document.getElementById('dayNoticeText');
+
+    if (dayOfWeek === 0) {
+      // Sunday
+      noticeBox.style.display = 'block';
+      noticeText.innerHTML = '<strong>Sunday is By Appointment only.</strong> Public standard slots are restricted. For Sunday appointments, please contact the clinic directly at <a href="tel:9409510501" style="font-weight:700;">94095 10501</a>.';
+    } else if (dayOfWeek === 6) {
+      // Saturday
+      noticeBox.style.display = 'block';
+      noticeText.innerHTML = '<strong>The clinic is closed on Saturdays.</strong> Regular working days are Monday through Friday (10:00 AM – 1:00 PM & 4:00 PM – 8:00 PM).';
+    } else {
+      noticeBox.style.display = 'none';
+    }
+  }
+
+  // Initialize on load
+  document.addEventListener('DOMContentLoaded', function() {
+    handleDateChange();
+    const initialSlot = document.getElementById('selectedTimeInput').value;
+    if (initialSlot) {
+      syncFromSelect(initialSlot);
+    }
+  });
+</script>
 {% endblock %}

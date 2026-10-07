@@ -1,0 +1,183 @@
+{% extends "super_admin/base_super_admin.html" %}
+{% load static %}
+
+{% block title %}Super Admin — Feature Catalog &amp; Global Kill Switch{% endblock %}
+{% block page_title %}📦 Feature Catalog &amp; Emergency Controls{% endblock %}
+{% block page_subtitle %}Centrally oversee all 16 platform modules, global operational statuses, and emergency kill switches{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'super_admin_access_matrix' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+  <i class="fas fa-table-cells"></i> Access Matrix
+</a>
+<a href="{% url 'super_admin_entitlement_debug' %}" class="sa-btn sa-btn-primary sa-btn-sm">
+  <i class="fas fa-search-dollar"></i> Entitlement Debugger
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- ════ SUMMARY CARDS ════ -->
+<div class="sa-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+  <div class="sa-stat-card">
+    <div class="sa-stat-icon purple"><i class="fas fa-cubes"></i></div>
+    <div class="sa-stat-info">
+      <h3>{{ total_features }}</h3>
+      <p>Catalog Features</p>
+    </div>
+  </div>
+  <div class="sa-stat-card">
+    <div class="sa-stat-icon gold"><i class="fas fa-crown"></i></div>
+    <div class="sa-stat-info">
+      <h3>{{ paid_features }}</h3>
+      <p>Paid / Premium</p>
+    </div>
+  </div>
+  <div class="sa-stat-card">
+    <div class="sa-stat-icon green"><i class="fas fa-check-circle"></i></div>
+    <div class="sa-stat-info">
+      <h3>{{ free_features }}</h3>
+      <p>Free Core</p>
+    </div>
+  </div>
+  <div class="sa-stat-card">
+    <div class="sa-stat-icon {% if impaired_count %}red{% else %}teal{% endif %}"><i class="fas fa-tools"></i></div>
+    <div class="sa-stat-info">
+      <h3>{{ impaired_count }}</h3>
+      <p>Impaired / Maintenance</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════ CATEGORIZED FEATURE CATALOG ════ -->
+{% for cat in categories %}
+<div class="sa-card" style="margin-bottom: 24px;">
+  <div class="sa-card-header" style="background: #faf5ff;">
+    <div class="sa-card-title" style="color: #6b21a8;">
+      <i class="fas {{ cat.icon|default:'fa-cube' }}"></i>
+      <span>{{ cat.name }} ({{ cat.features.count }})</span>
+    </div>
+    <small style="color: var(--sa-text-muted);">{{ cat.description }}</small>
+  </div>
+  <div class="sa-table-responsive">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Feature Name &amp; Code</th>
+          <th>Description</th>
+          <th>Pricing Tier Type</th>
+          <th>Usage Limits</th>
+          <th>Global Status (Platform-Wide)</th>
+          <th style="text-align: right;">Emergency Controls</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in cat.features.all %}
+        <tr>
+          <td>
+            <div style="font-weight: 700; color: var(--sa-dark); font-size: 0.95rem;">{{ f.name }}</div>
+            <code style="font-size: 0.74rem; color: var(--sa-text-muted);">{{ f.code }}</code>
+          </td>
+          <td style="max-width: 320px; font-size: 0.84rem; color: var(--sa-text-muted);">
+            {{ f.description }}
+          </td>
+          <td>
+            {% if f.is_paid %}
+              <span class="sa-badge" style="background: #fef3c7; color: #b45309; font-weight: 700;">
+                <i class="fas fa-crown"></i> Paid
+              </span>
+            {% else %}
+              <span class="sa-badge" style="background: #dcfce7; color: #15803d; font-weight: 700;">
+                <i class="fas fa-check"></i> Free Core
+              </span>
+            {% endif %}
+          </td>
+          <td>
+            {% if f.has_usage_limit %}
+              <strong>{{ f.default_limit }}</strong> {{ f.limit_unit }}
+            {% else %}
+              <span style="color: #10b981; font-weight: 600;">Unlimited</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if f.global_status == 'available' %}
+              <span class="sa-badge sa-badge-active"><i class="fas fa-check-circle"></i> Available</span>
+            {% elif f.global_status == 'maintenance' %}
+              <span class="sa-badge" style="background: #fed7aa; color: #9a3412;"><i class="fas fa-tools"></i> Maintenance</span>
+            {% else %}
+              <span class="sa-badge sa-badge-failed"><i class="fas fa-ban"></i> Disabled Globally</span>
+            {% endif %}
+            {% if f.maintenance_message and f.global_status != 'available' %}
+              <div style="font-size: 0.72rem; color: var(--sa-text-muted); margin-top: 2px;">{{ f.maintenance_message|truncatechars:35 }}</div>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <button type="button" class="sa-btn sa-btn-secondary sa-btn-sm" onclick="openGlobalStatusModal('{{ f.code|escapejs }}', '{{ f.name|escapejs }}', '{{ f.global_status|escapejs }}', '{{ f.maintenance_message|default:''|escapejs }}')">
+              <i class="fas fa-power-off"></i> Toggle
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align: center; color: var(--sa-text-muted);">No features in this category.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endfor %}
+
+<!-- ════ GLOBAL STATUS MODAL ════ -->
+<div id="globalStatusModal" class="sa-modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: #fff; border-radius: 12px; width: 90%; max-width: 480px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+    <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--sa-purple); margin-bottom: 8px;">
+      <i class="fas fa-power-off"></i> Global Feature Operational Status
+    </h3>
+    <p style="color: var(--sa-text-muted); font-size: 0.88rem; margin-bottom: 16px;">
+      Modifying global status for: <strong id="globalFeatureName" style="color: var(--sa-dark);"></strong>. This immediately impacts all clinics across the entire multi-tenant platform.
+    </p>
+
+    <form id="globalStatusForm" method="post" action="">
+      {% csrf_token %}
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px;">Operational Status</label>
+        <select name="global_status" id="globalStatusSelect" class="sa-form-input" style="width: 100%; border-radius: 8px;" onchange="toggleMaintenanceField()">
+          <option value="available">Available (Normal Operations)</option>
+          <option value="maintenance">Maintenance Mode (Temporary Scheduled Maintenance)</option>
+          <option value="disabled">Disabled Globally (Emergency Kill Switch)</option>
+        </select>
+      </div>
+
+      <div id="maintenanceMsgField" style="margin-bottom: 14px; display: none;">
+        <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px;">User-Facing Maintenance Notice</label>
+        <textarea name="maintenance_message" id="globalMaintenanceMessage" rows="2" class="sa-form-input" placeholder="This feature is temporarily unavailable due to scheduled platform maintenance..." style="width: 100%; border-radius: 8px;"></textarea>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px;">Administrative Reason (Required for Audit Log)</label>
+        <textarea name="reason" rows="2" class="sa-form-input" required placeholder="E.g. Third-party provider outage, database migration, vulnerability remediation..." style="width: 100%; border-radius: 8px;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="sa-btn sa-btn-secondary" onclick="closeGlobalStatusModal()">Cancel</button>
+        <button type="submit" class="sa-btn sa-btn-primary">Apply Global Status</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openGlobalStatusModal(code, name, status, message) {
+  document.getElementById('globalFeatureName').textContent = name;
+  document.getElementById('globalStatusSelect').value = status;
+  document.getElementById('globalMaintenanceMessage').value = message;
+  document.getElementById('globalStatusForm').action = '/super-admin/features/' + code + '/global-status/';
+  toggleMaintenanceField();
+  document.getElementById('globalStatusModal').style.display = 'flex';
+}
+function closeGlobalStatusModal() {
+  document.getElementById('globalStatusModal').style.display = 'none';
+}
+function toggleMaintenanceField() {
+  var s = document.getElementById('globalStatusSelect').value;
+  document.getElementById('maintenanceMsgField').style.display = (s === 'maintenance' || s === 'disabled') ? 'block' : 'none';
+}
+</script>
+{% endblock %}

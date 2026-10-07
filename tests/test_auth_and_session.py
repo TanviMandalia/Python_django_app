@@ -270,3 +270,36 @@ class AuthenticationAndSessionTests(BaseHospitalTestCase):
         }, follow=False)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("reset_password"))
+
+    def test_login_page_renders_with_premium_ui_and_accessibility(self):
+        """TC-AUTH-021: Redesigned login page contains semantic markup, accessible controls, and branding."""
+        response = self.client.get(reverse("login"))
+        self.assertEqual(response.status_code, 200)
+
+        # Branding
+        self.assertContains(response, "Dr. Dhvani Patalia")
+        self.assertContains(response, "Physio Rehab")
+        self.assertContains(response, "Dhvani_Patalia.jpeg")
+
+        # Semantic Form & Fields
+        self.assertContains(response, 'id="loginForm"')
+        self.assertContains(response, 'for="username"')
+        self.assertContains(response, 'id="username"')
+        self.assertContains(response, 'for="password"')
+        self.assertContains(response, 'id="password"')
+
+        # Accessibility and Show/Hide Password Toggle
+        self.assertContains(response, 'id="togglePassword"')
+        self.assertContains(response, 'aria-label="Show password"')
+        self.assertContains(response, 'aria-pressed="false"')
+
+        # Utility Links
+        self.assertContains(response, 'name="remember_me"')
+        self.assertContains(response, reverse("request_otp"))
+        self.assertContains(response, reverse("register"))
+        self.assertContains(response, reverse("home"))
+
+        # Submit button
+        self.assertContains(response, 'id="submitBtn"')
+        self.assertContains(response, "Sign In to Account")
+

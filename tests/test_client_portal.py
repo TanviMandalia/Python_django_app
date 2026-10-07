@@ -127,39 +127,34 @@ class ClientPortalTestSuite(BaseHospitalTestCase):
 
     # ── 3. Payments & Invoicing Isolation ─────────────────────────
 
-    def test_client_record_cash_payment(self):
-        """TC-CP-007: Patient records an in-person cash payment."""
+    def test_client_cannot_record_cash_payment(self):
+        """TC-CP-007: Patient cannot record an in-person cash payment directly (must be 403 Forbidden)."""
         payload = {
             "amount": "650.00",
             "notes": "Paid at reception counter",
         }
         response = self.client.post(reverse("record_cash_payment"), payload, follow=False)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
+        # Ensure no payment record was created by patient
         record = PaymentRecord.objects.filter(
             patient=self.patient_a, method="cash"
         ).first()
-        self.assertIsNotNone(record)
-        self.assertEqual(record.status, "paid")
-        self.assertEqual(record.amount, Decimal("650.00"))
-        self.assertTrue(record.transaction_id.startswith("CASH-"))
-        self.assertEqual(record.hospital, self.hospital)
+        self.assertIsNone(record)
 
-    def test_client_record_upi_payment(self):
-        """TC-CP-008: Patient records a UPI payment with reference ID."""
+    def test_client_cannot_record_upi_payment(self):
+        """TC-CP-008: Patient cannot directly enter a UPI payment record (must be 403 Forbidden)."""
         payload = {
             "amount": "800.00",
             "transaction_id": "UPI-REF-9988776655",
         }
         response = self.client.post(reverse("record_upi_payment"), payload, follow=False)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
         record = PaymentRecord.objects.filter(
             patient=self.patient_a, transaction_id="UPI-REF-9988776655"
         ).first()
-        self.assertIsNotNone(record)
-        self.assertEqual(record.status, "pending")
-        self.assertEqual(record.method, "upi")
+        self.assertIsNone(record)
 
     def test_client_cannot_see_other_patient_payments(self):
         """TC-CP-009: Patient A cannot see Patient B's financial receipts."""

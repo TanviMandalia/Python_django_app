@@ -64,10 +64,28 @@
 
       <div>
         <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
-          Time Slot <span style="color: var(--admin-danger);">*</span>
+          Time Slot (Clinic Shifts) <span style="color: var(--admin-danger);">*</span>
         </label>
-        <input type="text" name="time" value="{{ appt.time }}" required
-          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+        <select name="time" required style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          <optgroup label="Morning Shift (10:00 AM – 1:00 PM)">
+            <option value="10:00 AM" {% if appt.time == "10:00 AM" or appt.time == "10:00" %}selected{% endif %}>10:00 AM</option>
+            <option value="10:30 AM" {% if appt.time == "10:30 AM" or appt.time == "10:30" %}selected{% endif %}>10:30 AM</option>
+            <option value="11:00 AM" {% if appt.time == "11:00 AM" or appt.time == "11:00" %}selected{% endif %}>11:00 AM</option>
+            <option value="11:30 AM" {% if appt.time == "11:30 AM" or appt.time == "11:30" %}selected{% endif %}>11:30 AM</option>
+            <option value="12:00 PM" {% if appt.time == "12:00 PM" or appt.time == "12:00" %}selected{% endif %}>12:00 PM</option>
+            <option value="12:30 PM" {% if appt.time == "12:30 PM" or appt.time == "12:30" %}selected{% endif %}>12:30 PM</option>
+          </optgroup>
+          <optgroup label="Evening Shift (4:00 PM – 8:00 PM)">
+            <option value="04:00 PM" {% if appt.time == "04:00 PM" or appt.time == "16:00" or appt.time == "4:00 PM" %}selected{% endif %}>04:00 PM</option>
+            <option value="04:30 PM" {% if appt.time == "04:30 PM" or appt.time == "16:30" or appt.time == "4:30 PM" %}selected{% endif %}>04:30 PM</option>
+            <option value="05:00 PM" {% if appt.time == "05:00 PM" or appt.time == "17:00" or appt.time == "5:00 PM" %}selected{% endif %}>05:00 PM</option>
+            <option value="05:30 PM" {% if appt.time == "05:30 PM" or appt.time == "17:30" or appt.time == "5:30 PM" %}selected{% endif %}>05:30 PM</option>
+            <option value="06:00 PM" {% if appt.time == "06:00 PM" or appt.time == "18:00" or appt.time == "6:00 PM" %}selected{% endif %}>06:00 PM</option>
+            <option value="06:30 PM" {% if appt.time == "06:30 PM" or appt.time == "18:30" or appt.time == "6:30 PM" %}selected{% endif %}>06:30 PM</option>
+            <option value="07:00 PM" {% if appt.time == "07:00 PM" or appt.time == "19:00" or appt.time == "7:00 PM" %}selected{% endif %}>07:00 PM</option>
+            <option value="07:30 PM" {% if appt.time == "07:30 PM" or appt.time == "19:30" or appt.time == "7:30 PM" %}selected{% endif %}>07:30 PM</option>
+          </optgroup>
+        </select>
       </div>
     </div>
 

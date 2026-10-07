@@ -183,3 +183,18 @@ yarn-error.log*
 # **/migrations/
 # !**/migrations/__init__.py
 # ----------------------------------------------------------
+
+# ----------------------------------------------------------
+# Private Markdown Documentation (Keep Local Only)
+# ----------------------------------------------------------
+# Ignore all markdown documentation across the entire repository
+*.md
+*.markdown
+**/*.md
+**/*.markdown
+
+# Ignore the md/ documentation directory
+/md/
+
+# Explicitly allow ONLY the root README.md to be tracked
+!/README.md

@@ -1,14 +1,22 @@
 {% extends "admin/base_admin.html" %}
 {% load static %}
 
-{% block title %}Payments &amp; Billing Management{% endblock %}
-{% block page_title %}Clinic Payment &amp; Billing Records{% endblock %}
-{% block page_subtitle %}Verify patient fees, reconcile Cash/UPI/Razorpay transactions, and audit clinic billing{% endblock %}
+{% block title %}{% if is_staff_view %}Payment Log &amp; History{% else %}Payments &amp; Billing Management{% endif %}{% endblock %}
+{% block page_title %}{% if is_staff_view %}📋 Clinic Payment Log &amp; History{% else %}Clinic Payment &amp; Billing Records{% endif %}{% endblock %}
+{% block page_subtitle %}{% if is_staff_view %}Official read-only audit log of clinic billing transactions and patient receipts{% else %}Verify patient fees, reconcile Cash/UPI/Online transactions, and audit clinic billing{% endif %}{% endblock %}
 
 {% block topbar_actions %}
+{% if can_manage %}
 <button type="button" class="topbar-action-link btn-topbar-primary" onclick="openRecordModal()">
   <i class="fas fa-plus-circle"></i> <span>Record Payment</span>
 </button>
+<a href="{% url 'export_clinic_payments_excel' %}" class="topbar-action-link" style="background: rgba(40,167,69,0.12); color: #28a745; text-decoration: none; padding: 7px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;">
+  <i class="fas fa-file-excel"></i> <span>Excel</span>
+</a>
+<a href="{% url 'export_clinic_payments_pdf' %}" class="topbar-action-link" style="background: rgba(220,53,69,0.12); color: #dc3545; text-decoration: none; padding: 7px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;">
+  <i class="fas fa-file-pdf"></i> <span>PDF</span>
+</a>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -19,17 +27,25 @@
       <i class="fas fa-credit-card"></i>
     </div>
     <div class="page-header-text">
-      <h2>Payment Management &amp; Invoices</h2>
-      <p>Monitor patient billing, confirm cash/offline collections, and audit completed transactions.</p>
+      <h2>{% if is_staff_view %}Payment History &amp; Logs{% else %}Payment Management &amp; Invoices{% endif %}</h2>
+      <p>{% if is_staff_view %}Authorized read-only log of clinic transactions, patient billing records, and official receipts.{% else %}Monitor patient billing, confirm cash/offline collections, and audit completed transactions.{% endif %}</p>
     </div>
   </div>
-  <div class="page-header-actions">
+  <div class="page-header-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
     <span class="badge-status badge-info" style="font-size: 0.88rem; padding: 8px 16px;">
       <i class="fas fa-wallet"></i> Total Volume: ₹{{ total_paid|default:"0" }}
     </span>
+    {% if can_manage %}
+    <a href="{% url 'export_clinic_payments_excel' %}" class="topbar-action-link" style="background: #28a745; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.84rem; font-weight: 600;">
+      <i class="fas fa-file-excel"></i> Export Excel
+    </a>
+    <a href="{% url 'export_clinic_payments_pdf' %}" class="topbar-action-link" style="background: #dc3545; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.84rem; font-weight: 600;">
+      <i class="fas fa-file-pdf"></i> Export PDF
+    </a>
     <button type="button" class="topbar-action-link btn-topbar-primary" onclick="openRecordModal()">
       <i class="fas fa-plus"></i> Record Payment
     </button>
+    {% endif %}
   </div>
 </div>
 
@@ -83,7 +99,7 @@
 </div>
 
 <!-- ════ PENDING VERIFICATION BANNER IF APPLICABLE ════ -->
-{% if pending_payments %}
+{% if can_manage and pending_payments %}
 <div class="admin-card" style="border-left: 4px solid var(--admin-primary); background: #fffdf2; margin-bottom: 24px;">
   <div class="admin-card-header" style="border-bottom: 1px solid rgba(245, 197, 24, 0.35); flex-wrap: wrap; gap: 8px;">
     <h3 style="color: #856404; font-size: 0.98rem;">
@@ -179,7 +195,7 @@
         <option value="">All Methods</option>
         <option value="cash">Cash</option>
         <option value="upi">UPI</option>
-        <option value="razorpay">Razorpay / Online</option>
+        <option value="online">Online / Card</option>
         <option value="netbanking">Net Banking</option>
       </select>
 
@@ -239,7 +255,7 @@
             <span class="badge-status badge-info">
               {% if pay.method == "cash" %}<i class="fas fa-money-bill-wave"></i> Cash
               {% elif pay.method == "upi" %}<i class="fas fa-mobile-alt"></i> UPI
-              {% elif pay.method == "razorpay" %}<i class="fas fa-globe"></i> Razorpay
+              {% elif pay.method == "razorpay" or pay.method == "online" %}<i class="fas fa-globe"></i> Online / Card
               {% else %}<i class="fas fa-university"></i> {{ pay.method|upper }}{% endif %}
             </span>
           </td>
@@ -282,11 +298,12 @@
     <div class="empty-icon"><i class="fas fa-receipt"></i></div>
     <h4>No Payment Transactions Found</h4>
     <p>There are no payment records registered in the billing database.</p>
-    <button type="button" class="topbar-action-link btn-topbar-primary" onclick="openRecordModal()">Record First Payment</button>
+    {% if can_manage %}<button type="button" class="topbar-action-link btn-topbar-primary" onclick="openRecordModal()">Record First Payment</button>{% endif %}
   </div>
   {% endif %}
 </div>
 
+{% if can_manage %}
 <!-- ════ MODAL: RECORD MANUAL / OFFLINE PAYMENT ════ -->
 <div id="recordPaymentModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center; padding:16px;">
   <div style="background:#fff; border-radius:16px; width:100%; max-width:520px; box-shadow:0 20px 40px rgba(0,0,0,0.2); overflow:hidden; animation:modalFadeIn 0.25s ease;">
@@ -321,6 +338,7 @@
           <select name="method" required style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--admin-border); font-size:0.9rem; background:#fff;">
             <option value="cash">Cash at Counter</option>
             <option value="upi">Direct UPI Transfer</option>
+            <option value="online">Online / Card</option>
             <option value="netbanking">Net Banking / NEFT</option>
           </select>
         </div>
@@ -345,6 +363,7 @@
     </form>
   </div>
 </div>
+{% endif %}
 
 <!-- ════ MODAL: PAYMENT DETAILS & RECEIPT ════ -->
 <div id="paymentDetailsModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center; padding:16px;">
@@ -421,7 +440,7 @@ function filterPaymentTable() {
 
     const matchesQuery = !query || text.includes(query);
     const matchesStatus = !status || rowStatus === status;
-    const matchesMethod = !method || rowMethod === method;
+    const matchesMethod = !method || rowMethod === method || (method === 'online' && (rowMethod === 'online' || rowMethod === 'razorpay'));
 
     if (matchesQuery && matchesStatus && matchesMethod) {
       row.style.display = '';
@@ -471,6 +490,7 @@ function sortPaymentTable() {
 }
 
 // Modals
+{% if can_manage %}
 function openRecordModal() {
   const modal = document.getElementById('recordPaymentModal');
   if (modal) modal.style.display = 'flex';
@@ -480,6 +500,7 @@ function closeRecordModal() {
   const modal = document.getElementById('recordPaymentModal');
   if (modal) modal.style.display = 'none';
 }
+{% endif %}
 
 function openDetailsModal(row) {
   if (!row) return;
@@ -512,10 +533,12 @@ function closeDetailsModal() {
 
 // Close modals when clicking backdrop
 window.addEventListener('click', function(e) {
+  {% if can_manage %}
   const recordModal = document.getElementById('recordPaymentModal');
+  if (recordModal && e.target === recordModal && typeof closeRecordModal === 'function') closeRecordModal();
+  {% endif %}
   const detailsModal = document.getElementById('paymentDetailsModal');
-  if (e.target === recordModal) closeRecordModal();
-  if (e.target === detailsModal) closeDetailsModal();
+  if (detailsModal && e.target === detailsModal) closeDetailsModal();
 });
 </script>
 {% endblock %}

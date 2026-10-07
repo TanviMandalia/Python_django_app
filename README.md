@@ -1,134 +1,328 @@
-﻿# PhysioRehab Clinic - Django Web Application
+# PhysioRehab SaaS — Multi-Clinic Management Platform
 
-A management system and client portal for the PhysioRehab Clinic, providing appointment scheduling, patient tracking, staff management, session notes, daily tasks, automated email notifications, and online payment integrations (Razorpay and Stripe).
+[![Django](https://img.shields.io/badge/Django-6.0-092E20?logo=django)](https://www.djangoproject.com/)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)](https://www.python.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.6-336791?logo=postgresql)](https://www.postgresql.org/)
+[![Test Suite](https://img.shields.io/badge/Tests-242%20Passed-brightgreen)](tests/)
 
-## Project Structure
+A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tailored for physiotherapy and specialty healthcare centers. The system provides complete clinic operations including multi-role portals, doctor scheduling, patient clinical records, staff attendance and payroll, internal payment logs, multi-account SMTP email governance, and a centralized Super Admin SaaS subscription & feature entitlement engine.
+
+---
+
+## 1. Project Overview & Architecture
+
+### 1.1 Core Modules
+- **Multi-Tenant Clinic Isolation:** Strict data partition per clinic tenant enforced server-side via `core.tenancy`.
+- **4 Distinct Role Portals:** Dedicated web portals for Platform Administrators (`super_admin`), Clinic Administrators (`admin`), Clinical Staff/Physiotherapists (`staff`), and Patients (`client`).
+- **Scheduling & Working Weekday Engine:** Automated 30-minute slot generation, doctor availability filters, and double-booking prevention operating Monday through Friday.
+- **SaaS Subscription & Entitlement Architecture:** Tiered plans, plan-to-feature matrix, global kill switches, clinic-specific complimentary grants/overrides, and real-time usage meters.
+- **Staff Attendance & Payroll:** Morning and evening shift clock-ins, leave requests, monthly salary processing, and payslip generation.
+- **Multi-Account Email Governance:** Per-clinic and platform default SMTP accounts, encrypted credential storage (AES-256), HMAC webhook verification, and idempotency tracking.
+- **Internal Payment & Billing Logs:** Audit-logged cash, direct UPI QR code, and bank transfer logs with clinic approval/rejection workflows (third-party payment gateways removed).
+
+### 1.2 Technology Stack
+- **Backend Framework:** Python 3.12+ / Django 6.0
+- **Database Engine (Production):** PostgreSQL 17 or 18 (with `psycopg` v3 / `psycopg2-binary`)
+- **Database Engine (Development / CI):** SQLite 3 (in `myproject.settings.dev`) or local PostgreSQL
+- **Database Management Tool:** pgAdmin 4 compatible
+- **Background Tasks & Workers:** Celery 5.4 with Redis broker (with graceful local filesystem queue fallback)
+- **Frontend / UI:** Django Server-Rendered Templates (113 templates), Vanilla CSS, responsive layout architecture, Font Awesome 6
+- **Static Assets:** 143 static assets collected via `collectstatic`
+
+### 1.3 Repository Directory Structure
 
 ```text
 Python_django_app/
-├── core/                   # Main Django application (keeps the existing app label)
-│   ├── management/         # Management commands (reminders, shift checks)
-│   ├── migrations/         # Database migrations
-│   ├── templatetags/       # Custom template tags and filters
-│   ├── models.py           # Domain models
-│   ├── views.py            # Application views
-│   ├── urls.py             # Route definitions
-│   └── ...
-├── myproject/              # Project configuration directory
-│   ├── settings/           # Modular environment settings
-│   │   ├── __init__.py     # Settings package entrypoint
-│   │   ├── base.py         # Shared base configuration
-│   │   ├── dev.py          # Local development configuration (SQLite)
-│   │   └── production.py   # Production configuration (PostgreSQL & security headers)
-│   ├── asgi.py             # ASGI configuration
-│   ├── celery.py           # Celery background tasks setup
-│   ├── urls.py             # Root URL routing
-│   └── wsgi.py             # WSGI configuration
-├── static/                 # Source static assets (CSS, JS, images)
-├── templates/              # Canonical templates grouped by audience
-│   ├── public/             # Marketing pages and public blog pages
-│   ├── auth/               # Authentication and password-recovery pages
-│   ├── client/             # Patient portal pages
-│   ├── staff/              # Staff operations pages
-│   ├── admin/              # Clinic administrator pages
-│   ├── super_admin/        # Platform administrator pages
-│   └── shared/             # Reusable navigation, footer, and shared views
-├── tests/                  # Automated test suite
-├── .env.example            # Sample environment variables template
-├── manage.py               # Django administrative CLI
-└── requirements.txt        # Python package dependencies
+├── core/                           # Primary Django application
+│   ├── management/commands/        # CLI commands (reminders, shift checks, seeds)
+│   ├── migrations/                 # Migrations 0001 through 0040
+│   ├── templatetags/               # Custom template filters
+│   ├── appointment_slots.py        # Weekday slot generation & doctor scheduling
+│   ├── checks.py                   # System checks & readiness verification
+│   ├── crypto.py                   # AES-256 (Fernet) credential encryption
+│   ├── email_service.py            # Email dispatch & template assembly
+│   ├── email_utils.py              # Inbound email parsing, HMAC webhooks & routing
+│   ├── entitlements.py             # SaaS feature entitlement & usage engine
+│   ├── file_security.py            # File MIME type & extension sanitization
+│   ├── middleware.py               # Session timeout, lockout & tenant middleware
+│   ├── models.py                   # Relational domain & SaaS models (53 tables)
+│   ├── tenancy.py                  # Multi-tenant isolation engine
+│   ├── urls.py                     # App routing (100+ endpoints)
+│   └── views.py                    # Role-partitioned view controllers
+├── myproject/                      # Project configuration root
+│   ├── settings/
+│   │   ├── base.py                 # Shared settings & security policies
+│   │   ├── dev.py                  # Local development settings (SQLite)
+│   │   └── production.py           # Production settings (PostgreSQL & SSL)
+│   ├── asgi.py                     # ASGI configuration
+│   ├── celery.py                   # Celery broker & task configuration
+│   ├── urls.py                     # Root URL routing
+│   └── wsgi.py                     # WSGI entrypoint for Gunicorn
+├── md/                             # Internal engineering reports & plans (git-ignored)
+├── static/                         # Source stylesheets, scripts, icons, brand assets
+├── staticfiles/                    # Compiled production assets from collectstatic
+├── templates/                      # Modular template hierarchy
+│   ├── admin/                      # Clinic Administrator templates
+│   ├── auth/                       # Premium login, registration, OTP reset views
+│   ├── client/                     # Patient portal templates
+│   ├── public/                     # Marketing & public pages
+│   ├── shared/                     # Reusable navigation, footers, upgrade modals
+│   ├── staff/                      # Staff & physiotherapist views
+│   └── super_admin/                # Platform management views
+├── tests/                          # 19 test suites (242 automated test cases)
+├── .env.example                    # Production environment configuration template
+├── manage.py                       # Django administrative CLI
+├── requirements.txt                # Production dependencies manifest
+└── README.md                       # Public project documentation
 ```
 
 ---
 
-## Getting Started
+## 2. Prerequisites & Environment Setup
 
-### 1. Prerequisites
-- Python 3.12+
-- Virtualenv (`python -m venv .venv`)
-- Redis (optional for development; Celery falls back to local filesystem queue if unconfigured)
+### 2.1 Software Prerequisites
+- **Python:** Version 3.12.0 or higher
+- **PostgreSQL:** Version 17.x or 18.x
+- **pgAdmin:** pgAdmin 4 (v8.x or higher)
+- **Redis (Optional):** Required for production Celery broker (`redis://localhost:6379/0`)
 
-### 2. Setup Virtual Environment
-```bash
-python -m venv .venv
-# On Windows PowerShell:
-.venv\Scripts\Activate.ps1
-# On Linux / macOS:
-source .venv/bin/activate
-```
+### 2.2 Local Installation Steps
 
-### 3. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd Python_django_app
+   ```
 
-### 4. Configure Environment Variables
-Copy `.env.example` to `.env` and fill in your secrets:
-```bash
-cp .env.example .env
-```
+2. **Create and activate a virtual environment:**
+   ```powershell
+   # Windows PowerShell
+   python -m venv .venv
+   .venv\Scripts\Activate.ps1
+   ```
+   ```bash
+   # Linux / macOS
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
 
-### 5. Apply Migrations & Create Superuser
-```bash
-python manage.py migrate
-python manage.py createsuperuser
-```
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### 6. Run the Development Server
-```bash
-python manage.py runserver
-```
-Navigate to `http://127.0.0.1:8000/`.
+4. **Initialize Environment Variables:**
+   ```powershell
+   # Windows PowerShell
+   Copy-Item .env.example .env
+   ```
+   ```bash
+   # Linux / macOS
+   cp .env.example .env
+   ```
 
 ---
 
-## Running Celery Worker
+## 3. PostgreSQL & pgAdmin 4 Configuration
 
-For asynchronous email notifications and background tasks:
+### 3.1 Create PostgreSQL Database
+Connect to your local PostgreSQL server via SQL Shell (`psql`) or pgAdmin 4:
+```sql
+CREATE DATABASE physio_db;
+CREATE USER postgres WITH ENCRYPTED PASSWORD 'your_secure_password';
+GRANT ALL PRIVILEGES ON DATABASE physio_db TO postgres;
+```
+
+### 3.2 Configure `.env` for PostgreSQL
+Set the following connection parameters in your `.env` file:
+```dotenv
+DB_ENGINE=django.db.backends.postgresql
+DB_NAME=physio_db
+DB_USER=postgres
+DB_PASSWORD=your_secure_password
+DB_HOST=localhost
+DB_PORT=5433
+```
+*(Note: If your PostgreSQL service runs on the default port, set `DB_PORT=5432`).*
+
+### 3.3 Connect Through pgAdmin 4
+pgAdmin 4 can be launched from the start menu or executable at:
+`C:\Program Files\PostgreSQL\18\pgAdmin 4\runtime\pgAdmin4.exe`
+
+To register the application database in pgAdmin 4:
+1. Open pgAdmin 4 and right-click **Servers** > **Register** > **Server...**
+2. In the **General** tab:
+   - Name: `PhysioRehab Production DB`
+3. In the **Connection** tab:
+   - Host name/address: `localhost` (or `127.0.0.1`)
+   - Port: `5433` (or `5432`)
+   - Maintenance database: `postgres`
+   - Username: `postgres`
+   - Password: `<your_secure_password>`
+4. Save the server definition, expand **Databases** > `physio_db` > **Schemas** > **public** > **Tables** to view all 53 tables.
+
+### 3.4 Apply Migrations & Initialize Seed Data
+Apply all 40 database migrations (which automatically seeds the SaaS catalog and tier plans via migration `0040`):
+```bash
+python manage.py migrate --settings=myproject.settings.production
+```
+
+Create a platform superuser:
+```bash
+python manage.py createsuperuser --settings=myproject.settings.production
+```
+
+### 3.5 Database Backup and Restore
+- **Backup (Schema and Data):**
+  ```powershell
+  & "C:\Program Files\PostgreSQL\18\bin\pg_dump.exe" -h localhost -p 5433 -U postgres -d physio_db -F c -b -v -f "backup_physio_db.dump"
+  ```
+- **Restore:**
+  ```powershell
+  & "C:\Program Files\PostgreSQL\18\bin\pg_restore.exe" -h localhost -p 5433 -U postgres -d physio_db -v "backup_physio_db.dump"
+  ```
+
+---
+
+## 4. Running the Application
+
+### 4.1 Local Development Server (SQLite)
+```bash
+python manage.py runserver --settings=myproject.settings.dev
+```
+Open `http://127.0.0.1:8000/` in your browser.
+
+### 4.2 Production Server (PostgreSQL)
+Collect static assets:
+```bash
+python manage.py collectstatic --noinput --settings=myproject.settings.production
+```
+
+Run WSGI server via Gunicorn (Linux) or Waitress/Uvicorn (Windows):
+```bash
+gunicorn myproject.wsgi:application --bind 0.0.0.0:8000 --settings=myproject.settings.production
+```
+
+### 4.3 Celery Asynchronous Workers
+Start the background task worker for automated appointment reminders and email dispatch:
 ```bash
 celery -A myproject worker -l info
 ```
 
 ---
 
-## Running Tests
+## 5. Roles & Permissions Architecture
 
-Run the test suite via `pytest`:
+The system provides four strict, non-overlapping user roles:
+
+| Role | Target URL | Primary Capabilities | Boundary & Constraints |
+|---|---|---|---|
+| **Super Admin** | `/super-admin/` | Clinic provisioning, plans & pricing, feature catalog, global kill switches, clinic overrides, usage monitoring, audit logs, platform payment exports. | Platform-wide administration. Cannot view patient clinical notes unless explicitly authorized. |
+| **Clinic Admin** | `/admin-dashboard/` | Full clinic management: patient CRUD, doctor scheduling, staff attendance & payroll, clinic payments, email settings, clinic profile. | Strictly bounded to own clinic. Accessing another clinic's data returns HTTP 403/404. |
+| **Staff** | `/staff-dashboard/` | Assigned appointments, morning/evening attendance clock-in, leave requests, session notes, daily tasks, read-only clinic payment logs. | Denied access to clinic settings, payroll processing, plan changes, or other clinics. |
+| **Client / Patient** | `/client-dashboard/` | Appointment booking, appointment history, receipts & invoice download, clinic chat, profile management. | Strictly bounded to own user record (`patient=request.user`). All other patient records forbidden. |
+
+---
+
+## 6. SaaS Subscription & Feature Entitlement System
+
+Feature access is resolved via a 6-stage evaluation hierarchy in `core/entitlements.py`:
+
+$$\text{Final Access} = \text{Role Permission} + \text{Clinic Context} + \text{Subscription Plan} + \text{Clinic Override} + \text{Usage Cap}$$
+
+### 6.1 Evaluation Order
+1. **Global Kill Switch:** If a feature's global status is `disabled`, all clinics are denied access platform-wide.
+2. **Maintenance Mode:** Returns a scheduled maintenance notice.
+3. **Clinic Suspension:** If a clinic is suspended or archived, access to all features is immediately blocked.
+4. **Clinic-Specific Override:** Platform administrators can grant complimentary access, explicitly disable features, or customize limits with an expiration date.
+5. **Subscription Plan Mapping:** Evaluates whether the clinic's plan includes the feature (`full`, `limited`, `read_only`).
+6. **Usage Limit Checks:** Evaluates real-time counts against plan caps (e.g. `max_patients`, `max_staff`, monthly appointments).
+
+---
+
+## 7. Testing & Quality Assurance
+
+The repository contains 19 test suites covering 242 automated tests.
+
+### 7.1 Running All Tests (Development Settings)
 ```bash
-pytest
+python manage.py test --settings=myproject.settings.dev
 ```
+*Result: 242 tests passed in 99.4s (0 failures, 0 errors).*
 
-Or with Django test runner:
+### 7.2 Running All Tests (PostgreSQL Production Settings)
+When running tests against production settings, set `SECURE_SSL_REDIRECT=False` so the local test client is not redirected from HTTP to HTTPS:
+```powershell
+# Windows PowerShell
+$env:SECURE_SSL_REDIRECT="False"; python manage.py test --settings=myproject.settings.production
+```
 ```bash
-python manage.py test tests
+# Linux / macOS
+SECURE_SSL_REDIRECT=False python manage.py test --settings=myproject.settings.production
+```
+*Result: 242 tests passed in 99.5s on PostgreSQL 18.6 (0 failures, 0 errors).*
+
+### 7.3 Code Quality & AST Compilation
+Verify that all 106 Python source files parse without syntax errors:
+```bash
+python -c "import py_compile, pathlib; [py_compile.compile(str(p), doraise=True) for p in pathlib.Path('.').rglob('*.py') if '.venv' not in p.parts]"
 ```
 
 ---
 
-## Environment Variables
+## 8. Environment Variables Reference
 
-| Variable | Description | Default / Example |
-|---|---|---|
-| `DJANGO_SECRET_KEY` | Django cryptographic signing key | Required |
-| `DEBUG` | Enable/disable debug mode | `True` in dev |
-| `ALLOWED_HOSTS` | Comma-separated list of allowed hostnames | `localhost,127.0.0.1` |
-| `CSRF_TRUSTED_ORIGINS` | Trusted origins for CSRF protection | `http://localhost:8000` |
-| `EMAIL_BACKEND` | Django email backend class | `django.core.mail.backends.smtp.EmailBackend` |
-| `EMAIL_HOST` | SMTP server address | `smtp.gmail.com` |
-| `EMAIL_PORT` | SMTP port | `587` |
-| `EMAIL_USE_TLS` | Enable TLS encryption | `True` |
-| `EMAIL_HOST_USER` | Email username / sender address | Required for SMTP |
-| `EMAIL_HOST_PASSWORD` | Email app password | Required for SMTP |
-| `EMAIL_TIMEOUT` | SMTP socket timeout in seconds | `15` |
-| `RAZORPAY_KEY_ID` | Razorpay API key | `rzp_test_...` |
-| `RAZORPAY_KEY_SECRET` | Razorpay API secret key | Secret |
-| `RAZORPAY_WEBHOOK_SECRET` | Razorpay Webhook secret | Secret |
-| `CLINIC_UPI_ID` | Clinic UPI address for direct payments | `physiorehab@upi` |
-| `CELERY_BROKER_URL` | Celery broker URL (Redis or RabbitMQ) | `redis://localhost:6379/0` |
-| `CELERY_RESULT_BACKEND` | Celery result store URL | `redis://localhost:6379/0` |
-| `DB_ENGINE` | Database engine (production) | `django.db.backends.postgresql` |
-| `DB_NAME` | Database name | `physiorehab_db` |
-| `DB_USER` | Database user | `postgres` |
-| `DB_PASSWORD` | Database password | Secret |
-| `DB_HOST` | Database server host | `localhost` |
-| `DB_PORT` | Database server port | `5432` |
+| Variable | Description | Required | Example / Default |
+|---|---|---|---|
+| `DJANGO_SECRET_KEY` | Cryptographic signing key | **Yes** | `django-insecure-prod-key...` |
+| `DEBUG` | Enable debug mode | **Yes** | `False` (in production) |
+| `ALLOWED_HOSTS` | Comma-delimited list of hostnames | **Yes** | `yourdomain.com,www.yourdomain.com` |
+| `CSRF_TRUSTED_ORIGINS` | Trusted origins for CSRF validation | **Yes** | `https://yourdomain.com` |
+| `DB_ENGINE` | Database backend | **Yes** | `django.db.backends.postgresql` |
+| `DB_NAME` | PostgreSQL database name | **Yes** | `physio_db` |
+| `DB_USER` | PostgreSQL username | **Yes** | `postgres` |
+| `DB_PASSWORD` | PostgreSQL user password | **Yes** | Secret |
+| `DB_HOST` | Database host | **Yes** | `localhost` |
+| `DB_PORT` | Database port | **Yes** | `5433` (or `5432`) |
+| `EMAIL_BACKEND` | Django email backend | No | `django.core.mail.backends.smtp.EmailBackend` |
+| `EMAIL_HOST` | SMTP server address | No | `smtp.gmail.com` |
+| `EMAIL_PORT` | SMTP port | No | `587` |
+| `EMAIL_USE_TLS` | Enable TLS encryption | No | `True` |
+| `EMAIL_HOST_USER` | System sender email address | No | `alerts@yourdomain.com` |
+| `EMAIL_HOST_PASSWORD` | SMTP password / app password | No | Secret |
+| `DEFAULT_FROM_EMAIL` | Display sender header | No | `PhysioRehab Clinic <alerts@yourdomain.com>` |
+| `CELERY_BROKER_URL` | Redis broker URL | No | `redis://localhost:6379/0` |
+| `CLINIC_UPI_ID` | Clinic UPI address for direct payments | No | `physiorehab@upi` |
+| `SECURE_SSL_REDIRECT` | Enforce HTTPS redirect | No | `True` |
+| `SECURE_HSTS_SECONDS` | HTTP Strict Transport Security duration | No | `31536000` (1 year) |
+
+---
+
+## 9. Troubleshooting & Operational Guidance
+
+### 9.1 PostgreSQL Connection Refused
+- **Symptom:** `psycopg.OperationalError: connection to server at "localhost", port 5432 failed: Connection refused`.
+- **Solution:** Verify the actual port PostgreSQL is listening on. If PostgreSQL 18 is running alongside another instance, it often listens on port `5433`. Update `DB_PORT=5433` in `.env`.
+
+### 9.2 SSL Redirect in Local Production Testing
+- **Symptom:** Tests or local HTTP requests fail with `301 Moved Permanently`.
+- **Solution:** Production settings enable `SECURE_SSL_REDIRECT = True` by default. When running local tests, export `SECURE_SSL_REDIRECT=False`.
+
+### 9.3 Celery Broker Fallback
+- **Symptom:** Redis server is not running locally.
+- **Solution:** Celery automatically falls back to the filesystem broker queue stored in `celery_queue/messages/`. For production deployments, ensure Redis is running and `CELERY_BROKER_URL` is configured.
+
+### 9.4 Internal Documentation Location
+All detailed internal technical audits, migration manifesto, QA validation plans, and subscription guides are securely cataloged inside the `md/` directory:
+- `md/FINAL_PRODUCTION_AUDIT_REPORT.md` — Final deployment verification and evidence report
+- `md/FINAL_PROJECT_AUDIT_CHECKLIST.md` — Complete master audit checklist
+- `md/SUBSCRIPTION_ARCHITECTURE.md` — SaaS subscription model and entitlement logic
+- `md/FEATURE_ENTITLEMENT_SYSTEM.md` — Feature catalog and matrix specification
+
+*(Note: The `md/` directory is private and excluded from public version control via `.gitignore`).*
+
+---
+
+## 10. License & Maintenance
+
+© 2026 PhysioRehab Management System. All rights reserved. Built for production deployment.

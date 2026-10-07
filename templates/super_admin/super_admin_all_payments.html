@@ -5,14 +5,26 @@
 {% block page_title %}💳 Platform Payments Ledger{% endblock %}
 {% block page_subtitle %}Audit and reconcile all transaction records across all partnered clinics{% endblock %}
 
+{% block topbar_actions %}
+  <a href="{% url 'export_payments_excel' %}{% if hospital_filter %}?hospital={{ hospital_filter }}{% endif %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+    <i class="fas fa-file-excel" style="color: #28a745;"></i> <span>Export Excel</span>
+  </a>
+  <a href="{% url 'export_payments_pdf' %}{% if hospital_filter %}?hospital={{ hospital_filter }}{% endif %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+    <i class="fas fa-file-pdf" style="color: #dc3545;"></i> <span>Export PDF</span>
+  </a>
+  <button type="button" class="sa-btn sa-btn-primary sa-btn-sm" onclick="openSaRecordModal()">
+    <i class="fas fa-plus"></i> <span>Record Payment</span>
+  </button>
+{% endblock %}
+
 {% block content %}
 <!-- ════ REVENUE STATS ════ -->
-<div class="sa-stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+<div class="sa-stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px; gap: 16px;">
   <div class="sa-stat-card">
     <div class="sa-stat-icon green"><i class="fas fa-check-circle"></i></div>
     <div class="sa-stat-info">
       <h3>₹{{ total_paid }}</h3>
-      <p>Total Settled Revenue</p>
+      <p>Settled Revenue</p>
     </div>
   </div>
 
@@ -31,11 +43,19 @@
       <p>Total Transactions</p>
     </div>
   </div>
+
+  <div class="sa-stat-card">
+    <div class="sa-stat-icon blue"><i class="fas fa-hospital"></i></div>
+    <div class="sa-stat-info">
+      <h3>{{ hospitals|length }}</h3>
+      <p>Partnered Clinics</p>
+    </div>
+  </div>
 </div>
 
 <div class="sa-card">
   <!-- Toolbar Filters -->
-  <div class="sa-card-header" style="gap: 16px;">
+  <div class="sa-card-header" style="gap: 16px; flex-wrap: wrap; justify-content: space-between;">
     <div class="sa-card-title">
       <i class="fas fa-list-alt" style="color: var(--sa-purple);"></i>
       <span>All Transactions ({{ all_payments|length }})</span>
@@ -43,22 +63,39 @@
 
     <!-- Filter Form -->
     <form method="GET" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <div style="position: relative;">
+        <input type="text" name="q" value="{{ q|default:'' }}" placeholder="Search ID, patient, clinic..."
+               class="sa-input" style="padding: 7px 12px; font-size: 0.84rem; min-width: 180px; border-radius: 8px; border: 1px solid var(--sa-border);" />
+      </div>
+
+      <select name="hospital" class="sa-select" style="width: auto; padding: 7px 12px; font-size: 0.84rem;" onchange="this.form.submit()">
+        <option value="">All Clinics</option>
+        {% for h in hospitals %}
+          <option value="{{ h.id }}" {% if hospital_filter == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+        {% endfor %}
+      </select>
+
       <select name="status" class="sa-select" style="width: auto; padding: 7px 12px; font-size: 0.84rem;" onchange="this.form.submit()">
         <option value="">All Statuses</option>
         <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
         <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
         <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+        <option value="refunded" {% if status_filter == 'refunded' %}selected{% endif %}>Refunded</option>
       </select>
 
       <select name="method" class="sa-select" style="width: auto; padding: 7px 12px; font-size: 0.84rem;" onchange="this.form.submit()">
         <option value="">All Methods</option>
-        <option value="razorpay" {% if method_filter == 'razorpay' %}selected{% endif %}>Razorpay</option>
+        <option value="online" {% if method_filter == 'online' or method_filter == 'razorpay' %}selected{% endif %}>Online / Card</option>
         <option value="upi" {% if method_filter == 'upi' %}selected{% endif %}>UPI</option>
         <option value="cash" {% if method_filter == 'cash' %}selected{% endif %}>Cash</option>
         <option value="netbanking" {% if method_filter == 'netbanking' %}selected{% endif %}>Net Banking</option>
       </select>
 
-      {% if status_filter or method_filter %}
+      <button type="submit" class="sa-btn sa-btn-secondary sa-btn-sm">
+        <i class="fas fa-search"></i> Filter
+      </button>
+
+      {% if status_filter or method_filter or hospital_filter or q %}
       <a href="{% url 'super_admin_all_payments' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
         <i class="fas fa-times"></i> Reset
       </a>
@@ -67,25 +104,44 @@
   </div>
 
   {% if all_payments %}
-  <div class="sa-table-responsive">
-    <table class="sa-table">
+  <div class="sa-table-responsive" style="overflow-x: auto;">
+    <table class="sa-table" style="min-width: 800px;">
       <thead>
         <tr>
           <th>Transaction ID</th>
+          <th>Clinic / Hospital</th>
           <th>Patient / Payer</th>
           <th>Amount</th>
           <th>Payment Method</th>
           <th>Status</th>
           <th>Date &amp; Time</th>
+          <th style="text-align: right;">Action</th>
         </tr>
       </thead>
       <tbody>
         {% for pay in all_payments %}
-        <tr>
+        <tr data-id="{{ pay.id }}"
+            data-txn="{{ pay.transaction_id|default:'—' }}"
+            data-clinic="{% if pay.hospital %}{{ pay.hospital.name }}{% else %}Platform / General{% endif %}"
+            data-patient="{{ pay.patient.get_full_name|default:pay.patient.username }}"
+            data-email="{{ pay.patient.email|default:'—' }}"
+            data-amount="{{ pay.amount }}"
+            data-method="{{ pay.get_method_display }}"
+            data-status="{{ pay.status }}"
+            data-status-name="{{ pay.get_status_display }}"
+            data-date="{{ pay.created_at|date:'d M Y, h:i A' }}"
+            data-notes="{{ pay.notes|default:'Standard Consultation' }}">
           <td>
             <code style="background: #f8fafc; border: 1px solid var(--sa-border); padding: 3px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">
               {{ pay.transaction_id|default:"—" }}
             </code>
+          </td>
+          <td>
+            {% if pay.hospital %}
+              <div style="font-weight: 600; color: var(--sa-dark);">{{ pay.hospital.name }}</div>
+            {% else %}
+              <span style="color: var(--sa-text-muted);">Direct Platform</span>
+            {% endif %}
           </td>
           <td>
             {% if pay.patient %}
@@ -100,7 +156,7 @@
           </td>
           <td>
             <span class="sa-badge" style="background: #f1f5f9; color: var(--sa-dark);">
-              {% if pay.method == 'razorpay' %}<i class="fas fa-bolt" style="color: #F5C518"></i> Razorpay
+              {% if pay.method == 'razorpay' or pay.method == 'online' %}<i class="fas fa-globe" style="color: #3395ff"></i> Online / Card
               {% elif pay.method == 'upi' %}<i class="fas fa-qrcode" style="color: #00B900"></i> UPI
               {% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color: #28a745"></i> Cash
               {% elif pay.method == 'netbanking' %}<i class="fas fa-university" style="color: #1a73e8"></i> Net Banking
@@ -114,6 +170,8 @@
             <span class="sa-badge sa-badge-pending"><i class="fas fa-clock"></i> Pending</span>
             {% elif pay.status == 'failed' %}
             <span class="sa-badge sa-badge-failed"><i class="fas fa-times-circle"></i> Failed</span>
+            {% elif pay.status == 'refunded' %}
+            <span class="sa-badge sa-badge-trial"><i class="fas fa-undo"></i> Refunded</span>
             {% else %}
             <span class="sa-badge sa-badge-trial">{{ pay.get_status_display }}</span>
             {% endif %}
@@ -121,6 +179,11 @@
           <td>
             <div style="font-size: 0.82rem; font-weight: 500;">{{ pay.created_at|date:"d M Y" }}</div>
             <small style="color: var(--sa-text-muted);">{{ pay.created_at|time:"h:i A" }}</small>
+          </td>
+          <td style="text-align: right;">
+            <button type="button" class="sa-btn sa-btn-secondary sa-btn-sm" onclick="openSaDetailModal(this.closest('tr'))">
+              <i class="fas fa-receipt"></i> Details
+            </button>
           </td>
         </tr>
         {% endfor %}
@@ -136,9 +199,171 @@
   {% endif %}
 </div>
 
+<!-- ════ MODAL: RECORD PAYMENT (SUPER ADMIN) ════ -->
+<div id="saRecordModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:520px; box-shadow:0 20px 40px rgba(0,0,0,0.2); overflow:hidden;">
+    <div style="padding:18px 24px; border-bottom:1px solid var(--sa-border); display:flex; align-items:center; justify-content:space-between; background:#fafafa;">
+      <h3 style="margin:0; font-size:1.1rem; color:var(--sa-dark); display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-plus-circle" style="color:var(--sa-purple);"></i> Record Payment (Platform Scope)
+      </h3>
+      <button type="button" onclick="closeSaRecordModal()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+
+    <form method="POST" action="{% url 'payment_create' %}" style="padding:24px;">
+      {% csrf_token %}
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-weight:600; font-size:0.86rem; margin-bottom:6px; color:var(--sa-dark);">Select Hospital / Clinic *</label>
+        <select name="hospital_id" required style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--sa-border); font-size:0.9rem; background:#fff;">
+          <option value="">— Choose Hospital —</option>
+          {% for h in hospitals %}
+          <option value="{{ h.id }}">{{ h.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-weight:600; font-size:0.86rem; margin-bottom:6px; color:var(--sa-dark);">Select Patient *</label>
+        <select name="patient_id" required style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--sa-border); font-size:0.9rem; background:#fff;">
+          <option value="">— Choose Patient —</option>
+          {% for pt in patients %}
+          <option value="{{ pt.id }}">{{ pt.get_full_name|default:pt.username }} ({{ pt.email|default:pt.username }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+        <div>
+          <label style="display:block; font-weight:600; font-size:0.86rem; margin-bottom:6px; color:var(--sa-dark);">Amount (₹) *</label>
+          <input type="number" name="amount" required min="1" step="1" placeholder="e.g. 500" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--sa-border); font-size:0.9rem;" />
+        </div>
+        <div>
+          <label style="display:block; font-weight:600; font-size:0.86rem; margin-bottom:6px; color:var(--sa-dark);">Method *</label>
+          <select name="method" required style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--sa-border); font-size:0.9rem; background:#fff;">
+            <option value="cash">Cash</option>
+            <option value="upi">UPI</option>
+            <option value="netbanking">Net Banking</option>
+            <option value="online">Online / Card</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-weight:600; font-size:0.86rem; margin-bottom:6px; color:var(--sa-dark);">Transaction Reference (Optional)</label>
+        <input type="text" name="transaction_id" placeholder="e.g. CASH-REF-123" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--sa-border); font-size:0.9rem;" />
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-weight:600; font-size:0.86rem; margin-bottom:6px; color:var(--sa-dark);">Notes (Optional)</label>
+        <textarea name="notes" rows="2" placeholder="e.g. Settled consultation fee" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--sa-border); font-size:0.9rem;"></textarea>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="sa-btn sa-btn-secondary" onclick="closeSaRecordModal()">Cancel</button>
+        <button type="submit" class="sa-btn sa-btn-primary">
+          <i class="fas fa-check"></i> Save Record
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ════ MODAL: TRANSACTION DETAILS (SUPER ADMIN) ════ -->
+<div id="saDetailModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:520px; box-shadow:0 20px 40px rgba(0,0,0,0.2); overflow:hidden;">
+    <div style="padding:18px 24px; border-bottom:1px solid var(--sa-border); display:flex; align-items:center; justify-content:space-between; background:#fafafa;">
+      <h3 style="margin:0; font-size:1.1rem; color:var(--sa-dark); display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-receipt" style="color:var(--sa-purple);"></i> Payment Details &amp; Audit Log
+      </h3>
+      <button type="button" onclick="closeSaDetailModal()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+
+    <div style="padding:24px;">
+      <div style="text-align:center; padding-bottom:16px; border-bottom:1px dashed var(--sa-border); margin-bottom:18px;">
+        <div style="font-size:1.2rem; font-weight:800; color:var(--sa-dark);" id="saModalClinic">PhysioRehab</div>
+        <div style="font-size:1.8rem; font-weight:800; color:var(--sa-dark); margin:8px 0 4px 0;" id="saModalAmount">₹0</div>
+        <div id="saModalStatus"></div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; font-size:0.88rem;">
+        <div>
+          <span style="color:var(--sa-text-muted); display:block; font-size:0.78rem;">PATIENT</span>
+          <strong id="saModalPatient" style="color:var(--sa-dark);">—</strong>
+        </div>
+        <div>
+          <span style="color:var(--sa-text-muted); display:block; font-size:0.78rem;">TRANSACTION ID</span>
+          <code id="saModalTxn" style="font-size:0.82rem; color:#495057; font-weight:700;">—</code>
+        </div>
+        <div>
+          <span style="color:var(--sa-text-muted); display:block; font-size:0.78rem;">METHOD</span>
+          <strong id="saModalMethod" style="color:var(--sa-dark);">—</strong>
+        </div>
+        <div>
+          <span style="color:var(--sa-text-muted); display:block; font-size:0.78rem;">DATE &amp; TIME</span>
+          <span id="saModalDate" style="color:var(--sa-dark); font-weight:600;">—</span>
+        </div>
+      </div>
+
+      <div style="background:#f8f9fa; border-radius:10px; padding:12px; margin-bottom:20px; font-size:0.85rem;">
+        <span style="color:var(--sa-text-muted); display:block; font-size:0.76rem; font-weight:600; margin-bottom:2px;">NOTES</span>
+        <div id="saModalNotes" style="color:var(--sa-dark);">—</div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button type="button" class="sa-btn sa-btn-secondary" onclick="window.print()">
+          <i class="fas fa-print"></i> Print
+        </button>
+        <button type="button" class="sa-btn sa-btn-primary" onclick="closeSaDetailModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openSaRecordModal() {
+  document.getElementById('saRecordModal').style.display = 'flex';
+}
+function closeSaRecordModal() {
+  document.getElementById('saRecordModal').style.display = 'none';
+}
+function openSaDetailModal(row) {
+  if (!row) return;
+  document.getElementById('saModalClinic').innerText = row.getAttribute('data-clinic') || 'Platform';
+  document.getElementById('saModalAmount').innerText = '₹' + (row.getAttribute('data-amount') || '0');
+  document.getElementById('saModalPatient').innerText = row.getAttribute('data-patient') || '—';
+  document.getElementById('saModalTxn').innerText = row.getAttribute('data-txn') || '—';
+  document.getElementById('saModalMethod').innerText = row.getAttribute('data-method') || '—';
+  document.getElementById('saModalDate').innerText = row.getAttribute('data-date') || '—';
+  document.getElementById('saModalNotes').innerText = row.getAttribute('data-notes') || '—';
+
+  const status = row.getAttribute('data-status');
+  let badgeHtml = '<span class="sa-badge sa-badge-paid"><i class="fas fa-check-circle"></i> Paid</span>';
+  if (status === 'pending') {
+    badgeHtml = '<span class="sa-badge sa-badge-pending"><i class="fas fa-clock"></i> Pending</span>';
+  } else if (status === 'failed') {
+    badgeHtml = '<span class="sa-badge sa-badge-failed"><i class="fas fa-times-circle"></i> Failed</span>';
+  } else if (status === 'refunded') {
+    badgeHtml = '<span class="sa-badge sa-badge-trial"><i class="fas fa-undo"></i> Refunded</span>';
+  }
+  document.getElementById('saModalStatus').innerHTML = badgeHtml;
+  document.getElementById('saDetailModal').style.display = 'flex';
+}
+function closeSaDetailModal() {
+  document.getElementById('saDetailModal').style.display = 'none';
+}
+
+window.addEventListener('click', function(e) {
+  const recM = document.getElementById('saRecordModal');
+  const detM = document.getElementById('saDetailModal');
+  if (e.target === recM) closeSaRecordModal();
+  if (e.target === detM) closeSaDetailModal();
+});
+</script>
+
 <style>
   @media (max-width: 900px) {
-    div[style*="grid-template-columns: repeat(3, 1fr)"] {
+    div[style*="grid-template-columns: repeat(4, 1fr)"] {
       grid-template-columns: 1fr !important;
     }
   }

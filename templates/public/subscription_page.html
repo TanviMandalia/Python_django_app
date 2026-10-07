@@ -636,7 +636,7 @@
                                     {{ pay.duration_months }} month{% if pay.duration_months > 1 %}s{% endif %}
                                 </td>
                                 <td>
-                                    {% if pay.method == 'upi' %}<i class="fas fa-qrcode" style="color: #00b900"></i> UPI{% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color: #28a745"></i> Cash{% elif pay.method == 'netbanking' %}<i class="fas fa-university" style="color: #1a73e8"></i> Net Banking{% elif pay.method == 'razorpay' %}<i class="fas fa-lock" style="color: #3395ff"></i> Online{% else %}<i class="fas fa-university" style="color: #1a73e8"></i> Net Banking{% endif %}
+                                    {% if pay.method == 'upi' %}<i class="fas fa-qrcode" style="color: #00b900"></i> UPI{% elif pay.method == 'cash' %}<i class="fas fa-money-bill-wave" style="color: #28a745"></i> Cash{% elif pay.method == 'netbanking' %}<i class="fas fa-university" style="color: #1a73e8"></i> Net Banking{% elif pay.method == 'razorpay' or pay.method == 'online' %}<i class="fas fa-globe" style="color: #3395ff"></i> Online / Card{% else %}<i class="fas fa-university" style="color: #1a73e8"></i> Net Banking{% endif %}
                                 </td>
                                 <td style="font-family: monospace; font-size: 0.78rem; color: #888;">
                                     {{ pay.transaction_id|default:"—" }}

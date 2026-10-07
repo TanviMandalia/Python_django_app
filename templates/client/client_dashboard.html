@@ -252,44 +252,13 @@
         </a>
       </div>
       <div class="client-card-body">
-        {% if razorpay_key_id %}
-          <div style="background:var(--client-primary-subtle); border:1px solid rgba(245,197,24,0.35); border-radius:12px; padding:18px; margin-bottom:18px;">
-            <p style="font-size:0.84rem; color:var(--client-text); margin-bottom:14px; display:flex; align-items:center; gap:8px;">
-              <i class="fas fa-lock" style="color:var(--client-primary-dark);"></i> Settle consultation fees instantly via Cards, Net Banking, or UPI.
-            </p>
-            <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
-              <div style="flex:1; min-width:140px;">
-                <label class="client-label" style="font-size:0.78rem;">Appointment</label>
-                <select id="dash-appt-select" class="client-select" style="padding:8px 12px; font-size:0.85rem;">
-                  <option value="">— General Consultation —</option>
-                  {% for appt in upcoming_appointments %}
-                    <option value="{{ appt.id }}" {% if appt.consultation_fee %}data-fee="{{ appt.consultation_fee }}"{% endif %}>
-                      {{ appt.date|date:"d M" }} — {{ appt.get_service_display }}
-                    </option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div style="width:110px;">
-                <label class="client-label" style="font-size:0.78rem;">Amount (₹)</label>
-                <input type="number" id="dash-amount" class="client-input" value="500" min="1" style="padding:8px 12px; font-size:0.85rem;" />
-              </div>
-              <button onclick="dashInitiateRazorpay()" class="client-btn client-btn-primary" style="padding:8px 18px; font-size:0.88rem; font-weight:700;">
-                <i class="fas fa-bolt"></i> Pay Now
-              </button>
-            </div>
-            <div id="dashRzpLoading" style="display:none; text-align:center; padding:10px 0 0 0; color:var(--client-dark); font-size:0.82rem; font-weight:600;">
-              <i class="fas fa-spinner fa-spin" style="color:var(--client-primary-dark);"></i> Connecting to secure gateway...
-            </div>
-          </div>
-        {% else %}
-          <div style="text-align:center; padding:20px 14px; background:#f9fafb; border-radius:12px; border:1px solid var(--client-border); margin-bottom:16px;">
-            <i class="fas fa-credit-card" style="font-size:2rem; color:#9ca3af; margin-bottom:8px; display:block;"></i>
-            <p style="font-size:0.86rem; color:var(--client-text-muted); margin-bottom:10px;">Online checkout is ready. View all clinic payment options including QR code & cash.</p>
-            <a href="{% url 'payments' %}" class="client-btn client-btn-primary client-btn-sm">
-              View Payment Portal
-            </a>
-          </div>
-        {% endif %}
+        <div style="text-align:center; padding:20px 14px; background:#f9fafb; border-radius:12px; border:1px solid var(--client-border); margin-bottom:16px;">
+          <i class="fas fa-credit-card" style="font-size:2rem; color:#9ca3af; margin-bottom:8px; display:block;"></i>
+          <p style="font-size:0.86rem; color:var(--client-text-muted); margin-bottom:10px;">View all clinic payment records, logs, and billing options.</p>
+          <a href="{% url 'payments' %}" class="client-btn client-btn-primary client-btn-sm">
+            View Payment Records
+          </a>
+        </div>
 
         {% if my_payments %}
           <div style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--client-text-muted); font-weight:700; margin-bottom:8px;">
@@ -474,92 +443,4 @@
   </div>
 </div>
 
-<!-- ════ 5. HIDDEN RAZORPAY VERIFICATION FORM ════ -->
-<form id="dashRzpVerifyForm" method="POST" action="{% url 'razorpay_verify_payment' %}" style="display:none;">
-  {% csrf_token %}
-  <input type="hidden" name="razorpay_order_id" id="dash_rzp_order_id" />
-  <input type="hidden" name="razorpay_payment_id" id="dash_rzp_payment_id" />
-  <input type="hidden" name="razorpay_signature" id="dash_rzp_signature" />
-  <input type="hidden" name="record_id" id="dash_rzp_record_id" />
-</form>
-{% endblock %}
-
-{% block extra_js %}
-<!-- Razorpay Checkout Integration -->
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script>
-  var DASH_CSRF = '{{ csrf_token }}';
-
-  function dashInitiateRazorpay() {
-    if (typeof Razorpay === 'undefined') {
-      alert('Payment gateway is still loading. Please check your connection and retry.');
-      return;
-    }
-    var amount = document.getElementById('dash-amount').value || '500';
-    var apptId = document.getElementById('dash-appt-select').value || '';
-    if (parseFloat(amount) < 1) {
-      alert('Please enter a valid amount.');
-      return;
-    }
-
-    var loader = document.getElementById('dashRzpLoading');
-    if (loader) loader.style.display = 'block';
-
-    var fd = new FormData();
-    fd.append('amount', amount);
-    fd.append('appointment_id', apptId);
-    fd.append('csrfmiddlewaretoken', DASH_CSRF);
-
-    fetch('{% url "razorpay_create_order" %}', { method: 'POST', body: fd })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (loader) loader.style.display = 'none';
-        if (data.error) {
-          alert('Error: ' + data.error);
-          return;
-        }
-
-        var options = {
-          key: data.key_id,
-          amount: data.amount,
-          currency: data.currency,
-          name: 'PhysioRehab Clinic',
-          description: 'Consultation Fee Payment',
-          order_id: data.order_id,
-          prefill: {
-            name: data.patient_name,
-            email: data.patient_email
-          },
-          theme: { color: '#F5C518' },
-          modal: { ondismiss: function() {} },
-          handler: function(response) {
-            document.getElementById('dash_rzp_order_id').value = response.razorpay_order_id;
-            document.getElementById('dash_rzp_payment_id').value = response.razorpay_payment_id;
-            document.getElementById('dash_rzp_signature').value = response.razorpay_signature;
-            document.getElementById('dash_rzp_record_id').value = data.record_id;
-            document.getElementById('dashRzpVerifyForm').submit();
-          }
-        };
-
-        var rzp = new Razorpay(options);
-        rzp.on('payment.failed', function(resp) {
-          alert('Payment failed: ' + resp.error.description);
-        });
-        rzp.open();
-      })
-      .catch(function(err) {
-        if (loader) loader.style.display = 'none';
-        alert('Communication error. Please try again.');
-        console.error(err);
-      });
-  }
-
-  var dashApptSel = document.getElementById('dash-appt-select');
-  if (dashApptSel) {
-    dashApptSel.addEventListener('change', function() {
-      var fee = this.options[this.selectedIndex].dataset.fee;
-      if (fee) document.getElementById('dash-amount').value = fee;
-    });
-  }
-</script>
 {% endblock %}

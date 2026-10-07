@@ -224,13 +224,14 @@ CELERY_TASK_SOFT_TIME_LIMIT = 300
 CELERY_TASK_TIME_LIMIT = 360
 
 # =========================
-# RAZORPAY / PAYMENT
+# PAYMENT / UPI
 # =========================
 
-RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
-RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
-RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
 CLINIC_UPI_ID = os.getenv("CLINIC_UPI_ID", "")
+CLINIC_NAME = "Dr. Dhvani Patalia Physio Rehab"
+CLINIC_PHONE = "+91 94095 10501"
+CLINIC_EMAIL = "physio.rehab.guj@gmail.com"
+CLINIC_WHATSAPP = "94095 10501"
 
 # =========================
 # FILE UPLOADS

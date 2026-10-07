@@ -1,9 +1,9 @@
 {% extends "admin/base_admin.html" %}
 {% load static %}
 
-{% block title %}Edit Patient - {{ patient.get_full_name|default:patient.username }}{% endblock %}
+{% block title %}Edit Patient - {{ patient.get_full_name|default:patient.username }} - Dr. Dhvani Patalia Physio Rehab{% endblock %}
 {% block page_title %}Edit Patient Profile{% endblock %}
-{% block page_subtitle %}Update personal information, contact numbers and account details{% endblock %}
+{% block page_subtitle %}Update personal information, joining date, contact details, and clinical records{% endblock %}
 
 {% block content %}
 <div class="page-header-card">
@@ -13,7 +13,7 @@
     </div>
     <div class="page-header-text">
       <h2>Edit Patient: {{ patient.get_full_name|default:patient.username }}</h2>
-      <p>Modify basic information, contact records, address, and account status.</p>
+      <p>Modify personal information, joining date, contact numbers, address, and medical background.</p>
     </div>
   </div>
   <div class="page-header-actions">
@@ -23,19 +23,19 @@
   </div>
 </div>
 
-<div class="admin-card" style="max-width: 800px; margin: 0 auto;">
+<div class="admin-card" style="max-width: 850px; margin: 0 auto;">
   <div class="admin-card-header">
-    <h3><i class="fas fa-id-card text-primary"></i> Patient Account Information</h3>
+    <h3><i class="fas fa-id-card text-primary"></i> Patient Account &amp; Medical File</h3>
     <span class="badge-status {% if patient.is_active %}badge-success{% else %}badge-danger{% endif %}">
       {% if patient.is_active %}Active Account{% else %}Inactive Account{% endif %}
     </span>
   </div>
 
-  <form method="POST" style="display: flex; flex-direction: column; gap: 18px;">
+  <form method="POST" style="display: flex; flex-direction: column; gap: 18px; padding-top: 10px;">
     {% csrf_token %}
 
+    <!-- Names -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-      <!-- First Name -->
       <div>
         <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
           First Name <span style="color: var(--admin-danger);">*</span>
@@ -44,7 +44,6 @@
           style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
       </div>
 
-      <!-- Last Name -->
       <div>
         <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
           Last Name
@@ -54,8 +53,8 @@
       </div>
     </div>
 
+    <!-- Contact -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-      <!-- Email -->
       <div>
         <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
           Email Address <span style="color: var(--admin-danger);">*</span>
@@ -64,23 +63,91 @@
           style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
       </div>
 
-      <!-- Phone Number -->
       <div>
         <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
           Phone Number
         </label>
-        <input type="text" name="phone_number" value="{{ profile.phone_number|default:'' }}"
+        <input type="tel" name="phone_number" value="{{ profile.phone_number|default:'' }}"
           style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
       </div>
     </div>
 
-    <!-- City / Address -->
+    <!-- Demographics & Joining Date -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Gender
+        </label>
+        <select name="gender" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          <option value="">-- Select Gender --</option>
+          <option value="Male" {% if profile.gender == "Male" %}selected{% endif %}>Male</option>
+          <option value="Female" {% if profile.gender == "Female" %}selected{% endif %}>Female</option>
+          <option value="Other" {% if profile.gender == "Other" %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Date of Birth
+        </label>
+        <input type="date" name="date_of_birth" value="{{ profile.date_of_birth|date:'Y-m-d'|default:'' }}"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Joining Date
+        </label>
+        <input type="date" name="joining_date" id="id_joining_date"
+          value="{% if patient_profile.joining_date %}{{ patient_profile.joining_date|date:'Y-m-d' }}{% elif profile.joining_date %}{{ profile.joining_date|date:'Y-m-d' }}{% endif %}"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <!-- Blood Group & Emergency Contact -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Blood Group
+        </label>
+        <select name="blood_group" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          <option value="">-- Blood Group --</option>
+          <option value="A+" {% if profile.blood_group == "A+" %}selected{% endif %}>A+</option>
+          <option value="A-" {% if profile.blood_group == "A-" %}selected{% endif %}>A-</option>
+          <option value="B+" {% if profile.blood_group == "B+" %}selected{% endif %}>B+</option>
+          <option value="B-" {% if profile.blood_group == "B-" %}selected{% endif %}>B-</option>
+          <option value="O+" {% if profile.blood_group == "O+" %}selected{% endif %}>O+</option>
+          <option value="O-" {% if profile.blood_group == "O-" %}selected{% endif %}>O-</option>
+          <option value="AB+" {% if profile.blood_group == "AB+" %}selected{% endif %}>AB+</option>
+          <option value="AB-" {% if profile.blood_group == "AB-" %}selected{% endif %}>AB-</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Emergency Contact
+        </label>
+        <input type="text" name="emergency_contact" value="{{ profile.emergency_contact|default:'' }}" placeholder="e.g. 9876543210 (Spouse)"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <!-- Address -->
     <div>
       <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
-        City / Location
+        Residential Address / City
       </label>
-      <input type="text" name="city" value="{{ profile.city|default:'' }}"
+      <input type="text" name="address" value="{{ profile.address|default:'' }}"
         style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+    </div>
+
+    <!-- Medical Notes -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Clinical Notes &amp; Medical History
+      </label>
+      <textarea name="medical_notes" rows="3"
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box; resize: vertical;">{{ profile.medical_notes|default:'' }}</textarea>
     </div>
 
     <!-- Submit and Cancel Buttons -->

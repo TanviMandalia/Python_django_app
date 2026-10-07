@@ -1,0 +1,125 @@
+{% extends "super_admin/base_super_admin.html" %}
+{% load static %}
+
+{% block title %}Super Admin — Subscription Plans &amp; Pricing{% endblock %}
+{% block page_title %}💎 Subscription Plans &amp; Pricing{% endblock %}
+{% block page_subtitle %}Configure multi-tenant subscription tiers, billing periods, pricing, and default feature bundles{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'super_admin_add_plan' %}" class="sa-btn sa-btn-primary sa-btn-sm">
+  <i class="fas fa-plus-circle"></i> <span>Create New Plan</span>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="sa-card" style="margin-bottom: 24px;">
+  <div class="sa-card-header">
+    <div class="sa-card-title">
+      <i class="fas fa-layer-group" style="color: var(--sa-purple);"></i>
+      <span>Available Subscription Tiers ({{ plans|length }})</span>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <a href="{% url 'super_admin_access_matrix' %}" class="sa-btn sa-btn-secondary sa-btn-sm">
+        <i class="fas fa-table-cells"></i> View Access Matrix
+      </a>
+      <a href="{% url 'super_admin_add_plan' %}" class="sa-btn sa-btn-primary sa-btn-sm">
+        <i class="fas fa-plus"></i> Add Plan
+      </a>
+    </div>
+  </div>
+
+  <div class="sa-table-responsive">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Tier Level</th>
+          <th>Plan Details</th>
+          <th>Monthly Price</th>
+          <th>Annual Price</th>
+          <th>Trial Days</th>
+          <th>Quotas (Patients / Appts / Staff)</th>
+          <th>Active Clinics</th>
+          <th>Features Included</th>
+          <th>Status</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in plans_data %}
+        {% with p=item.plan %}
+        <tr>
+          <td>
+            <span class="sa-badge" style="background: #f1f5f9; color: var(--sa-dark); font-weight: 800;">
+              L{{ p.tier_level }}
+            </span>
+          </td>
+          <td>
+            <div style="font-weight: 700; color: var(--sa-dark); font-size: 0.95rem;">
+              {{ p.display_name }}
+            </div>
+            <div style="font-size: 0.76rem; color: var(--sa-text-muted);">
+              Code: <code>{{ p.code|default:p.name }}</code> &nbsp;·&nbsp;
+              {% if p.is_public %}<span style="color: #10b981;">Public</span>{% else %}<span style="color: #94a3b8;">Private / Custom</span>{% endif %}
+            </div>
+          </td>
+          <td>
+            <strong style="color: var(--sa-dark); font-size: 0.96rem;">₹{{ p.price_monthly }}</strong>
+            <small style="color: var(--sa-text-muted);">/mo</small>
+          </td>
+          <td>
+            <strong style="color: var(--sa-dark); font-size: 0.96rem;">₹{{ p.price_annual }}</strong>
+            <small style="color: var(--sa-text-muted);">/yr</small>
+          </td>
+          <td>{{ p.trial_days }} days</td>
+          <td>
+            <div style="font-size: 0.78rem;">
+              <strong>{{ p.max_patients }}</strong> Patients &nbsp;·&nbsp;
+              <strong>{{ p.max_appointments_monthly }}</strong> Appts/mo &nbsp;·&nbsp;
+              <strong>{{ p.max_staff }}</strong> Staff &nbsp;·&nbsp;
+              <strong>{{ p.storage_mb }}</strong> MB
+            </div>
+          </td>
+          <td>
+            <span class="sa-badge" style="background: #ede9fe; color: #6d28d9; font-weight: 700;">
+              {{ item.clinic_count }} Clinics
+            </span>
+          </td>
+          <td>
+            <span class="sa-badge sa-badge-active">
+              {{ item.feature_count }} features
+            </span>
+          </td>
+          <td>
+            {% if p.is_active %}
+              <span class="sa-badge sa-badge-active">Active</span>
+            {% else %}
+              <span class="sa-badge sa-badge-inactive">Archived</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right; white-space: nowrap;">
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <a href="{% url 'super_admin_edit_plan' p.id %}" class="sa-btn sa-btn-secondary sa-btn-sm" title="Edit Plan">
+                <i class="fas fa-edit"></i> Edit
+              </a>
+              <form method="post" action="{% url 'super_admin_duplicate_plan' p.id %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="sa-btn sa-btn-secondary sa-btn-sm" title="Duplicate Plan">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </form>
+              <form method="post" action="{% url 'super_admin_toggle_plan' p.id %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="sa-btn sa-btn-sm" style="background: {% if p.is_active %}#f1f5f9; color: #64748b;{% else %}#dcfce7; color: #15803d;{% endif %}" title="{% if p.is_active %}Archive Plan{% else %}Activate Plan{% endif %}">
+                  <i class="fas {% if p.is_active %}fa-eye-slash{% else %}fa-check{% endif %}"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

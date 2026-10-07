@@ -1,0 +1,161 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block title %}Register New Patient - Dr. Dhvani Patalia Physio Rehab{% endblock %}
+{% block page_title %}Register New Patient{% endblock %}
+{% block page_subtitle %}Add a new patient record to the clinic directory{% endblock %}
+
+{% block content %}
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon" style="background: rgba(245, 197, 24, 0.15); color: #997400;">
+      <i class="fas fa-user-plus"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>Register New Patient</h2>
+      <p>Enter patient personal details, contact information, date of joining, and clinical background.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'admin_patients' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+      <i class="fas fa-arrow-left"></i> Back to Patients
+    </a>
+  </div>
+</div>
+
+<div class="admin-card" style="max-width: 850px; margin: 0 auto;">
+  <div class="admin-card-header">
+    <h3><i class="fas fa-id-card text-primary"></i> Patient Registration Form</h3>
+    <span class="badge-status badge-info">New Patient Intake</span>
+  </div>
+
+  <form method="POST" action="{% url 'add_patient' %}" style="display: flex; flex-direction: column; gap: 20px; padding-top: 10px;">
+    {% csrf_token %}
+
+    <!-- Name Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          First Name <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <input type="text" name="first_name" required placeholder="e.g. Rahul"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Last Name <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <input type="text" name="last_name" required placeholder="e.g. Sharma"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <!-- Contact Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Email Address <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <input type="email" name="email" required placeholder="patient@example.com"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Phone Number <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <input type="tel" name="phone_number" required placeholder="e.g. 9409510501"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <!-- Demographics & Dates -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Gender
+        </label>
+        <select name="gender" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          <option value="">-- Select Gender --</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Date of Birth
+        </label>
+        <input type="date" name="date_of_birth"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Date of Joining / First Visit <span style="color: var(--admin-danger);">*</span>
+        </label>
+        <input type="date" name="joining_date" value="{% now 'Y-m-d' %}" required
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <!-- Medical Baseline -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Blood Group
+        </label>
+        <select name="blood_group" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #fff;">
+          <option value="">-- Blood Group --</option>
+          <option value="A+">A+</option>
+          <option value="A-">A-</option>
+          <option value="B+">B+</option>
+          <option value="B-">B-</option>
+          <option value="O+">O+</option>
+          <option value="O-">O-</option>
+          <option value="AB+">AB+</option>
+          <option value="AB-">AB-</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+          Emergency Contact
+        </label>
+        <input type="text" name="emergency_contact" placeholder="e.g. 9876543210 (Spouse/Parent)"
+          style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+      </div>
+    </div>
+
+    <!-- Address -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Residential Address / City
+      </label>
+      <input type="text" name="address" placeholder="e.g. Street, Area, City"
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box;" />
+    </div>
+
+    <!-- Medical Notes -->
+    <div>
+      <label style="display: block; font-weight: 600; font-size: 0.85rem; color: var(--admin-dark); margin-bottom: 6px;">
+        Initial Medical Notes &amp; Symptoms
+      </label>
+      <textarea name="medical_notes" rows="3" placeholder="e.g. Chronic lower back pain, posture stiffness, sciatica symptoms..."
+        style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--admin-border); font-size: 0.9rem; box-sizing: border-box; resize: vertical;"></textarea>
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; gap: 12px; margin-top: 10px; justify-content: flex-end;">
+      <a href="{% url 'admin_patients' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
+        Cancel
+      </a>
+      <button type="submit" class="topbar-action-link btn-topbar-primary" style="cursor: pointer; border: none; font-size: 0.9rem;">
+        <i class="fas fa-save"></i> Register Patient
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
