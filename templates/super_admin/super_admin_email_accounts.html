@@ -60,6 +60,7 @@
           <th>Scope / Hospital</th>
           <th>Host &amp; Port</th>
           <th>Sender Identity</th>
+          <th>Auth &amp; Credential</th>
           <th>Security</th>
           <th>Status</th>
           <th style="text-align: right;">Actions</th>
@@ -105,6 +106,17 @@
             {% endif %}
           </td>
           <td>
+            {% if a.encrypted_password %}
+              <span class="badge" style="background:#dcfce7; color:#15803d; font-size:0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: 600;">
+                <i class="fas fa-lock"></i> Configured
+              </span>
+            {% else %}
+              <span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.75rem; padding: 4px 8px; border-radius: 6px; font-weight: 600;">
+                <i class="fas fa-exclamation-triangle"></i> No Password
+              </span>
+            {% endif %}
+          </td>
+          <td>
             {% if a.use_ssl %}
               <span style="font-size: 0.75rem; color: #059669; font-weight: 600;"><i class="fas fa-lock"></i> SSL (Port 465)</span>
             {% elif a.use_tls %}
@@ -130,7 +142,7 @@
 
               <!-- EDIT BUTTON -->
               <button type="button" class="sa-btn sa-btn-sm" style="background: #f8fafc; color: var(--sa-dark); border: 1px solid var(--sa-border);"
-                      onclick="openEditAccountModal('{{ a.id }}', '{{ a.name|escapejs }}', '{{ a.account_type }}', '{{ a.scope_type }}', '{{ a.hospital_id|default:'' }}', '{{ a.provider }}', '{{ a.host|escapejs }}', '{{ a.port }}', '{{ a.username|escapejs }}', '{{ a.from_email|escapejs }}', '{{ a.from_name|escapejs }}', '{{ a.reply_to|escapejs }}', {{ a.use_tls|yesno:'true,false' }}, {{ a.use_ssl|yesno:'true,false' }}, {{ a.is_default|yesno:'true,false' }})">
+                      onclick="openEditAccountModal('{{ a.id }}', '{{ a.name|escapejs }}', '{{ a.account_type }}', '{{ a.scope_type }}', '{{ a.hospital_id|default:'' }}', '{{ a.provider }}', '{{ a.host|escapejs }}', '{{ a.port }}', '{{ a.username|escapejs }}', '{{ a.from_email|escapejs }}', '{{ a.from_name|escapejs }}', '{{ a.reply_to|escapejs }}', {{ a.use_tls|yesno:'true,false' }}, {{ a.use_ssl|yesno:'true,false' }}, {{ a.is_default|yesno:'true,false' }}, {{ a.encrypted_password|yesno:'true,false' }})">
                 <i class="fas fa-edit"></i> Edit
               </button>
 
@@ -170,7 +182,7 @@
       <button onclick="closeModal('accountModal')" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;">&times;</button>
     </div>
 
-    <form method="POST" action="{% url 'super_admin_email_account_save' %}" style="padding: 20px; overflow-y: auto; flex: 1;">
+    <form id="accountForm" method="POST" action="{% url 'super_admin_email_account_save' %}" style="padding: 20px; overflow-y: auto; flex: 1;" onsubmit="handleAccountFormSubmit(event)">
       {% csrf_token %}
       <input type="hidden" name="account_id" id="modalAccountId">
 
@@ -216,13 +228,13 @@
           <input type="text" name="host" id="modalHost" class="form-control" required placeholder="smtp.gmail.com / mail.domain.com">
         </div>
         <div>
-          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">Port *</label>
-          <input type="number" name="port" id="modalPort" class="form-control" required value="587">
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">Port (1-65535) *</label>
+          <input type="number" name="port" id="modalPort" class="form-control" required value="587" min="1" max="65535" oninput="handlePortChange()">
         </div>
         <div>
           <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">Provider</label>
-          <select name="provider" id="modalProvider" class="form-control">
-            <option value="smtp">SMTP</option>
+          <select name="provider" id="modalProvider" class="form-control" onchange="handleProviderChange()">
+            <option value="smtp">Custom SMTP</option>
             <option value="gmail">Gmail / Workspace</option>
             <option value="office365">Office 365</option>
             <option value="sendgrid">SendGrid</option>
@@ -233,11 +245,11 @@
 
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; gap: 20px;">
         <label style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" name="use_tls" id="modalUseTls" checked>
-          <span>Enable TLS (Port 587)</span>
+          <input type="checkbox" name="use_tls" id="modalUseTls" checked onchange="handleTlsToggle()">
+          <span>Enable TLS (Port 587 recommended)</span>
         </label>
         <label style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" name="use_ssl" id="modalUseSsl">
+          <input type="checkbox" name="use_ssl" id="modalUseSsl" onchange="handleSslToggle()">
           <span>Enable SSL (Port 465)</span>
         </label>
         <label style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">
@@ -252,8 +264,20 @@
           <input type="text" name="username" id="modalUsername" class="form-control" required placeholder="username or login email">
         </div>
         <div>
-          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">SMTP Password / Token</label>
-          <input type="password" name="password" id="modalPassword" class="form-control" placeholder="Leave blank to keep existing password">
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">
+            SMTP Password / App Password
+            <span id="passwordIndicatorBadge" style="margin-left: 6px;"></span>
+          </label>
+          <input type="password" name="password" id="modalPassword" class="form-control" placeholder="Enter password or App Password" autocomplete="new-password">
+          <div id="clearPasswordGroup" style="display: none; margin-top: 6px;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #dc2626; cursor: pointer;">
+              <input type="checkbox" name="clear_password" id="modalClearPassword">
+              <span>Remove stored password from database</span>
+            </label>
+          </div>
+          <small style="color: #64748b; font-size: 0.74rem; display: block; margin-top: 4px;">
+            For Gmail accounts, generate a 16-character Google App Password with 2-Step Verification enabled.
+          </small>
         </div>
       </div>
 
@@ -264,7 +288,7 @@
         </div>
         <div>
           <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">From Name</label>
-          <input type="text" name="from_name" id="modalFromName" class="form-control" placeholder="e.g. Platform System">
+          <input type="text" name="from_name" id="modalFromName" class="form-control" placeholder="e.g. TechCraft">
         </div>
       </div>
 
@@ -275,7 +299,9 @@
 
       <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
         <button type="button" class="sa-btn" onclick="closeModal('accountModal')">Cancel</button>
-        <button type="submit" class="sa-btn sa-btn-primary">Save Account</button>
+        <button type="submit" id="saveAccountBtn" class="sa-btn sa-btn-primary">
+          <i class="fas fa-save" style="margin-right: 6px;"></i> Save Account
+        </button>
       </div>
     </form>
   </div>
@@ -291,7 +317,7 @@
       <button onclick="closeModal('testModal')" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;">&times;</button>
     </div>
 
-    <form id="testForm" method="POST" action="" style="padding: 20px;">
+    <form id="testForm" method="POST" action="" style="padding: 20px;" onsubmit="handleTestFormSubmit(event)">
       {% csrf_token %}
       <div style="margin-bottom: 14px;">
         <p style="font-size: 0.85rem; color: #334155; margin: 0 0 6px 0;">
@@ -306,7 +332,7 @@
         <label style="font-size: 0.82rem; font-weight: 600; color: var(--sa-dark); display: block; margin-bottom: 4px;">
           Send Real Test Message To Recipient:
         </label>
-        <input type="email" name="test_recipient" class="form-control" placeholder="e.g. mandaliatanvi1504@gmail.com" required>
+        <input type="email" name="test_recipient" id="testRecipientInput" class="form-control" placeholder="e.g. techcraft1215@gmail.com" required>
         <small style="color: #64748b; font-size: 0.76rem; display: block; margin-top: 4px;">
           This executes a real TCP/TLS handshake against the remote SMTP server and dispatches an authentic test email.
         </small>
@@ -314,7 +340,7 @@
 
       <div style="display: flex; justify-content: flex-end; gap: 10px;">
         <button type="button" class="sa-btn" onclick="closeModal('testModal')">Cancel</button>
-        <button type="submit" class="sa-btn sa-btn-primary" style="background: #2563eb;">
+        <button type="submit" id="testSubmitBtn" class="sa-btn sa-btn-primary" style="background: #2563eb;">
           <i class="fas fa-paper-plane" style="margin-right: 6px;"></i> Send Live Test Email
         </button>
       </div>
@@ -337,6 +363,71 @@
     group.style.display = (scope === 'hospital') ? 'block' : 'none';
   }
 
+  function handleProviderChange() {
+    const provider = document.getElementById('modalProvider').value;
+    const hostInput = document.getElementById('modalHost');
+    const portInput = document.getElementById('modalPort');
+    const tlsCheckbox = document.getElementById('modalUseTls');
+    const sslCheckbox = document.getElementById('modalUseSsl');
+
+    if (provider === 'gmail') {
+      if (!hostInput.value || hostInput.value.includes('mail.')) hostInput.value = 'smtp.gmail.com';
+      portInput.value = '587';
+      tlsCheckbox.checked = true;
+      sslCheckbox.checked = false;
+    } else if (provider === 'office365') {
+      if (!hostInput.value || hostInput.value.includes('mail.')) hostInput.value = 'smtp.office365.com';
+      portInput.value = '587';
+      tlsCheckbox.checked = true;
+      sslCheckbox.checked = false;
+    }
+  }
+
+  function handleTlsToggle() {
+    const tlsCheckbox = document.getElementById('modalUseTls');
+    const sslCheckbox = document.getElementById('modalUseSsl');
+    if (tlsCheckbox.checked) {
+      sslCheckbox.checked = false;
+    }
+  }
+
+  function handleSslToggle() {
+    const tlsCheckbox = document.getElementById('modalUseTls');
+    const sslCheckbox = document.getElementById('modalUseSsl');
+    if (sslCheckbox.checked) {
+      tlsCheckbox.checked = false;
+    }
+  }
+
+  function handlePortChange() {
+    const portVal = parseInt(document.getElementById('modalPort').value, 10);
+    const tlsCheckbox = document.getElementById('modalUseTls');
+    const sslCheckbox = document.getElementById('modalUseSsl');
+    if (portVal === 465) {
+      sslCheckbox.checked = true;
+      tlsCheckbox.checked = false;
+    } else if (portVal === 587) {
+      tlsCheckbox.checked = true;
+      sslCheckbox.checked = false;
+    }
+  }
+
+  function handleAccountFormSubmit(e) {
+    const btn = document.getElementById('saveAccountBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i> Saving Account...';
+    }
+  }
+
+  function handleTestFormSubmit(e) {
+    const btn = document.getElementById('testSubmitBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i> Connecting to SMTP & Sending...';
+    }
+  }
+
   function openAddAccountModal() {
     document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--sa-purple);"></i> Add New Email Account';
     document.getElementById('modalAccountId').value = '';
@@ -344,22 +435,31 @@
     document.getElementById('modalAccountType').value = 'PLATFORM';
     document.getElementById('modalScopeType').value = 'platform';
     document.getElementById('modalHospitalId').value = '';
-    document.getElementById('modalProvider').value = 'smtp';
-    document.getElementById('modalHost').value = '';
+    document.getElementById('modalProvider').value = 'gmail';
+    document.getElementById('modalHost').value = 'smtp.gmail.com';
     document.getElementById('modalPort').value = '587';
     document.getElementById('modalUsername').value = '';
     document.getElementById('modalPassword').value = '';
+    document.getElementById('modalPassword').placeholder = 'Enter password or App Password';
+    document.getElementById('passwordIndicatorBadge').innerHTML = '';
+    document.getElementById('clearPasswordGroup').style.display = 'none';
+    document.getElementById('modalClearPassword').checked = false;
     document.getElementById('modalFromEmail').value = '';
     document.getElementById('modalFromName').value = '';
     document.getElementById('modalReplyTo').value = '';
     document.getElementById('modalUseTls').checked = true;
     document.getElementById('modalUseSsl').checked = false;
     document.getElementById('modalIsDefault').checked = false;
+    const saveBtn = document.getElementById('saveAccountBtn');
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fas fa-save" style="margin-right: 6px;"></i> Save Account';
+    }
     toggleHospitalDropdown();
     openModal('accountModal');
   }
 
-  function openEditAccountModal(id, name, accountType, scopeType, hospitalId, provider, host, port, username, fromEmail, fromName, replyTo, useTls, useSsl, isDefault) {
+  function openEditAccountModal(id, name, accountType, scopeType, hospitalId, provider, host, port, username, fromEmail, fromName, replyTo, useTls, useSsl, isDefault, hasPassword) {
     document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit" style="color: var(--sa-purple);"></i> Edit Email Account';
     document.getElementById('modalAccountId').value = id;
     document.getElementById('modalName').value = name;
@@ -377,6 +477,27 @@
     document.getElementById('modalUseTls').checked = useTls;
     document.getElementById('modalUseSsl').checked = useSsl;
     document.getElementById('modalIsDefault').checked = isDefault;
+
+    const badge = document.getElementById('passwordIndicatorBadge');
+    const clearGroup = document.getElementById('clearPasswordGroup');
+    document.getElementById('modalClearPassword').checked = false;
+
+    if (hasPassword) {
+      badge.innerHTML = '<span class="badge" style="background:#dcfce7; color:#15803d; font-size:0.72rem; padding: 2px 6px; border-radius: 4px;"><i class="fas fa-check-circle"></i> Password Configured</span>';
+      document.getElementById('modalPassword').placeholder = '•••••••••••• (Leave blank to keep existing password)';
+      clearGroup.style.display = 'block';
+    } else {
+      badge.innerHTML = '<span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.72rem; padding: 2px 6px; border-radius: 4px;"><i class="fas fa-exclamation-triangle"></i> No Password</span>';
+      document.getElementById('modalPassword').placeholder = 'Enter SMTP password or App Password';
+      clearGroup.style.display = 'none';
+    }
+
+    const saveBtn = document.getElementById('saveAccountBtn');
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fas fa-save" style="margin-right: 6px;"></i> Save Account';
+    }
+
     toggleHospitalDropdown();
     openModal('accountModal');
   }
@@ -385,6 +506,11 @@
     document.getElementById('testAccountName').innerText = accountName;
     document.getElementById('testAccountSender').innerText = fromEmail;
     document.getElementById('testForm').action = '/super-admin/email-accounts/' + accountId + '/test/';
+    const testBtn = document.getElementById('testSubmitBtn');
+    if (testBtn) {
+      testBtn.disabled = false;
+      testBtn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right: 6px;"></i> Send Live Test Email';
+    }
     openModal('testModal');
   }
 </script>

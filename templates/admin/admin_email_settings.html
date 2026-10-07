@@ -110,13 +110,21 @@
           <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
             SMTP Password / App Password
             {% if has_password %}
-              <span class="badge" style="background:#10b981; color:#fff; font-size:0.72rem; padding: 2px 6px; border-radius: 4px; margin-left:6px;">Configured</span>
+              <span class="badge" style="background:#10b981; color:#fff; font-size:0.72rem; padding: 2px 6px; border-radius: 4px; margin-left:6px;"><i class="fas fa-check-circle"></i> Configured</span>
             {% endif %}
           </label>
-          <input type="password" name="password" class="form-control"
+          <input type="password" name="password" class="form-control" autocomplete="new-password"
                  placeholder="{% if has_password %}•••••••••••• (Leave blank to keep existing password){% else %}Enter SMTP password or App Password{% endif %}">
+          {% if has_password %}
+            <div style="margin-top: 6px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #dc2626; cursor: pointer;">
+                <input type="checkbox" name="clear_password" id="clearPassword">
+                <span>Remove stored password from database</span>
+              </label>
+            </div>
+          {% endif %}
           <small style="color: var(--admin-text-sub); font-size: 0.76rem; display: block; margin-top: 4px;">
-            For Gmail/Workspace accounts, use a dedicated 16-character App Password.
+            For Gmail/Workspace accounts, use a dedicated 16-character Google App Password.
           </small>
         </div>
       </div>

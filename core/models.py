@@ -1312,26 +1312,57 @@ class EmailAccount(models.Model):
 
     def set_password(self, raw_password):
         from .crypto import encrypt_credential
-        self.encrypted_password = encrypt_credential(raw_password)
+        clean_pwd = (raw_password or "").strip()
+        # For Gmail / Workspace accounts (16-char App Passwords), safely strip display spaces
+        if clean_pwd and (
+            getattr(self, "provider", "") == "gmail"
+            or "gmail.com" in (getattr(self, "host", "") or "").lower()
+            or len(clean_pwd.replace(" ", "")) == 16
+        ):
+            clean_pwd = clean_pwd.replace(" ", "")
+        self.encrypted_password = encrypt_credential(clean_pwd)
 
     def get_password(self):
         from .crypto import decrypt_credential
-        return decrypt_credential(self.encrypted_password)
+        pwd = decrypt_credential(self.encrypted_password) or ""
+        clean_pwd = pwd.strip()
+        if clean_pwd and (
+            getattr(self, "provider", "") == "gmail"
+            or "gmail.com" in (getattr(self, "host", "") or "").lower()
+            or len(clean_pwd.replace(" ", "")) == 16
+        ):
+            clean_pwd = clean_pwd.replace(" ", "")
+        return clean_pwd
 
-    def get_connection(self, fail_silently=False, timeout=15):
+    def get_connection(self, fail_silently=False, timeout=15, force_smtp=False):
         from django.conf import settings
         from django.core.mail import get_connection
+
         backend = getattr(settings, "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
-        if "console" in backend or "locmem" in backend:
+        # In unit tests, honor locmem unless force_smtp is explicitly requested
+        if not force_smtp and "locmem" in backend:
             return get_connection(backend=backend)
+
+        # Enforce encryption mutual exclusivity
+        effective_tls = self.use_tls
+        effective_ssl = self.use_ssl
+        if self.port == 587:
+            effective_tls = True
+            effective_ssl = False
+        elif self.port == 465:
+            effective_ssl = True
+            effective_tls = False
+        elif effective_tls and effective_ssl:
+            effective_ssl = False
+
         return get_connection(
             backend="django.core.mail.backends.smtp.EmailBackend",
             host=self.host,
             port=self.port,
             username=self.username,
             password=self.get_password(),
-            use_tls=self.use_tls,
-            use_ssl=self.use_ssl,
+            use_tls=effective_tls,
+            use_ssl=effective_ssl,
             timeout=timeout,
             fail_silently=fail_silently,
         )

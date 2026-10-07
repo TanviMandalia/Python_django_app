@@ -15,6 +15,8 @@ Validates:
 7. Safe diagnostic connection testing without credential leakage.
 """
 
+import smtplib
+from unittest.mock import patch, MagicMock
 from django.core import mail
 from django.urls import reverse
 from django.contrib.auth.models import User
@@ -319,6 +321,113 @@ class TestEmailConfigurationRBAC(BaseHospitalTestCase):
         self.assertIsNotNone(account)
         self.assertEqual(account.get_password(), "NewSecretPassword123")
 
+    def test_blank_password_preserves_existing_credentials(self):
+        """Updating account with empty password keeps the original password unchanged."""
+        self.client.force_login(self.super_admin)
+        account = EmailAccount.objects.create(
+            name="Preserve Password Test",
+            account_type="PLATFORM",
+            scope_type="platform",
+            host="smtp.gmail.com",
+            port=587,
+            username="test@gmail.com",
+            from_email="test@gmail.com",
+        )
+        account.set_password("OriginalSecret123")
+        account.save()
+
+        save_data = {
+            "account_id": account.id,
+            "name": "Preserve Password Test Updated",
+            "account_type": "PLATFORM",
+            "scope_type": "platform",
+            "host": "smtp.gmail.com",
+            "port": "587",
+            "provider": "gmail",
+            "username": "test@gmail.com",
+            "password": "",  # Blank: should keep existing
+            "from_email": "test@gmail.com",
+        }
+        res = self.client.post(reverse("super_admin_email_account_save"), save_data)
+        self.assertEqual(res.status_code, 302)
+
+        account.refresh_from_db()
+        self.assertEqual(account.name, "Preserve Password Test Updated")
+        self.assertEqual(account.get_password(), "OriginalSecret123")
+
+    def test_clear_password_removes_existing_credentials(self):
+        """Selecting clear_password checkbox empties stored encrypted credentials."""
+        self.client.force_login(self.super_admin)
+        account = EmailAccount.objects.create(
+            name="Clear Password Test",
+            account_type="PLATFORM",
+            scope_type="platform",
+            host="smtp.gmail.com",
+            port=587,
+            username="test@gmail.com",
+            from_email="test@gmail.com",
+        )
+        account.set_password("OldSecretToClear")
+        account.save()
+
+        save_data = {
+            "account_id": account.id,
+            "name": "Clear Password Test",
+            "account_type": "PLATFORM",
+            "scope_type": "platform",
+            "host": "smtp.gmail.com",
+            "port": "587",
+            "provider": "gmail",
+            "username": "test@gmail.com",
+            "password": "",
+            "clear_password": "on",
+            "from_email": "test@gmail.com",
+        }
+        res = self.client.post(reverse("super_admin_email_account_save"), save_data)
+        self.assertEqual(res.status_code, 302)
+
+        account.refresh_from_db()
+        self.assertEqual(account.get_password(), "")
+
+    def test_google_app_password_space_stripping(self):
+        """Google App Passwords copied with display spaces (xxxx xxxx xxxx xxxx) are cleanly normalized."""
+        self.client.force_login(self.super_admin)
+        save_data = {
+            "name": "Google App Password Normalization Test",
+            "account_type": "PLATFORM",
+            "scope_type": "platform",
+            "host": "smtp.gmail.com",
+            "port": "587",
+            "provider": "gmail",
+            "username": "techcraft1215@gmail.com",
+            "password": "abcd efgh ijkl mnop",  # 16-char App Password with Google display spaces
+            "from_email": "techcraft1215@gmail.com",
+            "use_tls": "on",
+        }
+        res = self.client.post(reverse("super_admin_email_account_save"), save_data)
+        self.assertEqual(res.status_code, 302)
+
+        account = EmailAccount.objects.filter(name="Google App Password Normalization Test").first()
+        self.assertIsNotNone(account)
+        self.assertEqual(account.get_password(), "abcdefghijklmnop")
+
+    def test_invalid_port_rejected(self):
+        """Invalid port numbers (<=0 or >65535 or non-numeric) are safely rejected."""
+        self.client.force_login(self.super_admin)
+        save_data = {
+            "name": "Invalid Port Test",
+            "account_type": "PLATFORM",
+            "scope_type": "platform",
+            "host": "smtp.gmail.com",
+            "port": "99999",  # Out of range
+            "provider": "smtp",
+            "username": "user@gmail.com",
+            "from_email": "user@gmail.com",
+        }
+        res = self.client.post(reverse("super_admin_email_account_save"), save_data)
+        self.assertEqual(res.status_code, 302)
+        self.assertFalse(EmailAccount.objects.filter(name="Invalid Port Test").exists())
+
     def test_clinic_admin_own_clinic_access(self):
         """Clinic Admin can access and update their own clinic's email configuration."""
         self.client.force_login(self.clinic_admin_a)
@@ -390,3 +499,114 @@ class TestDiagnosticConnectionTest(BaseHospitalTestCase):
         self.assertTrue(ok)
         self.assertIn("✅", msg)
         self.assertNotIn(raw_password, msg)
+
+    def test_test_account_connection_missing_password(self):
+        """Account without configured password returns informative error before socket attempt."""
+        account = EmailAccount.objects.create(
+            name="No Password Account",
+            account_type="PLATFORM",
+            scope_type="platform",
+            host="smtp.gmail.com",
+            port=587,
+            username="techcraft1215@gmail.com",
+            from_email="techcraft1215@gmail.com",
+        )
+        ok, msg = run_account_connection_test(account, "recipient@test.com")
+        self.assertFalse(ok)
+        self.assertIn("❌", msg)
+        self.assertIn("No SMTP password or App Password is configured", msg)
+
+    def test_test_account_connection_invalid_recipient(self):
+        """Malformed recipient address is rejected with validation message."""
+        account = EmailAccount.objects.create(
+            name="Valid Account",
+            account_type="PLATFORM",
+            scope_type="platform",
+            host="smtp.gmail.com",
+            port=587,
+            username="techcraft1215@gmail.com",
+            from_email="techcraft1215@gmail.com",
+        )
+        account.set_password("ValidPassword123")
+        account.save()
+
+        ok, msg = run_account_connection_test(account, "not-an-email-address")
+        self.assertFalse(ok)
+        self.assertIn("❌", msg)
+        self.assertIn("Invalid recipient email address", msg)
+
+    @patch("django.core.mail.backends.smtp.EmailBackend.open")
+    def test_test_account_connection_auth_error_diagnostic(self, mock_open):
+        """SMTP Authentication Error (535) produces actionable Google App Password guidance."""
+        mock_open.side_effect = smtplib.SMTPAuthenticationError(535, b"5.7.8 BadCredentials")
+
+        account = EmailAccount.objects.create(
+            name="Gmail Test Account",
+            account_type="PLATFORM",
+            scope_type="platform",
+            host="smtp.gmail.com",
+            port=587,
+            username="techcraft1215@gmail.com",
+            from_email="techcraft1215@gmail.com",
+        )
+        account.set_password("wrong-app-password")
+        account.save()
+
+        ok, msg = run_account_connection_test(account, "test@example.com", force_smtp=True)
+        self.assertFalse(ok)
+        self.assertIn("❌", msg)
+        self.assertIn("SMTP Authentication Failed (Code 535)", msg)
+        self.assertIn("Google App Password", msg)
+        self.assertNotIn("wrong-app-password", msg)
+
+    @patch("django.core.mail.backends.smtp.EmailBackend.open")
+    def test_test_account_connection_server_disconnected_diagnostic(self, mock_open):
+        """SMTPServerDisconnected produces clear diagnostic about closed connections."""
+        mock_open.side_effect = smtplib.SMTPServerDisconnected("Connection unexpectedly closed")
+
+        account = EmailAccount.objects.create(
+            name="Gmail Test Account",
+            account_type="PLATFORM",
+            scope_type="platform",
+            host="smtp.gmail.com",
+            port=587,
+            username="techcraft1215@gmail.com",
+            from_email="techcraft1215@gmail.com",
+        )
+        account.set_password("anypassword")
+        account.save()
+
+        ok, msg = run_account_connection_test(account, "test@example.com", force_smtp=True)
+        self.assertFalse(ok)
+        self.assertIn("❌", msg)
+        self.assertIn("SMTP Server Disconnected", msg)
+
+    def test_super_admin_test_ajax_endpoint(self):
+        """Posting to test endpoint with XMLHttpRequest returns JSON format."""
+        super_admin = self.create_super_admin(username="ajax_sa")
+        self.client.force_login(super_admin)
+
+        account = EmailAccount.objects.create(
+            name="AJAX Test Account",
+            account_type="PLATFORM",
+            scope_type="platform",
+            host="smtp.gmail.com",
+            port=587,
+            username="test@gmail.com",
+            from_email="test@gmail.com",
+        )
+        account.set_password("Secret123")
+        account.save()
+
+        url = reverse("super_admin_email_account_test", args=[account.id])
+        res = self.client.post(
+            url,
+            {"test_recipient": "recipient@gmail.com"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(res.status_code, 200)
+        json_data = res.json()
+        self.assertIn("ok", json_data)
+        self.assertIn("message", json_data)
+        self.assertTrue(json_data["ok"])
+

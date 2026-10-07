@@ -7363,6 +7363,7 @@ def admin_email_settings(request):
         port_raw = request.POST.get("port", "587").strip()
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "").strip()
+        clear_password = request.POST.get("clear_password") == "on"
         from_email = request.POST.get("from_email", "").strip()
         from_name = request.POST.get("from_name", "").strip()
         reply_to = request.POST.get("reply_to", "").strip()
@@ -7371,12 +7372,25 @@ def admin_email_settings(request):
 
         try:
             port = int(port_raw)
-        except ValueError:
-            port = 587
+            if not (1 <= port <= 65535):
+                raise ValueError()
+        except (ValueError, TypeError):
+            messages.error(request, "Port must be a valid integer between 1 and 65535.")
+            return redirect("admin_email_settings")
 
         if not host or not username or not from_email:
             messages.error(request, "Host, Username, and From Email are required fields.")
             return redirect("admin_email_settings")
+
+        # Mutual exclusivity defense
+        if port == 587:
+            use_tls = True
+            use_ssl = False
+        elif port == 465:
+            use_ssl = True
+            use_tls = False
+        elif use_tls and use_ssl:
+            use_ssl = False
 
         if not account:
             account = EmailAccount(
@@ -7399,8 +7413,13 @@ def admin_email_settings(request):
         account.use_ssl = use_ssl
         account.is_active = True
 
-        if password:
-            account.set_password(password)
+        if clear_password:
+            account.encrypted_password = ""
+        elif password:
+            clean_pwd = password.strip()
+            if provider == "gmail" or "gmail.com" in host.lower() or len(clean_pwd.replace(" ", "")) == 16:
+                clean_pwd = clean_pwd.replace(" ", "")
+            account.set_password(clean_pwd)
 
         account.save()
         messages.success(request, f"Email account for {hospital.name} saved successfully.")
@@ -7448,6 +7467,7 @@ def super_admin_email_account_save(request):
         port_raw = request.POST.get("port", "587").strip()
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "").strip()
+        clear_password = request.POST.get("clear_password") == "on"
         from_email = request.POST.get("from_email", "").strip()
         from_name = request.POST.get("from_name", "").strip()
         reply_to = request.POST.get("reply_to", "").strip()
@@ -7457,12 +7477,25 @@ def super_admin_email_account_save(request):
 
         try:
             port = int(port_raw)
-        except ValueError:
-            port = 587
+            if not (1 <= port <= 65535):
+                raise ValueError()
+        except (ValueError, TypeError):
+            messages.error(request, "Port must be a valid number between 1 and 65535.")
+            return redirect("super_admin_email_accounts")
 
         if not name or not host or not username or not from_email:
             messages.error(request, "Name, Host, Username, and From Email are required.")
             return redirect("super_admin_email_accounts")
+
+        # Mutual exclusivity defense
+        if port == 587:
+            use_tls = True
+            use_ssl = False
+        elif port == 465:
+            use_ssl = True
+            use_tls = False
+        elif use_tls and use_ssl:
+            use_ssl = False
 
         hospital = None
         if scope_type == "hospital" and hospital_id:
@@ -7495,8 +7528,13 @@ def super_admin_email_account_save(request):
                 EmailAccount.objects.filter(hospital=hospital).update(is_default=False)
             account.is_default = True
 
-        if password:
-            account.set_password(password)
+        if clear_password:
+            account.encrypted_password = ""
+        elif password:
+            clean_pwd = password.strip()
+            if provider == "gmail" or "gmail.com" in host.lower() or len(clean_pwd.replace(" ", "")) == 16:
+                clean_pwd = clean_pwd.replace(" ", "")
+            account.set_password(clean_pwd)
 
         account.save()
         messages.success(request, f"Email account '{account.name}' saved successfully.")
@@ -7512,14 +7550,19 @@ def super_admin_email_account_test(request, account_id):
     if request.method == "POST":
         test_recipient = request.POST.get("test_recipient", "").strip()
         if not test_recipient:
-            messages.error(request, "Please enter a valid test recipient email.")
+            msg = "Please enter a valid test recipient email."
+            ok = False
         else:
             from .email_service import test_account_connection
             ok, msg = test_account_connection(account, test_recipient)
-            if ok:
-                messages.success(request, msg)
-            else:
-                messages.error(request, msg)
+
+        if request.headers.get("x-requested-with") == "XMLHttpRequest" or request.content_type == "application/json":
+            return JsonResponse({"ok": ok, "message": msg})
+
+        if ok:
+            messages.success(request, msg)
+        else:
+            messages.error(request, msg)
     return redirect("super_admin_email_accounts")
 
 

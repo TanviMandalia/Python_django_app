@@ -11,6 +11,9 @@ Provides:
 
 import uuid
 import logging
+import socket
+import ssl
+import smtplib
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
@@ -281,35 +284,180 @@ def send_email_via_account(
     return success_all
 
 
-def test_account_connection(account: EmailAccount, test_recipient: str) -> tuple[bool, str]:
+def test_account_connection(account: EmailAccount, test_recipient: str, force_smtp: bool = False) -> tuple[bool, str]:
     """
-    Test real connection and deliver a diagnostic test email using the EmailAccount.
-    Never exposes passwords or sensitive credentials in the response.
+    Test live SMTP connection, TLS negotiation, authentication, and test message dispatch.
+    Returns (success: bool, diagnostic_message: str).
+    Never exposes passwords or sensitive credentials in the response or logs.
     """
-    subject = f"Test Email from {account.name}"
-    body = (
-        f"This is a verified test email sent from the PhysioRehab Email Service.\n\n"
-        f"Account Name: {account.name}\n"
-        f"Sender: {account.from_email}\n"
-        f"Account Type: {account.get_account_type_display()}\n"
-        f"Scope: {account.get_scope_type_display()}\n"
-        f"Timestamp: {timezone.now().isoformat()}\n\n"
-        f"If you received this email, the SMTP configuration and credentials are functioning correctly."
-    )
+    from .email_utils import validate_recipient_email, sanitize_header_value, render_html_wrapper
+
+    # 1. Validate Recipient Email
     try:
-        ok = send_email_via_account(
-            account=account,
-            subject=subject,
-            body_text=body,
-            recipient_list=[test_recipient],
-            purpose="TEST_EMAIL",
-            hospital=account.hospital,
+        clean_recipient = validate_recipient_email(test_recipient)
+    except ValidationError:
+        return False, f"❌ Invalid recipient email address: '{test_recipient}'. Please provide a valid email format."
+
+    # 2. Validate Account Configuration Fields
+    if not account.host or not account.username or not account.from_email:
+        return False, "❌ Incomplete SMTP configuration. Host, Username, and From Email are required."
+
+    try:
+        port = int(account.port)
+        if not (1 <= port <= 65535):
+            raise ValueError()
+    except (ValueError, TypeError):
+        return False, f"❌ Invalid SMTP port ({account.port}). Port must be between 1 and 65535."
+
+    password = account.get_password()
+    if not password:
+        return False, "❌ Missing credentials: No SMTP password or App Password is configured. Please enter and save credentials before testing."
+
+    # Mutual exclusivity defense
+    if port == 587 and account.use_ssl:
+        return False, "❌ Port 587 requires STARTTLS (TLS), not implicit SSL. Please uncheck SSL and enable TLS."
+    if port == 465 and account.use_tls:
+        return False, "❌ Port 465 requires SSL, not STARTTLS. Please uncheck TLS and enable SSL."
+
+    backend_name = getattr(settings, "EMAIL_BACKEND", "")
+    is_locmem_test = ("locmem" in backend_name and not force_smtp)
+
+    # 3. Establish Connection & Authenticate
+    try:
+        connection = account.get_connection(fail_silently=False, timeout=15, force_smtp=force_smtp)
+        connection.open()
+    except smtplib.SMTPAuthenticationError as auth_err:
+        code = getattr(auth_err, "smtp_code", 535)
+        raw_err = getattr(auth_err, "smtp_error", b"")
+        err_str = raw_err.decode("utf-8", "ignore") if isinstance(raw_err, bytes) else str(raw_err or auth_err)
+        logger.warning(f"SMTP Auth failure for {account.username} on {account.host}: code={code}")
+        if "BadCredentials" in err_str or "5.7.8" in err_str or code == 535:
+            return False, (
+                f"❌ SMTP Authentication Failed (Code 535): Username or App Password rejected by {account.host}. "
+                "For Gmail, verify that 2-Step Verification is active and supply a valid, newly generated "
+                "16-character Google App Password (not your personal Google account password)."
+            )
+        return False, f"❌ SMTP Authentication Failed (Code {code}): {err_str}"
+    except smtplib.SMTPServerDisconnected as disc_err:
+        logger.warning(f"SMTP Server disconnected for {account.host}:{account.port}: {disc_err}")
+        return False, (
+            f"❌ SMTP Server Disconnected: The server at {account.host}:{account.port} unexpectedly closed the connection. "
+            "Common causes: invalid/revoked Google App Password, port/encryption mode mismatch (Port 587 STARTTLS vs Port 465 SSL), "
+            "or security restrictions on the mail host."
         )
-        if ok:
-            return True, f"✅ Test email successfully dispatched to {test_recipient} via {account.from_email}."
-        return False, "❌ Email dispatch failed. Please verify SMTP host, port, and security settings."
+    except smtplib.SMTPConnectError as conn_err:
+        logger.warning(f"SMTP connection error for {account.host}:{account.port}: {conn_err}")
+        return False, f"❌ SMTP Connection Error: Could not connect to {account.host}:{account.port}. Verify host name, port, and firewall rules."
+    except (socket.timeout, TimeoutError):
+        logger.warning(f"SMTP connection timeout for {account.host}:{account.port}")
+        return False, f"❌ Connection Timeout: Connection to {account.host}:{account.port} timed out after 15 seconds. Check outbound network access to SMTP ports."
+    except (socket.gaierror, ConnectionRefusedError) as net_err:
+        logger.warning(f"Network error connecting to {account.host}:{account.port}: {net_err}")
+        return False, f"❌ Network Error: Could not reach {account.host}:{account.port} ({type(net_err).__name__}). Check DNS resolution and internet connectivity."
+    except ssl.SSLError as ssl_err:
+        logger.warning(f"TLS/SSL negotiation error for {account.host}:{account.port}: {ssl_err}")
+        return False, f"❌ TLS/SSL Negotiation Error: {ssl_err}. Verify encryption settings (STARTTLS on port 587 or SSL on port 465)."
     except Exception as e:
-        return False, f"❌ Connection error: {type(e).__name__} - {str(e)}"
+        logger.exception(f"Unexpected connection error for account '{account.name}': {e}")
+        return False, f"❌ SMTP Connection Error: {type(e).__name__} - {str(e)}"
+
+    # 4. Construct Identifiable Test Message
+    sender_title = account.from_name or getattr(settings, "CLINIC_NAME", "TechCraft")
+    clean_sender_title = sanitize_header_value(sender_title)
+    from_header = f"{clean_sender_title} <{account.from_email}>" if clean_sender_title else account.from_email
+    subject = f"SMTP Configuration Test - {clean_sender_title}"
+    msg_id = f"{uuid.uuid4().hex}@{getattr(account, 'host', 'localhost')}"
+    now_str = timezone.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    body_text = (
+        f"SMTP Configuration Test Verification\n"
+        f"------------------------------------\n"
+        f"Account Label : {account.name}\n"
+        f"SMTP Server   : {account.host}:{account.port}\n"
+        f"Security Mode : {'STARTTLS (Port 587)' if account.use_tls else 'SSL (Port 465)' if account.use_ssl else 'Plain'}\n"
+        f"SMTP Username : {account.username}\n"
+        f"From Sender   : {from_header}\n"
+        f"Recipient     : {clean_recipient}\n"
+        f"Dispatched At : {now_str}\n"
+        f"Message ID    : <{msg_id}>\n\n"
+        f"Verification Result: The remote SMTP gateway connection, TLS negotiation, and credentials authenticated successfully.\n"
+        f"This test email confirms that your outgoing mail pipeline is operational."
+    )
+
+    html_content = (
+        f"<p><strong>SMTP Configuration Test Verification</strong></p>"
+        f"<div class=\"box\">"
+        f"<table style=\"width:100%; border-collapse:collapse; font-size:14px;\">"
+        f"<tr><td style=\"padding:4px 0; color:#64748b;\">Account Label:</td><td style=\"font-weight:600;\">{escape(account.name)}</td></tr>"
+        f"<tr><td style=\"padding:4px 0; color:#64748b;\">SMTP Server:</td><td style=\"font-weight:600;\">{escape(account.host)}:{account.port}</td></tr>"
+        f"<tr><td style=\"padding:4px 0; color:#64748b;\">Security Mode:</td><td><span class=\"badge\">{'STARTTLS (Port 587)' if account.use_tls else 'SSL (Port 465)' if account.use_ssl else 'Plain'}</span></td></tr>"
+        f"<tr><td style=\"padding:4px 0; color:#64748b;\">Authenticated:</td><td style=\"font-weight:600;\">{escape(account.username)}</td></tr>"
+        f"<tr><td style=\"padding:4px 0; color:#64748b;\">Sender 'From':</td><td>{escape(from_header)}</td></tr>"
+        f"<tr><td style=\"padding:4px 0; color:#64748b;\">Recipient:</td><td>{escape(clean_recipient)}</td></tr>"
+        f"<tr><td style=\"padding:4px 0; color:#64748b;\">Dispatched At:</td><td>{now_str}</td></tr>"
+        f"</table>"
+        f"</div>"
+        f"<p style=\"color:#059669; font-weight:600;\">"
+        f"The SMTP connection, TLS handshake, and authentication checks have passed successfully."
+        f"</p>"
+    )
+    html_wrapped = render_html_wrapper(subject, html_content)
+
+    email_msg = EmailMultiAlternatives(
+        subject=subject,
+        body=body_text,
+        from_email=from_header,
+        to=[clean_recipient],
+        headers={"Message-ID": f"<{msg_id}>", "X-Mailer": "PhysioRehab-Email-Gateway"},
+        connection=connection,
+    )
+    email_msg.attach_alternative(html_wrapped, "text/html")
+
+    # 5. Dispatch Message
+    try:
+        sent_count = connection.send_messages([email_msg])
+        if sent_count < 1 and not is_locmem_test:
+            return False, "❌ SMTP server did not accept the message for delivery."
+    except smtplib.SMTPRecipientsRefused:
+        return False, f"❌ Recipient Rejected: The SMTP server refused recipient '{clean_recipient}'."
+    except smtplib.SMTPSenderRefused:
+        return False, (
+            f"❌ Sender Rejected: The SMTP server refused sender '{account.from_email}'. "
+            f"For Gmail, the 'From' address must match the authenticated account ({account.username}) or an authorized alias."
+        )
+    except smtplib.SMTPDataError as data_err:
+        return False, f"❌ SMTP Data Error: Server rejected message payload: {data_err}"
+    except Exception as send_err:
+        logger.exception(f"Failed to transmit test message for {account.name}: {send_err}")
+        return False, f"❌ Transmission Error: {type(send_err).__name__} - {str(send_err)}"
+    finally:
+        try:
+            connection.close()
+        except Exception:
+            pass
+
+    # 6. Record Audit Log
+    try:
+        EmailLog.objects.create(
+            account=account if getattr(account, "pk", None) else None,
+            sender_email=account.from_email,
+            hospital=account.hospital,
+            email_type="TEST_EMAIL",
+            recipient_email=clean_recipient,
+            subject=subject,
+            status="sent",
+            message_id=msg_id,
+            sent_at=timezone.now(),
+        )
+    except Exception as log_err:
+        logger.debug(f"EmailLog audit creation failed: {log_err}")
+
+    # 7. Return Result Distinguishing SMTP Acceptance from Inbox Delivery
+    return True, (
+        f"✅ SMTP connection successful and test message accepted by {account.host}:{account.port}! "
+        f"Dispatched to '{clean_recipient}' from '{account.from_email}'. "
+        "(Note: SMTP acceptance confirms the server accepted the message; delivery to inbox depends on recipient mail provider.)"
+    )
 
 
 # Tell pytest not to discover this helper function as a test
