@@ -310,3 +310,8 @@ def test_account_connection(account: EmailAccount, test_recipient: str) -> tuple
         return False, "❌ Email dispatch failed. Please verify SMTP host, port, and security settings."
     except Exception as e:
         return False, f"❌ Connection error: {type(e).__name__} - {str(e)}"
+
+
+# Tell pytest not to discover this helper function as a test
+test_account_connection.__test__ = False
+

@@ -27,7 +27,10 @@ from decimal import Decimal
 import uuid
 
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
 from django.conf import settings
+
+CLINIC_NAME = getattr(settings, "CLINIC_NAME", "PhysioRehab Clinic")
 
 from .models import (
     Appointment,
@@ -62,6 +65,7 @@ from .models import (
     PlanFeature,
     ClinicFeatureOverride,
     SubscriptionHistory,
+    MediaAsset,
 )
 from .entitlements import (
     evaluate_entitlement,

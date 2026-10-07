@@ -25,7 +25,7 @@ from core.email_service import (
     EmailPurpose,
     resolve_email_account,
     send_email_via_account,
-    test_account_connection,
+    test_account_connection as run_account_connection_test,
 )
 from core.email_utils import send_clinic_email, send_appointment_confirmation, send_otp_email
 from tests.test_helpers import BaseHospitalTestCase
@@ -386,7 +386,7 @@ class TestDiagnosticConnectionTest(BaseHospitalTestCase):
         account.set_password(raw_password)
         account.save()
 
-        ok, msg = test_account_connection(account, "mandaliatanvi1504@gmail.com")
+        ok, msg = run_account_connection_test(account, "mandaliatanvi1504@gmail.com")
         self.assertTrue(ok)
         self.assertIn("✅", msg)
         self.assertNotIn(raw_password, msg)
