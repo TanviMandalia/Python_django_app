@@ -1,4 +1,4 @@
-﻿name: Django CI
+name: Django CI
 
 on:
   push:
@@ -36,5 +36,7 @@ jobs:
       env:
         DJANGO_SETTINGS_MODULE: myproject.settings.dev
         DJANGO_SECRET_KEY: ci-test-key-not-for-production
+        DB_ENGINE: django.db.backends.sqlite3
       run: |
         pytest
+
