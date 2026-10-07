@@ -196,5 +196,6 @@ yarn-error.log*
 # Ignore the md/ documentation directory
 /md/
 
-# Explicitly allow ONLY the root README.md to be tracked
-!/README.md
+# Explicitly allow ONLY the root README.md and RELEASE_NOTES.md to be tracked
+!/README.md
+!/RELEASE_NOTES.md
