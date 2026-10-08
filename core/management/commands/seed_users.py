@@ -21,10 +21,12 @@ from core.models import (
 )
 
 
+import os
+
 USERS = [
     {
         "username":     "super_admin_core",
-        "password":     "x0KX#KbokqhqY2JyI8Edr4UR",
+        "env_var":      "SEED_SUPERADMIN_PASSWORD",
         "first_name":   "Super",
         "last_name":    "Admin",
         "email":        "super_admin@physiorehab.com",
@@ -35,7 +37,7 @@ USERS = [
     },
     {
         "username":     "clinic_admin_main",
-        "password":     "f71jQiKG%*hBAeT6DN3tE7XH",
+        "env_var":      "SEED_CLINICADMIN_PASSWORD",
         "first_name":   "Clinic",
         "last_name":    "Admin",
         "email":        "clinic_admin@physiorehab.com",
@@ -46,7 +48,7 @@ USERS = [
     },
     {
         "username":     "physio_staff_pro",
-        "password":     "U#NQSzxIvg5axhMHu1u!7V$S",
+        "env_var":      "SEED_STAFF_PASSWORD",
         "first_name":   "Physio",
         "last_name":    "Staff",
         "email":        "physio_staff@physiorehab.com",
@@ -57,7 +59,7 @@ USERS = [
     },
     {
         "username":     "patient_user_primary",
-        "password":     "AzzjrOB5eUuugbt$8U8fOHPx",
+        "env_var":      "SEED_PATIENT_PASSWORD",
         "first_name":   "Patient",
         "last_name":    "Account",
         "email":        "patient_user@physiorehab.com",
@@ -101,7 +103,16 @@ class Command(BaseCommand):
 
             # Django User
             user, u_created = User.objects.get_or_create(username=username)
-            user.set_password(u_data["password"])
+            env_pwd = os.getenv(u_data["env_var"])
+            if env_pwd:
+                user.set_password(env_pwd)
+                pwd_status = f"password configured via {u_data['env_var']}"
+            elif u_created:
+                user.set_unusable_password()
+                pwd_status = f"unusable password set (set {u_data['env_var']} to configure)"
+            else:
+                pwd_status = "existing password preserved"
+
             user.first_name   = u_data["first_name"]
             user.last_name    = u_data["last_name"]
             user.email        = u_data["email"]
@@ -109,7 +120,7 @@ class Command(BaseCommand):
             user.is_staff     = u_data["is_staff"]
             user.save()
             action = "Created" if u_created else "Updated"
-            self.stdout.write(f"  {action} user: {username}")
+            self.stdout.write(f"  {action} user: {username} ({pwd_status})")
 
             # UserRole
             role_obj = roles[role_code]

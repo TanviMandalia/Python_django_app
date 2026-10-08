@@ -15,6 +15,8 @@ urlpatterns = [
     path("blogs/<slug:slug>/", views.blog_detail, name="blog_detail"),
     path("robots.txt", views.robots_txt, name="robots_txt"),
     path("sitemap.xml", views.sitemap_xml, name="sitemap_xml"),
+    path("healthz", views.healthz, name="healthz"),
+    path("healthz/", views.healthz, name="healthz_slash"),
     # ── Auth ──────────────────────────────────────────────────
     path("login/", views.login_view, name="login"),
     path("register/", views.register_view, name="register"),

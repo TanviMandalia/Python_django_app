@@ -3,7 +3,7 @@
 [![Django](https://img.shields.io/badge/Django-6.0-092E20?logo=django)](https://www.djangoproject.com/)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)](https://www.python.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.6-336791?logo=postgresql)](https://www.postgresql.org/)
-[![Test Suite](https://img.shields.io/badge/Tests-287%20Passed-brightgreen)](tests/)
+[![Test Suite](https://img.shields.io/badge/Tests-299%20Passed-brightgreen)](tests/)
 
 A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tailored for physiotherapy and specialty healthcare centers. The system provides complete clinic operations including multi-role portals, doctor scheduling, patient clinical records, staff attendance and payroll, internal payment logs, multi-account SMTP email governance with strict platform (TechCraft) vs clinic identity separation, a centralized Super Admin SaaS subscription & feature entitlement engine, and a complete technical & local SEO framework for public healthcare clinic discoverability.
 
@@ -20,12 +20,14 @@ A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tail
 - **Multi-Account Email Governance & Identity Separation:** Strict separation between SaaS platform identity (TechCraft / `techcraft1215@gmail.com`) and clinic identity (Dr. Dhvani Patalia Physio Rehab / `physio.rehab.guj@gmail.com`), per-clinic and platform default SMTP accounts, encrypted credential storage (AES-256), HMAC webhook verification, and idempotency tracking.
 - **Technical & Local SEO Architecture:** Dynamic `robots.txt`, valid XML sitemap (`/sitemap.xml`), canonical URLs with query-param stripping, Open Graph & Twitter Cards, Schema.org JSON-LD structured data (`MedicalClinic`, `Physician`, `OfferCatalog`, `MedicalWebPage`), local Jamnagar NAP citations, and `X-Robots-Tag: noindex, nofollow, noarchive` on all private and administrative endpoints.
 - **Internal Payment & Billing Logs:** Audit-logged cash, direct UPI QR code, and bank transfer logs with clinic approval/rejection workflows (third-party payment gateways removed).
+- **Deployment Hardening & Health Monitoring:** Lightweight `/healthz` probe, WhiteNoise compressed static delivery, `DATABASE_URL` pooling via `dj-database-url`, and safe CLI password rotation command.
 
 ### 1.2 Technology Stack
 - **Backend Framework:** Python 3.12+ / Django 6.0
-- **Database Engine (Production):** PostgreSQL 17 or 18 (with `psycopg` v3 / `psycopg2-binary`)
+- **Database Engine (Production):** PostgreSQL 17 or 18 (with `psycopg` v3 / `dj-database-url`)
 - **Database Engine (Development / CI):** SQLite 3 (in `myproject.settings.dev`) or local PostgreSQL
 - **Database Management Tool:** pgAdmin 4 compatible
+- **Static Asset Pipeline:** WhiteNoise 6.12 with `CompressedManifestStaticFilesStorage`
 - **Background Tasks & Workers:** Celery 5.4 with Redis broker (with graceful local filesystem queue fallback)
 - **Frontend / UI:** Django Server-Rendered Templates (113 templates), Vanilla CSS, responsive layout architecture, Font Awesome 6
 - **Static Assets:** 143 static assets collected via `collectstatic`
@@ -35,7 +37,7 @@ A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tail
 ```text
 Python_django_app/
 ├── core/                           # Primary Django application
-│   ├── management/commands/        # CLI commands (reminders, shift checks, seeds)
+│   ├── management/commands/        # CLI commands (password rotation, reminders, seeds)
 │   ├── migrations/                 # Migrations 0001 through 0040
 │   ├── templatetags/               # Custom template filters
 │   ├── appointment_slots.py        # Weekday slot generation & doctor scheduling
@@ -45,16 +47,16 @@ Python_django_app/
 │   ├── email_utils.py              # Inbound email parsing, HMAC webhooks & routing
 │   ├── entitlements.py             # SaaS feature entitlement & usage engine
 │   ├── file_security.py            # File MIME type & extension sanitization
-│   ├── middleware.py               # Session timeout, lockout & tenant middleware
+│   ├── middleware.py               # Session timeout, lockout, WhiteNoise & tenant middleware
 │   ├── models.py                   # Relational domain & SaaS models (53 tables)
 │   ├── tenancy.py                  # Multi-tenant isolation engine
-│   ├── urls.py                     # App routing (100+ endpoints)
-│   └── views.py                    # Role-partitioned view controllers
+│   ├── urls.py                     # App routing (100+ endpoints + /healthz)
+│   └── views.py                    # Role-partitioned view controllers & healthz probe
 ├── myproject/                      # Project configuration root
 │   ├── settings/
 │   │   ├── base.py                 # Shared settings & security policies
-│   │   ├── dev.py                  # Local development settings (SQLite)
-│   │   └── production.py           # Production settings (PostgreSQL & SSL)
+│   │   ├── dev.py                  # Local development settings (SQLite/PostgreSQL)
+│   │   └── production.py           # Production settings (DATABASE_URL, SSL & WhiteNoise)
 │   ├── asgi.py                     # ASGI configuration
 │   ├── celery.py                   # Celery broker & task configuration
 │   ├── urls.py                     # Root URL routing
@@ -63,14 +65,9 @@ Python_django_app/
 ├── static/                         # Source stylesheets, scripts, icons, brand assets
 ├── staticfiles/                    # Compiled production assets from collectstatic
 ├── templates/                      # Modular template hierarchy
-│   ├── admin/                      # Clinic Administrator templates
-│   ├── auth/                       # Premium login, registration, OTP reset views
-│   ├── client/                     # Patient portal templates
-│   ├── public/                     # Marketing & public pages
-│   ├── shared/                     # Reusable navigation, footers, upgrade modals
-│   ├── staff/                      # Staff & physiotherapist views
-│   └── super_admin/                # Platform management views
-├── tests/                          # 19 test suites (242 automated test cases)
+├── tests/                          # 21 test suites (299 automated test cases)
+├── build.sh                        # Production build script (PaaS / Render / Container)
+├── render.yaml                     # Render Blueprint specification
 ├── .env.example                    # Production environment configuration template
 ├── manage.py                       # Django administrative CLI
 ├── requirements.txt                # Production dependencies manifest
@@ -243,19 +240,19 @@ $$\text{Final Access} = \text{Role Permission} + \text{Clinic Context} + \text{S
 
 ## 7. Testing & Quality Assurance
 
-The repository contains comprehensive test suites covering 287 automated tests across 15 test modules.
+The repository contains comprehensive test suites covering 299 automated tests across 21 test modules.
 
 ### 7.1 Running All Tests via Pytest (Recommended)
 ```bash
 pytest -q
 ```
-*Result: 287 passed, 20 subtests passed in 111.6s (100% pass rate, 0 failures, 0 errors).*
+*Result: 299 passed in 132.75s (100% pass rate, 0 failures, 0 errors).*
 
 ### 7.2 Running All Tests via Django Test Runner (Development Settings)
 ```bash
 python manage.py test --settings=myproject.settings.dev
 ```
-*Result: 287 tests passed (0 failures, 0 errors).*
+*Result: All tests passed on isolated test database (0 failures, 0 errors).*
 
 ### 7.3 Running All Tests (PostgreSQL Production Settings)
 When running tests against production settings, set `SECURE_SSL_REDIRECT=False` so the local test client is not redirected from HTTP to HTTPS:
@@ -267,7 +264,7 @@ $env:SECURE_SSL_REDIRECT="False"; pytest -q --ds=myproject.settings.production
 # Linux / macOS
 SECURE_SSL_REDIRECT=False pytest -q --ds=myproject.settings.production
 ```
-*Result: 287 tests passed on PostgreSQL 18.6 (0 failures, 0 errors).*
+*Result: 299 tests passed on PostgreSQL 18.6 (0 failures, 0 errors).*
 
 ### 7.4 Running Dedicated SEO Validation Suite
 ```bash

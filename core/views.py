@@ -7686,3 +7686,37 @@ def sitemap_xml(request):
     return HttpResponse("\n".join(xml_lines), content_type="application/xml; charset=utf-8")
 
 
+def healthz(request):
+    """
+    Lightweight health-check endpoint for load balancers and container orchestrators.
+    Executes a read-only DB query (SELECT 1).
+    Returns:
+        HTTP 200 with {"status": "ok"} when healthy.
+        HTTP 503 with {"status": "unhealthy"} if database connectivity fails.
+        HTTP 405 Method Not Allowed if request method is not GET or HEAD.
+    Strictly avoids exposing connection strings, stack traces, queries, or server internals.
+    """
+    if request.method not in ("GET", "HEAD"):
+        response = HttpResponse("Method Not Allowed", status=405)
+        response["Allow"] = "GET, HEAD"
+        return response
+
+    try:
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1;")
+            row = cursor.fetchone()
+            if not row or row[0] != 1:
+                raise ValueError("Unexpected query result")
+
+        resp = JsonResponse({"status": "ok"}, status=200)
+        resp["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return resp
+    except Exception as exc:
+        logger.error("Health check database probe failed: %s", exc)
+        resp = JsonResponse({"status": "unhealthy"}, status=503)
+        resp["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return resp
+
+
+

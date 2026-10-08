@@ -6,6 +6,7 @@
 # Python
 # ----------------------------------------------------------
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.pyo
@@ -20,11 +21,17 @@ env/
 ENV/
 
 # ----------------------------------------------------------
-# Environment Variables
+# Environment Variables & Sensitive Credentials
 # ----------------------------------------------------------
 .env
 .env.*
 !.env.example
+Role Username Password.*
+~$Role Username Password.*
+*Username*Password*
+*.xlsx
+*.xls
+~$*
 
 # ----------------------------------------------------------
 # Django Database
@@ -139,6 +146,10 @@ local_settings.py
 # ----------------------------------------------------------
 backup/
 backups/
+*.dump
+*.sql
+*.tar
+*.psql
 db_backup.sqlite3
 *.sqlite3-bak
 

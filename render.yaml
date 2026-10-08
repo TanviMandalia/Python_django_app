@@ -1,0 +1,64 @@
+# ==============================================================================
+# Render Blueprint Specification for PhysioRehab Clinic SaaS
+# Reference: https://render.com/docs/blueprint-spec
+# NOTE: This file is a local deployment manifest for future deployment.
+# It does NOT execute external deployment or provision resources automatically.
+# ==============================================================================
+services:
+  # ── Web Application Service ────────────────────────────────────────────────
+  - type: web
+    name: physio-rehab-app
+    runtime: python
+    plan: starter
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn myproject.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120"
+    healthCheckPath: "/healthz"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.14"
+      - key: DJANGO_SETTINGS_MODULE
+        value: "myproject.settings.production"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: physio-rehab-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: CANONICAL_BASE_URL
+        sync: false
+      - key: SECURE_SSL_REDIRECT
+        value: "true"
+      - key: SECURE_HSTS_SECONDS
+        value: "31536000"
+      - key: SECURE_HSTS_INCLUDE_SUBDOMAINS
+        value: "true"
+      - key: SECURE_HSTS_PRELOAD
+        value: "true"
+      - key: DB_CONN_MAX_AGE
+        value: "600"
+      - key: EMAIL_BACKEND
+        value: "django.core.mail.backends.smtp.EmailBackend"
+      - key: EMAIL_HOST
+        value: "smtp.gmail.com"
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "true"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: CLINIC_UPI_ID
+        sync: false
+
+# ── Managed PostgreSQL Database ──────────────────────────────────────────────
+databases:
+  - name: physio-rehab-db
+    databaseName: physiorehab_db
+    user: physio_user
+    plan: starter
+    ipAllowList: [] # Deny public external access; enforce private networking
