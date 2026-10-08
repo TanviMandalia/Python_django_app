@@ -6,21 +6,92 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>{{ blog.title }}</title>
+  <title>{{ blog.title }} | Dr. Dhvani Patalia Physio Rehab</title>
 
-  <meta name="description" content="{{ blog.content|truncatechars:160 }}" />
+  <meta name="description" content="{{ blog.excerpt|default:blog.content|striptags|truncatechars:160 }}" />
+  <link rel="canonical" href="{{ canonical_url }}">
 
-  <meta property="og:title" content="{{ blog.title }}" />
-
-  <meta property="og:description" content="{{ blog.content|truncatechars:160 }}" />
-
+  <!-- Open Graph Metadata -->
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Dr. Dhvani Patalia Physio Rehab" />
+  <meta property="og:url" content="{{ canonical_url }}" />
+  <meta property="og:title" content="{{ blog.title }} | Dr. Dhvani Patalia Physio Rehab" />
+  <meta property="og:description" content="{{ blog.excerpt|default:blog.content|striptags|truncatechars:160 }}" />
   {% if blog.image %}
-  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ blog.image.url }}" />
+  <meta property="og:image" content="{{ canonical_base }}{{ blog.image.url }}" />
+  {% else %}
+  <meta property="og:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}" />
+  {% endif %}
+  <meta property="og:locale" content="en_IN" />
+
+  <!-- Twitter Card Metadata -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{{ blog.title }}" />
+  <meta name="twitter:description" content="{{ blog.excerpt|default:blog.content|striptags|truncatechars:160 }}" />
+  {% if blog.image %}
+  <meta name="twitter:image" content="{{ canonical_base }}{{ blog.image.url }}" />
+  {% else %}
+  <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}" />
   {% endif %}
 
-  <meta name="description" content="{{ blog.content|truncatechars:160 }}" />
-
+  <!-- Preconnect CDNs -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+
+  <!-- Schema.org JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "{{ canonical_base }}/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Blog",
+            "item": "{{ canonical_base }}/blogs/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "{{ blog.title|escapejs }}",
+            "item": "{{ canonical_url }}"
+          }
+        ]
+      },
+      {
+        "@type": "MedicalWebPage",
+        "@id": "{{ canonical_url }}#webpage",
+        "url": "{{ canonical_url }}",
+        "name": "{{ blog.title|escapejs }}",
+        "headline": "{{ blog.title|escapejs }}",
+        "description": "{{ blog.excerpt|default:blog.content|striptags|truncatechars:160|escapejs }}",
+        "datePublished": "{{ blog.created_at|date:'c' }}",
+        {% if blog.image %}
+        "image": "{{ canonical_base }}{{ blog.image.url }}",
+        {% endif %}
+        "author": {
+          "@type": "Person",
+          "name": "{{ clinic_nap.doctor_name }}",
+          "jobTitle": "{{ clinic_nap.job_title }}"
+        },
+        "publisher": {
+          "@type": ["MedicalClinic", "MedicalBusiness"],
+          "name": "{{ clinic_nap.name }}",
+          "url": "{{ canonical_base }}/",
+          "logo": "{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}"
+        }
+      }
+    ]
+  }
+  </script>
 
   <style>
     /* =========================

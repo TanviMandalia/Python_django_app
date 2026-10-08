@@ -3,9 +3,9 @@
 [![Django](https://img.shields.io/badge/Django-6.0-092E20?logo=django)](https://www.djangoproject.com/)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)](https://www.python.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.6-336791?logo=postgresql)](https://www.postgresql.org/)
-[![Test Suite](https://img.shields.io/badge/Tests-278%20Passed-brightgreen)](tests/)
+[![Test Suite](https://img.shields.io/badge/Tests-287%20Passed-brightgreen)](tests/)
 
-A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tailored for physiotherapy and specialty healthcare centers. The system provides complete clinic operations including multi-role portals, doctor scheduling, patient clinical records, staff attendance and payroll, internal payment logs, multi-account SMTP email governance with strict platform (TechCraft) vs clinic identity separation, and a centralized Super Admin SaaS subscription & feature entitlement engine.
+A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tailored for physiotherapy and specialty healthcare centers. The system provides complete clinic operations including multi-role portals, doctor scheduling, patient clinical records, staff attendance and payroll, internal payment logs, multi-account SMTP email governance with strict platform (TechCraft) vs clinic identity separation, a centralized Super Admin SaaS subscription & feature entitlement engine, and a complete technical & local SEO framework for public healthcare clinic discoverability.
 
 ---
 
@@ -18,6 +18,7 @@ A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tail
 - **SaaS Subscription & Entitlement Architecture:** Tiered plans, plan-to-feature matrix, global kill switches, clinic-specific complimentary grants/overrides, and real-time usage meters.
 - **Staff Attendance & Payroll:** Morning and evening shift clock-ins, leave requests, monthly salary processing, and payslip generation.
 - **Multi-Account Email Governance & Identity Separation:** Strict separation between SaaS platform identity (TechCraft / `techcraft1215@gmail.com`) and clinic identity (Dr. Dhvani Patalia Physio Rehab / `physio.rehab.guj@gmail.com`), per-clinic and platform default SMTP accounts, encrypted credential storage (AES-256), HMAC webhook verification, and idempotency tracking.
+- **Technical & Local SEO Architecture:** Dynamic `robots.txt`, valid XML sitemap (`/sitemap.xml`), canonical URLs with query-param stripping, Open Graph & Twitter Cards, Schema.org JSON-LD structured data (`MedicalClinic`, `Physician`, `OfferCatalog`, `MedicalWebPage`), local Jamnagar NAP citations, and `X-Robots-Tag: noindex, nofollow, noarchive` on all private and administrative endpoints.
 - **Internal Payment & Billing Logs:** Audit-logged cash, direct UPI QR code, and bank transfer logs with clinic approval/rejection workflows (third-party payment gateways removed).
 
 ### 1.2 Technology Stack
@@ -242,19 +243,19 @@ $$\text{Final Access} = \text{Role Permission} + \text{Clinic Context} + \text{S
 
 ## 7. Testing & Quality Assurance
 
-The repository contains comprehensive test suites covering 278 automated tests across 14 test modules.
+The repository contains comprehensive test suites covering 287 automated tests across 15 test modules.
 
 ### 7.1 Running All Tests via Pytest (Recommended)
 ```bash
 pytest -q
 ```
-*Result: 278 passed in 108.3s (100% pass rate, 0 failures, 0 errors).*
+*Result: 287 passed, 20 subtests passed in 111.6s (100% pass rate, 0 failures, 0 errors).*
 
 ### 7.2 Running All Tests via Django Test Runner (Development Settings)
 ```bash
 python manage.py test --settings=myproject.settings.dev
 ```
-*Result: 278 tests passed (0 failures, 0 errors).*
+*Result: 287 tests passed (0 failures, 0 errors).*
 
 ### 7.3 Running All Tests (PostgreSQL Production Settings)
 When running tests against production settings, set `SECURE_SSL_REDIRECT=False` so the local test client is not redirected from HTTP to HTTPS:
@@ -266,9 +267,15 @@ $env:SECURE_SSL_REDIRECT="False"; pytest -q --ds=myproject.settings.production
 # Linux / macOS
 SECURE_SSL_REDIRECT=False pytest -q --ds=myproject.settings.production
 ```
-*Result: 278 tests passed on PostgreSQL 18.6 (0 failures, 0 errors).*
+*Result: 287 tests passed on PostgreSQL 18.6 (0 failures, 0 errors).*
 
-### 7.4 Code Quality & AST Compilation
+### 7.4 Running Dedicated SEO Validation Suite
+```bash
+pytest tests/test_seo_implementation.py -v
+```
+*Result: 9 passed, 20 subtests passed (robots.txt, sitemap.xml, Schema.org JSON-LD, metadata uniqueness, and privacy headers).*
+
+### 7.5 Code Quality & AST Compilation
 Verify that all Python source files parse without syntax errors:
 ```bash
 python -c "import py_compile, pathlib; [py_compile.compile(str(p), doraise=True) for p in pathlib.Path('.').rglob('*.py') if '.venv' not in p.parts]"
@@ -288,6 +295,7 @@ flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 | `DEBUG` | Enable debug mode | **Yes** | `False` (in production) |
 | `ALLOWED_HOSTS` | Comma-delimited list of hostnames | **Yes** | `yourdomain.com,www.yourdomain.com` |
 | `CSRF_TRUSTED_ORIGINS` | Trusted origins for CSRF validation | **Yes** | `https://yourdomain.com` |
+| `CANONICAL_BASE_URL` | Production HTTPS URL for canonical SEO tags & sitemap | **Yes** | `https://yourdomain.com` |
 | `DB_ENGINE` | Database backend | **Yes** | `django.db.backends.postgresql` |
 | `DB_NAME` | PostgreSQL database name | **Yes** | `physio_db` |
 | `DB_USER` | PostgreSQL username | **Yes** | `postgres` |

@@ -2,6 +2,7 @@
 # core/views.py — TOP IMPORTS (replace your existing imports)
 # ════════════════════════════════════════════════════════════
 
+import os
 import json
 _json = json
 import random
@@ -7586,4 +7587,102 @@ def super_admin_email_account_delete(request, account_id):
         account.delete()
         messages.success(request, f"Email account '{name}' deleted successfully.")
     return redirect("super_admin_email_accounts")
+
+
+def robots_txt(request):
+    """
+    Renders dynamic robots.txt.
+    Permits crawling of public marketing routes and assets,
+    while explicitly disallowing all private, dashboard, and administrative endpoints.
+    Directs search engines to the absolute XML sitemap.
+    """
+    configured_base = getattr(settings, 'CANONICAL_BASE_URL', '').strip().rstrip('/') or os.environ.get('CANONICAL_BASE_URL', '').strip().rstrip('/')
+    if not configured_base:
+        scheme = 'https' if request.is_secure() else request.scheme
+        configured_base = f"{scheme}://{request.get_host()}"
+
+    sitemap_url = f"{configured_base}/sitemap.xml"
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        "Allow: /static/",
+        "Allow: /media/",
+        "Disallow: /admin/",
+        "Disallow: /admin-",
+        "Disallow: /staff-",
+        "Disallow: /client-",
+        "Disallow: /super-admin/",
+        "Disallow: /api/",
+        "Disallow: /login/",
+        "Disallow: /register/",
+        "Disallow: /logout/",
+        "Disallow: /forgot-password/",
+        "Disallow: /verify-otp/",
+        "Disallow: /reset-password/",
+        "Disallow: /resend-otp/",
+        "Disallow: /change-password/",
+        "Disallow: /subscription/",
+        "Disallow: /payments/",
+        "Disallow: /export/",
+        "Disallow: /bulk-import/",
+        "Disallow: /submit-review/",
+        "Disallow: /support/",
+        "",
+        f"Sitemap: {sitemap_url}",
+    ]
+    return HttpResponse("\n".join(lines) + "\n", content_type="text/plain; charset=utf-8")
+
+
+def sitemap_xml(request):
+    """
+    Renders valid XML sitemap adhering to Sitemap 0.9 protocol.
+    Includes only eligible, canonical public routes and published articles.
+    Strictly excludes all private, administrative, and authenticated endpoints.
+    """
+    from xml.sax.saxutils import escape as xml_escape
+
+    configured_base = getattr(settings, 'CANONICAL_BASE_URL', '').strip().rstrip('/') or os.environ.get('CANONICAL_BASE_URL', '').strip().rstrip('/')
+    if not configured_base:
+        scheme = 'https' if request.is_secure() else request.scheme
+        configured_base = f"{scheme}://{request.get_host()}"
+
+    # Static indexable public routes with appropriate change frequency and priority
+    static_urls = [
+        {"loc": f"{configured_base}/", "changefreq": "weekly", "priority": "1.0"},
+        {"loc": f"{configured_base}/services/", "changefreq": "weekly", "priority": "0.9"},
+        {"loc": f"{configured_base}/about/", "changefreq": "monthly", "priority": "0.8"},
+        {"loc": f"{configured_base}/contact/", "changefreq": "monthly", "priority": "0.8"},
+        {"loc": f"{configured_base}/blogs/", "changefreq": "weekly", "priority": "0.7"},
+    ]
+
+    # Dynamic blog articles
+    blog_urls = []
+    for b in Blog.objects.filter(slug__isnull=False).exclude(slug="").order_by("-created_at"):
+        item = {
+            "loc": f"{configured_base}/blogs/{b.slug}/",
+            "changefreq": "monthly",
+            "priority": "0.6",
+        }
+        if b.created_at:
+            item["lastmod"] = b.created_at.strftime("%Y-%m-%d")
+        blog_urls.append(item)
+
+    all_urls = static_urls + blog_urls
+
+    xml_lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for u in all_urls:
+        xml_lines.append("  <url>")
+        xml_lines.append(f"    <loc>{xml_escape(u['loc'])}</loc>")
+        if "lastmod" in u:
+            xml_lines.append(f"    <lastmod>{u['lastmod']}</lastmod>")
+        xml_lines.append(f"    <changefreq>{u['changefreq']}</changefreq>")
+        xml_lines.append(f"    <priority>{u['priority']}</priority>")
+        xml_lines.append("  </url>")
+    xml_lines.append("</urlset>")
+
+    return HttpResponse("\n".join(xml_lines), content_type="application/xml; charset=utf-8")
+
 

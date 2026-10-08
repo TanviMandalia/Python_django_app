@@ -5,9 +5,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blog Page</title>
+    <title>Physiotherapy &amp; Health Insights Blog | Dr. Dhvani Patalia Physio Rehab</title>
+    <meta name="description" content="Read expert physiotherapy articles, rehabilitation guides, posture correction tips, and wellness insights from Dr. Dhvani Patalia in Jamnagar.">
+    <link rel="canonical" href="{{ canonical_url }}">
+
+    <!-- Open Graph Metadata -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Dr. Dhvani Patalia Physio Rehab">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:title" content="Physiotherapy &amp; Health Insights Blog | Dr. Dhvani Patalia Physio Rehab">
+    <meta property="og:description" content="Read expert physiotherapy articles, rehabilitation guides, posture correction tips, and wellness insights from Dr. Dhvani Patalia in Jamnagar.">
+    <meta property="og:image" content="{{ canonical_base }}{% static 'images/clinic_image.webp' %}">
+    <meta property="og:locale" content="en_IN">
+
+    <!-- Twitter Card Metadata -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Physiotherapy &amp; Health Insights Blog">
+    <meta name="twitter:description" content="Expert clinical articles, rehabilitation guides, and recovery tips by Dr. Dhvani Patalia.">
+    <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/clinic_image.webp' %}">
+
+    <!-- Preconnect CDNs -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+
+    <!-- Schema.org JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "{{ canonical_base }}/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Blog",
+              "item": "{{ canonical_url }}"
+            }
+          ]
+        },
+        {
+          "@type": "Blog",
+          "name": "Dr. Dhvani Patalia Physio Rehab Health Blog",
+          "description": "Expert physiotherapy articles and clinical guidance from Dr. Dhvani Patalia in Jamnagar, Gujarat",
+          "url": "{{ canonical_url }}",
+          "publisher": {
+            "@type": ["MedicalClinic", "MedicalBusiness"],
+            "name": "{{ clinic_nap.name }}",
+            "url": "{{ canonical_base }}/"
+          }
+        }
+      ]
+    }
+    </script>
 </head>
 
 <body>

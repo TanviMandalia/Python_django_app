@@ -6,13 +6,15 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    # ── Public Pages ──────────────────────────────────────────
+    # ── Public Pages & SEO ────────────────────────────────────
     path("", views.home, name="home"),
     path("about/", views.about, name="about"),
     path("services/", views.services, name="services"),
     path("contact/", views.contact, name="contact"),
     path("blogs/", views.blog_list, name="blog_list"),
     path("blogs/<slug:slug>/", views.blog_detail, name="blog_detail"),
+    path("robots.txt", views.robots_txt, name="robots_txt"),
+    path("sitemap.xml", views.sitemap_xml, name="sitemap_xml"),
     # ── Auth ──────────────────────────────────────────────────
     path("login/", views.login_view, name="login"),
     path("register/", views.register_view, name="register"),

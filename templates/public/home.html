@@ -5,11 +5,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dr. Dhvani Patalia Physio Rehab | Certified Chiropractor &amp; Rehabilitation Clinic</title>
-    <meta name="description" content="Dr. Dhvani Patalia Physio Rehab - Certified Chiropractor and Fellowship in Neuromusculoskeletal Techniques. Professional physiotherapy and physical rehabilitation in Jamnagar, Gujarat.">
-    <meta property="og:title" content="Dr. Dhvani Patalia Physio Rehab">
-    <meta property="og:description" content="Certified Chiropractor &amp; Fellowship in Neuromusculoskeletal Techniques. Expert physiotherapy and pain relief rehabilitation.">
+    <title>Dr. Dhvani Patalia Physio Rehab | Physiotherapy &amp; Chiropractic Clinic in Jamnagar</title>
+    <meta name="description" content="Leading physiotherapy and chiropractic clinic in Jamnagar by Dr. Dhvani Patalia. Evidence-based care for back pain, joint rehab, sports injuries, and spine health.">
+    <link rel="canonical" href="{{ canonical_url }}">
+
+    <!-- Open Graph Metadata -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Dr. Dhvani Patalia Physio Rehab">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:title" content="Dr. Dhvani Patalia Physio Rehab | Physiotherapy &amp; Chiropractic Clinic in Jamnagar">
+    <meta property="og:description" content="Certified Chiropractor &amp; Fellowship in Neuromusculoskeletal Techniques. Professional physiotherapy and physical rehabilitation in Jamnagar, Gujarat.">
+    <meta property="og:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}">
+    <meta property="og:locale" content="en_IN">
+
+    <!-- Twitter Card Metadata -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Dr. Dhvani Patalia Physio Rehab | Physiotherapy &amp; Chiropractic Clinic">
+    <meta name="twitter:description" content="Certified Chiropractor &amp; Fellowship in Neuromusculoskeletal Techniques. Professional physiotherapy in Jamnagar.">
+    <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}">
+
+    <!-- Preconnect CDNs -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Schema.org JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "{{ canonical_base }}/#website",
+          "url": "{{ canonical_base }}/",
+          "name": "Dr. Dhvani Patalia Physio Rehab",
+          "description": "Specialized physiotherapy and chiropractic clinic in Jamnagar, Gujarat",
+          "inLanguage": "en"
+        },
+        {
+          "@type": ["MedicalClinic", "MedicalBusiness"],
+          "@id": "{{ canonical_base }}/#clinic",
+          "name": "{{ clinic_nap.name }}",
+          "url": "{{ canonical_base }}/",
+          "logo": "{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}",
+          "image": [
+            "{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}",
+            "{{ canonical_base }}{% static 'images/clinic_image_outdoor.webp' %}",
+            "{{ canonical_base }}{% static 'images/clinic_image.webp' %}"
+          ],
+          "telephone": "{{ clinic_nap.phone }}",
+          "email": "{{ clinic_nap.email }}",
+          "priceRange": "$$",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "{{ clinic_nap.street_address }}",
+            "addressLocality": "{{ clinic_nap.locality }}",
+            "addressRegion": "{{ clinic_nap.region }}",
+            "postalCode": "{{ clinic_nap.postal_code }}",
+            "addressCountry": "{{ clinic_nap.country }}"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": {{ clinic_nap.geo_lat }},
+            "longitude": {{ clinic_nap.geo_lng }}
+          },
+          "medicalSpecialty": [
+            "Physiotherapy",
+            "Musculoskeletal"
+          ],
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+              "opens": "10:00",
+              "closes": "13:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+              "opens": "16:00",
+              "closes": "20:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": ["Sunday"],
+              "opens": "10:00",
+              "closes": "13:00"
+            }
+          ]
+        }
+      ]
+    }
+    </script>
     <style>
         * {
             margin: 0;

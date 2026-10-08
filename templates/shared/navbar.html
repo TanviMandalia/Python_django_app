@@ -12,34 +12,34 @@
 
         <!-- DESKTOP NAV LINKS -->
         <ul class="nav-links" id="navLinks">
-            <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
-            <li><a href="/about" class="{% if request.path == '/about' %}active{% endif %}">About</a></li>
-            <li><a href="/services" class="{% if request.path == '/services' %}active{% endif %}">Services</a></li>
-            <li><a href="/blogs" class="{% if request.path == '/blogs' %}active{% endif %}">Blog</a></li>
-            <li><a href="/contact" class="{% if request.path == '/contact' %}active{% endif %}">Contact</a></li>
+            <li><a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
+            <li><a href="{% url 'about' %}" class="{% if request.path == '/about/' %}active{% endif %}">About</a></li>
+            <li><a href="{% url 'services' %}" class="{% if request.path == '/services/' %}active{% endif %}">Services</a></li>
+            <li><a href="{% url 'blog_list' %}" class="{% if '/blogs/' in request.path %}active{% endif %}">Blog</a></li>
+            <li><a href="{% url 'contact' %}" class="{% if request.path == '/contact/' %}active{% endif %}">Contact</a></li>
         </ul>
 
         <!-- AUTH BUTTONS -->
         <div class="nav-auth" id="navAuth">
-            <a href="{% url "book_appointment" %}" class="btn-book-nav">📅 Book Now</a>
-            <a href="/login" class="btn-login">Login</a>
+            <a href="{% url 'book_appointment' %}" class="btn-book-nav">📅 Book Now</a>
+            <a href="{% url 'login' %}" class="btn-login">Login</a>
         </div>
 
         <!-- HAMBURGER -->
-        <button class="hamburger" onclick="toggleNav()" id="hamburgerBtn">
+        <button class="hamburger" onclick="toggleNav()" id="hamburgerBtn" aria-label="Toggle Navigation Menu">
             <i class="fas fa-bars"></i>
         </button>
     </div>
 
     <!-- MOBILE MENU -->
     <div class="mobile-menu" id="mobileMenu">
-        <a href="/">🏠 Home</a>
-        <a href="/about">ℹ️ About</a>
-        <a href="/services">💆 Services</a>
-        <a href="/blogs">📝 Blog</a>
-        <a href="/contact">📞 Contact</a>
-        <a href="{% url "book_appointment" %}"style="color:#F5C518; font-weight:700;">📅 Book Appointment</a>
-        <a href="/login">🔐 Login</a>
+        <a href="{% url 'home' %}">🏠 Home</a>
+        <a href="{% url 'about' %}">ℹ️ About</a>
+        <a href="{% url 'services' %}">💆 Services</a>
+        <a href="{% url 'blog_list' %}">📝 Blog</a>
+        <a href="{% url 'contact' %}">📞 Contact</a>
+        <a href="{% url 'book_appointment' %}" style="color:#F5C518; font-weight:700;">📅 Book Appointment</a>
+        <a href="{% url 'login' %}">🔐 Login</a>
     </div>
 </nav>
 

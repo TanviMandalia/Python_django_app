@@ -5,8 +5,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us - Dr. Dhvani Patalia Physio Rehab</title>
+    <title>About Dr. Dhvani Patalia | Certified Chiropractor &amp; Physiotherapist Jamnagar</title>
+    <meta name="description" content="Learn about Dr. Dhvani Patalia, certified chiropractor with fellowship in neuromusculoskeletal techniques, providing physiotherapy rehabilitation in Jamnagar, Gujarat.">
+    <link rel="canonical" href="{{ canonical_url }}">
+
+    <!-- Open Graph Metadata -->
+    <meta property="og:type" content="profile">
+    <meta property="og:site_name" content="Dr. Dhvani Patalia Physio Rehab">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:title" content="About Dr. Dhvani Patalia | Certified Chiropractor &amp; Physiotherapist Jamnagar">
+    <meta property="og:description" content="Certified Chiropractor with Fellowship in Neuromusculoskeletal Techniques. Dedicated to evidence-based musculoskeletal care and recovery in Jamnagar.">
+    <meta property="og:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}">
+    <meta property="og:locale" content="en_IN">
+
+    <!-- Twitter Card Metadata -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="About Dr. Dhvani Patalia | Certified Chiropractor Jamnagar">
+    <meta name="twitter:description" content="Certified Chiropractor with Fellowship in Neuromusculoskeletal Techniques. Providing specialized physiotherapy rehabilitation in Jamnagar.">
+    <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}">
+
+    <!-- Preconnect CDNs -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Schema.org JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "{{ canonical_base }}/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "About Us",
+              "item": "{{ canonical_url }}"
+            }
+          ]
+        },
+        {
+          "@type": "Physician",
+          "name": "{{ clinic_nap.doctor_name }}",
+          "jobTitle": "{{ clinic_nap.job_title }}",
+          "description": "Certified Chiropractor with Fellowship in Neuromusculoskeletal Techniques specializing in musculoskeletal physical therapy, spinal care, and pain recovery.",
+          "telephone": "{{ clinic_nap.phone }}",
+          "email": "{{ clinic_nap.email }}",
+          "image": "{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}",
+          "worksFor": {
+            "@type": ["MedicalClinic", "MedicalBusiness"],
+            "name": "{{ clinic_nap.name }}",
+            "url": "{{ canonical_base }}/",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "{{ clinic_nap.street_address }}",
+              "addressLocality": "{{ clinic_nap.locality }}",
+              "addressRegion": "{{ clinic_nap.region }}",
+              "postalCode": "{{ clinic_nap.postal_code }}",
+              "addressCountry": "{{ clinic_nap.country }}"
+            }
+          },
+          "medicalSpecialty": [
+            "Physiotherapy",
+            "Musculoskeletal"
+          ]
+        }
+      ]
+    }
+    </script>
     <style>
         /* ===========================================================
    GLOBAL DESIGN SYSTEM

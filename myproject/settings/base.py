@@ -24,6 +24,9 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
+# Canonical production base URL for SEO and XML sitemap generation
+CANONICAL_BASE_URL = os.getenv("CANONICAL_BASE_URL", "").strip().rstrip("/")
+
 # =========================
 # APPLICATIONS
 # =========================
@@ -64,6 +67,7 @@ MIDDLEWARE = [
     "core.middleware.LoginAttemptMiddleware",
     "core.middleware.SubscriptionGateMiddleware",
     "core.middleware.PreventBackAfterLogoutMiddleware",
+    "core.middleware.SEORobotsTagMiddleware",
 ]
 
 ROOT_URLCONF = "myproject.urls"
@@ -84,6 +88,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.unread_notifications",
+                "core.context_processors.seo_context",
             ],
         },
     },

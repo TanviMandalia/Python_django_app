@@ -145,3 +145,46 @@ class PreventBackAfterLogoutMiddleware:
         response = self.get_response(request)
         add_never_cache_headers(response)
         return response
+
+
+# ───────────────────────────────
+# 6. SEO & PRIVACY ROBOTS TAG
+# ───────────────────────────────
+class SEORobotsTagMiddleware:
+    """
+    Guarantees privacy for non-public endpoints.
+    Emits 'X-Robots-Tag: noindex, nofollow, noarchive' on all administrative,
+    staff, patient, authentication, and API endpoints so search engines
+    never index private healthcare or administrative records.
+    """
+    INDEXABLE_PATHS = {
+        '/',
+        '/about/',
+        '/services/',
+        '/contact/',
+        '/blogs/',
+        '/robots.txt',
+        '/sitemap.xml',
+    }
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        path = request.path
+
+        # If static or media asset, do not restrict indexing
+        if path.startswith('/static/') or path.startswith('/media/'):
+            return response
+
+        # Check if path is an eligible public page
+        is_indexable = (
+            path in self.INDEXABLE_PATHS
+            or (path.startswith('/blogs/') and not path.startswith('/admin-blog/'))
+        )
+
+        if not is_indexable:
+            response['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
+
+        return response

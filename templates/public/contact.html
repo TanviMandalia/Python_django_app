@@ -5,8 +5,101 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contact Us - Dr. Dhvani Patalia Physio Rehab</title>
+  <title>Contact Dr. Dhvani Patalia Physio Rehab | Clinic Location &amp; Appointment Jamnagar</title>
+  <meta name="description" content="Contact Dr. Dhvani Patalia Physio Rehab in Jamnagar, Gujarat. Get directions to Bedi Rd clinic, call +91 94095 10501, or book your consultation online." />
+  <link rel="canonical" href="{{ canonical_url }}">
+
+  <!-- Open Graph Metadata -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dr. Dhvani Patalia Physio Rehab">
+  <meta property="og:url" content="{{ canonical_url }}">
+  <meta property="og:title" content="Contact Dr. Dhvani Patalia Physio Rehab | Clinic Location &amp; Appointment Jamnagar">
+  <meta property="og:description" content="Reach out to Dr. Dhvani Patalia Physio Rehab in Jamnagar. Professional physical rehabilitation, chiropractic care, and appointment bookings.">
+  <meta property="og:image" content="{{ canonical_base }}{% static 'images/clinic_image_outdoor.webp' %}">
+  <meta property="og:locale" content="en_IN">
+
+  <!-- Twitter Card Metadata -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Contact Dr. Dhvani Patalia Physio Rehab Jamnagar">
+  <meta name="twitter:description" content="Clinic location, working hours, and appointment contact for Dr. Dhvani Patalia in Jamnagar, Gujarat.">
+  <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/clinic_image_outdoor.webp' %}">
+
+  <!-- Preconnect CDNs -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+  <!-- Schema.org JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "{{ canonical_base }}/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Contact Us",
+            "item": "{{ canonical_url }}"
+          }
+        ]
+      },
+      {
+        "@type": "ContactPage",
+        "@id": "{{ canonical_url }}#webpage",
+        "url": "{{ canonical_url }}",
+        "name": "Contact Dr. Dhvani Patalia Physio Rehab",
+        "description": "Clinic location, contact channels, and working hours in Jamnagar, Gujarat",
+        "mainEntity": {
+          "@type": ["MedicalClinic", "MedicalBusiness"],
+          "name": "{{ clinic_nap.name }}",
+          "url": "{{ canonical_base }}/",
+          "telephone": "{{ clinic_nap.phone }}",
+          "email": "{{ clinic_nap.email }}",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "{{ clinic_nap.street_address }}",
+            "addressLocality": "{{ clinic_nap.locality }}",
+            "addressRegion": "{{ clinic_nap.region }}",
+            "postalCode": "{{ clinic_nap.postal_code }}",
+            "addressCountry": "{{ clinic_nap.country }}"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": {{ clinic_nap.geo_lat }},
+            "longitude": {{ clinic_nap.geo_lng }}
+          },
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+              "opens": "10:00",
+              "closes": "13:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+              "opens": "16:00",
+              "closes": "20:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": ["Sunday"],
+              "opens": "10:00",
+              "closes": "13:00"
+            }
+          ]
+        }
+      }
+    ]
+  }
+  </script>
   <style>
     * {
       margin: 0;
@@ -624,7 +717,7 @@
     <h1>Contact <span>Us</span></h1>
     <p>Get in touch with us — we'd love to hear from you</p>
     <div class="breadcrumb">
-      <a href="/">Home</a><span>›</span>
+      <a href="{% url 'home' %}">Home</a><span>›</span>
       <span style="color:white;">Contact</span>
     </div>
   </div>
@@ -644,10 +737,10 @@
             </div>
             <div class="info-content">
               <h4>1. Clinic Location</h4>
-              <p>Dr. Dhvani Patalia Physio Rehab<br>
-              Ground Floor, Sheetal Guest House Building,<br>
-              Opp. New Super Medical, Bedi Gate,<br>
-              Jamnagar, Gujarat, India</p>
+              <p><strong>Dr. Dhvani Patalia Physio Rehab</strong><br>
+              Ground Floor, Narayan Cottage, Bedi Rd,<br>
+              opposite New Super Medical, Panchasar, Pancheshwar Tower,<br>
+              Jamnagar, Gujarat 361006, India</p>
             </div>
           </div>
 
