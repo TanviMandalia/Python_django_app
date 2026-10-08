@@ -314,6 +314,7 @@ python -c "import py_compile, pathlib; [py_compile.compile(str(p), doraise=True)
 
 ### 9.4 Internal Documentation Location
 All detailed internal technical audits, migration manifesto, QA validation plans, and subscription guides are securely cataloged inside the `md/` directory:
+- `md/DATABASE_ARCHITECTURE.md` — Authoritative PostgreSQL 18.6 architecture, pgAdmin 4 connection guide, backup/restore runbook, and migration procedures
 - `md/DATABASE_AUDIT_REPORT.md` — Complete PostgreSQL 18.6 & pgAdmin 4 connection, schema, and integrity audit
 - `md/CRUD_AUDIT_REPORT.md` — 26-entity CRUD matrix, multi-tenant RBAC verification, and defect remediation report
 - `md/FINAL_PRODUCTION_AUDIT_REPORT.md` — Final deployment verification and evidence report

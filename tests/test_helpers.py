@@ -124,6 +124,13 @@ class BaseHospitalTestCase(TestCase):
             profile.save()
         return user
 
+    @staticmethod
+    def get_next_weekday(days_ahead=1):
+        d = timezone.now().date() + timedelta(days=days_ahead)
+        while d.weekday() >= 5:  # Skip Saturday (5) and Sunday (6)
+            d += timedelta(days=1)
+        return d
+
     def create_appointment(self, hospital, patient, **kwargs):
         data = {
             "hospital": hospital,
@@ -132,7 +139,7 @@ class BaseHospitalTestCase(TestCase):
             "email": patient.email,
             "phone": "9876543210",
             "service": "orthopedic",
-            "date": timezone.now().date() + timedelta(days=2),
+            "date": self.get_next_weekday(days_ahead=1),
             "time": "10:00",
             "status": "pending",
             "consultation_fee": Decimal("500.00"),

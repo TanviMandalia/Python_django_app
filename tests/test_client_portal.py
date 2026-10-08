@@ -82,7 +82,7 @@ class ClientPortalTestSuite(BaseHospitalTestCase):
 
     def test_client_book_appointment_success(self):
         """TC-CP-005: Patient books appointment with clinic."""
-        target_date = (timezone.now() + timedelta(days=2)).strftime("%Y-%m-%d")
+        target_date = self.get_next_weekday(days_ahead=1).strftime("%Y-%m-%d")
         payload = {
             "hospital_id": self.hospital.id,
             "service": "Physiotherapy Consultation",
