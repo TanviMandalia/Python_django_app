@@ -129,10 +129,64 @@ def mask_email_for_logging(email):
     return f"{masked_local}@{domain}"
 
 
-def render_html_wrapper(title, body_content, preheader=""):
-    """Generate a clean, responsive HTML email template with consistent hospital branding."""
+def render_html_wrapper(
+    title,
+    body_content,
+    preheader="",
+    context="clinic",
+    hospital=None,
+    organization_name=None,
+):
+    """
+    Generate a clean, responsive HTML email template with strict identity separation.
+
+    Contexts:
+      - 'platform': TechCraft platform communications (Super Admin tests, SaaS subscriptions,
+                    platform security alerts, system notices). Zero clinic branding leaks.
+      - 'clinic': Clinic-branded communications (appointments, patient care, staff, billing)
+                  retaining the specific hospital/clinic name, contact info, and branding.
+    """
     safe_title = escape(title)
     safe_preheader = escape(preheader or title)
+
+    is_platform = (context == "platform")
+
+    if is_platform:
+        org_title = organization_name or getattr(settings, "PLATFORM_BRAND_NAME", "TechCraft")
+        safe_org = escape(org_title)
+        tagline = getattr(settings, "PLATFORM_TAGLINE", "Healthcare SaaS Platform")
+        safe_tagline = escape(tagline)
+        support_email = getattr(settings, "PLATFORM_SUPPORT_EMAIL", "techcraft1215@gmail.com")
+        safe_support = escape(support_email)
+
+        header_html = f"""
+  <div class="header" style="background:#0f172a; padding:24px; text-align:center;">
+    <h1 style="margin:0; font-size:22px; font-weight:700; color:#38bdf8; letter-spacing:0.5px;">{safe_org}</h1>
+    <p style="margin:4px 0 0; font-size:13px; color:#94a3b8; font-weight:500;">{safe_tagline}</p>
+  </div>"""
+        footer_html = f"""
+  <div class="footer" style="background:#f8fafc; padding:20px 24px; text-align:center; font-size:12px; color:#64748b; border-top:1px solid #e2e8f0;">
+    <p style="margin:0 0 4px 0; font-weight:600; color:#334155;">{safe_org} SaaS Platform</p>
+    <p style="margin:0;">Support & Inquiries: <a href="mailto:{safe_support}" style="color:#0284c7; text-decoration:none;">{safe_support}</a></p>
+  </div>"""
+    else:
+        clinic_title = organization_name or (hospital.name if hospital else getattr(settings, "CLINIC_NAME", "Dr. Dhvani Patalia — PhysioRehab"))
+        safe_clinic = escape(clinic_title)
+        phone = hospital.phone if (hospital and hospital.phone) else getattr(settings, "CLINIC_PHONE", "+91 98765 43210")
+        email = hospital.email if (hospital and hospital.email) else getattr(settings, "CLINIC_EMAIL", "noreply@physiorehab.com")
+        safe_phone = escape(phone)
+        safe_email = escape(email)
+
+        header_html = f"""
+  <div class="header" style="background:#0f172a; padding:24px; text-align:center;">
+    <h1 style="margin:0; font-size:20px; font-weight:700; color:#38bdf8;">{safe_clinic}</h1>
+  </div>"""
+        footer_html = f"""
+  <div class="footer" style="background:#f1f5f9; padding:18px 24px; text-align:center; font-size:12px; color:#64748b; border-top:1px solid #e2e8f0;">
+    <p style="margin:0 0 4px 0;"><strong>{safe_clinic}</strong></p>
+    <p style="margin:0;">Support: {safe_phone} | {safe_email}</p>
+  </div>"""
+
     return f"""<!DOCTYPE html>
 <html>
 <head>
@@ -142,10 +196,7 @@ def render_html_wrapper(title, body_content, preheader=""):
 <style>
   body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; }}
   .container {{ max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }}
-  .header {{ background: #0f172a; padding: 24px; text-align: center; color: #ffffff; }}
-  .header h1 {{ margin: 0; font-size: 20px; font-weight: 700; color: #38bdf8; }}
   .content {{ padding: 32px 24px; line-height: 1.6; font-size: 15px; color: #334155; }}
-  .footer {{ background: #f1f5f9; padding: 18px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }}
   .badge {{ display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; background: #e0f2fe; color: #0369a1; }}
   .box {{ background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0; }}
 </style>
@@ -155,22 +206,155 @@ def render_html_wrapper(title, body_content, preheader=""):
   {safe_preheader}
 </div>
 <div class="container">
-  <div class="header">
-    <h1>{CLINIC_NAME}</h1>
-  </div>
+  {header_html}
   <div class="content">
     {body_content}
   </div>
-  <div class="footer">
-    <p style="margin:0 0 4px 0;"><strong>{CLINIC_NAME}</strong></p>
-    <p style="margin:0;">Support: {CLINIC_PHONE} | {CLINIC_EMAIL}</p>
-  </div>
+  {footer_html}
 </div>
 </body>
 </html>"""
 
 
 # ── CORE SENDING FUNCTIONS ───────────────────────────────────
+
+def send_platform_email(
+    subject,
+    message_text,
+    recipient_list,
+    email_type="platform_system",
+    html_message=None,
+    attachments=None,
+    in_reply_to=None,
+    thread_id=None,
+    reply_to=None,
+):
+    """
+    Send platform-level email using the authoritative TechCraft platform EmailAccount.
+    Used for Super Admin notifications, SaaS subscription billing/activation notices,
+    platform security alerts, and system-level communications.
+    Strictly isolated from clinic identity; never leaks clinic branding.
+    """
+    from .email_service import resolve_email_account, EmailContext
+
+    raw_recipients = recipient_list if isinstance(recipient_list, list) else [recipient_list]
+    valid_recipients = []
+    for r in raw_recipients:
+        try:
+            valid_recipients.append(validate_recipient_email(r))
+        except ValidationError as e:
+            logger.warning(f"Rejected invalid platform email recipient '{r}': {e}")
+
+    if not valid_recipients:
+        logger.error(f"Cannot send platform email '{subject}': No valid recipients.")
+        return False
+
+    clean_subject = sanitize_header_value(subject)
+
+    # Resolve authoritative TechCraft platform account
+    account = resolve_email_account(purpose=email_type, context=EmailContext.PLATFORM)
+
+    platform_brand = getattr(settings, "PLATFORM_BRAND_NAME", "TechCraft")
+    clean_display_name = sanitize_header_value(account.from_name or platform_brand)
+    from_email = f"{clean_display_name} <{account.from_email}>" if clean_display_name else account.from_email
+
+    if not html_message:
+        escaped_body = escape(message_text).replace("\n", "<br>")
+        html_message = render_html_wrapper(
+            clean_subject,
+            f"<p>{escaped_body}</p>",
+            context="platform",
+            organization_name=clean_display_name,
+        )
+
+    effective_reply_to = reply_to or account.reply_to or getattr(settings, "PLATFORM_SUPPORT_EMAIL", "techcraft1215@gmail.com")
+    reply_to_list = [sanitize_header_value(effective_reply_to)] if effective_reply_to else None
+
+    connection = account.get_connection(fail_silently=False)
+
+    success_all = True
+    for recipient in valid_recipients:
+        msg_id = f"{uuid.uuid4().hex}@{getattr(account, 'host', 'smtp.gmail.com')}"
+        clean_thread_id = str(thread_id or msg_id).strip("<> ")
+        headers = {
+            "Message-ID": f"<{msg_id}>",
+            "X-Thread-ID": clean_thread_id,
+            "X-Mailer": "TechCraft-Platform-Gateway",
+        }
+        if in_reply_to:
+            clean_in_reply_to = sanitize_header_value(in_reply_to).strip("<> ")
+            headers["In-Reply-To"] = f"<{clean_in_reply_to}>"
+            headers["References"] = f"<{clean_in_reply_to}>"
+        if effective_reply_to:
+            headers["Reply-To"] = sanitize_header_value(effective_reply_to)
+
+        try:
+            email_msg = EmailMultiAlternatives(
+                subject=f"[{clean_display_name}] {clean_subject}",
+                body=message_text,
+                from_email=from_email,
+                to=[recipient],
+                headers=headers,
+                reply_to=reply_to_list,
+                connection=connection,
+            )
+            email_msg.attach_alternative(html_message, "text/html")
+
+            if attachments:
+                for att in attachments:
+                    if isinstance(att, tuple) and len(att) >= 2:
+                        att_name, att_content = att[0], att[1]
+                        att_mime = att[2] if len(att) > 2 else "application/octet-stream"
+                        email_msg.attach(sanitize_header_value(att_name), att_content, att_mime)
+
+            email_msg.send(fail_silently=False)
+
+            try:
+                from .models import EmailLog
+                EmailLog.objects.create(
+                    account=account if getattr(account, "pk", None) else None,
+                    sender_email=account.from_email,
+                    hospital=None,
+                    email_type=email_type,
+                    recipient_email=recipient,
+                    subject=clean_subject,
+                    status="sent",
+                    message_id=msg_id,
+                    thread_id=clean_thread_id,
+                    sent_at=timezone.now(),
+                )
+            except Exception as log_err:
+                logger.debug(f"EmailLog record failed: {log_err}")
+
+            safe_log_subject = clean_subject.encode("ascii", errors="backslashreplace").decode("ascii")
+            logger.info(f"Platform email sent via '{account.name}' ({account.from_email}) to {mask_email_for_logging(recipient)}: '{safe_log_subject}'")
+
+        except Exception as exc:
+            success_all = False
+            err_category = exc.__class__.__name__
+            safe_err = str(exc).encode("ascii", errors="backslashreplace").decode("ascii")
+            logger.error(f"Platform email failed via '{account.name}' to {mask_email_for_logging(recipient)}: {err_category} - {safe_err}")
+
+            try:
+                from .models import EmailLog
+                EmailLog.objects.create(
+                    account=account if getattr(account, "pk", None) else None,
+                    sender_email=account.from_email,
+                    hospital=None,
+                    email_type=email_type,
+                    recipient_email=recipient,
+                    subject=clean_subject,
+                    status="failed",
+                    error_category=err_category,
+                    message_id=msg_id,
+                    thread_id=clean_thread_id,
+                    sent_at=timezone.now(),
+                )
+            except Exception:
+                pass
+
+    return success_all
+
 
 def send_clinic_email(
     subject,
@@ -191,7 +375,7 @@ def send_clinic_email(
     Dynamically resolves the authoritative EmailAccount per clinic, role, or purpose.
     Supports RFC threading headers (In-Reply-To, References, X-Thread-ID) and Reply-To.
     """
-    from .email_service import resolve_email_account
+    from .email_service import resolve_email_account, EmailContext
 
     raw_recipients = recipient_list if isinstance(recipient_list, list) else [recipient_list]
     valid_recipients = []
@@ -207,17 +391,33 @@ def send_clinic_email(
         return False
 
     clean_subject = sanitize_header_value(subject)
-    
-    # Resolve authoritative EmailAccount dynamically
-    account = resolve_email_account(purpose=email_type, hospital=hospital, doctor=doctor)
 
-    display_clinic_name = account.from_name or (hospital.name if hospital else getattr(settings, "CLINIC_NAME", "PhysioRehab Clinic"))
+    # Resolve authoritative EmailAccount dynamically with CLINIC context
+    account = resolve_email_account(
+        purpose=email_type,
+        hospital=hospital,
+        doctor=doctor,
+        context=EmailContext.CLINIC,
+    )
+
+    if account.scope_type != "platform" and account.from_name:
+        display_clinic_name = account.from_name
+    elif hospital and hospital.name:
+        display_clinic_name = hospital.name
+    else:
+        display_clinic_name = getattr(settings, "CLINIC_NAME", "Dr. Dhvani Patalia — PhysioRehab")
     clean_display_name = sanitize_header_value(display_clinic_name)
     from_email = f"{clean_display_name} <{account.from_email}>" if clean_display_name else account.from_email
 
     if not html_message:
         escaped_body = escape(message_text).replace("\n", "<br>")
-        html_message = render_html_wrapper(clean_subject, f"<p>{escaped_body}</p>")
+        html_message = render_html_wrapper(
+            clean_subject,
+            f"<p>{escaped_body}</p>",
+            context="clinic",
+            hospital=hospital,
+            organization_name=clean_display_name,
+        )
 
     effective_reply_to = reply_to or account.reply_to
     reply_to_list = [sanitize_header_value(effective_reply_to)] if effective_reply_to else None
@@ -391,9 +591,12 @@ def send_appointment_confirmation(appointment):
     date_str = escape(format_date(appointment.date))
     time_str = escape(get_time_name(appointment))
 
+    clinic_title = hospital.name if hospital else CLINIC_NAME
+    clinic_phone = hospital.phone if (hospital and hospital.phone) else CLINIC_PHONE
+
     body_text = f"""Dear {appointment.name},
 
-Your appointment has been booked at {CLINIC_NAME}.
+Your appointment has been booked at {clinic_title}.
 
 Details:
   Service  : {get_service_name(appointment)}
@@ -402,12 +605,12 @@ Details:
   Status   : Pending Confirmation
 
 We will confirm your appointment shortly.
-For queries, call us at {CLINIC_PHONE}.
+For queries, call us at {clinic_phone}.
 
-Thank you for choosing {CLINIC_NAME}!
+Thank you for choosing {clinic_title}!
 """
     html_content = f"""<p>Dear <strong>{patient_name}</strong>,</p>
-<p>Your appointment has been recorded at <strong>{CLINIC_NAME}</strong>.</p>
+<p>Your appointment has been recorded at <strong>{clinic_title}</strong>.</p>
 <div class="box">
   <table style="width:100%; border-collapse:collapse; font-size:14px;">
     <tr><td style="padding:6px 0; color:#64748b;">Service:</td><td style="font-weight:600;">{service_name}</td></tr>
@@ -418,7 +621,14 @@ Thank you for choosing {CLINIC_NAME}!
 </div>
 <p>Our clinical administration team will review and confirm your session shortly.</p>"""
 
-    html = render_html_wrapper(subject, html_content, preheader=f"Appointment booked for {date_str}")
+    html = render_html_wrapper(
+        subject,
+        html_content,
+        preheader=f"Appointment booked for {date_str}",
+        context="clinic",
+        hospital=hospital,
+        organization_name=clinic_title,
+    )
     return send_clinic_email(
         subject, body_text, appointment.email, hospital=hospital, email_type="appointment_confirmation", html_message=html
     )
@@ -438,6 +648,9 @@ def send_appointment_status_update(appointment):
     time_str = escape(get_time_name(appointment))
     status_str = escape(appointment.status.upper())
 
+    clinic_title = hospital.name if hospital else CLINIC_NAME
+    clinic_phone = hospital.phone if (hospital and hospital.phone) else CLINIC_PHONE
+
     body_text = f"""Dear {appointment.name},
 
 Your appointment status has been updated.
@@ -451,15 +664,15 @@ Details:
     if appointment.status == "confirmed":
         body_text += "\nPlease arrive 10 minutes before your scheduled time.\n"
     elif appointment.status == "cancelled":
-        body_text += f"\nTo reschedule, call us at {CLINIC_PHONE}.\n"
+        body_text += f"\nTo reschedule, call us at {clinic_phone}.\n"
 
-    body_text += f"\n{CLINIC_NAME}"
+    body_text += f"\n{clinic_title}"
 
     extra_msg = ""
     if appointment.status == "confirmed":
         extra_msg = "<p style='color:#059669; font-weight:600;'>Please arrive 10 minutes before your scheduled appointment time.</p>"
     elif appointment.status == "cancelled":
-        extra_msg = f"<p style='color:#dc2626;'>To reschedule this session, please contact us at {CLINIC_PHONE}.</p>"
+        extra_msg = f"<p style='color:#dc2626;'>To reschedule this session, please contact us at {clinic_phone}.</p>"
 
     html_content = f"""<p>Dear <strong>{patient_name}</strong>,</p>
 <p>Your appointment status has been updated:</p>
@@ -473,7 +686,14 @@ Details:
 </div>
 {extra_msg}"""
 
-    html = render_html_wrapper(label, html_content, preheader=f"Status update: {appointment.status}")
+    html = render_html_wrapper(
+        label,
+        html_content,
+        preheader=f"Status update: {appointment.status}",
+        context="clinic",
+        hospital=hospital,
+        organization_name=clinic_title,
+    )
     return send_clinic_email(
         label, body_text, appointment.email, hospital=hospital, email_type="appointment_status_update", html_message=html
     )
@@ -504,7 +724,14 @@ Login to the clinic admin panel to confirm or assign this session.
 </div>
 <p>Please log in to your clinic admin portal to confirm or delegate this session.</p>"""
 
-    html = render_html_wrapper(subject, html_content)
+    clinic_title = hospital.name if hospital else CLINIC_NAME
+    html = render_html_wrapper(
+        subject,
+        html_content,
+        context="clinic",
+        hospital=hospital,
+        organization_name=clinic_title,
+    )
     return send_clinic_email(
         subject, body_text, admin_email, hospital=hospital, email_type="admin_appointment_alert", html_message=html
     )
@@ -512,18 +739,34 @@ Login to the clinic admin panel to confirm or assign this session.
 
 # ── OTP & AUTHENTICATION EMAILS ───────────────────────────────
 
-def send_otp_email(email, otp, purpose="Password Reset"):
+def send_otp_email(email, otp, purpose="Password Reset", user=None, hospital=None):
     clean_purpose = sanitize_header_value(purpose)
-    subject = f"{clean_purpose} Verification Code"
-    body_text = f"""Your verification code for {clean_purpose} at {CLINIC_NAME}:
+
+    # Determine if this OTP is for a platform super admin / superuser vs clinic user
+    is_platform_user = False
+    if user:
+        if user.is_superuser or getattr(user, "is_super_admin", False):
+            is_platform_user = True
+        elif not getattr(user, "hospital", None) and not hospital:
+            is_platform_user = True
+    elif hospital is None:
+        from .models import User
+        found_user = User.objects.filter(email__iexact=email).first()
+        if found_user and (found_user.is_superuser or getattr(found_user, "is_super_admin", False)):
+            is_platform_user = True
+
+    if is_platform_user:
+        platform_brand = getattr(settings, "PLATFORM_BRAND_NAME", "TechCraft")
+        subject = f"{clean_purpose} Verification Code – {platform_brand}"
+        body_text = f"""Your verification code for {clean_purpose} on {platform_brand}:
 
     CODE: {otp}
 
 Valid for 5 minutes. Never share this code with anyone.
 
-{CLINIC_NAME}
+{platform_brand} Platform Administration
 """
-    html_content = f"""<p>You requested a verification code for <strong>{escape(clean_purpose)}</strong>.</p>
+        html_content = f"""<p>You requested a verification code for <strong>{escape(clean_purpose)}</strong> on <strong>{escape(platform_brand)}</strong>.</p>
 <div class="box" style="text-align:center; padding:24px;">
   <span style="font-size:32px; font-weight:800; letter-spacing:6px; color:#0284c7; background:#e0f2fe; padding:8px 24px; border-radius:8px; display:inline-block;">
     {escape(str(otp))}
@@ -531,10 +774,46 @@ Valid for 5 minutes. Never share this code with anyone.
 </div>
 <p style="color:#64748b; font-size:13px;">This code is valid for 5 minutes. If you did not initiate this request, please contact our security team immediately.</p>"""
 
-    html = render_html_wrapper(subject, html_content, preheader=f"Your verification code is {otp}")
-    return send_clinic_email(
-        subject, body_text, email, email_type="otp_verification", html_message=html
-    )
+        html = render_html_wrapper(
+            subject,
+            html_content,
+            preheader=f"Your verification code is {otp}",
+            context="platform",
+            organization_name=platform_brand,
+        )
+        return send_platform_email(
+            subject, body_text, email, email_type="platform_otp", html_message=html
+        )
+    else:
+        clinic_title = (hospital.name if hospital else getattr(settings, "CLINIC_NAME", "Dr. Dhvani Patalia — PhysioRehab"))
+        subject = f"{clean_purpose} Verification Code"
+        body_text = f"""Your verification code for {clean_purpose} at {clinic_title}:
+
+    CODE: {otp}
+
+Valid for 5 minutes. Never share this code with anyone.
+
+{clinic_title}
+"""
+        html_content = f"""<p>You requested a verification code for <strong>{escape(clean_purpose)}</strong>.</p>
+<div class="box" style="text-align:center; padding:24px;">
+  <span style="font-size:32px; font-weight:800; letter-spacing:6px; color:#0284c7; background:#e0f2fe; padding:8px 24px; border-radius:8px; display:inline-block;">
+    {escape(str(otp))}
+  </span>
+</div>
+<p style="color:#64748b; font-size:13px;">This code is valid for 5 minutes. If you did not initiate this request, please contact our security team immediately.</p>"""
+
+        html = render_html_wrapper(
+            subject,
+            html_content,
+            preheader=f"Your verification code is {otp}",
+            context="clinic",
+            hospital=hospital,
+            organization_name=clinic_title,
+        )
+        return send_clinic_email(
+            subject, body_text, email, hospital=hospital, email_type="otp_verification", html_message=html
+        )
 
 
 # ── STAFF EMAILS ─────────────────────────────────────────────
@@ -567,7 +846,14 @@ Your leave application has been {leave.status.upper()}.
   <p><strong>Note:</strong> {escape(leave.admin_note or 'None')}</p>
 </div>"""
 
-    html = render_html_wrapper(subject, html_content)
+    clinic_title = hospital.name if hospital else CLINIC_NAME
+    html = render_html_wrapper(
+        subject,
+        html_content,
+        context="clinic",
+        hospital=hospital,
+        organization_name=clinic_title,
+    )
     return send_clinic_email(
         subject, body_text, staff_user.email, hospital=hospital, email_type="leave_status", html_message=html
     )
@@ -602,7 +888,14 @@ Your salary for {salary_record.month} {salary_record.year} has been processed.
   <p style="font-size:16px; font-weight:700; color:#059669;">Net Paid: ₹{salary_record.net_salary}</p>
 </div>"""
 
-    html = render_html_wrapper(subject, html_content)
+    clinic_title = hospital.name if hospital else CLINIC_NAME
+    html = render_html_wrapper(
+        subject,
+        html_content,
+        context="clinic",
+        hospital=hospital,
+        organization_name=clinic_title,
+    )
     return send_clinic_email(
         subject, body_text, staff_user.email, hospital=hospital, email_type="salary_paid", html_message=html
     )
@@ -637,7 +930,14 @@ Login to your staff dashboard to review and complete this task.
   <p><strong>Instructions:</strong> {escape(task.description or 'None')}</p>
 </div>"""
 
-    html = render_html_wrapper(subject, html_content)
+    clinic_title = hospital.name if hospital else CLINIC_NAME
+    html = render_html_wrapper(
+        subject,
+        html_content,
+        context="clinic",
+        hospital=hospital,
+        organization_name=clinic_title,
+    )
     return send_clinic_email(
         subject, body_text, assigned_to.email, hospital=hospital, email_type="task_assignment", html_message=html
     )
@@ -679,30 +979,37 @@ def send_subscription_success_email(hospital, plan, expires_at):
     if not hospital or not hospital.email:
         return False
 
+    platform_brand = getattr(settings, "PLATFORM_BRAND_NAME", "TechCraft")
     plan_name = plan.get_name_display() if hasattr(plan, "get_name_display") else str(plan)
     subject = "Platform Subscription Activated Successfully"
     body_text = f"""Dear {hospital.name} Administration,
 
-Your subscription to {CLINIC_NAME} Platform is now active!
+Your subscription to {platform_brand} Platform is now active!
 
 Plan Details:
   Plan       : {plan_name}
   Expiry Date: {format_date(expires_at)}
   Price      : ₹{getattr(plan, 'price_monthly', 0)}/month
 
-Thank you for partnering with {CLINIC_NAME}!
+Thank you for partnering with {platform_brand}!
 """
     html_content = f"""<p>Dear <strong>{escape(hospital.name)}</strong> Administration,</p>
-<p>Your hospital subscription has been verified and activated.</p>
+<p>Your {escape(platform_brand)} platform subscription has been verified and activated.</p>
 <div class="box">
   <p><strong>Plan:</strong> <span class="badge">{escape(plan_name)}</span></p>
   <p><strong>Expires On:</strong> {escape(format_date(expires_at))}</p>
   <p><strong>Monthly Rate:</strong> ₹{getattr(plan, 'price_monthly', 0)}</p>
-</div>"""
+</div>
+<p>Thank you for partnering with <strong>{escape(platform_brand)}</strong>. You now have full access to your healthcare management portal.</p>"""
 
-    html = render_html_wrapper(subject, html_content)
-    return send_clinic_email(
-        subject, body_text, hospital.email, hospital=hospital, email_type="subscription_activated", html_message=html
+    html = render_html_wrapper(
+        subject,
+        html_content,
+        context="platform",
+        organization_name=platform_brand,
+    )
+    return send_platform_email(
+        subject, body_text, hospital.email, email_type="subscription_activated", html_message=html
     )
 
 
@@ -710,16 +1017,17 @@ def send_subscription_expiry_warning_email(hospital, plan, expires_at, days_left
     if not hospital or not hospital.email:
         return False
 
+    platform_brand = getattr(settings, "PLATFORM_BRAND_NAME", "TechCraft")
     plan_name = plan.get_name_display() if hasattr(plan, "get_name_display") else str(plan)
     subject = f"⚠️ Subscription Expiring in {days_left} Days"
     body_text = f"""Dear {hospital.name} Administration,
 
-Your clinic subscription will expire in {days_left} day(s) on {format_date(expires_at)}.
+Your clinic subscription on {platform_brand} will expire in {days_left} day(s) on {format_date(expires_at)}.
 To prevent operational interruption, please renew your plan.
 
-{CLINIC_NAME} Platform
+{platform_brand} Platform Administration
 """
-    html_content = f"""<p>Dear <strong>{escape(hospital.name)}</strong>,</p>
+    html_content = f"""<p>Dear <strong>{escape(hospital.name)}</strong> Administration,</p>
 <p style="color:#b45309; font-weight:600;">Your clinic subscription will expire in {days_left} days.</p>
 <div class="box">
   <p><strong>Active Plan:</strong> {escape(plan_name)}</p>
@@ -727,9 +1035,14 @@ To prevent operational interruption, please renew your plan.
 </div>
 <p>Please renew before expiry to ensure uninterrupted clinical access for your staff and patients.</p>"""
 
-    html = render_html_wrapper(subject, html_content)
-    return send_clinic_email(
-        subject, body_text, hospital.email, hospital=hospital, email_type="subscription_warning", html_message=html
+    html = render_html_wrapper(
+        subject,
+        html_content,
+        context="platform",
+        organization_name=platform_brand,
+    )
+    return send_platform_email(
+        subject, body_text, hospital.email, email_type="subscription_warning", html_message=html
     )
 
 
@@ -749,15 +1062,21 @@ Best regards,
     html_content = f"""<p>Dear <strong>{escape(user.get_full_name() or user.username)}</strong>,</p>
 <p>Welcome to <strong>{escape(clinic_title)}</strong>. Your patient account has been created successfully.</p>
 <p>You can now log in, schedule appointments, review session records, and manage your treatments securely.</p>"""
-    html = render_html_wrapper(subject, html_content)
+    html = render_html_wrapper(
+        subject,
+        html_content,
+        context="clinic",
+        hospital=hospital,
+        organization_name=clinic_title,
+    )
     return send_clinic_email(
         subject, body_text, user.email, hospital=hospital, email_type="welcome", html_message=html
     )
 
 
-def send_password_reset_otp_email(email, otp, hospital=None):
-    """Alias for send_otp_email for password resets."""
-    return send_otp_email(email, otp, purpose="Password Reset")
+def send_password_reset_otp_email(email, otp, user=None, hospital=None):
+    """Alias for send_otp_email for password resets with context support."""
+    return send_otp_email(email, otp, purpose="Password Reset", user=user, hospital=hospital)
 
 
 def send_appointment_confirmation_email(appointment):
@@ -788,7 +1107,13 @@ If you would like to reschedule, please visit our online booking portal or conta
   <p><strong>Reason:</strong> {escape(reason_txt)}</p>
 </div>
 <p>If you need to reschedule or consult with our staff, please contact us.</p>"""
-    html = render_html_wrapper(subject, html_content)
+    html = render_html_wrapper(
+        subject,
+        html_content,
+        context="clinic",
+        hospital=appointment.hospital,
+        organization_name=clinic_title,
+    )
     return send_clinic_email(
         subject, body_text, appointment.email, hospital=appointment.hospital, email_type="appointment_cancelled", html_message=html
     )
@@ -817,7 +1142,13 @@ Thank you for choosing {clinic_title}.
   <p><strong>Services:</strong> {escape(str(description))}</p>
 </div>
 <p>Thank you for partnering with <strong>{escape(clinic_title)}</strong>.</p>"""
-    html = render_html_wrapper(subject, html_content)
+    html = render_html_wrapper(
+        subject,
+        html_content,
+        context="clinic",
+        hospital=hospital,
+        organization_name=clinic_title,
+    )
     return send_clinic_email(
         subject, body_text, user.email, hospital=hospital, email_type="invoice", html_message=html
     )

@@ -24,7 +24,7 @@ import logging
 from celery import shared_task
 from django.conf import settings
 
-from .email_utils import send_clinic_email, send_bulk_clinic_email
+from .email_utils import send_clinic_email, send_bulk_clinic_email, send_platform_email
 
 logger = logging.getLogger(__name__)
 
@@ -37,18 +37,81 @@ logger = logging.getLogger(__name__)
     retry_backoff=True,       # 30s, 60s, 120s...
     retry_jitter=True,
 )
-def send_email_task(self, subject, message, recipient_list):
+def send_email_task(
+    self,
+    subject,
+    message,
+    recipient_list,
+    context="clinic",
+    hospital_id=None,
+    email_type="transactional",
+    html_message=None,
+):
     """
-    Background task for a SINGLE-recipient (or small, safe) email.
-    Use this instead of calling send_clinic_email() directly from a view
-    whenever the send doesn't need to block the response (which is almost
-    always the case).
+    Background task for a single-recipient (or small, safe) email.
+    Preserves the sending context ('platform' vs 'clinic') across background workers and retries.
     """
-    ok = send_clinic_email(subject, message, recipient_list)
+    if context == "platform":
+        ok = send_platform_email(
+            subject,
+            message,
+            recipient_list,
+            email_type=email_type,
+            html_message=html_message,
+        )
+    else:
+        hospital = None
+        if hospital_id:
+            try:
+                from .models import Hospital
+                hospital = Hospital.objects.filter(id=hospital_id).first()
+            except Exception:
+                pass
+        ok = send_clinic_email(
+            subject,
+            message,
+            recipient_list,
+            hospital=hospital,
+            email_type=email_type,
+            html_message=html_message,
+        )
+
     if not ok:
         # Raising triggers Celery's autoretry/backoff above.
-        raise RuntimeError(f"Email send failed for {recipient_list}: {subject}")
-    return {"recipient_list": recipient_list, "subject": subject, "status": "sent"}
+        raise RuntimeError(f"Email send failed for {recipient_list}: {subject} (context={context})")
+    return {"recipient_list": recipient_list, "subject": subject, "status": "sent", "context": context}
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=30,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_jitter=True,
+)
+def send_platform_email_task(
+    self,
+    subject,
+    message,
+    recipient_list,
+    email_type="platform_system",
+    html_message=None,
+):
+    """
+    Dedicated background task for platform-level TechCraft emails.
+    Guarantees strict TechCraft branding and zero clinic identity leaks.
+    """
+    ok = send_platform_email(
+        subject,
+        message,
+        recipient_list,
+        email_type=email_type,
+        html_message=html_message,
+    )
+    if not ok:
+        raise RuntimeError(f"Platform email send failed for {recipient_list}: {subject}")
+    return {"recipient_list": recipient_list, "subject": subject, "status": "sent", "context": "platform"}
 
 
 @shared_task(

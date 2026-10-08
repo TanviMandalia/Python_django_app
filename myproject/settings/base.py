@@ -194,6 +194,18 @@ EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", 15))
 INBOUND_EMAIL_WEBHOOK_SECRET = os.getenv("INBOUND_EMAIL_WEBHOOK_SECRET", "")
 
 # =========================
+# PLATFORM EMAIL IDENTITY (TechCraft)
+# =========================
+
+PLATFORM_BRAND_NAME = "TechCraft"
+PLATFORM_TAGLINE = "Healthcare SaaS Platform"
+PLATFORM_DEFAULT_FROM_EMAIL = os.getenv("PLATFORM_DEFAULT_FROM_EMAIL", "techcraft1215@gmail.com")
+PLATFORM_SUPPORT_EMAIL = os.getenv("PLATFORM_SUPPORT_EMAIL", "techcraft1215@gmail.com")
+PLATFORM_SMTP_HOST = os.getenv("PLATFORM_SMTP_HOST", "smtp.gmail.com")
+PLATFORM_SMTP_PORT = int(os.getenv("PLATFORM_SMTP_PORT", 587))
+PLATFORM_SMTP_USER = os.getenv("PLATFORM_SMTP_USER", "techcraft1215@gmail.com")
+
+# =========================
 # CELERY
 # =========================
 

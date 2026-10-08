@@ -26,6 +26,11 @@ from .crypto import encrypt_credential, decrypt_credential
 logger = logging.getLogger(__name__)
 
 
+class EmailContext:
+    PLATFORM = "platform"
+    CLINIC = "clinic"
+
+
 class EmailPurpose:
     PLATFORM_SYSTEM = "PLATFORM_SYSTEM"
     PASSWORD_RESET = "PASSWORD_RESET"
@@ -41,37 +46,83 @@ class EmailPurpose:
     SUBSCRIPTION_SUCCESS = "SUBSCRIPTION_SUCCESS"
     SUBSCRIPTION_WARNING = "SUBSCRIPTION_WARNING"
     SUPPORT_TICKET = "SUPPORT_TICKET"
+    PLATFORM_TEST = "PLATFORM_TEST"
+    CLINIC_TEST = "CLINIC_TEST"
 
 
-def resolve_email_account(purpose=None, hospital=None, doctor=None, user=None) -> EmailAccount:
+def resolve_email_account(
+    purpose=None,
+    hospital=None,
+    doctor=None,
+    user=None,
+    context=None,
+) -> EmailAccount:
     """
     Resolve the authoritative EmailAccount for sending based on context.
-    
-    Resolution Priority:
-    1. Doctor-specific account (if doctor provided and has active EmailAccount)
-    2. Clinic-specific account (if hospital provided and has active EmailAccount)
-       - First matches specific purpose type (e.g. NOTIFICATION for patient notifications)
-       - Next matches clinic default
-    3. Platform-wide account (for platform purposes or allowed fallback)
-    4. Fallback in-memory EmailAccount initialized from settings if no DB account configured.
-    
+
+    Two Explicit Contexts:
+    1. 'platform': TechCraft Platform & Super Admin communications.
+       - Strictly binds to scope_type='platform' (TechCraft sender).
+       - Never falls back to a clinic's account or inherits clinic branding.
+    2. 'clinic': Communications on behalf of Dr. Dhvani Patalia Physio Rehab (or specific tenant).
+       - Binds to the hospital's dedicated account.
+       - Never leaks another clinic's account or platform credentials.
+
     CRITICAL SECURITY INVARIANT:
     Never use an unrelated hospital's EmailAccount under any circumstances.
     """
-    # 0. Purpose-Specific Global Routing (Platform Auth / Support)
-    if purpose in (
-        EmailPurpose.PASSWORD_RESET,
-        "password_reset",
-        "otp_verification",
-        EmailPurpose.PLATFORM_SYSTEM,
-        "platform",
-    ):
-        plat_acc = EmailAccount.objects.filter(
-            scope_type="platform", is_active=True
-        ).order_by("-is_default").first()
+    is_platform_purpose = (
+        purpose in (
+            EmailPurpose.PLATFORM_SYSTEM,
+            EmailPurpose.SUBSCRIPTION_SUCCESS,
+            EmailPurpose.SUBSCRIPTION_WARNING,
+            EmailPurpose.PLATFORM_TEST,
+            "platform_system",
+            "subscription_activated",
+            "subscription_warning",
+            "PLATFORM_TEST",
+            "platform_otp",
+        )
+        or (hospital is None and user is None and purpose in (EmailPurpose.PASSWORD_RESET, "password_reset", "otp_verification"))
+    )
+
+    is_platform = (
+        context == EmailContext.PLATFORM
+        or context == "platform"
+        or (context is None and is_platform_purpose)
+    )
+
+    # 1. PLATFORM CONTEXT (TechCraft)
+    if is_platform:
+        plat_acc = (
+            EmailAccount.objects.filter(scope_type="platform", is_active=True)
+            .order_by("-is_default", "id")
+            .first()
+        )
         if plat_acc:
             return plat_acc
 
+        # In-memory virtual fallback account for TechCraft platform
+        fallback = EmailAccount(
+            name="TechCraft Platform Mailer",
+            account_type="PLATFORM",
+            scope_type="platform",
+            hospital=None,
+            host=getattr(settings, "PLATFORM_SMTP_HOST", "smtp.gmail.com"),
+            port=getattr(settings, "PLATFORM_SMTP_PORT", 587),
+            use_tls=True,
+            use_ssl=False,
+            username=getattr(settings, "PLATFORM_SMTP_USER", "techcraft1215@gmail.com"),
+            from_email=getattr(settings, "PLATFORM_DEFAULT_FROM_EMAIL", "techcraft1215@gmail.com"),
+            from_name="TechCraft",
+            reply_to=getattr(settings, "PLATFORM_SUPPORT_EMAIL", "techcraft1215@gmail.com"),
+            is_active=True,
+            is_default=True,
+        )
+        fallback.set_password(getattr(settings, "EMAIL_HOST_PASSWORD", ""))
+        return fallback
+
+    # 2. SUPPORT TICKET GLOBAL ROUTING
     if purpose in (EmailPurpose.SUPPORT_TICKET, "support"):
         supp_acc = (
             EmailAccount.objects.filter(account_type="SUPPORT", is_active=True).first()
@@ -82,7 +133,7 @@ def resolve_email_account(purpose=None, hospital=None, doctor=None, user=None) -
         if supp_acc:
             return supp_acc
 
-    # 1. Doctor-specific account
+    # 3. DOCTOR-SPECIFIC ACCOUNT
     if doctor:
         doc_account = EmailAccount.objects.filter(
             user=doctor, is_active=True
@@ -90,59 +141,61 @@ def resolve_email_account(purpose=None, hospital=None, doctor=None, user=None) -
         if doc_account:
             return doc_account
 
-    # 2. Clinic-specific account
-    if hospital:
+    # 4. CLINIC-SPECIFIC ACCOUNT (Tenant-Isolated)
+    effective_hospital = hospital
+    if not effective_hospital and user:
+        from .views import resolve_hospital
+        try:
+            effective_hospital = resolve_hospital(user)
+        except Exception:
+            effective_hospital = None
+
+    if effective_hospital:
         clinic_accounts = EmailAccount.objects.filter(
-            hospital=hospital, is_active=True
+            hospital=effective_hospital, is_active=True
         )
         if purpose in (EmailPurpose.PATIENT_NOTIFICATION, "notification"):
             notif_acc = clinic_accounts.filter(account_type="NOTIFICATION").first()
             if notif_acc:
                 return notif_acc
-        
+
         default_acc = clinic_accounts.filter(is_default=True).first()
         if default_acc:
             return default_acc
-        
+
         first_clinic_acc = clinic_accounts.first()
         if first_clinic_acc:
             return first_clinic_acc
 
-    # 3. Platform account (for platform/system actions or allowed platform fallback)
-    platform_accounts = EmailAccount.objects.filter(
-        scope_type="platform", is_active=True
-    )
-    if purpose in (EmailPurpose.SUPPORT_TICKET, "support"):
-        supp_acc = platform_accounts.filter(account_type="SUPPORT").first()
-        if supp_acc:
-            return supp_acc
+        # Virtual fallback for THIS specific clinic
+        clinic_fallback = EmailAccount(
+            name=f"{effective_hospital.name} Primary SMTP",
+            account_type="CLINIC",
+            scope_type="hospital",
+            hospital=effective_hospital,
+            host=getattr(settings, "EMAIL_HOST", "smtp.gmail.com"),
+            port=getattr(settings, "EMAIL_PORT", 587),
+            use_tls=getattr(settings, "EMAIL_USE_TLS", True),
+            use_ssl=getattr(settings, "EMAIL_USE_SSL", False),
+            username=getattr(settings, "EMAIL_HOST_USER", effective_hospital.email or "noreply@physiorehab.com"),
+            from_email=effective_hospital.email or getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@physiorehab.com"),
+            from_name=effective_hospital.name,
+            reply_to=effective_hospital.email or "",
+            is_active=True,
+            is_default=True,
+        )
+        clinic_fallback.set_password(getattr(settings, "EMAIL_HOST_PASSWORD", ""))
+        return clinic_fallback
 
-    platform_default = platform_accounts.filter(is_default=True).first()
-    if platform_default:
-        return platform_default
+    # 5. NO HOSPITAL AND NO PLATFORM CONTEXT SPECIFIED
+    primary_hospital = Hospital.objects.filter(is_active=True).first()
+    if primary_hospital:
+        return resolve_email_account(
+            purpose=purpose, hospital=primary_hospital, doctor=doctor, user=user, context=EmailContext.CLINIC
+        )
 
-    first_platform = platform_accounts.first()
-    if first_platform:
-        return first_platform
-
-    # 4. Virtual Fallback Account based on active settings (guarantees backward compatibility)
-    fallback = EmailAccount(
-        name="System Default SMTP",
-        account_type="PLATFORM" if not hospital else "CLINIC",
-        scope_type="platform" if not hospital else "hospital",
-        hospital=hospital,
-        host=getattr(settings, "EMAIL_HOST", "smtp.gmail.com"),
-        port=getattr(settings, "EMAIL_PORT", 587),
-        use_tls=getattr(settings, "EMAIL_USE_TLS", True),
-        use_ssl=getattr(settings, "EMAIL_USE_SSL", False),
-        username=getattr(settings, "EMAIL_HOST_USER", "noreply@physiorehab.com"),
-        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@physiorehab.com"),
-        from_name=getattr(settings, "CLINIC_NAME", "PhysioRehab Clinic") if not hospital else hospital.name,
-        is_active=True,
-        is_default=True,
-    )
-    fallback.set_password(getattr(settings, "EMAIL_HOST_PASSWORD", ""))
-    return fallback
+    # 6. Default platform fallback
+    return resolve_email_account(purpose=purpose, context=EmailContext.PLATFORM)
 
 
 def send_email_via_account(
@@ -157,9 +210,13 @@ def send_email_via_account(
     attachments=None,
     purpose: str = "transactional",
     hospital=None,
+    context: str = None,
 ) -> bool:
     """
     Send an isolated email using the dynamic connection and credentials of the specified EmailAccount.
+    Preserves strict identity separation:
+    - 'platform' context / platform accounts: strictly TechCraft branding & headers.
+    - 'clinic' context / clinic accounts: strictly clinic branding & headers.
     """
     from .email_utils import (
         validate_recipient_email,
@@ -182,20 +239,52 @@ def send_email_via_account(
         return False
 
     clean_subject = sanitize_header_value(subject)
-    
+
+    is_platform = (
+        context == EmailContext.PLATFORM
+        or context == "platform"
+        or getattr(account, "scope_type", "") == "platform"
+        or purpose in (
+            EmailPurpose.PLATFORM_SYSTEM,
+            EmailPurpose.SUBSCRIPTION_SUCCESS,
+            EmailPurpose.SUBSCRIPTION_WARNING,
+            EmailPurpose.PLATFORM_TEST,
+            "platform_system",
+            "subscription_activated",
+            "subscription_warning",
+            "PLATFORM_TEST",
+        )
+    )
+
+    effective_hospital = None if is_platform else (hospital or getattr(account, "hospital", None))
+
     # Formulate authoritative sender
-    from_name = account.from_name or getattr(settings, "CLINIC_NAME", "PhysioRehab")
+    if is_platform:
+        from_name = account.from_name or "TechCraft"
+        default_reply_to = getattr(settings, "PLATFORM_SUPPORT_EMAIL", "techcraft1215@gmail.com")
+    else:
+        from_name = account.from_name or (
+            effective_hospital.name if effective_hospital else getattr(settings, "CLINIC_NAME", "Dr. Dhvani Patalia — PhysioRehab")
+        )
+        default_reply_to = (
+            effective_hospital.email if effective_hospital else getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@physiorehab.com")
+        )
+
     clean_from_name = sanitize_header_value(from_name)
     from_email = f"{clean_from_name} <{account.from_email}>" if clean_from_name else account.from_email
 
-    effective_reply_to = reply_to or account.reply_to
+    effective_reply_to = reply_to or account.reply_to or default_reply_to
     reply_to_list = [sanitize_header_value(effective_reply_to)] if effective_reply_to else None
 
     if not html_body:
         escaped_body = escape(body_text).replace("\n", "<br>")
-        html_body = render_html_wrapper(clean_subject, f"<p>{escaped_body}</p>")
-
-    effective_hospital = hospital or account.hospital
+        html_body = render_html_wrapper(
+            clean_subject,
+            f"<p>{escaped_body}</p>",
+            context="platform" if is_platform else "clinic",
+            hospital=effective_hospital,
+            organization_name=clean_from_name,
+        )
 
     # Obtain dynamic connection for this specific account
     connection = account.get_connection(fail_silently=False)
@@ -207,6 +296,7 @@ def send_email_via_account(
         headers = {
             "Message-ID": f"<{msg_id}>",
             "X-Thread-ID": clean_thread_id,
+            "X-Mailer": "TechCraft-Email-Gateway" if is_platform else "Clinic-Email-Gateway",
         }
         if in_reply_to:
             clean_in_reply_to = sanitize_header_value(in_reply_to).strip("<> ")
@@ -371,7 +461,18 @@ def test_account_connection(account: EmailAccount, test_recipient: str, force_sm
         return False, f"❌ SMTP Connection Error: {type(e).__name__} - {str(e)}"
 
     # 4. Construct Identifiable Test Message
-    sender_title = account.from_name or getattr(settings, "CLINIC_NAME", "TechCraft")
+    is_platform = (account.scope_type == "platform")
+    if is_platform:
+        sender_title = account.from_name or "TechCraft"
+        org_heading = "TechCraft SaaS Platform"
+        x_mailer = "TechCraft-Email-Gateway"
+    else:
+        sender_title = account.from_name or (
+            account.hospital.name if account.hospital else getattr(settings, "CLINIC_NAME", "Dr. Dhvani Patalia — PhysioRehab")
+        )
+        org_heading = sender_title
+        x_mailer = "Clinic-Email-Gateway"
+
     clean_sender_title = sanitize_header_value(sender_title)
     from_header = f"{clean_sender_title} <{account.from_email}>" if clean_sender_title else account.from_email
     subject = f"SMTP Configuration Test - {clean_sender_title}"
@@ -379,9 +480,10 @@ def test_account_connection(account: EmailAccount, test_recipient: str, force_sm
     now_str = timezone.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
     body_text = (
-        f"SMTP Configuration Test Verification\n"
-        f"------------------------------------\n"
+        f"{org_heading} SMTP Configuration Test Verification\n"
+        f"{'-' * (len(org_heading) + 38)}\n"
         f"Account Label : {account.name}\n"
+        f"Identity      : {sender_title} ({'Platform Super Admin' if is_platform else 'Clinic Mailer'})\n"
         f"SMTP Server   : {account.host}:{account.port}\n"
         f"Security Mode : {'STARTTLS (Port 587)' if account.use_tls else 'SSL (Port 465)' if account.use_ssl else 'Plain'}\n"
         f"SMTP Username : {account.username}\n"
@@ -390,14 +492,15 @@ def test_account_connection(account: EmailAccount, test_recipient: str, force_sm
         f"Dispatched At : {now_str}\n"
         f"Message ID    : <{msg_id}>\n\n"
         f"Verification Result: The remote SMTP gateway connection, TLS negotiation, and credentials authenticated successfully.\n"
-        f"This test email confirms that your outgoing mail pipeline is operational."
+        f"This test email confirms that your outgoing mail pipeline is operational for {sender_title}."
     )
 
     html_content = (
-        f"<p><strong>SMTP Configuration Test Verification</strong></p>"
+        f"<p><strong>{escape(org_heading)} — SMTP Configuration Test Verification</strong></p>"
         f"<div class=\"box\">"
         f"<table style=\"width:100%; border-collapse:collapse; font-size:14px;\">"
         f"<tr><td style=\"padding:4px 0; color:#64748b;\">Account Label:</td><td style=\"font-weight:600;\">{escape(account.name)}</td></tr>"
+        f"<tr><td style=\"padding:4px 0; color:#64748b;\">Identity Scope:</td><td style=\"font-weight:600;\"><span class=\"badge\">{'TechCraft Platform' if is_platform else 'Clinic Tenant'}</span></td></tr>"
         f"<tr><td style=\"padding:4px 0; color:#64748b;\">SMTP Server:</td><td style=\"font-weight:600;\">{escape(account.host)}:{account.port}</td></tr>"
         f"<tr><td style=\"padding:4px 0; color:#64748b;\">Security Mode:</td><td><span class=\"badge\">{'STARTTLS (Port 587)' if account.use_tls else 'SSL (Port 465)' if account.use_ssl else 'Plain'}</span></td></tr>"
         f"<tr><td style=\"padding:4px 0; color:#64748b;\">Authenticated:</td><td style=\"font-weight:600;\">{escape(account.username)}</td></tr>"
@@ -410,14 +513,20 @@ def test_account_connection(account: EmailAccount, test_recipient: str, force_sm
         f"The SMTP connection, TLS handshake, and authentication checks have passed successfully."
         f"</p>"
     )
-    html_wrapped = render_html_wrapper(subject, html_content)
+    html_wrapped = render_html_wrapper(
+        subject,
+        html_content,
+        context="platform" if is_platform else "clinic",
+        hospital=account.hospital,
+        organization_name=clean_sender_title,
+    )
 
     email_msg = EmailMultiAlternatives(
         subject=subject,
         body=body_text,
         from_email=from_header,
         to=[clean_recipient],
-        headers={"Message-ID": f"<{msg_id}>", "X-Mailer": "PhysioRehab-Email-Gateway"},
+        headers={"Message-ID": f"<{msg_id}>", "X-Mailer": x_mailer},
         connection=connection,
     )
     email_msg.attach_alternative(html_wrapped, "text/html")

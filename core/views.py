@@ -677,7 +677,7 @@ def request_otp(request):
         otp = f"{secrets.SystemRandom().randint(100000, 999999):06d}"
         PasswordResetOTP.objects.create(user=user, otp=otp)
 
-        ok = send_otp_email(email, otp, purpose="Password Reset")
+        ok = send_otp_email(email, otp, purpose="Password Reset", user=user)
         if ok:
             messages.success(request, f"✅ OTP sent to {email}. Check your inbox.")
         else:
@@ -730,7 +730,7 @@ def resend_otp(request):
         PasswordResetOTP.objects.filter(user=user).delete()
         otp = str(random.randint(100000, 999999))
         PasswordResetOTP.objects.create(user=user, otp=otp)
-        ok = send_otp_email(user.email, otp, purpose="Password Reset")
+        ok = send_otp_email(user.email, otp, purpose="Password Reset", user=user)
         if ok:
             messages.success(request, "✅ New OTP sent!")
         else:
@@ -816,7 +816,7 @@ def change_password_request(request):
         PasswordResetOTP.objects.filter(user=request.user).delete()
         PasswordResetOTP.objects.create(user=request.user, otp=otp)
 
-        ok = send_otp_email(request.user.email, otp, purpose="Password Change")
+        ok = send_otp_email(request.user.email, otp, purpose="Password Change", user=request.user)
 
         if ok:
             messages.success(request, "✅ OTP sent successfully")
@@ -7501,7 +7501,13 @@ def super_admin_email_account_save(request):
             use_ssl = False
 
         hospital = None
-        if scope_type == "hospital" and hospital_id:
+        if scope_type == "platform":
+            hospital = None
+            if not from_name:
+                from_name = getattr(settings, "PLATFORM_BRAND_NAME", "TechCraft")
+            if not from_email:
+                from_email = getattr(settings, "PLATFORM_DEFAULT_FROM_EMAIL", "techcraft1215@gmail.com")
+        elif scope_type == "hospital" and hospital_id:
             hospital = Hospital.objects.filter(id=hospital_id).first()
 
         if account_id:

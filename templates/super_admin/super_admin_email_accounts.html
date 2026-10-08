@@ -431,25 +431,25 @@
   function openAddAccountModal() {
     document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color: var(--sa-purple);"></i> Add New Email Account';
     document.getElementById('modalAccountId').value = '';
-    document.getElementById('modalName').value = '';
+    document.getElementById('modalName').value = 'TechCraft Gmail SMTP';
     document.getElementById('modalAccountType').value = 'PLATFORM';
     document.getElementById('modalScopeType').value = 'platform';
     document.getElementById('modalHospitalId').value = '';
     document.getElementById('modalProvider').value = 'gmail';
     document.getElementById('modalHost').value = 'smtp.gmail.com';
     document.getElementById('modalPort').value = '587';
-    document.getElementById('modalUsername').value = '';
+    document.getElementById('modalUsername').value = 'techcraft1215@gmail.com';
     document.getElementById('modalPassword').value = '';
-    document.getElementById('modalPassword').placeholder = 'Enter password or App Password';
+    document.getElementById('modalPassword').placeholder = 'Enter Google App Password';
     document.getElementById('passwordIndicatorBadge').innerHTML = '';
     document.getElementById('clearPasswordGroup').style.display = 'none';
     document.getElementById('modalClearPassword').checked = false;
-    document.getElementById('modalFromEmail').value = '';
-    document.getElementById('modalFromName').value = '';
-    document.getElementById('modalReplyTo').value = '';
+    document.getElementById('modalFromEmail').value = 'techcraft1215@gmail.com';
+    document.getElementById('modalFromName').value = 'TechCraft';
+    document.getElementById('modalReplyTo').value = 'techcraft1215@gmail.com';
     document.getElementById('modalUseTls').checked = true;
     document.getElementById('modalUseSsl').checked = false;
-    document.getElementById('modalIsDefault').checked = false;
+    document.getElementById('modalIsDefault').checked = true;
     const saveBtn = document.getElementById('saveAccountBtn');
     if (saveBtn) {
       saveBtn.disabled = false;
