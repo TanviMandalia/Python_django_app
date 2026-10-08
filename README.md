@@ -3,9 +3,9 @@
 [![Django](https://img.shields.io/badge/Django-6.0-092E20?logo=django)](https://www.djangoproject.com/)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)](https://www.python.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.6-336791?logo=postgresql)](https://www.postgresql.org/)
-[![Test Suite](https://img.shields.io/badge/Tests-261%20Passed-brightgreen)](tests/)
+[![Test Suite](https://img.shields.io/badge/Tests-278%20Passed-brightgreen)](tests/)
 
-A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tailored for physiotherapy and specialty healthcare centers. The system provides complete clinic operations including multi-role portals, doctor scheduling, patient clinical records, staff attendance and payroll, internal payment logs, multi-account SMTP email governance, and a centralized Super Admin SaaS subscription & feature entitlement engine.
+A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tailored for physiotherapy and specialty healthcare centers. The system provides complete clinic operations including multi-role portals, doctor scheduling, patient clinical records, staff attendance and payroll, internal payment logs, multi-account SMTP email governance with strict platform (TechCraft) vs clinic identity separation, and a centralized Super Admin SaaS subscription & feature entitlement engine.
 
 ---
 
@@ -17,7 +17,7 @@ A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tail
 - **Scheduling & Working Weekday Engine:** Automated 30-minute slot generation, doctor availability filters, and double-booking prevention operating Monday through Friday.
 - **SaaS Subscription & Entitlement Architecture:** Tiered plans, plan-to-feature matrix, global kill switches, clinic-specific complimentary grants/overrides, and real-time usage meters.
 - **Staff Attendance & Payroll:** Morning and evening shift clock-ins, leave requests, monthly salary processing, and payslip generation.
-- **Multi-Account Email Governance:** Per-clinic and platform default SMTP accounts, encrypted credential storage (AES-256), HMAC webhook verification, and idempotency tracking.
+- **Multi-Account Email Governance & Identity Separation:** Strict separation between SaaS platform identity (TechCraft / `techcraft1215@gmail.com`) and clinic identity (Dr. Dhvani Patalia Physio Rehab / `physio.rehab.guj@gmail.com`), per-clinic and platform default SMTP accounts, encrypted credential storage (AES-256), HMAC webhook verification, and idempotency tracking.
 - **Internal Payment & Billing Logs:** Audit-logged cash, direct UPI QR code, and bank transfer logs with clinic approval/rejection workflows (third-party payment gateways removed).
 
 ### 1.2 Technology Stack
@@ -242,31 +242,41 @@ $$\text{Final Access} = \text{Role Permission} + \text{Clinic Context} + \text{S
 
 ## 7. Testing & Quality Assurance
 
-The repository contains 19 test suites covering 242 automated tests.
+The repository contains comprehensive test suites covering 278 automated tests across 14 test modules.
 
-### 7.1 Running All Tests (Development Settings)
+### 7.1 Running All Tests via Pytest (Recommended)
+```bash
+pytest -q
+```
+*Result: 278 passed in 108.3s (100% pass rate, 0 failures, 0 errors).*
+
+### 7.2 Running All Tests via Django Test Runner (Development Settings)
 ```bash
 python manage.py test --settings=myproject.settings.dev
 ```
-*Result: 242 tests passed in 99.4s (0 failures, 0 errors).*
+*Result: 278 tests passed (0 failures, 0 errors).*
 
-### 7.2 Running All Tests (PostgreSQL Production Settings)
+### 7.3 Running All Tests (PostgreSQL Production Settings)
 When running tests against production settings, set `SECURE_SSL_REDIRECT=False` so the local test client is not redirected from HTTP to HTTPS:
 ```powershell
 # Windows PowerShell
-$env:SECURE_SSL_REDIRECT="False"; python manage.py test --settings=myproject.settings.production
+$env:SECURE_SSL_REDIRECT="False"; pytest -q --ds=myproject.settings.production
 ```
 ```bash
 # Linux / macOS
-SECURE_SSL_REDIRECT=False python manage.py test --settings=myproject.settings.production
+SECURE_SSL_REDIRECT=False pytest -q --ds=myproject.settings.production
 ```
-*Result: 242 tests passed in 99.5s on PostgreSQL 18.6 (0 failures, 0 errors).*
+*Result: 278 tests passed on PostgreSQL 18.6 (0 failures, 0 errors).*
 
-### 7.3 Code Quality & AST Compilation
-Verify that all 106 Python source files parse without syntax errors:
+### 7.4 Code Quality & AST Compilation
+Verify that all Python source files parse without syntax errors:
 ```bash
 python -c "import py_compile, pathlib; [py_compile.compile(str(p), doraise=True) for p in pathlib.Path('.').rglob('*.py') if '.venv' not in p.parts]"
 ```
+```bash
+flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+```
+*Result: 0 syntax or critical lint errors across the entire codebase.*
 
 ---
 
