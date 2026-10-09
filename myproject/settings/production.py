@@ -117,3 +117,16 @@ else:
         "Production database misconfigured: either DATABASE_URL or DB_NAME (with DB_USER, DB_PASSWORD, DB_HOST, DB_PORT) must be set."
     )
 
+# ------------------------------------------------------------------------------
+# Production Email Configuration
+# If SMTP credentials are provided, use SMTP; otherwise fallback to console backend
+# to allow initial deployment, build steps, and health checks to succeed safely.
+# ------------------------------------------------------------------------------
+email_user = os.getenv("EMAIL_HOST_USER", "").strip()
+email_password = os.getenv("EMAIL_HOST_PASSWORD", "").strip()
+
+if email_user and email_password:
+    EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
