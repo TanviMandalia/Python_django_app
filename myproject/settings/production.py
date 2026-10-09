@@ -39,16 +39,46 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS", "Tr
 SECURE_HSTS_PRELOAD = os.getenv("SECURE_HSTS_PRELOAD", "True").lower() == "true"
 
 # ------------------------------------------------------------------------------
-# Static Files (WhiteNoise)
+# Storage Configuration:
+# - Static Files: WhiteNoise CompressedManifestStaticFilesStorage
+# - Media / Attachments: Cloudflare R2 (S3-compatible private bucket) when R2_* 
+#   variables are provided, with fallback to local FileSystemStorage.
 # ------------------------------------------------------------------------------
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+r2_bucket = os.getenv("R2_BUCKET_NAME") or os.getenv("AWS_STORAGE_BUCKET_NAME")
+if r2_bucket:
+    r2_account_id = os.getenv("R2_ACCOUNT_ID", "").strip()
+    r2_endpoint = os.getenv("R2_ENDPOINT_URL")
+    if not r2_endpoint and r2_account_id:
+        r2_endpoint = f"https://{r2_account_id}.r2.cloudflarestorage.com"
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": r2_bucket,
+                "endpoint_url": r2_endpoint,
+                "access_key": os.getenv("R2_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID"),
+                "secret_key": os.getenv("R2_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_ACCESS_KEY"),
+                "default_acl": "private",
+                "querystring_auth": True,
+                "querystring_expire": int(os.getenv("R2_PRESIGNED_EXPIRY", "3600")),
+                "signature_version": "s3v4",
+                "file_overwrite": False,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 # ------------------------------------------------------------------------------
 # Production Database Configuration

@@ -9,7 +9,7 @@ services:
   - type: web
     name: physio-rehab-app
     runtime: python
-    plan: starter
+    plan: free
     buildCommand: "./build.sh"
     startCommand: "gunicorn myproject.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120"
     healthCheckPath: "/healthz"
@@ -54,11 +54,19 @@ services:
         sync: false
       - key: CLINIC_UPI_ID
         sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
 
 # ── Managed PostgreSQL Database ──────────────────────────────────────────────
 databases:
   - name: physio-rehab-db
     databaseName: physiorehab_db
     user: physio_user
-    plan: starter
+    plan: free
     ipAllowList: [] # Deny public external access; enforce private networking
