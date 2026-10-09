@@ -5,14 +5,17 @@
 # ==============================================================================
 set -o errexit
 
-echo "==> [1/3] Installing / verifying application dependencies..."
+echo "==> [1/4] Installing / verifying application dependencies..."
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 
-echo "==> [2/3] Performing Django configuration validation..."
+echo "==> [2/4] Performing Django configuration validation..."
 python manage.py check --settings=myproject.settings.production
 
-echo "==> [3/3] Collecting static files via WhiteNoise..."
+echo "==> [3/4] Collecting static files via WhiteNoise..."
 python manage.py collectstatic --no-input --settings=myproject.settings.production
+
+echo "==> [4/4] Applying database migrations..."
+python manage.py migrate --no-input --settings=myproject.settings.production
 
 echo "==> Build preparation completed successfully."
