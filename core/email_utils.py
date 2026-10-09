@@ -311,14 +311,19 @@ def send_platform_email(
 
             try:
                 from .models import EmailLog
+                _is_otp = bool(email_type and ("otp" in str(email_type).lower() or "verification" in str(email_type).lower()))
+                _expires_at = (timezone.now() + timezone.timedelta(hours=24)) if _is_otp else None
                 EmailLog.objects.create(
                     account=account if getattr(account, "pk", None) else None,
+                    direction="outgoing",
                     sender_email=account.from_email,
                     hospital=None,
                     email_type=email_type,
                     recipient_email=recipient,
                     subject=clean_subject,
                     status="sent",
+                    is_otp=_is_otp,
+                    expires_at=_expires_at,
                     message_id=msg_id,
                     thread_id=clean_thread_id,
                     sent_at=timezone.now(),
@@ -337,14 +342,19 @@ def send_platform_email(
 
             try:
                 from .models import EmailLog
+                _is_otp = bool(email_type and ("otp" in str(email_type).lower() or "verification" in str(email_type).lower()))
+                _expires_at = (timezone.now() + timezone.timedelta(hours=24)) if _is_otp else None
                 EmailLog.objects.create(
                     account=account if getattr(account, "pk", None) else None,
+                    direction="outgoing",
                     sender_email=account.from_email,
                     hospital=None,
                     email_type=email_type,
                     recipient_email=recipient,
                     subject=clean_subject,
                     status="failed",
+                    is_otp=_is_otp,
+                    expires_at=_expires_at,
                     error_category=err_category,
                     message_id=msg_id,
                     thread_id=clean_thread_id,
@@ -465,14 +475,19 @@ def send_clinic_email(
             # Record successful outgoing email log
             try:
                 from .models import EmailLog
+                _is_otp = bool(email_type and ("otp" in str(email_type).lower() or "verification" in str(email_type).lower()))
+                _expires_at = (timezone.now() + timezone.timedelta(hours=24)) if _is_otp else None
                 EmailLog.objects.create(
                     account=account if getattr(account, "pk", None) else None,
+                    direction="outgoing",
                     sender_email=account.from_email,
                     hospital=hospital or account.hospital,
                     email_type=email_type,
                     recipient_email=recipient,
                     subject=clean_subject,
                     status="sent",
+                    is_otp=_is_otp,
+                    expires_at=_expires_at,
                     message_id=msg_id,
                     thread_id=clean_thread_id,
                     sent_at=timezone.now(),
@@ -491,14 +506,19 @@ def send_clinic_email(
 
             try:
                 from .models import EmailLog
+                _is_otp = bool(email_type and ("otp" in str(email_type).lower() or "verification" in str(email_type).lower()))
+                _expires_at = (timezone.now() + timezone.timedelta(hours=24)) if _is_otp else None
                 EmailLog.objects.create(
                     account=account if getattr(account, "pk", None) else None,
+                    direction="outgoing",
                     sender_email=account.from_email,
                     hospital=hospital or account.hospital,
                     email_type=email_type,
                     recipient_email=recipient,
                     subject=clean_subject,
                     status="failed",
+                    is_otp=_is_otp,
+                    expires_at=_expires_at,
                     error_category=err_category,
                     message_id=msg_id,
                     thread_id=clean_thread_id,
@@ -549,6 +569,7 @@ def send_bulk_clinic_email(subject, message_text, recipient_list, html_message=N
                 try:
                     from .models import EmailLog
                     EmailLog.objects.create(
+                        direction="outgoing",
                         hospital=hospital,
                         email_type="bulk",
                         recipient_email=addr,

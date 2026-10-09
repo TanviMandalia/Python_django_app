@@ -109,6 +109,9 @@ urlpatterns = [
     path(
         "delete-message/<int:message_id>/", views.delete_message, name="delete_message"
     ),
+    path(
+        "chat/attachment/<int:message_id>/", views.download_chat_attachment, name="download_chat_attachment"
+    ),
     # ── Typing Indicators ─────────────────────────────────────
     path("api/chat/send/", views.api_chat_send, name="api_chat_send"),
     path("api/chat/fetch/<int:user_id>/", views.api_chat_fetch, name="api_chat_fetch"),

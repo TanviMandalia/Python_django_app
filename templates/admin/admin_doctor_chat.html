@@ -5,106 +5,47 @@
 {% block page_title %}Doctor &amp; Staff Communication{% endblock %}
 {% block page_subtitle %}Direct Real-Time Chat Channels with Attending Physiotherapists &amp; Medical Staff{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chat_dm.css' %}" />
+{% endblock %}
+
 {% block content %}
-<!-- ════ HEADER ════ -->
-<div class="page-header-card">
-  <div class="page-header-title">
-    <div class="page-header-icon" style="background: rgba(111, 66, 193, 0.15); color: #6f42c1;">
-      <i class="fas fa-user-nurse"></i>
-    </div>
-    <div class="page-header-text">
-      <h2>Medical Staff &amp; Doctor Communications</h2>
-      <p>Coordinate patient schedules, discuss clinical cases, and send internal clinic updates to physiotherapists.</p>
-    </div>
-  </div>
-  <div class="page-header-actions">
-    <a href="{% url 'admin_chat' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
-      <i class="fas fa-comments"></i> Patient Messages
-    </a>
-    <a href="{% url 'admin_staff' %}" class="topbar-action-link btn-topbar-primary">
-      <i class="fas fa-user-md"></i> Staff Directory
-    </a>
-  </div>
-</div>
+<!-- ════ TWO-PANEL INSTAGRAM DM WORKSPACE ════ -->
+<div class="chat-dm-container chat-mode-list">
+  <!-- Left Panel: Doctor/Staff List -->
+  {% include "admin/_doctor_chat_inbox_panel.html" %}
 
-<!-- ════ DOCTORS LIST CONTAINER ════ -->
-<div class="admin-card">
-  <div class="admin-search-box" style="margin-bottom: 18px;">
-    <i class="fas fa-search"></i>
-    <input type="text" id="doctorSearch" placeholder="Search staff by doctor name, specialization, or email..." onkeyup="filterDoctors()" />
-  </div>
-
-  {% if doctor_chats %}
-  <div style="display: flex; flex-direction: column; gap: 10px;" id="doctorChatsContainer">
-    {% for item in doctor_chats %}
-    <a href="{% url 'admin_doctor_chat_detail' item.doctor.id %}" class="doctor-chat-item"
-      style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 20px; background: #fff; border: 1px solid var(--admin-border); border-radius: 12px; text-decoration: none; color: var(--admin-dark); transition: all 0.2s; border-left: 4px solid {% if item.unread_count > 0 %}#6f42c1{% else %}transparent{% endif %};">
-      
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <div style="position: relative; flex-shrink: 0;">
-          <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(111, 66, 193, 0.15); color: #6f42c1; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">
-            {{ item.doctor.first_name|first|default:item.doctor.username|first|upper }}
-          </div>
-          {% if item.is_online %}
-          <span style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #28a745; border-radius: 50%; border: 2px solid #fff;"></span>
-          {% endif %}
-        </div>
-
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <strong style="font-size: 0.98rem; color: var(--admin-dark);">
-              {{ item.doctor.get_full_name|default:item.doctor.username }}
-            </strong>
-            <span class="badge-status badge-info" style="font-size: 0.72rem; padding: 2px 8px;">
-              {{ item.profile.get_role_display|default:"Physiotherapist" }}
-            </span>
-            {% if item.unread_count > 0 %}
-              <span class="badge-status badge-warning" style="font-size: 0.72rem; padding: 2px 8px;">{{ item.unread_count }} New</span>
-            {% endif %}
-          </div>
-
-          <p style="font-size: 0.82rem; color: var(--admin-text-sub); margin: 3px 0 0 0; max-width: 500px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            {% if item.last_msg %}
-              {% if item.last_msg.sender == request.user %}<span style="color: var(--admin-text-main); font-weight: 600;">You:</span> {% endif %}
-              {{ item.last_msg.content }}
-            {% else %}
-              <span style="font-style: italic; color: #adb5bd;">Click to start internal clinic conversation</span>
-            {% endif %}
-          </p>
-        </div>
+  <!-- Right Panel: Desktop Welcome State (hidden on mobile list view) -->
+  <div class="chat-conversation-panel">
+    <div class="chat-placeholder-view">
+      <div class="chat-placeholder-icon" style="border-color: #6f42c1; color: #6f42c1;">
+        <i class="fas fa-user-nurse"></i>
       </div>
-
-      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0;">
-        <span style="font-size: 0.76rem; color: var(--admin-text-sub);">
-          {% if item.last_msg %}{{ item.last_msg.created_at|date:"d M, H:i" }}{% else %}—{% endif %}
-        </span>
-        <span class="btn-action-icon btn-action-view" style="width: 28px; height: 28px; font-size: 0.75rem;">
-          <i class="fas fa-chevron-right"></i>
-        </span>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--admin-dark); margin: 0 0 8px 0;">
+        Internal Staff Communications
+      </h3>
+      <p style="font-size: 0.88rem; max-width: 360px; margin: 0 0 20px 0; line-height: 1.5;">
+        Select a doctor or physiotherapist from the list on the left to coordinate patient care, clinical notes, and treatment schedules.
+      </p>
+      <div style="display: flex; gap: 10px;">
+        <a href="{% url 'admin_staff' %}" class="topbar-action-link" style="background: #ffffff; border: 1px solid var(--admin-border); color: var(--admin-dark); font-size: 0.85rem; padding: 8px 16px;">
+          <i class="fas fa-id-badge"></i> View All Staff Members
+        </a>
       </div>
-    </a>
-    {% endfor %}
+    </div>
   </div>
-  {% else %}
-  <div class="admin-empty-state">
-    <div class="empty-icon"><i class="fas fa-user-md"></i></div>
-    <h4>No Doctors or Medical Staff Registered</h4>
-    <p>Add physiotherapists and staff members to enable doctor-admin communications.</p>
-    <a href="{% url 'add_staff' %}" class="topbar-action-link btn-topbar-primary">Register New Staff</a>
-  </div>
-  {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 function filterDoctors() {
-  const query = document.getElementById('doctorSearch').value.toLowerCase();
-  const items = document.querySelectorAll('#doctorChatsContainer .doctor-chat-item');
+  const query = (document.getElementById('doctorChatSearch')?.value || '').toLowerCase().trim();
+  const items = document.querySelectorAll('#doctorChatsContainer .chat-inbox-item');
 
   items.forEach(item => {
-    const text = item.innerText.toLowerCase();
-    item.style.display = text.includes(query) ? 'flex' : 'none';
+    const dataName = (item.getAttribute('data-name') || '').toLowerCase();
+    item.style.display = dataName.includes(query) ? 'flex' : 'none';
   });
 }
 </script>

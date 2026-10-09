@@ -27,6 +27,18 @@
     return document.querySelectorAll(".main, .main-wrapper, .app-main, .staff-main-panel, .main-content, .client-main, .client-main-wrapper, .sa-main-wrapper");
   }
 
+  function updateAriaStates(isOpen) {
+    const menuButtons = document.querySelectorAll(
+      "#menuToggle, #mobileMenuBtn, .menu-toggle, .menu-btn, .sidebar-toggle-btn, .hamburger, .mobile-menu-btn, .sidebar-toggle, [data-toggle='sidebar'], [data-action='toggle-sidebar']"
+    );
+    menuButtons.forEach((btn) => {
+      btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      const label = isOpen ? "Collapse sidebar navigation" : "Expand sidebar navigation";
+      btn.setAttribute("aria-label", label);
+      btn.setAttribute("title", label);
+    });
+  }
+
   // ── DESKTOP COLLAPSE ───────────────────────────────────────
   function toggleDesktopCollapse() {
     const sidebar = getSidebar();
@@ -38,6 +50,8 @@
     getContentWrappers().forEach((wrapper) => {
       wrapper.classList.toggle("sidebar-collapsed", isCollapsed);
     });
+
+    updateAriaStates(!isCollapsed);
 
     try {
       localStorage.setItem("sidebar_collapsed", isCollapsed ? "true" : "false");
@@ -53,6 +67,7 @@
     sidebar.classList.add("show", "active", "open");
     if (overlay) overlay.classList.add("show", "active");
     document.body.classList.add("sidebar-open");
+    updateAriaStates(true);
   }
 
   function closeMobileDrawer() {
@@ -61,6 +76,7 @@
     if (sidebar) sidebar.classList.remove("show", "active", "open");
     if (overlay) overlay.classList.remove("show", "active");
     document.body.classList.remove("sidebar-open");
+    updateAriaStates(false);
   }
 
   function toggleMobileDrawer() {
@@ -124,7 +140,7 @@
 
     // 2. Attach click handlers to all toggle buttons
     const menuButtons = document.querySelectorAll(
-      "#menuToggle, #mobileMenuBtn, .menu-toggle, .menu-btn, .topbar-toggle-btn, .hamburger, .mobile-menu-btn, .sidebar-toggle, [data-toggle='sidebar']"
+      "#menuToggle, #mobileMenuBtn, .menu-toggle, .menu-btn, .sidebar-toggle-btn, .hamburger, .mobile-menu-btn, .sidebar-toggle, [data-toggle='sidebar'], [data-action='toggle-sidebar']"
     );
     menuButtons.forEach((btn) => {
       btn.removeEventListener("click", window.toggleSidebar);
@@ -164,7 +180,7 @@
         const s = getSidebar();
         if (s && (s.classList.contains("show") || s.classList.contains("active") || s.classList.contains("open"))) {
           const isTrigger = e.target.closest(
-            "#menuToggle, #mobileMenuBtn, .menu-toggle, .menu-btn, .topbar-toggle-btn, .hamburger, .mobile-menu-btn, .sidebar-toggle, [data-toggle='sidebar']"
+            "#menuToggle, #mobileMenuBtn, .menu-toggle, .menu-btn, .sidebar-toggle-btn, .hamburger, .mobile-menu-btn, .sidebar-toggle, [data-toggle='sidebar'], [data-action='toggle-sidebar']"
           );
           if (!s.contains(e.target) && !isTrigger) {
             closeMobileDrawer();

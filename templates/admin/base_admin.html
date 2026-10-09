@@ -253,7 +253,7 @@
     .page-header-card {
       background: #ffffff;
       border: 1px solid var(--admin-border);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 22px 24px;
       display: flex;
       align-items: center;
@@ -261,38 +261,40 @@
       flex-wrap: wrap;
       gap: 16px;
       margin-bottom: 24px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
     }
 
     .page-header-title {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 16px;
     }
 
     .page-header-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
       background: rgba(245, 197, 24, 0.18);
       color: var(--admin-dark);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 1.35rem;
+      flex-shrink: 0;
     }
 
     .page-header-text h2 {
-      font-size: 1.35rem;
-      font-weight: 700;
+      font-size: 1.4rem;
+      font-weight: 800;
       color: var(--admin-dark);
       margin: 0;
+      letter-spacing: -0.01em;
     }
 
     .page-header-text p {
-      font-size: 0.84rem;
+      font-size: 0.85rem;
       color: var(--admin-text-sub);
-      margin: 3px 0 0 0;
+      margin: 4px 0 0 0;
     }
 
     .page-header-actions {
@@ -305,51 +307,55 @@
     /* Stats Cards Grid */
     .admin-stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 20px;
       margin-bottom: 24px;
     }
 
     .admin-stat-card {
       background: #ffffff;
       border: 1px solid var(--admin-border);
-      border-radius: 14px;
-      padding: 20px;
+      border-radius: 16px;
+      padding: 22px 24px;
       display: flex;
       align-items: center;
-      gap: 16px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      gap: 18px;
+      box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.04);
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+      position: relative;
     }
 
     .admin-stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.08);
+      border-color: #cbd5e1;
     }
 
     .stat-icon-wrap {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.25rem;
+      font-size: 1.35rem;
       flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
     .stat-info .stat-val {
-      font-size: 1.55rem;
+      font-size: 1.85rem;
       font-weight: 800;
       color: var(--admin-dark);
       line-height: 1.1;
+      letter-spacing: -0.02em;
     }
 
     .stat-info .stat-lbl {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: var(--admin-text-sub);
-      margin-top: 4px;
+      margin-top: 5px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -358,10 +364,10 @@
     .admin-card {
       background: #ffffff;
       border: 1px solid var(--admin-border);
-      border-radius: 14px;
-      padding: 22px;
+      border-radius: 16px;
+      padding: 24px;
       margin-bottom: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
     }
 
     .admin-card-header {
@@ -371,7 +377,7 @@
       flex-wrap: wrap;
       gap: 14px;
       padding-bottom: 16px;
-      margin-bottom: 18px;
+      margin-bottom: 20px;
       border-bottom: 1px solid var(--admin-border);
     }
 
@@ -662,7 +668,7 @@
     <header class="admin-topbar">
       <div class="topbar-left">
         <!-- Mobile Drawer Hamburger & Desktop Collapse Toggle -->
-        <button class="topbar-toggle-btn" id="menuToggle" aria-label="Toggle Navigation">
+        <button class="topbar-toggle-btn sidebar-toggle-btn" id="menuToggle" aria-label="Toggle Navigation">
           <i class="fas fa-bars"></i>
         </button>
         <div class="topbar-title-wrap">

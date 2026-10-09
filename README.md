@@ -3,9 +3,9 @@
 [![Django](https://img.shields.io/badge/Django-6.0-092E20?logo=django)](https://www.djangoproject.com/)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)](https://www.python.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.6-336791?logo=postgresql)](https://www.postgresql.org/)
-[![Test Suite](https://img.shields.io/badge/Tests-299%20Passed-brightgreen)](tests/)
+[![Test Suite](https://img.shields.io/badge/Tests-320%20Passed-brightgreen)](tests/)
 
-A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tailored for physiotherapy and specialty healthcare centers. The system provides complete clinic operations including multi-role portals, doctor scheduling, patient clinical records, staff attendance and payroll, internal payment logs, multi-account SMTP email governance with strict platform (TechCraft) vs clinic identity separation, a centralized Super Admin SaaS subscription & feature entitlement engine, and a complete technical & local SEO framework for public healthcare clinic discoverability.
+A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tailored for physiotherapy and specialty healthcare centers. The system provides complete clinic operations including multi-role portals, doctor scheduling, patient clinical records, single-conversation clinical messaging with secure attachments, staff attendance and payroll, internal payment logs, multi-account SMTP email governance with strict platform (TechCraft) vs clinic identity separation, an automated 24-hour OTP retention & cleanup policy, a centralized Super Admin SaaS subscription & feature entitlement engine, and a complete technical & local SEO framework for public healthcare clinic discoverability.
 
 ---
 
@@ -14,6 +14,10 @@ A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tail
 ### 1.1 Core Modules
 - **Multi-Tenant Clinic Isolation:** Strict data partition per clinic tenant enforced server-side via `core.tenancy`.
 - **4 Distinct Role Portals:** Dedicated web portals for Platform Administrators (`super_admin`), Clinic Administrators (`admin`), Clinical Staff/Physiotherapists (`staff`), and Patients (`client`).
+- **Single-Conversation Clinical Messaging & File Sharing:** Instagram-inspired, uncluttered single-conversation view with attachment preview pills, multiline text entry, duplicate submission prevention, and tenant-isolated authenticated downloads (`/chat/attachment/<id>/`).
+- **Secure File, Document & Image Uploads:** Defense-in-depth file validation (`.pdf`, `.docx`, `.xlsx`, `.jpg`, `.jpeg`, `.png`, `.webp`), 10MB clinical limit, magic-byte inspection, Pillow image verification, `X-Content-Type-Options: nosniff`, and `Content-Disposition: attachment`.
+- **Email Delivery Audit & 24-Hour OTP Retention:** Granular logging of outgoing and incoming emails with `direction`, `status`, `is_otp`, `expires_at`, and an automated CLI cleanup command (`cleanup_expired_otp_logs`) that purges expired OTP logs while retaining general clinical audit history. Zero plaintext OTP storage.
+- **Accessible Sidebar Navigation System:** Unified layout controller (`static/js/layout.js`) supporting smooth desktop collapse (76px/260px), mobile off-canvas drawer with overlay, `aria-expanded` and accessible label synchronization, and Escape key dismissal.
 - **Scheduling & Working Weekday Engine:** Automated 30-minute slot generation, doctor availability filters, and double-booking prevention operating Monday through Friday.
 - **SaaS Subscription & Entitlement Architecture:** Tiered plans, plan-to-feature matrix, global kill switches, clinic-specific complimentary grants/overrides, and real-time usage meters.
 - **Staff Attendance & Payroll:** Morning and evening shift clock-ins, leave requests, monthly salary processing, and payslip generation.
@@ -38,7 +42,7 @@ A multi-tenant, enterprise-grade Clinic & Hospital Management SaaS platform tail
 Python_django_app/
 ├── core/                           # Primary Django application
 │   ├── management/commands/        # CLI commands (password rotation, reminders, seeds)
-│   ├── migrations/                 # Migrations 0001 through 0040
+│   ├── migrations/                 # Migrations 0001 through 0041
 │   ├── templatetags/               # Custom template filters
 │   ├── appointment_slots.py        # Weekday slot generation & doctor scheduling
 │   ├── checks.py                   # System checks & readiness verification
@@ -65,7 +69,7 @@ Python_django_app/
 ├── static/                         # Source stylesheets, scripts, icons, brand assets
 ├── staticfiles/                    # Compiled production assets from collectstatic
 ├── templates/                      # Modular template hierarchy
-├── tests/                          # 21 test suites (299 automated test cases)
+├── tests/                          # 24 test suites (320+ automated test cases)
 ├── build.sh                        # Production build script (PaaS / Render / Container)
 ├── render.yaml                     # Render Blueprint specification
 ├── .env.example                    # Production environment configuration template
@@ -73,6 +77,24 @@ Python_django_app/
 ├── requirements.txt                # Production dependencies manifest
 └── README.md                       # Public project documentation
 ```
+
+### 1.4 Modern Direct Messaging (DM) & Decoupled Interaction Architecture
+- **Instagram-Inspired Two-Panel Desktop Experience:**
+  - **Left Panel (`.chat-inbox-panel`):** Fixed 360px conversation list with instant search filtering, patient/doctor avatars with real-time online status indicators, last message snippets with sender attribution ("You: ..."), formatted timestamps, and unread count badges. Active conversations feature prominent highlight states.
+  - **Right Panel (`.chat-conversation-panel`):** Full-height conversation workspace. Features a contact header with status and quick actions, a scrollable chronological message timeline with differentiated sent/received bubbles (`#F5C518` brand gold / neutral white), and a fixed bottom composer with attachment picker, selected file preview pill, and send button.
+  - **Zero-Selection Desktop State:** Root `/admin-chat/` and `/admin-doctor-chat/` display a clean, centered welcome state prompting the user to select an inbox conversation.
+- **Mobile-First Responsive Transitions (< 992px):**
+  - **Strict Single-Panel Mode:** On mobile screens, only ONE panel renders at a time. The conversation list is shown at 100% width on `/admin-chat/`. Tapping any thread transitions to the active conversation at 100% width on `/admin-chat/<id>/`.
+  - **Dedicated Mobile Navigation:** A prominent header back arrow (`.chat-back-btn`) returns the user to the conversation list. Overlapping chat windows and dual-pane mobile squishing are strictly eliminated.
+- **Independent Controls & Conflict Elimination:**
+  - **Decoupled Sidebar Toggle:** `static/js/layout.js` strictly targets dedicated sidebar triggers (`#menuToggle`, `#mobileMenuBtn`, `.sidebar-toggle-btn`, `[data-action="toggle-sidebar"]`). Generic styling classes (such as `.topbar-toggle-btn`) were completely excised from sidebar event listeners.
+  - **Dedicated Navigation Back Button:** Back controls use `.chat-back-btn` with explicit `href` targets and fallback URLs, preventing accidental event bubbling or sidebar toggling.
+  - **Isolated Attachment Controls:** Attachment pickers use dedicated `.chat-attach-btn` buttons with `type="button"`, completely decoupled from form submission and navigation.
+- **Database Query Batching (N+1 Elimination):**
+  - Conversation inbox lists (`_get_admin_patient_chats` and `_get_admin_doctor_chats`) batch unread message counts in 1 aggregated query (`Count('id')`) and fetch recent conversation messages in 1 query, replacing 2*N queries with 2 queries total (98% query reduction).
+- **Private Attachment Security:**
+  - All uploaded clinical records, reports, and images are protected behind authenticated endpoint `/chat/attachment/<id>/`.
+  - Server-side multi-tenant authorization verifies clinic ownership, sender/receiver identity, and staff roles. Unauthenticated requests redirect to login, cross-tenant requests yield `403 Forbidden`, and responses enforce `X-Content-Type-Options: nosniff` and `Content-Disposition: attachment`.
 
 ---
 
@@ -240,21 +262,36 @@ $$\text{Final Access} = \text{Role Permission} + \text{Clinic Context} + \text{S
 
 ## 7. Testing & Quality Assurance
 
-The repository contains comprehensive test suites covering 299 automated tests across 21 test modules.
+The repository contains comprehensive test suites covering **320 automated tests** across 24 test modules.
 
-### 7.1 Running All Tests via Pytest (Recommended)
+### 7.1 Running All Tests via Django Test Runner
+```bash
+python manage.py test tests
+```
+*Result: 320 passed in ~141s (100% pass rate, 0 failures, 0 errors).*
+
+### 7.2 Running Focused Feature Test Suites
+```bash
+# Sidebar navigation and role menu access across all 4 portals
+python manage.py test tests.test_sidebar_navigation
+
+# Clinical messaging, secure attachments, and download permissions
+python manage.py test tests.test_messaging_and_attachments
+
+# Email delivery audit trail & 24h OTP retention cleanup
+python manage.py test tests.test_email_audit_and_otp_retention
+
+# Dedicated SEO validation suite
+python manage.py test tests.test_seo_implementation
+```
+
+### 7.3 Running All Tests via Pytest
 ```bash
 pytest -q
 ```
-*Result: 299 passed in 132.75s (100% pass rate, 0 failures, 0 errors).*
+*Result: 320 passed (100% pass rate, 0 failures, 0 errors).*
 
-### 7.2 Running All Tests via Django Test Runner (Development Settings)
-```bash
-python manage.py test --settings=myproject.settings.dev
-```
-*Result: All tests passed on isolated test database (0 failures, 0 errors).*
-
-### 7.3 Running All Tests (PostgreSQL Production Settings)
+### 7.4 Running All Tests (PostgreSQL Production Settings)
 When running tests against production settings, set `SECURE_SSL_REDIRECT=False` so the local test client is not redirected from HTTP to HTTPS:
 ```powershell
 # Windows PowerShell
@@ -264,15 +301,18 @@ $env:SECURE_SSL_REDIRECT="False"; pytest -q --ds=myproject.settings.production
 # Linux / macOS
 SECURE_SSL_REDIRECT=False pytest -q --ds=myproject.settings.production
 ```
-*Result: 299 tests passed on PostgreSQL 18.6 (0 failures, 0 errors).*
 
-### 7.4 Running Dedicated SEO Validation Suite
+### 7.5 OTP Retention Cleanup Management Command
+Run the scheduled audit cleanup command to delete expired OTP records (24-hour retention):
 ```bash
-pytest tests/test_seo_implementation.py -v
-```
-*Result: 9 passed, 20 subtests passed (robots.txt, sitemap.xml, Schema.org JSON-LD, metadata uniqueness, and privacy headers).*
+# Dry run preview
+python manage.py cleanup_expired_otp_logs --dry-run
 
-### 7.5 Code Quality & AST Compilation
+# Purge expired OTP logs
+python manage.py cleanup_expired_otp_logs
+```
+
+### 7.6 Code Quality & AST Compilation
 Verify that all Python source files parse without syntax errors:
 ```bash
 python -c "import py_compile, pathlib; [py_compile.compile(str(p), doraise=True) for p in pathlib.Path('.').rglob('*.py') if '.venv' not in p.parts]"

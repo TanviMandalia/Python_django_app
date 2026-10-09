@@ -5,116 +5,245 @@
 {% block page_title %}Patient Conversation{% endblock %}
 {% block page_subtitle %}Direct Chat Session with {{ patient.get_full_name|default:patient.username }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chat_dm.css' %}" />
+{% endblock %}
+
 {% block content %}
-<!-- ════ CHAT CONVERSATION CONTAINER ════ -->
-<div class="admin-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; height: calc(100vh - 180px); min-height: 520px;">
-  
-  <!-- Active Chat Header -->
-  <div style="padding: 16px 22px; background: #ffffff; border-bottom: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: space-between; gap: 14px;">
-    <div style="display: flex; align-items: center; gap: 12px;">
-      <a href="{% url 'admin_chat' %}" class="topbar-toggle-btn" style="width: 36px; height: 36px; font-size: 0.9rem;" title="Back to Inquiries">
-        <i class="fas fa-arrow-left"></i>
-      </a>
+<!-- ════ ULTRA-MODERN DIRECT MESSAGING WORKSPACE ════ -->
+<div class="chat-dm-container chat-mode-detail">
+  <!-- Left Panel: Conversations List (visible on desktop) -->
+  {% include "admin/_chat_inbox_panel.html" %}
 
-      <!-- Patient Avatar & Online Indicator -->
-      <div style="position: relative;">
-        <div style="width: 42px; height: 42px; border-radius: 50%; background: rgba(245, 197, 24, 0.2); color: var(--admin-dark); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem;">
-          {{ patient.first_name|first|default:patient.username|first|upper }}
-        </div>
-        {% if patient_online %}
-        <span style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #28a745; border-radius: 50%; border: 2px solid #fff;"></span>
-        {% endif %}
-      </div>
+  <!-- Right Panel: Active Conversation (visible on desktop & mobile) -->
+  <div class="chat-conversation-panel">
+    <!-- Active Conversation Header -->
+    <div class="chat-conversation-header">
+      <div class="chat-header-user">
+        <!-- Mobile Back Arrow (Returns to Inbox) -->
+        <a href="{% url 'admin_chat' %}" class="chat-back-btn" title="Back to Messages" aria-label="Back to Messages">
+          <i class="fas fa-arrow-left"></i>
+        </a>
 
-      <!-- Patient Information -->
-      <div>
-        <strong style="font-size: 1rem; color: var(--admin-dark); display: block; line-height: 1.2;">
-          {{ patient.get_full_name|default:patient.username }}
-        </strong>
-        <div style="font-size: 0.75rem; color: var(--admin-text-sub); display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+        <!-- Patient Avatar & Online Indicator -->
+        <div class="chat-avatar-wrap">
+          <div class="chat-avatar" style="width: 44px; height: 44px; font-size: 1.05rem;">
+            {{ patient.first_name|first|default:patient.username|first|upper }}
+          </div>
           {% if patient_online %}
-            <span style="color: #28a745; font-weight: 600;"><i class="fas fa-circle" style="font-size: 0.55rem;"></i> Online</span>
-          {% elif patient_last_seen %}
-            <span>Last seen {{ patient_last_seen|timesince }} ago</span>
-          {% else %}
-            <span>Patient Account</span>
+            <span class="chat-online-dot"></span>
           {% endif %}
-          <span id="typing-status" style="display: none; color: #997400; font-weight: 600; font-style: italic;">• typing...</span>
         </div>
-      </div>
-    </div>
 
-    <!-- Quick Actions -->
-    <div style="display: flex; gap: 8px;">
-      <a href="{% url 'edit_patient' patient.id %}" class="topbar-action-link" style="background: #f8f9fa; border: 1px solid var(--admin-border); color: var(--admin-dark); font-size: 0.8rem; padding: 6px 12px;">
-        <i class="fas fa-user"></i> Patient Details
-      </a>
-    </div>
-  </div>
-
-  <!-- Messages Scroll Area -->
-  <div id="chatArea" style="flex: 1; overflow-y: auto; padding: 22px; background: #fdfdfd; display: flex; flex-direction: column; gap: 14px;">
-    {% if messages_list %}
-      {% for msg in messages_list %}
-      <div style="display: flex; flex-direction: column; align-items: {% if msg.sender == request.user %}flex-end{% else %}flex-start{% endif %};">
-        <div style="max-width: 70%; padding: 12px 16px; border-radius: 14px; font-size: 0.9rem; line-height: 1.45; word-break: break-word; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-          {% if msg.sender == request.user %}
-            background: var(--admin-primary); color: var(--admin-dark); border-bottom-right-radius: 4px;
-          {% else %}
-            background: #ffffff; color: var(--admin-dark); border: 1px solid var(--admin-border); border-bottom-left-radius: 4px;
-          {% endif %}">
-          {{ msg.content }}
-        </div>
-        
-        <div style="display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: #9ca3af; margin-top: 4px; padding: 0 4px;">
-          <span>{{ msg.created_at|date:"H:i" }}</span>
-          {% if msg.sender == request.user %}
-            {% if msg.is_read %}
-              <i class="fas fa-check-double" style="color: #28a745;" title="Read"></i>
+        <!-- Contact Name & Real-time Status -->
+        <div style="min-width: 0;">
+          <span class="chat-header-name">
+            {{ patient.get_full_name|default:patient.username }}
+          </span>
+          <div class="chat-header-status">
+            {% if patient_online %}
+              <span class="chat-status-active">
+                <span class="chat-status-dot-pulse"></span> Active now
+              </span>
+            {% elif patient_last_seen %}
+              <span>Last seen {{ patient_last_seen|timesince }} ago</span>
             {% else %}
-              <i class="fas fa-check" title="Sent"></i>
+              <span>Patient Account</span>
             {% endif %}
-          {% endif %}
+            <span id="typing-status" style="display: none; color: #997400; font-weight: 600; font-style: italic;">• typing...</span>
+          </div>
         </div>
       </div>
-      {% endfor %}
-    {% else %}
-      <div style="margin: auto; text-align: center; color: var(--admin-text-sub);">
-        <div style="width: 52px; height: 52px; border-radius: 50%; background: #f1f3f5; color: #adb5bd; display: inline-flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 10px;">
-          <i class="fas fa-comments"></i>
-        </div>
-        <h4 style="font-size: 0.98rem; font-weight: 700; color: var(--admin-dark); margin: 0 0 4px 0;">Start Conversation</h4>
-        <p style="font-size: 0.82rem; margin: 0;">Send a message to begin real-time communication with this patient.</p>
-      </div>
-    {% endif %}
-  </div>
 
-  <!-- Message Composer Footer -->
-  <div style="padding: 16px 20px; background: #ffffff; border-top: 1px solid var(--admin-border);">
-    <form method="POST" id="msgForm" style="display: flex; gap: 10px; align-items: center;">
-      {% csrf_token %}
-      <input type="text" name="content" id="msgInput" placeholder="Type your message to patient..." required autocomplete="off"
-        style="flex: 1; padding: 12px 18px; border-radius: 24px; border: 1px solid var(--admin-border); font-size: 0.9rem; background: #f8f9fa; outline: none;" />
-      
-      <button type="submit" class="topbar-action-link btn-topbar-primary" style="border-radius: 24px; padding: 12px 24px; font-size: 0.9rem; border: none; cursor: pointer;">
-        <i class="fas fa-paper-plane"></i> Send
+      <!-- Quick Actions -->
+      <div class="chat-header-actions">
+        <a href="{% url 'edit_patient' patient.id %}" class="chat-action-btn" title="View Patient Details">
+          <i class="fas fa-user-edit"></i> <span>Patient Details</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Messages Timeline Area -->
+    <div class="chat-messages-area" id="chatArea">
+      <!-- Date Separator Pill -->
+      <div class="chat-date-pill">
+        <span>Conversation History</span>
+      </div>
+
+      {% if messages_list %}
+        {% for msg in messages_list %}
+        <div class="chat-msg-row {% if msg.sender == request.user %}sent{% else %}received{% endif %} msg-container" data-msg-id="{{ msg.id }}">
+          <div class="chat-msg-bubble">
+            {% if msg.attachment %}
+              <div>
+                {% if "image" in msg.attachment_type or msg.attachment.name|lower|slice:"-4:" == ".jpg" or msg.attachment.name|lower|slice:"-5:" == ".jpeg" or msg.attachment.name|lower|slice:"-4:" == ".png" or msg.attachment.name|lower|slice:"-5:" == ".webp" %}
+                  <a href="{% url 'download_chat_attachment' msg.id %}" target="_blank" rel="noopener" class="chat-attachment-img-wrap">
+                    <img src="{% url 'download_chat_attachment' msg.id %}" alt="Attachment" />
+                  </a>
+                {% else %}
+                  <a href="{% url 'download_chat_attachment' msg.id %}" class="chat-doc-card">
+                    <i class="fas {% if 'pdf' in msg.attachment_type or '.pdf' in msg.attachment.name|lower %}fa-file-pdf text-danger{% elif 'sheet' in msg.attachment_type or '.xlsx' in msg.attachment.name|lower %}fa-file-excel text-success{% else %}fa-file-alt text-primary{% endif %} chat-doc-icon"></i>
+                    <div class="chat-doc-info">
+                      <div class="chat-doc-name">{{ msg.attachment_name|default:"Clinical Document" }}</div>
+                      {% if msg.attachment_size %}
+                      <div class="chat-doc-size">{{ msg.attachment_size|filesizeformat }}</div>
+                      {% endif %}
+                    </div>
+                    <i class="fas fa-arrow-down" style="font-size: 0.85rem; opacity: 0.7;"></i>
+                  </a>
+                {% endif %}
+              </div>
+            {% endif %}
+
+            {% if msg.content %}
+              <div style="margin: 0; line-height: 1.45;">{{ msg.content|linebreaksbr }}</div>
+            {% endif %}
+
+            <!-- Inline timestamp & read status -->
+            <div class="chat-bubble-meta">
+              <span>{{ msg.created_at|date:"H:i" }}</span>
+              {% if msg.sender == request.user %}
+                {% if msg.is_read %}
+                  <i class="fas fa-check-double text-success" title="Read"></i>
+                {% else %}
+                  <i class="fas fa-check" title="Sent"></i>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div id="emptyChatPlaceholder" style="margin: auto; text-align: center; color: var(--admin-text-sub);">
+          <div style="width: 60px; height: 60px; border-radius: 50%; background: #f1f5f9; color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-bottom: 12px;">
+            <i class="fas fa-comments"></i>
+          </div>
+          <h4 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 0 0 6px 0;">Start Conversation</h4>
+          <p style="font-size: 0.86rem; margin: 0; max-width: 320px;">Send clinical recommendations or share medical reports with this patient.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Selected Attachment Preview Pill -->
+    <div id="attachmentPreviewPill" class="chat-preview-pill">
+      <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+        <i class="fas fa-paperclip" style="color: #997400; font-size: 1rem;"></i>
+        <span id="selectedFileName" style="font-weight: 600; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
+        <span id="selectedFileSize" style="font-size: 0.75rem; color: #64748b;"></span>
+      </div>
+      <button type="button" onclick="clearAttachment()" style="background: none; border: none; cursor: pointer; color: #dc3545; font-size: 1.1rem; padding: 2px 8px;" title="Remove Attachment" aria-label="Remove Attachment">
+        <i class="fas fa-times-circle"></i>
       </button>
-    </form>
+    </div>
+
+    <!-- Message Composer Dock -->
+    <div class="chat-composer-bar">
+      <form method="POST" id="msgForm" enctype="multipart/form-data" class="chat-composer-form">
+        {% csrf_token %}
+        <input type="hidden" name="receiver_id" value="{{ patient.id }}" />
+
+        <!-- Hidden File Input -->
+        <input type="file" id="chatFileInput" name="attachment" style="display: none;" accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png,.webp" onchange="handleFileSelected(this)" />
+
+        <!-- Attachment Button -->
+        <button type="button" class="chat-attach-btn" id="attachBtn" onclick="document.getElementById('chatFileInput').click()" title="Attach Document or Image" aria-label="Attach File">
+          <i class="fas fa-paperclip"></i>
+        </button>
+
+        <!-- Message Text Input Capsule -->
+        <div class="chat-input-wrapper">
+          <input type="text" name="content" id="msgInput" class="chat-composer-input" placeholder="Message {{ patient.get_full_name|default:patient.username }}..." autocomplete="off" />
+        </div>
+
+        <!-- Send Button -->
+        <button type="submit" id="sendBtn" class="chat-send-btn" title="Send message" aria-label="Send message">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Auto scroll to bottom of chat
+const patientId = "{{ patient.id }}";
 const chatArea = document.getElementById('chatArea');
-if (chatArea) {
-  chatArea.scrollTop = chatArea.scrollHeight;
+const msgForm = document.getElementById('msgForm');
+const msgInput = document.getElementById('msgInput');
+const sendBtn = document.getElementById('sendBtn');
+const fileInput = document.getElementById('chatFileInput');
+const pill = document.getElementById('attachmentPreviewPill');
+const pillName = document.getElementById('selectedFileName');
+const pillSize = document.getElementById('selectedFileSize');
+
+// Live filter for left panel
+function filterPatientChats() {
+  const query = (document.getElementById('patientChatSearch')?.value || '').toLowerCase().trim();
+  const items = document.querySelectorAll('#chatListContainer .chat-inbox-item');
+
+  items.forEach(item => {
+    const dataName = (item.getAttribute('data-name') || '').toLowerCase();
+    item.style.display = dataName.includes(query) ? 'flex' : 'none';
+  });
 }
 
-// Typing indicators check
-const patientId = "{{ patient.id }}";
+// Auto scroll to bottom
+function scrollToBottom() {
+  if (chatArea) {
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+}
+scrollToBottom();
+
+// Handle Attachment Selection
+function handleFileSelected(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File size exceeds 10MB limit. Please select a smaller file.");
+      input.value = "";
+      if (pill) pill.style.display = "none";
+      return;
+    }
+    if (pillName) pillName.textContent = file.name;
+    if (pillSize) pillSize.textContent = "(" + (file.size / 1024).toFixed(1) + " KB)";
+    if (pill) pill.style.display = "flex";
+  }
+}
+
+function clearAttachment() {
+  if (fileInput) fileInput.value = "";
+  if (pill) pill.style.display = "none";
+}
+
+// Form Submission with duplicate submission prevention
+if (msgForm) {
+  msgForm.addEventListener('submit', function(e) {
+    const content = (msgInput ? msgInput.value.trim() : "");
+    const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+    
+    if (!content && !hasFile) {
+      e.preventDefault();
+      return;
+    }
+
+    if (sendBtn) {
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+  });
+}
+
+// Typing indicators & Real-time message polling
+let lastMessageId = 0;
+document.querySelectorAll('.msg-container').forEach(el => {
+  const mid = parseInt(el.getAttribute('data-msg-id') || 0);
+  if (mid > lastMessageId) lastMessageId = mid;
+});
+
 if (patientId) {
+  // Typing indicator check
   setInterval(function() {
     fetch('/check-typing/' + patientId + '/')
       .then(r => r.json())
@@ -126,6 +255,48 @@ if (patientId) {
       })
       .catch(() => {});
   }, 3000);
+
+  // Background message fetch
+  setInterval(function() {
+    fetch('/api/chat/fetch/' + patientId + '/?last_id=' + lastMessageId)
+      .then(r => r.json())
+      .then(d => {
+        if (d.messages && d.messages.length > 0) {
+          const emptyPl = document.getElementById('emptyChatPlaceholder');
+          if (emptyPl) emptyPl.remove();
+
+          d.messages.forEach(msg => {
+            if (msg.id > lastMessageId) {
+              lastMessageId = msg.id;
+
+              const isMe = (msg.sender_id != patientId);
+              const row = document.createElement('div');
+              row.className = 'chat-msg-row ' + (isMe ? 'sent' : 'received') + ' msg-container';
+              row.setAttribute('data-msg-id', msg.id);
+
+              let attHtml = '';
+              if (msg.has_attachment && msg.attachment_url) {
+                const isImg = (msg.attachment_type && msg.attachment_type.includes('image')) || /\.(jpg|jpeg|png|webp)$/i.test(msg.attachment_name);
+                if (isImg) {
+                  attHtml = '<a href="' + msg.attachment_url + '" target="_blank" rel="noopener" class="chat-attachment-img-wrap"><img src="' + msg.attachment_url + '" /></a>';
+                } else {
+                  attHtml = '<a href="' + msg.attachment_url + '" class="chat-doc-card"><i class="fas fa-file-alt text-primary chat-doc-icon"></i><div class="chat-doc-info"><div class="chat-doc-name">' + (msg.attachment_name || 'Document') + '</div></div><i class="fas fa-arrow-down"></i></a>';
+                }
+              }
+
+              const contentHtml = msg.content ? '<div style="margin: 0; line-height: 1.45;">' + msg.content + '</div>' : '';
+              const checkIcon = isMe ? '<i class="fas fa-check" style="margin-left: 3px;"></i>' : '';
+
+              row.innerHTML = '<div class="chat-msg-bubble">' + attHtml + contentHtml + '<div class="chat-bubble-meta"><span>' + (msg.created_at || '') + '</span>' + checkIcon + '</div></div>';
+
+              chatArea.appendChild(row);
+            }
+          });
+          scrollToBottom();
+        }
+      })
+      .catch(() => {});
+  }, 3500);
 }
 </script>
 {% endblock %}

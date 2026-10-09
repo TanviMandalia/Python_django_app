@@ -96,7 +96,7 @@
       gap: 16px;
     }
 
-    .topbar-toggle-btn {
+    .topbar-toggle-btn, .topbar-icon-btn {
       width: 40px;
       height: 40px;
       border-radius: 10px;
@@ -109,11 +109,13 @@
       cursor: pointer;
       font-size: 1.05rem;
       transition: all 0.2s ease;
+      text-decoration: none;
     }
 
-    .topbar-toggle-btn:hover {
+    .topbar-toggle-btn:hover, .topbar-icon-btn:hover {
       background: var(--staff-bg);
       border-color: #cbd5e1;
+      color: var(--staff-dark);
     }
 
     .staff-header-title h1 {
@@ -249,29 +251,32 @@
     .staff-stat-card {
       background: #ffffff;
       border: 1px solid var(--staff-border);
-      border-radius: 14px;
-      padding: 20px 22px;
+      border-radius: 16px;
+      padding: 22px 24px;
       display: flex;
       align-items: center;
-      gap: 16px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      gap: 18px;
+      box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.04);
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+      position: relative;
     }
 
     .staff-stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.08);
+      border-color: #cbd5e1;
     }
 
     .stat-icon-wrapper {
       width: 52px;
       height: 52px;
-      border-radius: 12px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 1.3rem;
       flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
     .icon-gold { background: rgba(245, 197, 24, 0.15); color: #b89008; }
@@ -286,7 +291,7 @@
     }
 
     .stat-label {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: var(--staff-text-sub);
       text-transform: uppercase;
@@ -297,11 +302,12 @@
 
     .stat-value {
       font-family: 'Outfit', sans-serif;
-      font-size: 1.7rem;
+      font-size: 1.85rem;
       font-weight: 800;
       color: var(--staff-dark);
       line-height: 1.1;
       margin-bottom: 4px;
+      letter-spacing: -0.02em;
     }
 
     .stat-subtext {
@@ -316,10 +322,9 @@
     .staff-card {
       background: #ffffff;
       border: 1px solid var(--staff-border);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 24px;
       margin-bottom: 24px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
     }
 
     .staff-card-header {
@@ -494,7 +499,7 @@
       <!-- ════ STICKY HEADER ════ -->
       <header class="staff-header">
         <div class="staff-header-left">
-          <button class="topbar-toggle-btn" id="mobileMenuBtn" aria-label="Toggle Navigation">
+          <button class="topbar-toggle-btn sidebar-toggle-btn" id="mobileMenuBtn" aria-label="Toggle Navigation">
             <i class="fas fa-bars"></i>
           </button>
           <div class="staff-header-title">
@@ -508,7 +513,7 @@
             <i class="fas fa-user-md"></i> {{ user.staff_profile.get_role_display|default:"Staff Member" }}
           </span>
 
-          <a href="{% url 'notifications' %}" class="topbar-toggle-btn" title="Notifications" style="position: relative;">
+          <a href="{% url 'notifications' %}" class="topbar-icon-btn" title="Notifications" style="position: relative;">
             <i class="fas fa-bell"></i>
             {% if unread_notifs_count %}
             <span style="position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: var(--staff-danger); border-radius: 50%;"></span>

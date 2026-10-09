@@ -1,0 +1,93 @@
+{% load static %}
+<div class="chat-inbox-panel">
+  <!-- Inbox Header -->
+  <div class="chat-inbox-header">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--admin-dark); margin: 0; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-inbox text-muted" style="font-size: 1rem;"></i> Messages
+      </h3>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        {% if patient_chats %}
+          <span class="badge-status badge-info" style="font-size: 0.72rem; padding: 2px 8px;">
+            {{ patient_chats|length }}
+          </span>
+        {% endif %}
+        <a href="{% url 'admin_doctor_chat' %}" title="Switch to Doctor & Staff Chat" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; background: #f1f5f9; color: #475569; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.15s;">
+          <i class="fas fa-user-nurse" style="color: #6f42c1;"></i> Doctors
+        </a>
+      </div>
+    </div>
+
+    <!-- Live Search -->
+    <div class="chat-search-wrapper" style="margin-top: 12px; position: relative;">
+      <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--admin-text-sub); font-size: 0.85rem;"></i>
+      <input
+        type="text"
+        id="patientChatSearch"
+        placeholder="Search conversations..."
+        autocomplete="off"
+        onkeyup="filterPatientChats()"
+        style="width: 100%; padding: 8px 12px 8px 34px; border-radius: 20px; border: 1px solid var(--admin-border); background: #f8fafc; font-size: 0.85rem; outline: none; transition: border-color 0.2s;"
+      />
+    </div>
+  </div>
+
+  <!-- Conversation List -->
+  <div class="chat-inbox-list" id="chatListContainer">
+    {% if patient_chats %}
+      {% for item in patient_chats %}
+      <a
+        href="{% url 'admin_chat_detail' item.patient.id %}"
+        class="chat-inbox-item{% if selected_patient and selected_patient.id == item.patient.id %} active{% endif %}"
+        data-name="{{ item.patient.get_full_name|default:item.patient.username|lower }} {{ item.patient.email|default:''|lower }}"
+      >
+        <!-- Avatar + Online dot -->
+        <div class="chat-avatar-wrap">
+          <div class="chat-avatar">
+            {{ item.patient.first_name|first|default:item.patient.username|first|upper }}
+          </div>
+          {% if item.is_online %}
+            <span class="chat-online-dot" title="Online"></span>
+          {% endif %}
+        </div>
+
+        <!-- Meta -->
+        <div class="chat-item-content">
+          <div class="chat-item-top">
+            <span class="chat-item-name">{{ item.patient.get_full_name|default:item.patient.username }}</span>
+            <span class="chat-item-time">
+              {% if item.last_msg %}
+                {{ item.last_msg.created_at|date:"H:i" }}
+              {% else %}
+                —
+              {% endif %}
+            </span>
+          </div>
+          <div class="chat-item-bottom">
+            <span class="chat-item-snippet">
+              {% if item.last_msg %}
+                {% if item.last_msg.sender == request.user %}<span class="chat-you-prefix">You: </span>{% endif %}
+                {% if item.last_msg.attachment and not item.last_msg.content %}
+                  <i class="fas fa-paperclip" style="font-size: 0.75rem;"></i> Attachment
+                {% else %}
+                  {{ item.last_msg.content }}
+                {% endif %}
+              {% else %}
+                <span style="font-style: italic; color: #adb5bd;">No messages yet</span>
+              {% endif %}
+            </span>
+            {% if item.unread_count > 0 %}
+              <span class="chat-unread-badge">{{ item.unread_count }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div class="chat-inbox-empty">
+        <i class="fas fa-comment-slash" style="font-size: 1.8rem; color: #cbd5e1; margin-bottom: 8px;"></i>
+        <p style="font-size: 0.85rem; color: var(--admin-text-sub); margin: 0;">No patient conversations yet</p>
+      </div>
+    {% endif %}
+  </div>
+</div>

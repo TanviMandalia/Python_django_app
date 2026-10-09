@@ -5,101 +5,47 @@
 {% block page_title %}Patient Messages &amp; Inquiries{% endblock %}
 {% block page_subtitle %}Direct Two-Way Communication Channels with Clinic Patients{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chat_dm.css' %}" />
+{% endblock %}
+
 {% block content %}
-<!-- ════ HEADER ════ -->
-<div class="page-header-card">
-  <div class="page-header-title">
-    <div class="page-header-icon">
-      <i class="fas fa-comments"></i>
-    </div>
-    <div class="page-header-text">
-      <h2>Patient Communication Center</h2>
-      <p>Respond to patient treatment inquiries, appointment questions, and exercise feedback in real-time.</p>
-    </div>
-  </div>
-  <div class="page-header-actions">
-    <a href="{% url 'admin_doctor_chat' %}" class="topbar-action-link" style="background:#f8f9fa;border:1px solid var(--admin-border);color:var(--admin-dark);">
-      <i class="fas fa-user-nurse"></i> Switch to Doctor Chat
-    </a>
-  </div>
-</div>
+<!-- ════ TWO-PANEL INSTAGRAM DM WORKSPACE ════ -->
+<div class="chat-dm-container chat-mode-list">
+  <!-- Left Panel: Conversations List -->
+  {% include "admin/_chat_inbox_panel.html" %}
 
-<!-- ════ CHAT INBOX CONTAINER ════ -->
-<div class="admin-card">
-  <!-- Search bar -->
-  <div class="admin-search-box" style="margin-bottom: 18px;">
-    <i class="fas fa-search"></i>
-    <input type="text" id="patientChatSearch" placeholder="Search conversations by patient name or email..." onkeyup="filterPatientChats()" />
-  </div>
-
-  {% if patient_chats %}
-  <div style="display: flex; flex-direction: column; gap: 10px;" id="chatListContainer">
-    {% for item in patient_chats %}
-    <a href="{% url 'admin_chat_detail' item.patient.id %}" class="patient-chat-item"
-      style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 20px; background: #fff; border: 1px solid var(--admin-border); border-radius: 12px; text-decoration: none; color: var(--admin-dark); transition: all 0.2s; border-left: 4px solid {% if item.unread_count > 0 %}var(--admin-primary){% else %}transparent{% endif %};">
-      
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <!-- Avatar -->
-        <div style="position: relative; flex-shrink: 0;">
-          <div style="width: 46px; height: 46px; border-radius: 50%; background: rgba(245, 197, 24, 0.2); color: var(--admin-dark); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">
-            {{ item.patient.first_name|first|default:item.patient.username|first|upper }}
-          </div>
-        </div>
-
-        <!-- Info -->
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <strong style="font-size: 0.95rem; color: var(--admin-dark);">{{ item.patient.get_full_name|default:item.patient.username }}</strong>
-            {% if item.unread_count > 0 %}
-              <span class="badge-status badge-warning" style="font-size: 0.72rem; padding: 2px 8px;">{{ item.unread_count }} New</span>
-            {% endif %}
-          </div>
-          <p style="font-size: 0.82rem; color: var(--admin-text-sub); margin: 3px 0 0 0; max-width: 500px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            {% if item.last_msg %}
-              {% if item.last_msg.sender == request.user %}<span style="color: var(--admin-text-main); font-weight: 600;">You:</span> {% endif %}
-              {{ item.last_msg.content }}
-            {% else %}
-              <span style="font-style: italic; color: #adb5bd;">No messages exchanged yet</span>
-            {% endif %}
-          </p>
-        </div>
+  <!-- Right Panel: Desktop Welcome State (hidden on mobile list view) -->
+  <div class="chat-conversation-panel">
+    <div class="chat-placeholder-view">
+      <div class="chat-placeholder-icon">
+        <i class="fas fa-paper-plane"></i>
       </div>
-
-      <!-- Right: Timestamp & Action -->
-      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0;">
-        <span style="font-size: 0.76rem; color: var(--admin-text-sub);">
-          {% if item.last_msg %}
-            {{ item.last_msg.created_at|date:"d M, H:i" }}
-          {% else %}
-            —
-          {% endif %}
-        </span>
-        <span class="btn-action-icon btn-action-view" style="width: 28px; height: 28px; font-size: 0.75rem;">
-          <i class="fas fa-chevron-right"></i>
-        </span>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--admin-dark); margin: 0 0 8px 0;">
+        Your Messages
+      </h3>
+      <p style="font-size: 0.88rem; max-width: 360px; margin: 0 0 20px 0; line-height: 1.5;">
+        Select a patient conversation from the inbox list to read inquiries, reply in real-time, or share clinical exercise sheets and PDF reports.
+      </p>
+      <div style="display: flex; gap: 10px;">
+        <a href="{% url 'admin_patients' %}" class="topbar-action-link" style="background: #ffffff; border: 1px solid var(--admin-border); color: var(--admin-dark); font-size: 0.85rem; padding: 8px 16px;">
+          <i class="fas fa-user-injured"></i> View Patient Directory
+        </a>
       </div>
-    </a>
-    {% endfor %}
+    </div>
   </div>
-  {% else %}
-  <div class="admin-empty-state">
-    <div class="empty-icon"><i class="fas fa-comment-slash"></i></div>
-    <h4>No Active Patient Conversations</h4>
-    <p>When patients submit inquiries or questions through their portal, their conversations will appear here.</p>
-  </div>
-  {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 function filterPatientChats() {
-  const query = document.getElementById('patientChatSearch').value.toLowerCase();
-  const items = document.querySelectorAll('#chatListContainer .patient-chat-item');
+  const query = (document.getElementById('patientChatSearch')?.value || '').toLowerCase().trim();
+  const items = document.querySelectorAll('#chatListContainer .chat-inbox-item');
 
   items.forEach(item => {
-    const text = item.innerText.toLowerCase();
-    item.style.display = text.includes(query) ? 'flex' : 'none';
+    const dataName = (item.getAttribute('data-name') || '').toLowerCase();
+    item.style.display = dataName.includes(query) ? 'flex' : 'none';
   });
 }
 </script>

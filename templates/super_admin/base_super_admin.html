@@ -291,29 +291,32 @@
     .sa-stat-card {
       background: var(--sa-card);
       border: 1px solid var(--sa-border);
-      border-radius: var(--sa-radius-lg);
-      padding: 20px;
+      border-radius: 16px;
+      padding: 22px 24px;
       display: flex;
       align-items: center;
-      gap: 16px;
-      box-shadow: var(--sa-shadow-sm);
-      transition: all 0.2s ease;
+      gap: 18px;
+      box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.04);
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+      position: relative;
     }
 
     .sa-stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--sa-shadow-md);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.08);
+      border-color: #cbd5e1;
     }
 
     .sa-stat-icon {
       width: 52px;
       height: 52px;
-      border-radius: var(--sa-radius-md);
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 1.35rem;
       flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
     .sa-stat-icon.purple { background: var(--sa-purple-subtle); color: var(--sa-purple); }
@@ -332,18 +335,21 @@
 
     .sa-stat-info h3 {
       font-family: 'Outfit', sans-serif;
-      font-size: 1.5rem;
+      font-size: 1.85rem;
       font-weight: 800;
       color: var(--sa-dark);
       margin: 0;
-      line-height: 1.2;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
     }
 
     .sa-stat-info p {
-      font-size: 0.8rem;
-      font-weight: 500;
+      font-size: 0.78rem;
+      font-weight: 600;
       color: var(--sa-text-muted);
-      margin: 3px 0 0 0;
+      margin: 4px 0 0 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     /* ── Responsive Tables ── */
@@ -578,7 +584,7 @@
     <!-- ════ TOPBAR ════ -->
     <header class="sa-topbar topbar">
       <div class="sa-topbar-left topbar-left">
-        <button class="sa-toggle-btn menu-toggle" id="menuToggle" aria-label="Toggle Navigation">
+        <button class="sa-toggle-btn menu-toggle sidebar-toggle-btn" id="menuToggle" aria-label="Toggle Navigation">
           <i class="fas fa-bars"></i>
         </button>
         <div class="sa-topbar-titles">

@@ -715,7 +715,14 @@ class Message(models.Model):
         User, related_name="received_messages", on_delete=models.CASCADE
     )
 
-    content = models.TextField()
+    content = models.TextField(blank=True)
+
+    attachment = models.FileField(
+        upload_to="chat_attachments/", null=True, blank=True
+    )
+    attachment_name = models.CharField(max_length=255, blank=True)
+    attachment_size = models.PositiveIntegerField(null=True, blank=True)
+    attachment_type = models.CharField(max_length=100, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -724,6 +731,14 @@ class Message(models.Model):
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default=STATUS_SENT
     )
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["sender", "receiver", "created_at"]),
+            models.Index(fields=["receiver", "is_read"]),
+            models.Index(fields=["hospital", "created_at"]),
+        ]
 
     def __str__(self):
         return f"{self.sender.username} -> {self.receiver.username}"
@@ -1374,9 +1389,16 @@ class EmailLog(models.Model):
         ("failed", "Failed"),
         ("retrying", "Retrying"),
     ]
+    DIRECTION_CHOICES = [
+        ("outgoing", "Outgoing"),
+        ("incoming", "Incoming"),
+    ]
     account = models.ForeignKey(
         EmailAccount, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="email_logs",
+    )
+    direction = models.CharField(
+        max_length=10, choices=DIRECTION_CHOICES, default="outgoing"
     )
     sender_email = models.CharField(max_length=254, blank=True)
     hospital = models.ForeignKey(
@@ -1390,11 +1412,18 @@ class EmailLog(models.Model):
     error_category = models.CharField(max_length=100, blank=True)
     message_id = models.CharField(max_length=255, blank=True, db_index=True)
     thread_id = models.CharField(max_length=255, blank=True, db_index=True)
+    is_otp = models.BooleanField(default=False, db_index=True)
+    expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
     sent_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-sent_at"]
+        indexes = [
+            models.Index(fields=["is_otp", "expires_at"]),
+            models.Index(fields=["hospital", "status"]),
+            models.Index(fields=["email_type", "sent_at"]),
+        ]
 
     def __str__(self):
         return f"[{self.status}] {self.email_type} -> {self.recipient_email}"

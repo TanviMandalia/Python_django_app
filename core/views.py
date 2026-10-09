@@ -16,7 +16,7 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.cache import cache  # ← ADDED
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Count
 from django.db import models, transaction, IntegrityError
 from django.http import JsonResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
@@ -1910,18 +1910,48 @@ def client_chat(request):
 
     if request.method == "POST":
         content = request.POST.get("content", "").strip()
-        if content:
+        attachment_file = request.FILES.get("attachment") or request.FILES.get("file")
+
+        if not content and not attachment_file:
+            messages.warning(request, "Please enter a message or select a document to attach.")
+            return redirect("client_chat")
+
+        try:
+            attachment_name = ""
+            attachment_size = None
+            attachment_type = ""
+
+            if attachment_file:
+                from .file_security import validate_attachment_file, sanitize_upload_filename
+                validate_attachment_file(attachment_file, max_size_mb=10)
+                attachment_name = attachment_file.name[:250]
+                attachment_size = attachment_file.size
+                attachment_type = getattr(attachment_file, "content_type", "") or "application/octet-stream"
+
+            from .file_security import sanitize_html_content
+            clean_content = sanitize_html_content(content) if content else ""
+
             Message.objects.create(
                 sender=request.user,
                 receiver=admin,
-                content=content,
+                hospital=hospital,
+                content=clean_content,
+                attachment=attachment_file if attachment_file else None,
+                attachment_name=attachment_name,
+                attachment_size=attachment_size,
+                attachment_type=attachment_type,
                 status=Message.STATUS_SENT,
             )
+        except ValidationError as val_err:
+            messages.error(request, f"Attachment rejected: {val_err.message if hasattr(val_err, 'message') else str(val_err)}")
+        except Exception as exc:
+            messages.error(request, f"Failed to send message: {str(exc)}")
+
         return redirect("client_chat")
 
     msgs = Message.objects.filter(
         Q(sender=request.user, receiver=admin) | Q(sender=admin, receiver=request.user)
-    ).order_by("created_at")
+    ).select_related("sender", "receiver").order_by("created_at")
 
     Message.objects.filter(sender=admin, receiver=request.user, is_read=False).update(
         is_read=True, status=Message.STATUS_READ
@@ -1941,12 +1971,10 @@ def client_chat(request):
 
 
 @login_required
-def admin_chat(request):
-    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
-        return redirect("home")
+def _get_admin_patient_chats(request):
     hospital = resolve_hospital(request.user)
     if hospital and not request.user.is_superuser:
-        patients = (
+        patients = list(
             User.objects.filter(
                 Q(appointments__hospital=hospital)
                 | Q(patient_profile__hospital=hospital)
@@ -1955,34 +1983,143 @@ def admin_chat(request):
                 is_superuser=False,
                 is_staff=False,
             )
+            .select_related("patient_profile", "profile")
             .distinct()
         )
     elif request.user.is_superuser:
-        patients = User.objects.filter(is_superuser=False, is_staff=False)
+        patients = list(
+            User.objects.filter(is_superuser=False, is_staff=False)
+            .select_related("patient_profile", "profile")
+        )
     else:
-        patients = User.objects.none()
+        patients = []
+
+    if not patients:
+        return []
+
+    patient_ids = [p.id for p in patients]
+
+    # Batch unread counts in 1 optimized query
+    unread_counts = dict(
+        Message.objects.filter(
+            sender_id__in=patient_ids,
+            receiver=request.user,
+            is_read=False,
+        )
+        .values("sender_id")
+        .annotate(count=Count("id"))
+        .values_list("sender_id", "count")
+    )
+
+    # Batch recent messages in 1 query
+    recent_messages = (
+        Message.objects.filter(
+            Q(sender=request.user, receiver_id__in=patient_ids)
+            | Q(receiver=request.user, sender_id__in=patient_ids)
+        )
+        .order_by("-created_at")
+    )
+    last_msg_map = {}
+    for m in recent_messages:
+        partner_id = m.receiver_id if m.sender_id == request.user.id else m.sender_id
+        if partner_id not in last_msg_map:
+            last_msg_map[partner_id] = m
 
     patient_chats = []
     for patient in patients:
-        last_msg = (
-            Message.objects.filter(
-                Q(sender=patient, receiver=request.user)
-                | Q(sender=request.user, receiver=patient)
-            )
-            .order_by("-created_at")
-            .first()
-        )
-        unread = Message.objects.filter(
-            sender=patient, receiver=request.user, is_read=False
-        ).count()
+        last_msg = last_msg_map.get(patient.id)
+        unread = unread_counts.get(patient.id, 0)
         patient_chats.append(
-            {"patient": patient, "last_msg": last_msg, "unread_count": unread}
+            {
+                "patient": patient,
+                "last_msg": last_msg,
+                "unread_count": unread,
+                "is_online": is_online(patient),
+            }
         )
+
+    fallback_date = timezone.now() - timedelta(days=36500)
     patient_chats.sort(
-        key=lambda x: x["last_msg"].created_at if x["last_msg"] else timezone.now(),
+        key=lambda x: x["last_msg"].created_at if x["last_msg"] else fallback_date,
         reverse=True,
     )
-    return render(request, "admin/admin_chat.html", {"patient_chats": patient_chats})
+    return patient_chats
+
+
+def _get_admin_doctor_chats(request):
+    hospital = resolve_hospital(request.user)
+    if hospital and not request.user.is_superuser:
+        staff_members = list(StaffProfile.objects.filter(hospital=hospital).select_related("user", "user__profile"))
+    else:
+        staff_members = list(StaffProfile.objects.all().select_related("user", "user__profile"))
+
+    if not staff_members:
+        return []
+
+    doc_ids = [s.user_id for s in staff_members]
+
+    # Batch unread counts in 1 query
+    unread_counts = dict(
+        Message.objects.filter(
+            sender_id__in=doc_ids,
+            receiver=request.user,
+            is_read=False,
+        )
+        .values("sender_id")
+        .annotate(count=Count("id"))
+        .values_list("sender_id", "count")
+    )
+
+    # Batch recent messages in 1 query
+    recent_messages = (
+        Message.objects.filter(
+            Q(sender=request.user, receiver_id__in=doc_ids)
+            | Q(receiver=request.user, sender_id__in=doc_ids)
+        )
+        .order_by("-created_at")
+    )
+    last_msg_map = {}
+    for m in recent_messages:
+        partner_id = m.receiver_id if m.sender_id == request.user.id else m.sender_id
+        if partner_id not in last_msg_map:
+            last_msg_map[partner_id] = m
+
+    doctor_chats = []
+    for staff in staff_members:
+        doc_user = staff.user
+        last_msg = last_msg_map.get(doc_user.id)
+        unread = unread_counts.get(doc_user.id, 0)
+        doctor_chats.append(
+            {
+                "doctor": doc_user,
+                "profile": staff,
+                "last_msg": last_msg,
+                "unread_count": unread,
+                "is_online": is_online(doc_user),
+            }
+        )
+
+    fallback_date = timezone.now() - timedelta(days=36500)
+    doctor_chats.sort(
+        key=lambda x: x["last_msg"].created_at if x["last_msg"] else fallback_date,
+        reverse=True,
+    )
+    return doctor_chats
+
+
+@login_required
+def admin_chat(request):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("home")
+    patient_chats = _get_admin_patient_chats(request)
+    return render(
+        request,
+        "admin/admin_chat.html",
+        {
+            "patient_chats": patient_chats,
+            "selected_patient": None,
+        },
+    )
 
 
 @login_required
@@ -2003,37 +2140,66 @@ def admin_chat_detail(request, patient_id):
 
     if request.method == "POST":
         content = request.POST.get("content", "").strip()
-        if content:
+        attachment_file = request.FILES.get("attachment") or request.FILES.get("file")
+
+        if not content and not attachment_file:
+            messages.warning(request, "Please enter a message or attach a file.")
+            return redirect("admin_chat_detail", patient_id=patient_id)
+
+        try:
+            attachment_name = ""
+            attachment_size = None
+            attachment_type = ""
+
+            if attachment_file:
+                from .file_security import validate_attachment_file
+                validate_attachment_file(attachment_file, max_size_mb=10)
+                attachment_name = attachment_file.name[:250]
+                attachment_size = attachment_file.size
+                attachment_type = getattr(attachment_file, "content_type", "") or "application/octet-stream"
+
             from .file_security import sanitize_html_content
-            clean_content = sanitize_html_content(content)
+            clean_content = sanitize_html_content(content) if content else ""
+
             Message.objects.create(
                 sender=request.user,
                 receiver=patient,
+                hospital=hospital,
                 content=clean_content,
+                attachment=attachment_file if attachment_file else None,
+                attachment_name=attachment_name,
+                attachment_size=attachment_size,
+                attachment_type=attachment_type,
                 status=Message.STATUS_SENT,
             )
+        except ValidationError as val_err:
+            messages.error(request, f"Attachment rejected: {val_err.message if hasattr(val_err, 'message') else str(val_err)}")
+        except Exception as exc:
+            messages.error(request, f"Failed to send message: {str(exc)}")
+
         return redirect("admin_chat_detail", patient_id=patient_id)
 
     msgs = Message.objects.filter(
         Q(sender=patient, receiver=request.user)
         | Q(sender=request.user, receiver=patient)
-    ).order_by("created_at")
+    ).select_related("sender", "receiver").order_by("created_at")
 
     Message.objects.filter(sender=patient, receiver=request.user, is_read=False).update(
         is_read=True, status=Message.STATUS_READ
     )
 
+    patient_chats = _get_admin_patient_chats(request)
     patient_profile = Profile.objects.filter(user=patient).first()
     return render(
         request,
         "admin/admin_chat_detail.html",
         {
             "patient": patient,
+            "selected_patient": patient,
+            "patient_chats": patient_chats,
             "messages_list": msgs,
             "patient_online": is_online(patient),
-            "patient_last_seen": patient_profile.last_seen
-            if patient_profile
-            else None,
+            "patient_last_seen": patient_profile.last_seen if patient_profile else None,
         },
     )
 
@@ -2042,39 +2208,15 @@ def admin_chat_detail(request, patient_id):
 def admin_doctor_chat(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    hospital = resolve_hospital(request.user)
-    if hospital and not request.user.is_superuser:
-        staff_members = StaffProfile.objects.filter(hospital=hospital).select_related("user")
-    else:
-        staff_members = StaffProfile.objects.all().select_related("user")
-    doctor_chats = []
-    for staff in staff_members:
-        doc_user = staff.user
-        last_msg = (
-            Message.objects.filter(
-                Q(sender=doc_user, receiver=request.user)
-                | Q(sender=request.user, receiver=doc_user)
-            )
-            .order_by("-created_at")
-            .first()
-        )
-        unread = Message.objects.filter(
-            sender=doc_user, receiver=request.user, is_read=False
-        ).count()
-        doctor_chats.append(
-            {
-                "doctor": doc_user,
-                "profile": staff,
-                "last_msg": last_msg,
-                "unread_count": unread,
-                "is_online": is_online(doc_user),
-            }
-        )
-    doctor_chats.sort(
-        key=lambda x: x["last_msg"].created_at if x["last_msg"] else timezone.now(),
-        reverse=True,
+    doctor_chats = _get_admin_doctor_chats(request)
+    return render(
+        request,
+        "admin/admin_doctor_chat.html",
+        {
+            "doctor_chats": doctor_chats,
+            "selected_doctor": None,
+        },
     )
-    return render(request, "admin/admin_doctor_chat.html", {"doctor_chats": doctor_chats})
 
 
 @login_required
@@ -2083,38 +2225,118 @@ def admin_doctor_chat_detail(request, doctor_id):
         return redirect("client_dashboard")
     doctor = get_object_or_404(User, id=doctor_id)
     doc_profile = StaffProfile.objects.filter(user=doctor).first()
+    hospital = resolve_hospital(request.user)
 
     if request.method == "POST":
         content = request.POST.get("content", "").strip()
-        if content:
+        attachment_file = request.FILES.get("attachment") or request.FILES.get("file")
+
+        if not content and not attachment_file:
+            messages.warning(request, "Please enter a message or attach a file.")
+            return redirect("admin_doctor_chat_detail", doctor_id=doctor_id)
+
+        try:
+            attachment_name = ""
+            attachment_size = None
+            attachment_type = ""
+
+            if attachment_file:
+                from .file_security import validate_attachment_file
+                validate_attachment_file(attachment_file, max_size_mb=10)
+                attachment_name = attachment_file.name[:250]
+                attachment_size = attachment_file.size
+                attachment_type = getattr(attachment_file, "content_type", "") or "application/octet-stream"
+
+            from .file_security import sanitize_html_content
+            clean_content = sanitize_html_content(content) if content else ""
+
             Message.objects.create(
                 sender=request.user,
                 receiver=doctor,
-                content=content,
+                hospital=hospital,
+                content=clean_content,
+                attachment=attachment_file if attachment_file else None,
+                attachment_name=attachment_name,
+                attachment_size=attachment_size,
+                attachment_type=attachment_type,
                 status=Message.STATUS_SENT,
             )
+        except ValidationError as val_err:
+            messages.error(request, f"Attachment rejected: {val_err.message if hasattr(val_err, 'message') else str(val_err)}")
+        except Exception as exc:
+            messages.error(request, f"Failed to send message: {str(exc)}")
+
         return redirect("admin_doctor_chat_detail", doctor_id=doctor_id)
 
     msgs = Message.objects.filter(
         Q(sender=doctor, receiver=request.user)
         | Q(sender=request.user, receiver=doctor)
-    ).order_by("created_at")
+    ).select_related("sender", "receiver").order_by("created_at")
 
     Message.objects.filter(sender=doctor, receiver=request.user, is_read=False).update(
         is_read=True, status=Message.STATUS_READ
     )
 
+    doctor_chats = _get_admin_doctor_chats(request)
     return render(
         request,
         "admin/admin_doctor_chat_detail.html",
         {
             "doctor": doctor,
+            "selected_doctor": doctor,
+            "doctor_chats": doctor_chats,
             "doctor_profile": doc_profile,
             "messages_list": msgs,
             "doctor_online": is_online(doctor),
             "doctor_last_seen": getattr(doctor, "profile", None).last_seen if hasattr(doctor, "profile") and doctor.profile else None,
         },
     )
+
+
+@login_required
+def download_chat_attachment(request, message_id):
+    """
+    Secure authenticated attachment download view.
+    Enforces defense-in-depth authorization:
+      - Authenticated user
+      - Must be sender, receiver, or superuser
+      - For clinic admin/staff, tenancy check is enforced
+      - Returns FileResponse with Content-Disposition: attachment
+    """
+    from django.http import Http404, HttpResponseForbidden, FileResponse
+    import mimetypes
+
+    msg = get_object_or_404(Message, id=message_id)
+    if not msg.attachment:
+        raise Http404("Attachment not found.")
+
+    # Authorization check
+    is_party = (request.user.id == msg.sender_id or request.user.id == msg.receiver_id)
+    is_authorized = is_party or request.user.is_superuser
+
+    if not is_authorized:
+        hospital = resolve_hospital(request.user)
+        if hospital and (_is_clinic_admin(request.user) or getattr(request.user, "is_staff", False)):
+            sender_h = resolve_hospital(msg.sender)
+            receiver_h = resolve_hospital(msg.receiver)
+            if (sender_h and sender_h.id == hospital.id) or (receiver_h and receiver_h.id == hospital.id):
+                is_authorized = True
+
+    if not is_authorized:
+        return HttpResponseForbidden("Access Denied: You are not authorized to download this clinical document.")
+
+    try:
+        file_handle = msg.attachment.open("rb")
+    except (FileNotFoundError, ValueError):
+        raise Http404("Attachment file does not exist on storage.")
+
+    content_type = msg.attachment_type or mimetypes.guess_type(msg.attachment.name)[0] or "application/octet-stream"
+    download_filename = msg.attachment_name or os.path.basename(msg.attachment.name)
+
+    response = FileResponse(file_handle, content_type=content_type)
+    response["Content-Disposition"] = f'attachment; filename="{download_filename}"'
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @login_required
@@ -7069,7 +7291,7 @@ def bulk_import(request):
                             user.save()
                         salary_val = row_data.get("salary", "0") or "0"
                         try:
-                            salary_val = float(salary_val.replace(",", ""))
+                            salary_val = float(str(salary_val).replace(",", ""))
                         except (ValueError, AttributeError):
                             salary_val = 0
                         StaffProfile.objects.get_or_create(
@@ -7202,34 +7424,74 @@ def can_user_chat_with(user_a, user_b):
 def api_chat_send(request):
     if request.method == "POST":
         try:
-            data = json.loads(request.body)
-            receiver_id = data.get("receiver_id")
-            content = data.get("content", "").strip()
-            if not receiver_id or not content:
-                return JsonResponse({"error": "Missing data"}, status=400)
+            content = ""
+            receiver_id = None
+            attachment_file = None
+
+            if request.content_type and "application/json" in request.content_type:
+                data = json.loads(request.body)
+                receiver_id = data.get("receiver_id")
+                content = data.get("content", "").strip()
+            else:
+                receiver_id = request.POST.get("receiver_id")
+                content = request.POST.get("content", "").strip()
+                attachment_file = request.FILES.get("attachment") or request.FILES.get("file")
+
+            if not receiver_id or (not content and not attachment_file):
+                return JsonResponse({"error": "Missing message content or recipient ID"}, status=400)
 
             receiver = User.objects.get(id=receiver_id)
             if not can_user_chat_with(request.user, receiver):
                 return JsonResponse({"error": "Access denied: Cannot message this recipient"}, status=403)
 
+            attachment_name = ""
+            attachment_size = None
+            attachment_type = ""
+
+            if attachment_file:
+                from .file_security import validate_attachment_file
+                validate_attachment_file(attachment_file, max_size_mb=10)
+                attachment_name = attachment_file.name[:250]
+                attachment_size = attachment_file.size
+                attachment_type = getattr(attachment_file, "content_type", "") or "application/octet-stream"
+
             from .file_security import sanitize_html_content
-            clean_content = sanitize_html_content(content)
+            clean_content = sanitize_html_content(content) if content else ""
+
+            hospital = resolve_hospital(request.user) or resolve_hospital(receiver)
 
             msg = Message.objects.create(
                 sender=request.user,
                 receiver=receiver,
+                hospital=hospital,
                 content=clean_content,
+                attachment=attachment_file if attachment_file else None,
+                attachment_name=attachment_name,
+                attachment_size=attachment_size,
+                attachment_type=attachment_type,
                 status=Message.STATUS_SENT,
             )
+
+            from django.urls import reverse
+            attachment_url = reverse("download_chat_attachment", args=[msg.id]) if msg.attachment else None
+
             return JsonResponse({
+                "success": True,
                 "id": msg.id,
                 "content": msg.content,
                 "created_at": format(msg.created_at, "d M Y, h:i A"),
                 "sender_id": msg.sender.id,
-                "status": msg.status
+                "status": msg.status,
+                "has_attachment": bool(msg.attachment),
+                "attachment_url": attachment_url,
+                "attachment_name": msg.attachment_name,
+                "attachment_size": msg.attachment_size,
+                "attachment_type": msg.attachment_type,
             })
         except User.DoesNotExist:
             return JsonResponse({"error": "Recipient not found"}, status=404)
+        except ValidationError as val_err:
+            return JsonResponse({"error": val_err.message if hasattr(val_err, "message") else str(val_err)}, status=400)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
     return JsonResponse({"error": "Invalid request"}, status=400)
@@ -7238,6 +7500,7 @@ def api_chat_send(request):
 @login_required
 def api_chat_fetch(request, user_id):
     try:
+        from django.urls import reverse
         last_id = int(request.GET.get('last_id', 0))
         other_user = User.objects.get(id=user_id)
         if not can_user_chat_with(request.user, other_user):
@@ -7251,18 +7514,25 @@ def api_chat_fetch(request, user_id):
         msgs = Message.objects.filter(
             Q(sender=request.user, receiver=other_user) | Q(sender=other_user, receiver=request.user),
             id__gt=last_id
-        ).order_by("created_at")
+        ).select_related("sender", "receiver").order_by("created_at")
 
         data = []
         for msg in msgs:
+            att_url = reverse("download_chat_attachment", args=[msg.id]) if msg.attachment else None
             data.append({
                 "id": msg.id,
                 "content": msg.content,
                 "created_at": format(msg.created_at, "d M Y, h:i A"),
                 "date_label": format(msg.created_at, "d M Y"),
                 "sender_id": msg.sender.id,
-                "status": msg.status
+                "status": msg.status,
+                "has_attachment": bool(msg.attachment),
+                "attachment_url": att_url,
+                "attachment_name": msg.attachment_name,
+                "attachment_size": msg.attachment_size,
+                "attachment_type": msg.attachment_type,
             })
+
         return JsonResponse({"messages": data})
     except User.DoesNotExist:
         return JsonResponse({"error": "User not found"}, status=404)

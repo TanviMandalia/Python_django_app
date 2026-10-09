@@ -85,24 +85,24 @@
       <h3><i class="fas fa-tasks text-primary"></i> Appointment Status Breakdown</h3>
       <a href="{% url 'admin_appointments' %}" style="font-size: 0.82rem; font-weight: 600; color: #6c757d;">View All</a>
     </div>
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center;">
-      <div style="padding: 16px 10px; background: rgba(245, 197, 24, 0.1); border-radius: 12px; border: 1px solid rgba(245, 197, 24, 0.25);">
-        <div style="font-size: 1.4rem; font-weight: 800; color: #856404;">{{ pending }}</div>
-        <div style="font-size: 0.76rem; font-weight: 700; color: #856404; text-transform: uppercase; margin-top: 4px;">Pending</div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; text-align: center;">
+      <div style="padding: 18px 12px; background: rgba(245, 197, 24, 0.08); border-radius: 14px; border: 1px solid rgba(245, 197, 24, 0.22); transition: all 0.2s;">
+        <div style="font-size: 1.6rem; font-weight: 800; color: #856404; letter-spacing: -0.02em;">{{ pending }}</div>
+        <div style="font-size: 0.76rem; font-weight: 700; color: #856404; text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px;">Pending</div>
       </div>
-      <div style="padding: 16px 10px; background: rgba(23, 162, 184, 0.1); border-radius: 12px; border: 1px solid rgba(23, 162, 184, 0.25);">
-        <div style="font-size: 1.4rem; font-weight: 800; color: #117a8b;">{{ confirmed }}</div>
-        <div style="font-size: 0.76rem; font-weight: 700; color: #117a8b; text-transform: uppercase; margin-top: 4px;">Confirmed</div>
+      <div style="padding: 18px 12px; background: rgba(23, 162, 184, 0.08); border-radius: 14px; border: 1px solid rgba(23, 162, 184, 0.22); transition: all 0.2s;">
+        <div style="font-size: 1.6rem; font-weight: 800; color: #117a8b; letter-spacing: -0.02em;">{{ confirmed }}</div>
+        <div style="font-size: 0.76rem; font-weight: 700; color: #117a8b; text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px;">Confirmed</div>
       </div>
-      <div style="padding: 16px 10px; background: rgba(40, 167, 69, 0.1); border-radius: 12px; border: 1px solid rgba(40, 167, 69, 0.25);">
-        <div style="font-size: 1.4rem; font-weight: 800; color: #1e7e34;">{{ completed }}</div>
-        <div style="font-size: 0.76rem; font-weight: 700; color: #1e7e34; text-transform: uppercase; margin-top: 4px;">Completed</div>
+      <div style="padding: 18px 12px; background: rgba(40, 167, 69, 0.08); border-radius: 14px; border: 1px solid rgba(40, 167, 69, 0.22); transition: all 0.2s;">
+        <div style="font-size: 1.6rem; font-weight: 800; color: #1e7e34; letter-spacing: -0.02em;">{{ completed }}</div>
+        <div style="font-size: 0.76rem; font-weight: 700; color: #1e7e34; text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px;">Completed</div>
       </div>
     </div>
     <!-- Direct shortcut links -->
     <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--admin-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-      <span style="color: var(--admin-text-sub);">Unread Patient Inquiries: <strong>{{ new_messages }}</strong></span>
-      <a href="{% url 'admin_chat' %}" class="badge-status badge-info"><i class="fas fa-comment-dots"></i> Open Chat</a>
+      <span style="color: var(--admin-text-sub);">Unread Patient Inquiries: <strong style="color: var(--admin-dark);">{{ new_messages }}</strong></span>
+      <a href="{% url 'admin_chat' %}" class="badge-status badge-info" style="text-decoration: none; padding: 4px 10px; font-weight: 600;"><i class="fas fa-comment-dots"></i> Open Chat</a>
     </div>
   </div>
 
@@ -112,30 +112,30 @@
       <h3><i class="fas fa-bolt text-primary"></i> Quick Administration Hub</h3>
       <span class="badge-status badge-warning">Shortcuts</span>
     </div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
-      <a href="{% url 'admin_salary' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px 10px; background: #f8f9fa; border: 1px solid var(--admin-border); border-radius: 10px; text-decoration: none; color: var(--admin-dark); transition: all 0.2s;">
-        <i class="fas fa-rupee-sign" style="font-size: 1.2rem; color: #28a745; margin-bottom: 6px;"></i>
-        <span style="font-size: 0.8rem; font-weight: 600;">Salary</span>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+      <a href="{% url 'admin_salary' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 12px; background: #ffffff; border: 1px solid var(--admin-border); border-radius: 12px; text-decoration: none; color: var(--admin-dark); box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 14px rgba(0,0,0,0.06)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.02)'">
+        <i class="fas fa-rupee-sign" style="font-size: 1.3rem; color: #28a745; margin-bottom: 6px;"></i>
+        <span style="font-size: 0.82rem; font-weight: 600;">Salary</span>
       </a>
-      <a href="{% url 'admin_tasks' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px 10px; background: #f8f9fa; border: 1px solid var(--admin-border); border-radius: 10px; text-decoration: none; color: var(--admin-dark); transition: all 0.2s;">
-        <i class="fas fa-tasks" style="font-size: 1.2rem; color: #17a2b8; margin-bottom: 6px;"></i>
-        <span style="font-size: 0.8rem; font-weight: 600;">Assign Tasks</span>
+      <a href="{% url 'admin_tasks' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 12px; background: #ffffff; border: 1px solid var(--admin-border); border-radius: 12px; text-decoration: none; color: var(--admin-dark); box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 14px rgba(0,0,0,0.06)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.02)'">
+        <i class="fas fa-tasks" style="font-size: 1.3rem; color: #17a2b8; margin-bottom: 6px;"></i>
+        <span style="font-size: 0.82rem; font-weight: 600;">Assign Tasks</span>
       </a>
-      <a href="{% url 'admin_blog_list' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px 10px; background: #f8f9fa; border: 1px solid var(--admin-border); border-radius: 10px; text-decoration: none; color: var(--admin-dark); transition: all 0.2s;">
-        <i class="fas fa-blog" style="font-size: 1.2rem; color: #fd7e14; margin-bottom: 6px;"></i>
-        <span style="font-size: 0.8rem; font-weight: 600;">Blog Posts</span>
+      <a href="{% url 'admin_blog_list' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 12px; background: #ffffff; border: 1px solid var(--admin-border); border-radius: 12px; text-decoration: none; color: var(--admin-dark); box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 14px rgba(0,0,0,0.06)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.02)'">
+        <i class="fas fa-blog" style="font-size: 1.3rem; color: #fd7e14; margin-bottom: 6px;"></i>
+        <span style="font-size: 0.82rem; font-weight: 600;">Blog Posts</span>
       </a>
-      <a href="{% url 'admin_promos' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px 10px; background: #f8f9fa; border: 1px solid var(--admin-border); border-radius: 10px; text-decoration: none; color: var(--admin-dark); transition: all 0.2s;">
-        <i class="fas fa-bullhorn" style="font-size: 1.2rem; color: #e83e8c; margin-bottom: 6px;"></i>
-        <span style="font-size: 0.8rem; font-weight: 600;">Promotions</span>
+      <a href="{% url 'admin_promos' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 12px; background: #ffffff; border: 1px solid var(--admin-border); border-radius: 12px; text-decoration: none; color: var(--admin-dark); box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 14px rgba(0,0,0,0.06)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.02)'">
+        <i class="fas fa-bullhorn" style="font-size: 1.3rem; color: #e83e8c; margin-bottom: 6px;"></i>
+        <span style="font-size: 0.82rem; font-weight: 600;">Promotions</span>
       </a>
-      <a href="{% url 'admin_doctor_chat' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px 10px; background: #f8f9fa; border: 1px solid var(--admin-border); border-radius: 10px; text-decoration: none; color: var(--admin-dark); transition: all 0.2s;">
-        <i class="fas fa-user-nurse" style="font-size: 1.2rem; color: #6f42c1; margin-bottom: 6px;"></i>
-        <span style="font-size: 0.8rem; font-weight: 600;">Doctor Chat</span>
+      <a href="{% url 'admin_doctor_chat' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 12px; background: #ffffff; border: 1px solid var(--admin-border); border-radius: 12px; text-decoration: none; color: var(--admin-dark); box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 14px rgba(0,0,0,0.06)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.02)'">
+        <i class="fas fa-user-nurse" style="font-size: 1.3rem; color: #6f42c1; margin-bottom: 6px;"></i>
+        <span style="font-size: 0.82rem; font-weight: 600;">Doctor Chat</span>
       </a>
-      <a href="{% url 'bulk_import' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px 10px; background: #f8f9fa; border: 1px solid var(--admin-border); border-radius: 10px; text-decoration: none; color: var(--admin-dark); transition: all 0.2s;">
-        <i class="fas fa-file-excel" style="font-size: 1.2rem; color: #20c997; margin-bottom: 6px;"></i>
-        <span style="font-size: 0.8rem; font-weight: 600;">Import Excel</span>
+      <a href="{% url 'bulk_import' %}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 12px; background: #ffffff; border: 1px solid var(--admin-border); border-radius: 12px; text-decoration: none; color: var(--admin-dark); box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 14px rgba(0,0,0,0.06)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.02)'">
+        <i class="fas fa-file-excel" style="font-size: 1.3rem; color: #20c997; margin-bottom: 6px;"></i>
+        <span style="font-size: 0.82rem; font-weight: 600;">Import Excel</span>
       </a>
     </div>
   </div>
