@@ -174,7 +174,12 @@ def contact(request):
         clean_subject = sanitize_header_value(f"Inquiry: {subject_choice} - {full_name}")
 
         hospital = Hospital.objects.filter(is_active=True).first()
-        admin_email = hospital.email if (hospital and hospital.email) else getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@physiorehab.com")
+        raw_admin_email = hospital.email if (hospital and hospital.email) else getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@physiorehab.com")
+        if "<" in raw_admin_email and ">" in raw_admin_email:
+            extracted = raw_admin_email.split("<")[1].split(">")[0].strip()
+            admin_email = extracted if extracted else "noreply@physiorehab.com"
+        else:
+            admin_email = raw_admin_email.strip() if raw_admin_email else "noreply@physiorehab.com"
 
         alert_body = f"""New public website contact inquiry received:
 

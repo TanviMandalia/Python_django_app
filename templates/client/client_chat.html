@@ -343,6 +343,12 @@
           </div>
         </div>
       {% endfor %}
+    {% elif not admin %}
+      <div style="background: #fffbeb; border: 1px solid #fef3c7; color: #92400e; padding: 18px 24px; border-radius: 12px; margin: 30px auto; max-width: 520px; text-align: center;">
+        <i class="fas fa-user-doctor" style="font-size: 2rem; margin-bottom: 10px; display: block; color: #d97706;"></i>
+        <h4 style="margin: 0 0 6px 0; font-weight: 700; color: #78350f;">Doctor Consultation Currently Offline</h4>
+        <p style="margin: 0; font-size: 0.88rem; line-height: 1.5; color: #92400e;">No doctor or administrator is currently assigned to this clinic. As soon as a clinic doctor is active, direct consultation messaging will be enabled here.</p>
+      </div>
     {% else %}
       <div class="client-empty-state" style="margin:auto;">
         <div class="client-empty-icon">
@@ -377,14 +383,14 @@
       {% csrf_token %}
       <div class="chat-form-row">
         <!-- Attachment File Button -->
-        <button type="button" class="chat-attach-btn" id="clientAttachBtn" onclick="document.getElementById('clientFileInput').click()" style="width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--client-border); background: #f8fafc; color: var(--client-dark); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;" title="Attach document or medical image (PDF, Word, Excel, JPG, PNG)" aria-label="Attach File">
+        <button type="button" class="chat-attach-btn" id="clientAttachBtn" onclick="document.getElementById('clientFileInput').click()" style="width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--client-border); background: #f8fafc; color: var(--client-dark); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;" title="Attach document or medical image (PDF, Word, Excel, JPG, PNG)" aria-label="Attach File" {% if not admin %}disabled style="opacity:0.5; cursor:not-allowed;"{% endif %}>
           <i class="fas fa-paperclip" style="font-size: 1rem;"></i>
         </button>
-        <input type="file" id="clientFileInput" name="attachment" style="display: none;" accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png,.webp">
+        <input type="file" id="clientFileInput" name="attachment" style="display: none;" accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png,.webp" {% if not admin %}disabled{% endif %}>
 
-        <input type="text" name="content" id="messageInput" class="chat-input-field" placeholder="Type your message to Dr. Dhvani..." autocomplete="off" />
+        <input type="text" name="content" id="messageInput" class="chat-input-field" placeholder="{% if not admin %}Consultation offline — no doctor assigned yet...{% else %}Type your message to Dr. Dhvani...{% endif %}" autocomplete="off" {% if not admin %}disabled style="background:#f1f5f9; cursor:not-allowed;"{% endif %} />
         
-        <button type="submit" id="sendBtn" class="chat-send-btn" title="Send Message">
+        <button type="submit" id="sendBtn" class="chat-send-btn" title="Send Message" {% if not admin %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
           <i class="fas fa-paper-plane"></i>
         </button>
       </div>
@@ -451,7 +457,9 @@
     });
   }
 
-  if (messageInput) {
+  const adminId = "{{ admin.id|default:'' }}";
+
+  if (messageInput && adminId) {
     messageInput.addEventListener('input', function () {
       fetch('/start-typing/', {
         method: 'POST',
@@ -459,7 +467,7 @@
           'Content-Type': 'application/json',
           'X-CSRFToken': csrfToken
         },
-        body: JSON.stringify({ receiver_id: '{{ admin.id }}' })
+        body: JSON.stringify({ receiver_id: adminId })
       }).catch(() => {});
 
       clearTimeout(typingTimer);
@@ -472,27 +480,33 @@
     });
   }
 
-  // Check if admin is typing
-  setInterval(() => {
-    fetch('/check-typing/{{ admin.id }}/')
-      .then((res) => res.json())
-      .then((data) => {
-        const typingEl = document.getElementById('typing-status');
-        if (!typingEl) return;
-        if (data.is_typing) {
-          typingEl.innerText = ' • typing...';
-        } else {
-          typingEl.innerText = '';
-        }
-      })
-      .catch(() => {});
-  }, 2000);
+  // Check if admin is typing (only if doctor/admin account exists)
+  if (adminId) {
+    setInterval(() => {
+      fetch('/check-typing/' + adminId + '/')
+        .then((res) => res.json())
+        .then((data) => {
+          const typingEl = document.getElementById('typing-status');
+          if (!typingEl) return;
+          if (data.is_typing) {
+            typingEl.innerText = ' • typing...';
+          } else {
+            typingEl.innerText = '';
+          }
+        })
+        .catch(() => {});
+    }, 2000);
+  }
 
   // AJAX Chat Sending & Polling
   let lastMsgId = {{ messages_list|last|default_if_none:""|default:"{ 'id': 0 }"|safe }}.id || 0;
 
   function sendMessage() {
     if (isSending) return;
+    if (!adminId) {
+      alert('Direct consultation is currently offline because no clinic doctor or administrator is assigned.');
+      return;
+    }
     const content = messageInput ? messageInput.value.trim() : '';
     const file = clientFileInput && clientFileInput.files && clientFileInput.files[0] ? clientFileInput.files[0] : null;
 
@@ -505,7 +519,7 @@
     }
 
     const formData = new FormData();
-    formData.append('receiver_id', '{{ admin.id }}');
+    formData.append('receiver_id', adminId);
     if (content) formData.append('content', content);
     if (file) formData.append('attachment', file);
 
@@ -596,19 +610,21 @@
     chatArea.scrollTop = chatArea.scrollHeight;
   }
 
-  // Poll for new messages every 3 seconds
-  setInterval(() => {
-    fetch(`/api/chat/fetch/{{ admin.id }}/?last_id=${lastMsgId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.messages && data.messages.length > 0) {
-          data.messages.forEach(msg => {
-            appendMessage(msg);
-            lastMsgId = msg.id;
-          });
-        }
-      })
-      .catch(() => {});
-  }, 3000);
+  // Poll for new messages every 3 seconds (only if admin is assigned)
+  if (adminId) {
+    setInterval(() => {
+      fetch(`/api/chat/fetch/${adminId}/?last_id=${lastMsgId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.messages && data.messages.length > 0) {
+            data.messages.forEach(msg => {
+              appendMessage(msg);
+              lastMsgId = msg.id;
+            });
+          }
+        })
+        .catch(() => {});
+    }, 3000);
+  }
 </script>
 {% endblock %}
