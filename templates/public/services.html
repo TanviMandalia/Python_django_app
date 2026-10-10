@@ -24,9 +24,16 @@
     <meta name="twitter:description" content="Explore evidence-based physiotherapy, chiropractic care, and rehabilitation therapies in Jamnagar by Dr. Dhvani Patalia.">
     <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/clinic_image.webp' %}">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+
     <!-- Preconnect CDNs -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></noscript>
 
     <!-- Schema.org JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -289,8 +296,8 @@
 
         .services-cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 28px;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+            gap: 24px;
         }
 
         .service-box {
@@ -543,8 +550,26 @@
         }
 
         @media (max-width: 600px) {
+            .hero { padding: clamp(35px, 6vw, 55px) 16px 35px; }
             .pillars-grid { grid-template-columns: 1fr; }
-            .cta-banner-box { padding: 40px 20px; }
+            .cta-banner-box { padding: clamp(30px, 5vw, 40px) 16px; }
+            .services-section { padding: clamp(40px, 6vw, 60px) 0; }
+            .process-section { padding: clamp(40px, 6vw, 60px) 0; }
+        }
+
+        @media (max-width: 480px) {
+            .hero-btns a,
+            .cta-banner-btns a {
+                width: 100%;
+                box-sizing: border-box;
+                text-align: center;
+                min-height: 48px;
+                justify-content: center;
+            }
+            .hero-badge {
+                font-size: 0.8rem;
+                padding: 6px 14px;
+            }
         }
     </style>
 </head>
@@ -874,7 +899,7 @@
     </section>
 
     {% include 'shared/footer.html' %}
-    <script src="{% static 'js/layout.js' %}"></script>
+    <script src="{% static 'js/layout.js' %}" defer></script>
     <script>
         function toggleDetail(id) {
             const el = document.getElementById(id);

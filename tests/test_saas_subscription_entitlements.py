@@ -463,7 +463,7 @@ class SaaSSubscriptionEntitlementTestSuite(BaseHospitalTestCase):
             hospital=self.clinic_b,
             feature=self.feat_salary,
             override_type="grant",
-            expires_at=timezone.now() - timedelta(days=1),  # Already expired
+            expires_at=timezone.localdate() - timedelta(days=1),  # Already expired
             reason="Expired trial promotion",
             created_by=self.super_admin,
         )

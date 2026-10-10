@@ -29,7 +29,7 @@
 
   function updateAriaStates(isOpen) {
     const menuButtons = document.querySelectorAll(
-      "#menuToggle, #mobileMenuBtn, .menu-toggle, .menu-btn, .sidebar-toggle-btn, .hamburger, .mobile-menu-btn, .sidebar-toggle, [data-toggle='sidebar'], [data-action='toggle-sidebar']"
+      "#menuToggle, #mobileMenuBtn, .menu-toggle, .menu-btn, .sidebar-toggle-btn, .hamburger:not(#publicNavToggle), .mobile-menu-btn, .sidebar-toggle, [data-toggle='sidebar'], [data-action='toggle-sidebar']"
     );
     menuButtons.forEach((btn) => {
       btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
@@ -96,6 +96,8 @@
 
   // ── GLOBAL EXPORTS (Available immediately) ──────────────────
   window.toggleSidebar = function (e) {
+    const sidebar = getSidebar();
+    if (!sidebar) return;
     if (e && e.preventDefault) e.preventDefault();
     if (e && e.stopPropagation) e.stopPropagation();
 
@@ -140,7 +142,7 @@
 
     // 2. Attach click handlers to all toggle buttons
     const menuButtons = document.querySelectorAll(
-      "#menuToggle, #mobileMenuBtn, .menu-toggle, .menu-btn, .sidebar-toggle-btn, .hamburger, .mobile-menu-btn, .sidebar-toggle, [data-toggle='sidebar'], [data-action='toggle-sidebar']"
+      "#menuToggle, #mobileMenuBtn, .menu-toggle, .menu-btn, .sidebar-toggle-btn, .hamburger:not(#publicNavToggle), .mobile-menu-btn, .sidebar-toggle, [data-toggle='sidebar'], [data-action='toggle-sidebar']"
     );
     menuButtons.forEach((btn) => {
       btn.removeEventListener("click", window.toggleSidebar);
@@ -180,7 +182,7 @@
         const s = getSidebar();
         if (s && (s.classList.contains("show") || s.classList.contains("active") || s.classList.contains("open"))) {
           const isTrigger = e.target.closest(
-            "#menuToggle, #mobileMenuBtn, .menu-toggle, .menu-btn, .sidebar-toggle-btn, .hamburger, .mobile-menu-btn, .sidebar-toggle, [data-toggle='sidebar'], [data-action='toggle-sidebar']"
+            "#menuToggle, #mobileMenuBtn, .menu-toggle, .menu-btn, .sidebar-toggle-btn, .hamburger:not(#publicNavToggle), .mobile-menu-btn, .sidebar-toggle, [data-toggle='sidebar'], [data-action='toggle-sidebar']"
           );
           if (!s.contains(e.target) && !isTrigger) {
             closeMobileDrawer();

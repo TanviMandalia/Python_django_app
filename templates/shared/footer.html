@@ -5,14 +5,14 @@
 
             <!-- BRAND -->
             <div class="footer-brand">
-                <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia">
+                <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia" width="130" height="60" loading="lazy" decoding="async">
                 <h3>Dr. Dhvani Patalia Physio Rehab</h3>
                 <p>Certified Chiropractor</p>
                 <p class="footer-desc">Professional chiropractic and physiotherapy rehabilitation in Jamnagar, Gujarat. Personalized care and evidence-based recovery.</p>
                 <div class="social-links">
-                    <a href="https://wa.me/919409510501" target="_blank" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                    <a href="mailto:physio.rehab.guj@gmail.com" title="Email"><i class="fas fa-envelope"></i></a>
-                    <a href="tel:9409510501" title="Call Us"><i class="fas fa-phone"></i></a>
+                    <a href="https://wa.me/919409510501" target="_blank" rel="noopener noreferrer" title="WhatsApp" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                    <a href="mailto:physio.rehab.guj@gmail.com" title="Email" aria-label="Email"><i class="fas fa-envelope"></i></a>
+                    <a href="tel:9409510501" title="Call Us" aria-label="Call Us"><i class="fas fa-phone"></i></a>
                 </div>
             </div>
 
@@ -54,7 +54,7 @@
                 </div>
                 <div class="contact-item">
                     <i class="fab fa-whatsapp"></i>
-                    <a href="https://wa.me/919409510501" target="_blank" style="color:inherit;">+91 94095 10501</a>
+                    <a href="https://wa.me/919409510501" target="_blank" rel="noopener noreferrer" style="color:inherit;">+91 94095 10501</a>
                 </div>
                 <div class="contact-item">
                     <i class="fas fa-phone"></i>
@@ -62,15 +62,14 @@
                 </div>
                 <div class="contact-item">
                     <i class="fas fa-clock"></i>
-                    <span>Mon–Fri: 10:00 AM – 1:00 PM &amp; 4:00 PM – 8:00 PM<br>Sunday: By Appointment</span>
+                    <span>Mon–Sat: 10:00 AM – 1:00 PM &amp; 4:00 PM – 8:00 PM<br>Sunday: By Appointment</span>
                 </div>
             </div>
 
         </div>
     </div>
     <div class="footer-bottom">
-        <div class="footer-container"
-            style="flex-direction:row; justify-content:space-between; align-items:center; padding:15px 25px;">
+        <div class="footer-container footer-bottom-inner">
             <p>© 2026 Dr. Dhvani Patalia Physio Rehab. All rights reserved.</p>
         </div>
     </div>
@@ -81,10 +80,11 @@
         background: #1a1a1a;
         color: #E0E0E0;
         margin-top: 60px;
+        overflow-x: hidden;
     }
 
     .footer-top {
-        padding: 50px 25px;
+        padding: clamp(38px, 5vw, 50px) clamp(16px, 4vw, 25px);
     }
 
     .footer-container {
@@ -92,14 +92,26 @@
         margin: 0 auto;
         display: grid;
         grid-template-columns: 2fr 1fr 1fr 1.5fr;
-        gap: 40px;
+        gap: clamp(24px, 3vw, 40px);
+        box-sizing: border-box;
+    }
+
+    .footer-bottom-inner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px clamp(16px, 4vw, 25px);
     }
 
     .footer-brand img {
         height: 60px;
+        width: auto;
+        aspect-ratio: 1280 / 591;
+        object-fit: cover;
         border-radius: 10px;
         border: 2px solid #F5C518;
         margin-bottom: 12px;
+        display: block;
     }
 
     .footer-brand h3 {
@@ -120,6 +132,8 @@
         line-height: 1.7;
         margin-top: 10px;
         margin-bottom: 15px;
+        overflow-wrap: break-word;
+        word-break: break-word;
     }
 
     .social-links {
@@ -129,8 +143,8 @@
     }
 
     .social-links a {
-        width: 36px;
-        height: 36px;
+        width: 38px;
+        height: 38px;
         background: rgba(245, 197, 24, 0.1);
         border: 1px solid rgba(245, 197, 24, 0.2);
         border-radius: 50%;
@@ -192,6 +206,8 @@
         align-items: flex-start;
         gap: 10px;
         margin-bottom: 12px;
+        overflow-wrap: break-word;
+        word-break: break-word;
     }
 
     .contact-item i {
@@ -199,12 +215,16 @@
         margin-top: 3px;
         font-size: 0.88em;
         width: 14px;
+        flex-shrink: 0;
     }
 
-    .contact-item span {
+    .contact-item span,
+    .contact-item a {
         color: #888;
         font-size: 0.85em;
         line-height: 1.5;
+        overflow-wrap: break-word;
+        word-break: break-word;
     }
 
     .footer-book-btn {
@@ -233,6 +253,7 @@
     .footer-bottom p {
         color: #555;
         font-size: 0.82em;
+        margin: 0;
     }
 
     .footer-bottom a {
@@ -246,9 +267,20 @@
         color: #F5C518;
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
+        .footer-container {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 600px) {
         .footer-container {
             grid-template-columns: 1fr;
+        }
+        .footer-bottom-inner {
+            flex-direction: column;
+            text-align: center;
+            gap: 8px;
         }
     }
 </style>

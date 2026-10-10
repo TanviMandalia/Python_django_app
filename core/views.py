@@ -1702,7 +1702,7 @@ def book_appointment(request):
         phone = getattr(request.user, "profile", None)
         phone = phone.phone_number if phone else ""
 
-        # Validate appointment slot against clinic shift rules (No Sunday public bookings, only valid Mon-Fri shifts)
+        # Validate appointment slot against clinic shift rules (No Sunday public bookings, valid Mon-Sat shifts)
         is_valid, err_msg, normalized_time = validate_appointment_booking(
             date_str=date,
             time_str=time,

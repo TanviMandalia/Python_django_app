@@ -34,9 +34,16 @@
   <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}" />
   {% endif %}
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+
   <!-- Preconnect CDNs -->
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" /></noscript>
 
   <!-- Schema.org JSON-LD Structured Data -->
   <script type="application/ld+json">
@@ -824,7 +831,7 @@
 
     {% if blog.image %}
     <div class="featured-image-wrapper">
-      <img src="{{ blog.image.url }}" alt="{{ blog.title }}" class="featured-image" />
+      <img src="{{ blog.image.url }}" alt="{{ blog.title }}" class="featured-image" decoding="async" />
     </div>
     {% endif %}
 
@@ -898,7 +905,7 @@
           {% for related in related_blogs %}
           <a href="{% url 'blog_detail' related.slug %}" class="related-card">
             {% if related.image %}
-            <img src="{{ related.image.url }}" />
+            <img src="{{ related.image.url }}" alt="{{ related.title }}" loading="lazy" decoding="async" />
             {% endif %}
 
             <h4>{{ related.title }}</h4>
@@ -935,7 +942,7 @@
       </div>
     </div>
   </div>
-  <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/layout.js' %}" defer></script>
 </body>
 
 </html>

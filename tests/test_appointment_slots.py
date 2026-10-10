@@ -125,17 +125,17 @@ class AppointmentSlotValidationTests(BaseHospitalTestCase):
         )
         self.assertTrue(is_valid_admin, f"Admin should be able to book on Sunday: {err_admin}")
 
-    def test_saturday_closed_by_default(self):
-        """Saturday should be closed unless an explicit Saturday schedule is configured."""
+    def test_saturday_open_for_booking(self):
+        """Saturday is an active working day (Monday to Saturday clinic operation)."""
         target = timezone.now().date() + timedelta(days=1)
         while target.weekday() != 5:  # 5 is Saturday
             target += timedelta(days=1)
 
-        is_valid, err, _ = validate_appointment_booking(
+        is_valid, err, norm = validate_appointment_booking(
             target, "10:00 AM", hospital=self.hospital, allow_sunday=False
         )
-        self.assertFalse(is_valid)
-        self.assertIn("closed on Saturdays", err)
+        self.assertTrue(is_valid, f"Saturday booking should be allowed: {err}")
+        self.assertEqual(norm, "10:00 AM")
 
     def test_past_date_and_time_rejected(self):
         """Appointments in the past must be rejected."""

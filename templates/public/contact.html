@@ -24,9 +24,16 @@
   <meta name="twitter:description" content="Clinic location, working hours, and appointment contact for Dr. Dhvani Patalia in Jamnagar, Gujarat.">
   <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/clinic_image_outdoor.webp' %}">
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+
   <!-- Preconnect CDNs -->
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" /></noscript>
 
   <!-- Schema.org JSON-LD Structured Data -->
   <script type="application/ld+json">
@@ -646,15 +653,15 @@
     @media (max-width:767px) {
 
       .page-hero {
-        padding: 70px 15px 50px;
+        padding: clamp(65px, 12vw, 90px) 15px clamp(40px, 8vw, 55px);
       }
 
       section {
-        padding: 50px 15px;
+        padding: clamp(35px, 6vw, 55px) 15px;
       }
 
       .container {
-        padding: 0 15px;
+        padding: 0 12px;
       }
 
       .contact-info h2,
@@ -663,21 +670,35 @@
       }
 
       .contact-form {
-        padding: 22px;
+        padding: clamp(16px, 4vw, 22px);
+        box-sizing: border-box;
       }
 
       .info-card {
         padding: 16px;
+        box-sizing: border-box;
+      }
+
+      .info-content p,
+      .info-content a {
+        overflow-wrap: break-word;
+        word-break: break-word;
       }
 
       .info-icon {
         width: 48px;
         height: 48px;
+        flex-shrink: 0;
       }
 
       .btn-submit {
-        width: max-content;
+        width: 100%;
         max-width: 100%;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
       }
 
     }
@@ -687,22 +708,23 @@
     @media (max-width:480px) {
 
       .page-hero h1 {
-        font-size: 1.9rem;
+        font-size: 1.75rem;
       }
 
       .contact-info h2,
       .contact-form h3 {
-        font-size: 1.5rem;
+        font-size: 1.45rem;
       }
 
       .contact-form {
-        padding: 18px;
+        padding: 16px 12px;
       }
 
       .input-box input,
       .input-box select,
       .input-box textarea {
         font-size: 14px;
+        box-sizing: border-box;
       }
 
     }
@@ -780,20 +802,16 @@
           <h4 style="color:#2C2C2C; font-size:0.95em; margin-top:20px; margin-bottom:12px;">⏰ Working Hours</h4>
           <div class="hours-grid">
             <div class="hour-item">
-              <div class="day">Mon – Fri (Morning)</div>
+              <div class="day">Mon – Sat (Morning)</div>
               <div class="time">10:00 AM – 1:00 PM</div>
             </div>
             <div class="hour-item">
-              <div class="day">Mon – Fri (Evening)</div>
+              <div class="day">Mon – Sat (Evening)</div>
               <div class="time">4:00 PM – 8:00 PM</div>
             </div>
             <div class="hour-item">
-              <div class="day">Saturday</div>
-              <div class="time" style="color:#888;">Closed</div>
-            </div>
-            <div class="hour-item">
               <div class="day">Sunday</div>
-              <div class="time">By Appointment</div>
+              <div class="time" style="color:#d49e00;">By Appointment</div>
             </div>
           </div>
         </div>
@@ -867,7 +885,7 @@
   </section>
 
   {% include 'shared/footer.html' %}
-  <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/layout.js' %}" defer></script>
 </body>
 
 </html>

@@ -28,9 +28,16 @@
         content="Certified Chiropractor with Fellowship in Neuromusculoskeletal Techniques. Providing specialized physiotherapy rehabilitation in Jamnagar.">
     <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+
     <!-- Preconnect CDNs -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></noscript>
 
     <!-- Schema.org JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -1130,24 +1137,31 @@
             }
 
             .contact-cta {
-                flex-direction: column
+                flex-direction: column;
+                gap: 16px;
             }
 
             .contact-cta .btn-gold,
             .cta-section .btn-dark {
-                width: max-content;
-                max-width: 100%;
+                width: 100%;
+                max-width: 320px;
+                box-sizing: border-box;
+                text-align: center;
+                min-height: 48px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
             }
         }
 
         /*========== SMALL MOBILE ==========*/
         @media(max-width:480px) {
             .page-hero {
-                padding: 95px 12px 80px
+                padding: clamp(75px, 15vw, 95px) 16px clamp(40px, 8vw, 60px);
             }
 
             .page-hero h1 {
-                font-size: 1.9rem
+                font-size: 1.75rem;
             }
 
             .page-hero p {
@@ -1163,7 +1177,7 @@
             }
 
             .section-title h2 {
-                font-size: 1.75rem
+                font-size: 1.6rem;
             }
 
             .section-title p {
@@ -1179,9 +1193,15 @@
 
             .btn-gold,
             .btn-dark {
-                width: max-content;
+                width: 100%;
                 max-width: 100%;
-                padding: 14px 28px
+                padding: 14px 20px;
+                box-sizing: border-box;
+                text-align: center;
+                min-height: 48px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
             }
         }
 
@@ -1269,7 +1289,7 @@
                 <!-- LEFT: photo + clinic info -->
                 <div class="about-img-wrap">
                     <div class="about-img-box">
-                        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia">
+                        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia" width="380" height="175" loading="lazy" decoding="async">
                         <h3>Dr. Dhvani Patalia</h3>
                         <p style="font-weight:700; color:#d49e00;">Certified Chiropractor</p>
                         <p style="font-size:0.85rem; color:#666;">Fellowship in Neuromusculoskeletal Techniques</p>
@@ -1287,7 +1307,7 @@
                                 style="color:inherit; text-decoration:none;">physio.rehab.guj@gmail.com</a></span>
                         <p style="margin-top:10px; font-size:0.85rem; color:#555;">
                             <strong>Working Hours:</strong><br>
-                            Mon–Fri: 10:00 AM – 1:00 PM &amp; 4:00 PM – 8:00 PM<br>
+                            Mon–Sat: 10:00 AM – 1:00 PM &amp; 4:00 PM – 8:00 PM<br>
                             Sunday: By Appointment
                         </p>
                     </div>
@@ -1407,8 +1427,9 @@
                     style="background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); margin-bottom: 24px;">
                     <img src="{% static 'images/certificate_image.webp' %}"
                         alt="Dr. Dhvani Patalia Qualification Certificate"
+                        width="800" height="600"
                         style="width: 100%; max-height: 480px; object-fit: contain; border-radius: 10px; display: block; margin: 0 auto;"
-                        loading="lazy" onerror="this.style.display='none';">
+                        loading="lazy" decoding="async" onerror="this.style.display='none';">
                 </div>
 
                 <div
@@ -1477,7 +1498,7 @@
 
     {% include 'shared/footer.html' %}
 
-    <script src="{% static 'js/layout.js' %}"></script>
+    <script src="{% static 'js/layout.js' %}" defer></script>
 </body>
 
 </html>

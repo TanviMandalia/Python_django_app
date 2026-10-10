@@ -24,9 +24,18 @@
     <meta name="twitter:description" content="Certified Chiropractor &amp; Fellowship in Neuromusculoskeletal Techniques. Professional physiotherapy in Jamnagar.">
     <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}">
 
-    <!-- Preconnect CDNs -->
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+
+    <!-- Preload Hero Image & Preconnect CDNs -->
+    <link rel="preload" as="image" href="{% static 'images/clinic_image_outdoor.webp' %}" fetchpriority="high">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
 
     <!-- Schema.org JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -388,7 +397,7 @@
 
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
             gap: 24px;
         }
 
@@ -952,32 +961,103 @@
             transform: translateY(-2px);
         }
 
-        /* RESPONSIVE DESIGN */
+        /* RESPONSIVE DESIGN & MOBILE POLISH (320px - 900px) */
         @media (max-width: 900px) {
             .credentials-card {
                 grid-template-columns: 1fr;
+                gap: 28px;
             }
             .contact-layout-grid {
                 grid-template-columns: 1fr;
+                gap: 28px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            section {
+                padding: clamp(38px, 6vw, 55px) 0;
+            }
+            .container {
+                padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+            }
+            .section-header {
+                margin-bottom: 32px;
+            }
+            .section-header h2 {
+                font-size: 1.75rem;
+            }
+            .section-header p {
+                font-size: 0.95rem;
+            }
+            .hero-content {
+                padding: 45px 16px;
+            }
+            .hero-badge {
+                font-size: 0.8rem;
+                padding: 6px 16px;
+            }
+            .final-cta-section {
+                padding: 50px 16px;
             }
         }
 
         @media (max-width: 480px) {
             .credentials-card {
-                padding: 20px;
+                padding: 20px 16px;
+                border-radius: 14px;
             }
             .hero-btns {
                 flex-direction: column;
                 width: 100%;
+                gap: 12px;
             }
             .hero-btns a {
                 width: 100%;
                 justify-content: center;
+                min-height: 48px;
             }
             .tips-call-btn {
                 width: 100%;
                 justify-content: center;
-                font-size: 1rem;
+                font-size: 0.95rem;
+                min-height: 48px;
+            }
+            .hours-schedule-row {
+                flex-direction: column;
+                gap: 3px;
+                padding: 10px 0;
+            }
+            .hours-time {
+                font-size: 0.85rem;
+            }
+            .results-gallery-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .ordered-contact-card {
+                padding: 18px 16px;
+            }
+            .btn-dark-pill {
+                width: 100%;
+                justify-content: center;
+                min-height: 48px;
+                padding: 14px 20px;
+            }
+        }
+
+        /* 320px - 360px Ultra Small Phones */
+        @media (max-width: 360px) {
+            .container {
+                padding: 0 12px;
+            }
+            .hero h1 {
+                font-size: 1.65rem;
+            }
+            .hero p {
+                font-size: 0.9rem;
+            }
+            .credentials-card {
+                padding: 16px 12px;
             }
         }
     </style>
@@ -1026,7 +1106,8 @@
                     <div class="cert-image-container">
                         <img src="{% static 'images/certificate_image.webp' %}" 
                              alt="Dr. Dhvani Patalia Qualification Certificate" 
-                             loading="lazy" 
+                             width="1280" height="960"
+                             loading="lazy" decoding="async"
                              onerror="this.style.display='none';" />
                     </div>
                 </div>
@@ -1286,7 +1367,7 @@
 
             <div class="results-gallery-grid">
                 <div class="result-image-box">
-                    <img src="{% static 'images/paitent-1.webp' %}" alt="Arm Movement Rehabilitation" loading="lazy">
+                    <img src="{% static 'images/paitent-1.webp' %}" alt="Arm Movement Rehabilitation" width="816" height="1020" loading="lazy" decoding="async">
                     <div class="result-image-caption">
                         <span>Arm Mobility Restoration</span>
                         <small>Clinical Progress</small>
@@ -1294,7 +1375,7 @@
                 </div>
 
                 <div class="result-image-box">
-                    <img src="{% static 'images/paitent-2.webp' %}" alt="Shoulder Mobility Improvement" loading="lazy">
+                    <img src="{% static 'images/paitent-2.webp' %}" alt="Shoulder Mobility Improvement" width="970" height="1020" loading="lazy" decoding="async">
                     <div class="result-image-caption">
                         <span>Shoulder Range of Motion</span>
                         <small>Active Rehab</small>
@@ -1302,7 +1383,7 @@
                 </div>
 
                 <div class="result-image-box">
-                    <img src="{% static 'images/paitent-3.webp' %}" alt="Facial Motor Function Rehabilitation" loading="lazy">
+                    <img src="{% static 'images/paitent-3.webp' %}" alt="Facial Motor Function Rehabilitation" width="816" height="1020" loading="lazy" decoding="async">
                     <div class="result-image-caption">
                         <span>Facial Muscle Rehabilitation</span>
                         <small>Targeted Therapy</small>
@@ -1310,7 +1391,7 @@
                 </div>
 
                 <div class="result-image-box">
-                    <img src="{% static 'images/paitent-4.webp' %}" alt="Spine and Back Flexibility Recovery" loading="lazy">
+                    <img src="{% static 'images/paitent-4.webp' %}" alt="Spine and Back Flexibility Recovery" width="864" height="1020" loading="lazy" decoding="async">
                     <div class="result-image-caption">
                         <span>Spine Mobility &amp; Flexibility</span>
                         <small>Postural Alignment</small>
@@ -1318,7 +1399,7 @@
                 </div>
 
                 <div class="result-image-box">
-                    <img src="{% static 'images/paitent-5.webp' %}" alt="Posture Correction Therapy" loading="lazy">
+                    <img src="{% static 'images/paitent-5.webp' %}" alt="Posture Correction Therapy" width="1020" height="1020" loading="lazy" decoding="async">
                     <div class="result-image-caption">
                         <span>Postural Correction</span>
                         <small>Functional Balance</small>
@@ -1326,7 +1407,7 @@
                 </div>
 
                 <div class="result-image-box">
-                    <img src="{% static 'images/paitent-6.jpg' %}" alt="Lower Limb Functional Alignment" loading="lazy">
+                    <img src="{% static 'images/paitent-6.jpg' %}" alt="Lower Limb Functional Alignment" width="141" height="141" loading="lazy" decoding="async">
                     <div class="result-image-caption">
                         <span>Lower Limb Stability</span>
                         <small>Strength Program</small>
@@ -1517,18 +1598,13 @@
                     </p>
 
                     <div class="hours-schedule-row">
-                        <span class="hours-day">Monday – Friday (Morning Shift)</span>
+                        <span class="hours-day">Monday – Saturday (Morning Shift)</span>
                         <span class="hours-time">10:00 AM – 1:00 PM</span>
                     </div>
 
                     <div class="hours-schedule-row">
-                        <span class="hours-day">Monday – Friday (Evening Shift)</span>
+                        <span class="hours-day">Monday – Saturday (Evening Shift)</span>
                         <span class="hours-time">4:00 PM – 8:00 PM</span>
-                    </div>
-
-                    <div class="hours-schedule-row">
-                        <span class="hours-day">Saturday</span>
-                        <span class="hours-time" style="color: #94a3b8;">Closed</span>
                     </div>
 
                     <div class="hours-schedule-row">
@@ -1563,7 +1639,7 @@
     </section>
 
     {% include 'shared/footer.html' %}
-    <script src="{% static 'js/layout.js' %}"></script>
+    <script src="{% static 'js/layout.js' %}" defer></script>
 </body>
 
 </html>

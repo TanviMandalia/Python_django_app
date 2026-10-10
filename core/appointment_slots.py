@@ -2,11 +2,10 @@
 Dr. Dhvani Patalia Physio Rehab - Centralized Appointment Slot & Schedule Engine
 
 Working Hours:
-  - Monday to Friday:
+  - Monday to Saturday:
       Morning Shift: 10:00 AM – 1:00 PM
       Evening Shift:  4:00 PM – 8:00 PM
   - Sunday: By Appointment (restricted public booking)
-  - Saturday: Closed by default
 
 Standard Appointment Slots (Start Times):
   - Morning:
@@ -224,7 +223,7 @@ def validate_appointment_booking(
     time_val: Any = None,
     hospital: Optional[Any] = None,
     allow_sunday: bool = False,
-    allow_saturday: bool = False,
+    allow_saturday: bool = True,
     exclude_appointment_id: Optional[int] = None,
     *,
     date_str: Any = None,
@@ -281,7 +280,7 @@ def validate_appointment_booking(
     if weekday == 5 and not allow_saturday:
         return (
             False,
-            "The clinic is closed on Saturdays. Working days are Monday through Friday.",
+            "The clinic is closed on Saturdays. Working days are Monday through Saturday.",
             None,
         )
 
@@ -338,7 +337,7 @@ def get_available_slots_for_date(
     hospital: Any,
     target_date: date,
     allow_sunday: bool = False,
-    allow_saturday: bool = False,
+    allow_saturday: bool = True,
 ) -> Dict[str, Any]:
     """
     Returns the status (available, booked, past, closed) for each shift and slot.
@@ -360,7 +359,7 @@ def get_available_slots_for_date(
     if weekday == 5 and not allow_saturday:
         return {
             "is_closed": True,
-            "status_reason": "Closed on Saturday. Clinic operates Monday to Friday.",
+            "status_reason": "Closed on Saturday. Clinic operates Monday to Saturday.",
             "morning_slots": [],
             "evening_slots": [],
         }

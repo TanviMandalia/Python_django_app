@@ -1,6 +1,7 @@
 # core/urls.py  (app urls)
 
 from django.urls import path
+from django.views.generic.base import RedirectView
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -15,6 +16,11 @@ urlpatterns = [
     path("blogs/<slug:slug>/", views.blog_detail, name="blog_detail"),
     path("robots.txt", views.robots_txt, name="robots_txt"),
     path("sitemap.xml", views.sitemap_xml, name="sitemap_xml"),
+    path(
+        "favicon.ico",
+        RedirectView.as_view(url=f"{settings.STATIC_URL}images/favicon.ico", permanent=True),
+        name="favicon",
+    ),
     path("healthz", views.healthz, name="healthz"),
     path("healthz/", views.healthz, name="healthz_slash"),
     # ── Auth ──────────────────────────────────────────────────

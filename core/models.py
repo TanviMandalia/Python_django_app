@@ -217,7 +217,7 @@ class HospitalSubscription(models.Model):
     @property
     def is_expired(self):
         if self.expires_at:
-            return timezone.now().date() > self.expires_at
+            return timezone.localdate() > self.expires_at
         return False
 
     @property
@@ -286,7 +286,7 @@ class ClinicFeatureOverride(models.Model):
     @property
     def is_expired(self):
         if self.expires_at:
-            return timezone.now().date() > self.expires_at
+            return timezone.localdate() > self.expires_at
         return False
 
 

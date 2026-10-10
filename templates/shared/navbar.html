@@ -1,168 +1,244 @@
 {% load static %}
-<nav class="main-navbar">
-    <div class="nav-container">
-        <!-- LOGO -->
-        <a href="/" class="nav-logo" title="Dr. Dhvani Patalia Physio Rehab" aria-label="Dr. Dhvani Patalia Physio Rehab">
-            <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia Physio Rehab">
-            <div class="logo-text">
-                <span class="logo-name">Dr. Dhvani Patalia</span>
-                <span class="logo-sub">Physio Rehab</span>
+<header class="public-header" id="publicHeader" role="banner">
+    <nav class="main-navbar" aria-label="Main Navigation">
+        <div class="nav-container">
+            <!-- FAR LEFT: LOGO -->
+            <a href="{% url 'home' %}" class="nav-logo" title="Dr. Dhvani Patalia Physio Rehab" aria-label="Dr. Dhvani Patalia Physio Rehab Homepage">
+                <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia Physio Rehab Logo" width="42" height="42">
+                <div class="logo-text">
+                    <span class="logo-name">Dr. Dhvani Patalia</span>
+                    <span class="logo-sub">Physio Rehab</span>
+                </div>
+            </a>
+
+            <!-- DESKTOP NAV LINKS -->
+            <ul class="nav-links" id="desktopNavLinks">
+                <li><a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}" {% if request.path == '/' %}aria-current="page"{% endif %}>Home</a></li>
+                <li><a href="{% url 'about' %}" class="{% if request.path == '/about/' %}active{% endif %}" {% if request.path == '/about/' %}aria-current="page"{% endif %}>About</a></li>
+                <li><a href="{% url 'services' %}" class="{% if request.path == '/services/' %}active{% endif %}" {% if request.path == '/services/' %}aria-current="page"{% endif %}>Services</a></li>
+                <li><a href="{% url 'blog_list' %}" class="{% if '/blogs/' in request.path %}active{% endif %}" {% if '/blogs/' in request.path %}aria-current="page"{% endif %}>Blog</a></li>
+                <li><a href="{% url 'contact' %}" class="{% if request.path == '/contact/' %}active{% endif %}" {% if request.path == '/contact/' %}aria-current="page"{% endif %}>Contact</a></li>
+            </ul>
+
+            <!-- DESKTOP AUTH BUTTONS -->
+            <div class="nav-auth" id="desktopNavAuth">
+                <a href="{% url 'book_appointment' %}" class="btn-book-nav"><i class="fas fa-calendar-check" aria-hidden="true"></i> Book Now</a>
+                <a href="{% url 'login' %}" class="btn-login"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Login</a>
             </div>
-        </a>
 
-        <!-- DESKTOP NAV LINKS -->
-        <ul class="nav-links" id="navLinks">
-            <li><a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
-            <li><a href="{% url 'about' %}" class="{% if request.path == '/about/' %}active{% endif %}">About</a></li>
-            <li><a href="{% url 'services' %}" class="{% if request.path == '/services/' %}active{% endif %}">Services</a></li>
-            <li><a href="{% url 'blog_list' %}" class="{% if '/blogs/' in request.path %}active{% endif %}">Blog</a></li>
-            <li><a href="{% url 'contact' %}" class="{% if request.path == '/contact/' %}active{% endif %}">Contact</a></li>
-        </ul>
+            <!-- FAR RIGHT: MOBILE HAMBURGER BUTTON -->
+            <button class="hamburger" id="publicNavToggle" type="button" aria-label="Open Navigation Menu" aria-expanded="false" aria-controls="mobileNavDrawer" onclick="togglePublicNav()">
+                <i class="fas fa-bars" aria-hidden="true" id="publicNavIcon"></i>
+            </button>
+        </div>
+    </nav>
 
-        <!-- AUTH BUTTONS -->
-        <div class="nav-auth" id="navAuth">
-            <a href="{% url 'book_appointment' %}" class="btn-book-nav">📅 Book Now</a>
-            <a href="{% url 'login' %}" class="btn-login">Login</a>
+    <!-- MOBILE DRAWER BACKDROP -->
+    <div class="mobile-drawer-backdrop" id="mobileDrawerBackdrop" onclick="closePublicNav()" aria-hidden="true"></div>
+
+    <!-- MOBILE NAVIGATION DRAWER -->
+    <aside class="mobile-nav-drawer" id="mobileNavDrawer" role="dialog" aria-modal="true" aria-label="Mobile Navigation Menu" aria-hidden="true">
+        <div class="mobile-drawer-header">
+            <a href="{% url 'home' %}" class="nav-logo drawer-logo" onclick="closePublicNav()">
+                <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" width="36" height="36">
+                <div class="logo-text">
+                    <span class="logo-name">Dr. Dhvani Patalia</span>
+                    <span class="logo-sub">Physio Rehab</span>
+                </div>
+            </a>
+            <button class="mobile-drawer-close" id="mobileDrawerClose" type="button" aria-label="Close Navigation Menu" onclick="closePublicNav()">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
         </div>
 
-        <!-- HAMBURGER -->
-        <button class="hamburger" onclick="toggleNav()" id="hamburgerBtn" aria-label="Toggle Navigation Menu">
-            <i class="fas fa-bars"></i>
-        </button>
-    </div>
+        <nav class="mobile-drawer-nav" aria-label="Mobile Navigation Links">
+            <a href="{% url 'home' %}" class="drawer-link {% if request.path == '/' %}active{% endif %}">
+                <span class="drawer-icon-box"><i class="fas fa-home" aria-hidden="true"></i></span>
+                <span>Home</span>
+            </a>
+            <a href="{% url 'about' %}" class="drawer-link {% if request.path == '/about/' %}active{% endif %}">
+                <span class="drawer-icon-box"><i class="fas fa-user-md" aria-hidden="true"></i></span>
+                <span>About Doctor</span>
+            </a>
+            <a href="{% url 'services' %}" class="drawer-link {% if request.path == '/services/' %}active{% endif %}">
+                <span class="drawer-icon-box"><i class="fas fa-hands-helping" aria-hidden="true"></i></span>
+                <span>Clinical Services</span>
+            </a>
+            <a href="{% url 'blog_list' %}" class="drawer-link {% if '/blogs/' in request.path %}active{% endif %}">
+                <span class="drawer-icon-box"><i class="fas fa-newspaper" aria-hidden="true"></i></span>
+                <span>Health Blog</span>
+            </a>
+            <a href="{% url 'contact' %}" class="drawer-link {% if request.path == '/contact/' %}active{% endif %}">
+                <span class="drawer-icon-box"><i class="fas fa-map-marker-alt" aria-hidden="true"></i></span>
+                <span>Contact &amp; Hours</span>
+            </a>
+        </nav>
 
-    <!-- MOBILE MENU -->
-    <div class="mobile-menu" id="mobileMenu">
-        <a href="{% url 'home' %}">🏠 Home</a>
-        <a href="{% url 'about' %}">ℹ️ About</a>
-        <a href="{% url 'services' %}">💆 Services</a>
-        <a href="{% url 'blog_list' %}">📝 Blog</a>
-        <a href="{% url 'contact' %}">📞 Contact</a>
-        <a href="{% url 'book_appointment' %}" style="color:#F5C518; font-weight:700;">📅 Book Appointment</a>
-        <a href="{% url 'login' %}">🔐 Login</a>
-    </div>
-</nav>
+        <div class="mobile-drawer-actions">
+            <a href="{% url 'book_appointment' %}" class="drawer-btn-book">
+                <i class="fas fa-calendar-check" aria-hidden="true"></i> Book Consultation
+            </a>
+            <a href="{% url 'login' %}" class="drawer-btn-login">
+                <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Patient / Staff Login
+            </a>
+        </div>
+        
+        <div class="mobile-drawer-footer">
+            <div class="drawer-contact-line">
+                <i class="fas fa-phone-alt" aria-hidden="true"></i> <a href="tel:9409510501">+91 94095 10501</a>
+            </div>
+            <div class="drawer-contact-line">
+                <i class="fas fa-map-pin" aria-hidden="true"></i> <span>Bedi Rd, Jamnagar, Gujarat</span>
+            </div>
+        </div>
+    </aside>
+</header>
 
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+    /* Public Header & Navbar Styles */
+    .public-header {
+        position: sticky;
+        top: 0;
+        z-index: 9999;
+        width: 100%;
     }
 
     .main-navbar {
         background: #1a1a1a;
-        position: sticky;
-        top: 0;
-        z-index: 999;
-        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
-        font-family: 'Segoe UI', sans-serif;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.45);
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        border-bottom: 1px solid rgba(245, 197, 24, 0.15);
     }
 
     .nav-container {
-        max-width: 100%;
+        width: 100%;
+        max-width: 1240px;
         margin: 0 auto;
-        padding: 0 30px;
+        padding: 0 24px;
         display: flex;
         align-items: center;
-        height: 70px;
-        gap: 20px;
+        justify-content: space-between;
+        height: 66px;
+        gap: 16px;
     }
 
+    /* Far Left: Logo */
     .nav-logo {
         display: flex;
         align-items: center;
         gap: 12px;
         text-decoration: none;
         flex-shrink: 0;
+        min-width: 0;
+        max-width: calc(100% - 60px);
     }
 
     .nav-logo img {
-        height: 52px;
-        width: auto;
+        height: 42px;
+        width: 42px;
+        min-width: 42px;
         border-radius: 8px;
         border: 2px solid #F5C518;
         object-fit: cover;
+        flex-shrink: 0;
     }
 
     .logo-text {
         display: flex;
         flex-direction: column;
+        min-width: 0;
+        overflow: hidden;
     }
 
     .logo-name {
         color: #F5C518;
-        font-size: 0.95em;
+        font-size: 0.95rem;
         font-weight: 800;
-        line-height: 1.2;
+        line-height: 1.15;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .logo-sub {
-        color: #888;
-        font-size: 0.7em;
-        letter-spacing: 1px;
+        color: #94a3b8;
+        font-size: 0.68rem;
+        letter-spacing: 0.8px;
         text-transform: uppercase;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
+    /* Desktop Navigation Links */
     .nav-links {
         display: flex;
         list-style: none;
-        gap: 3px;
-        margin-left: auto;
+        gap: 4px;
+        margin: 0 0 0 auto;
         align-items: center;
     }
 
     .nav-links a {
-        color: #ccc;
+        color: #cbd5e1;
         text-decoration: none;
-        font-size: 0.9em;
+        font-size: 0.92rem;
         font-weight: 500;
         padding: 8px 14px;
         border-radius: 8px;
-        transition: all 0.3s;
+        transition: all 0.2s ease;
         white-space: nowrap;
     }
 
     .nav-links a:hover,
     .nav-links a.active {
         color: #F5C518;
-        background: rgba(245, 197, 24, 0.1);
+        background: rgba(245, 197, 24, 0.12);
     }
 
+    /* Desktop Auth Buttons */
     .nav-auth {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        margin-left: 14px;
         flex-shrink: 0;
     }
 
     .btn-book-nav {
         background: #F5C518;
-        color: #2C2C2C;
+        color: #1a1a1a;
         text-decoration: none;
-        font-size: 0.85em;
+        font-size: 0.86rem;
         font-weight: 700;
-        padding: 9px 18px;
-        border-radius: 25px;
-        transition: all 0.3s;
+        padding: 8px 18px;
+        border-radius: 20px;
+        transition: all 0.2s ease;
         white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
 
     .btn-book-nav:hover {
         background: #e6b800;
         transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(245, 197, 24, 0.35);
     }
 
     .btn-login {
-        color: #E0E0E0;
+        color: #e2e8f0;
         text-decoration: none;
-        font-size: 0.85em;
+        font-size: 0.86rem;
         font-weight: 600;
         padding: 8px 16px;
         border-radius: 8px;
-        border: 1px solid #444;
-        transition: all 0.3s;
+        border: 1px solid #475569;
+        transition: all 0.2s ease;
         white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
 
     .btn-login:hover {
@@ -170,66 +246,333 @@
         color: #F5C518;
     }
 
+    /* Far Right: Mobile Hamburger Button */
     .hamburger {
         display: none;
-        background: none;
-        border: none;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        background: rgba(245, 197, 24, 0.08);
+        border: 1px solid rgba(245, 197, 24, 0.3);
+        border-radius: 8px;
         color: #F5C518;
-        font-size: 1.4em;
+        font-size: 1.25rem;
         cursor: pointer;
-        padding: 8px;
-        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin-left: auto;
+        touch-action: manipulation;
+        transition: all 0.2s ease;
     }
 
-    .mobile-menu {
-        display: none;
-        flex-direction: column;
-        background: #111;
-        border-top: 1px solid #333;
+    .hamburger:hover,
+    .hamburger:focus-visible {
+        background: rgba(245, 197, 24, 0.2);
+        border-color: #F5C518;
+        outline: 2px solid #F5C518;
+        outline-offset: 2px;
     }
 
-    .mobile-menu.open {
-        display: flex;
-    }
-
-    .mobile-menu a {
-        color: #ccc;
-        text-decoration: none;
-        padding: 14px 25px;
-        font-size: 0.92em;
-        border-bottom: 1px solid #222;
-        transition: all 0.3s;
-    }
-
-    .mobile-menu a:hover {
-        color: #F5C518;
-        background: rgba(245, 197, 24, 0.05);
-    }
-
-    @media (max-width: 950px) {
-        .nav-links {
-            display: none;
-        }
-
+    /* Mobile Breakpoint (< 992px) */
+    @media (max-width: 991px) {
+        .nav-links,
         .nav-auth {
-            display: none;
+            display: none !important;
         }
 
         .hamburger {
-            display: block;
+            display: flex !important;
         }
+
+        .nav-container {
+            height: 60px;
+            padding: 0 16px;
+        }
+
+        .nav-logo img {
+            height: 38px;
+            width: 38px;
+            min-width: 38px;
+        }
+
+        .logo-name {
+            font-size: 0.88rem;
+        }
+
+        .logo-sub {
+            font-size: 0.64rem;
+        }
+    }
+
+    /* Small Mobile (< 360px) */
+    @media (max-width: 360px) {
+        .nav-container {
+            padding: 0 10px;
+        }
+
+        .logo-name {
+            font-size: 0.82rem;
+        }
+
+        .logo-sub {
+            font-size: 0.6rem;
+        }
+    }
+
+    /* Mobile Drawer Backdrop */
+    .mobile-drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 99998;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .mobile-drawer-backdrop.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Mobile Navigation Drawer Panel */
+    .mobile-nav-drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(85vw, 340px);
+        background: #141414;
+        border-left: 1px solid rgba(245, 197, 24, 0.25);
+        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.7);
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        transform: translateX(100%);
+        visibility: hidden;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s ease;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
+
+    .mobile-nav-drawer.active {
+        transform: translateX(0);
+        visibility: visible;
+    }
+
+    .mobile-drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: #1a1a1a;
+    }
+
+    .drawer-logo {
+        max-width: calc(100% - 48px);
+    }
+
+    .mobile-drawer-close {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: #e2e8f0;
+        font-size: 1.15rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .mobile-drawer-close:hover,
+    .mobile-drawer-close:focus-visible {
+        color: #F5C518;
+        background: rgba(245, 197, 24, 0.15);
+        border-color: #F5C518;
+        outline: none;
+    }
+
+    .mobile-drawer-nav {
+        display: flex;
+        flex-direction: column;
+        padding: 12px 14px;
+        gap: 4px;
+    }
+
+    .drawer-link {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        color: #cbd5e1;
+        text-decoration: none;
+        font-size: 0.95rem;
+        font-weight: 600;
+        transition: all 0.2s;
+        min-height: 48px;
+    }
+
+    .drawer-link:hover,
+    .drawer-link.active {
+        color: #F5C518;
+        background: rgba(245, 197, 24, 0.12);
+    }
+
+    .drawer-icon-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #F5C518;
+        font-size: 0.92rem;
+        flex-shrink: 0;
+    }
+
+    .drawer-link.active .drawer-icon-box {
+        background: #F5C518;
+        color: #1a1a1a;
+    }
+
+    .mobile-drawer-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 16px 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        margin-top: 4px;
+    }
+
+    .drawer-btn-book {
+        background: #F5C518;
+        color: #1a1a1a;
+        font-weight: 800;
+        font-size: 0.94rem;
+        text-decoration: none;
+        padding: 13px 20px;
+        border-radius: 12px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 48px;
+        box-shadow: 0 4px 14px rgba(245, 197, 24, 0.3);
+    }
+
+    .drawer-btn-login {
+        background: transparent;
+        color: #e2e8f0;
+        font-weight: 600;
+        font-size: 0.92rem;
+        text-decoration: none;
+        padding: 12px 20px;
+        border-radius: 12px;
+        border: 1px solid #475569;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 48px;
+    }
+
+    .mobile-drawer-footer {
+        margin-top: auto;
+        padding: 16px 18px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        background: #111;
+        font-size: 0.8rem;
+        color: #64748b;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .drawer-contact-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .drawer-contact-line i {
+        color: #F5C518;
+        width: 14px;
+    }
+
+    .drawer-contact-line a {
+        color: #94a3b8;
+        text-decoration: none;
     }
 </style>
 
 <script>
-    function toggleNav() {
-        document.getElementById('mobileMenu').classList.toggle('open');
+    function openPublicNav() {
+        const drawer = document.getElementById('mobileNavDrawer');
+        const backdrop = document.getElementById('mobileDrawerBackdrop');
+        const toggleBtn = document.getElementById('publicNavToggle');
+        const closeBtn = document.getElementById('mobileDrawerClose');
+
+        if (!drawer) return;
+        drawer.classList.add('active');
+        if (backdrop) backdrop.classList.add('active');
+        if (toggleBtn) {
+            toggleBtn.setAttribute('aria-expanded', 'true');
+            toggleBtn.setAttribute('aria-label', 'Close Navigation Menu');
+        }
+        drawer.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+
+        setTimeout(() => {
+            if (closeBtn) closeBtn.focus();
+        }, 80);
     }
-    document.addEventListener('click', function (e) {
-        const menu = document.getElementById('mobileMenu');
-        const btn = document.getElementById('hamburgerBtn');
-        if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
-            menu.classList.remove('open');
+
+    function closePublicNav() {
+        const drawer = document.getElementById('mobileNavDrawer');
+        const backdrop = document.getElementById('mobileDrawerBackdrop');
+        const toggleBtn = document.getElementById('publicNavToggle');
+
+        if (!drawer) return;
+        drawer.classList.remove('active');
+        if (backdrop) backdrop.classList.remove('active');
+        if (toggleBtn) {
+            toggleBtn.setAttribute('aria-expanded', 'false');
+            toggleBtn.setAttribute('aria-label', 'Open Navigation Menu');
+            toggleBtn.focus();
+        }
+        drawer.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    function togglePublicNav() {
+        const drawer = document.getElementById('mobileNavDrawer');
+        if (drawer && drawer.classList.contains('active')) {
+            closePublicNav();
+        } else {
+            openPublicNav();
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            const drawer = document.getElementById('mobileNavDrawer');
+            if (drawer && drawer.classList.contains('active')) {
+                closePublicNav();
+            }
         }
     });
 </script>
