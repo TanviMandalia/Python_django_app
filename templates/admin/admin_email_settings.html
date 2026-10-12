@@ -223,6 +223,97 @@
   </div>
 </div>
 
+<!-- ════ REAL EMAIL DELIVERY & AUDIT LOGS ════ -->
+<div class="admin-card" style="margin-top: 24px;">
+  <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h3 style="font-size: 1.15rem; color: var(--admin-dark); margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-history" style="color: var(--admin-primary);"></i> Email Delivery &amp; Audit Logs
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--admin-text-sub); margin: 0;">
+        Authoritative delivery status for appointment notifications, password resets, and clinic communications for {{ hospital.name }}.
+      </p>
+    </div>
+    <div style="font-size: 0.78rem; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; max-width: 500px;">
+      <i class="fas fa-info-circle"></i> <strong>Delivery Note:</strong> Emails are sent via mail gateways and tracked below. Standard SMTP does not mirror copies into your external personal Gmail "Sent" folder.
+    </div>
+  </div>
+
+  {% if recent_logs %}
+    <div style="overflow-x: auto;">
+      <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+        <thead>
+          <tr style="background: #f8fafc; border-bottom: 2px solid var(--admin-border); text-align: left;">
+            <th style="padding: 10px 12px; font-weight: 600; color: var(--admin-dark);">Time (UTC)</th>
+            <th style="padding: 10px 12px; font-weight: 600; color: var(--admin-dark);">Recipient</th>
+            <th style="padding: 10px 12px; font-weight: 600; color: var(--admin-dark);">Purpose</th>
+            <th style="padding: 10px 12px; font-weight: 600; color: var(--admin-dark);">Subject</th>
+            <th style="padding: 10px 12px; font-weight: 600; color: var(--admin-dark);">Status</th>
+            <th style="padding: 10px 12px; font-weight: 600; color: var(--admin-dark);">Delivery Info</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in recent_logs %}
+            <tr style="border-bottom: 1px solid var(--admin-border);">
+              <td style="padding: 10px 12px; white-space: nowrap; color: var(--admin-text-sub);">
+                {{ log.sent_at|date:"M d, H:i:s" }}
+              </td>
+              <td style="padding: 10px 12px; font-weight: 500;">
+                {{ log.recipient_email }}
+              </td>
+              <td style="padding: 10px 12px;">
+                <span class="badge" style="background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 0.76rem;">
+                  {{ log.email_type }}
+                </span>
+              </td>
+              <td style="padding: 10px 12px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ log.subject }}
+              </td>
+              <td style="padding: 10px 12px;">
+                {% if log.status == "delivered" %}
+                  <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 0.76rem; padding: 3px 8px; border-radius: 4px;">
+                    <i class="fas fa-check-double"></i> Delivered
+                  </span>
+                {% elif log.status == "accepted" or log.status == "sent" %}
+                  <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.76rem; padding: 3px 8px; border-radius: 4px;">
+                    <i class="fas fa-check"></i> Accepted by Provider
+                  </span>
+                {% elif log.status == "bounced" %}
+                  <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 0.76rem; padding: 3px 8px; border-radius: 4px;">
+                    <i class="fas fa-exclamation-triangle"></i> Bounced
+                  </span>
+                {% elif log.status == "failed" %}
+                  <span class="badge" style="background: #fef2f2; color: #b91c1c; font-size: 0.76rem; padding: 3px 8px; border-radius: 4px;">
+                    <i class="fas fa-times-circle"></i> Failed
+                  </span>
+                {% else %}
+                  <span class="badge" style="background: #f3f4f6; color: #374151; font-size: 0.76rem; padding: 3px 8px; border-radius: 4px;">
+                    {{ log.status }}
+                  </span>
+                {% endif %}
+              </td>
+              <td style="padding: 10px 12px; font-size: 0.78rem; color: var(--admin-text-sub); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {% if log.error_details %}
+                  <span style="color: #dc2626;" title="{{ log.error_details }}">{{ log.error_details }}</span>
+                {% elif log.error_category %}
+                  <span style="color: #dc2626;">{{ log.error_category }}</span>
+                {% else %}
+                  <span style="color: #059669;">Accepted (Msg ID: {{ log.message_id|truncatechars:20 }})</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 32px 16px; color: var(--admin-text-sub); background: #f8fafc; border-radius: 8px;">
+      <i class="fas fa-envelope-open" style="font-size: 2rem; color: #cbd5e1; margin-bottom: 8px; display: block;"></i>
+      <p style="margin: 0; font-size: 0.9rem;">No outgoing emails logged yet for {{ hospital.name }}. Use the test form above or schedule an appointment to view real delivery logs.</p>
+    </div>
+  {% endif %}
+</div>
+
 <script>
   // Dynamic host/port helper when selecting known provider templates
   const providerSelect = document.getElementById('providerSelect');

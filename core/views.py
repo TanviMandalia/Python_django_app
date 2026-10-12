@@ -3,6 +3,7 @@
 # ════════════════════════════════════════════════════════════
 
 import os
+import re
 import json
 _json = json
 import random
@@ -11,6 +12,7 @@ from datetime import datetime, time as dtime, timedelta  # ← time as dtime ADD
 
 from .models import Blog
 from .forms import BlogForm
+from .email_utils import send_clinic_email
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -163,7 +165,7 @@ def contact(request):
             messages.error(request, "Please fill in all required fields (First Name, Email, and Message).")
             return redirect("contact")
 
-        from .email_utils import validate_recipient_email, send_clinic_email, sanitize_header_value
+        from .email_utils import validate_recipient_email, sanitize_header_value
         try:
             clean_email = validate_recipient_email(email)
         except Exception:
@@ -191,14 +193,6 @@ Subject : {subject_choice}
 Message:
 {message}
 """
-        send_clinic_email(
-            clean_subject,
-            alert_body,
-            admin_email,
-            hospital=hospital,
-            email_type="contact_inquiry_admin",
-        )
-
         ack_body = f"""Dear {full_name},
 
 Thank you for contacting {CLINIC_NAME}.
@@ -210,15 +204,37 @@ Summary of your inquiry:
 Warm regards,
 {CLINIC_NAME} Team
 """
-        send_clinic_email(
-            f"We received your inquiry – {CLINIC_NAME}",
-            ack_body,
-            clean_email,
-            hospital=hospital,
-            email_type="contact_inquiry_ack",
-        )
+        ok_admin = False
+        try:
+            ok_admin = bool(send_clinic_email(
+                clean_subject,
+                alert_body,
+                admin_email,
+                hospital=hospital,
+                email_type="contact_inquiry_admin",
+            ))
+        except Exception as exc:
+            logger.error(f"Contact form admin email failed: {exc.__class__.__name__} - {exc}")
 
-        messages.success(request, "✅ Message sent! We will contact you soon.")
+        ok_ack = False
+        try:
+            ok_ack = bool(send_clinic_email(
+                f"We received your inquiry – {CLINIC_NAME}",
+                ack_body,
+                clean_email,
+                hospital=hospital,
+                email_type="contact_inquiry_ack",
+            ))
+        except Exception as exc:
+            logger.error(f"Contact form user acknowledgment email failed: {exc.__class__.__name__} - {exc}")
+
+        if ok_admin or ok_ack:
+            messages.success(request, "✅ Message sent! We will contact you soon.")
+        else:
+            messages.error(
+                request,
+                "⚠️ We could not deliver your message due to a mail server configuration issue. Please contact the clinic directly."
+            )
         return redirect("contact")
     return render(request, "public/contact.html")
 
@@ -2516,14 +2532,15 @@ def admin_leaves(request):
         leave.status = "approved"
         leave.admin_note = "Auto-approved: Admin did not respond before leave date."
         leave.save()
-        # Email staff
+        # Email staff via clinic email pipeline
         try:
-            from django.core.mail import send_mail
-
-            send_mail(
-                subject="✅ Leave Auto-Approved — No Admin Response",
-                message=f"""
-Dear {leave.staff.get_full_name() or leave.staff.username},
+            from .email_utils import send_clinic_email, CLINIC_NAME
+            staff_email = getattr(leave.staff, "email", None)
+            if staff_email:
+                clinic_title = leave.hospital.name if leave.hospital else CLINIC_NAME
+                send_clinic_email(
+                    subject="✅ Leave Auto-Approved — No Admin Response",
+                    message_text=f"""Dear {leave.staff.get_full_name() or leave.staff.username},
 
 Your leave has been AUTO-APPROVED as the admin did not respond before the leave date.
 
@@ -2532,14 +2549,13 @@ Your leave has been AUTO-APPROVED as the admin did not respond before the leave 
   To         : {leave.to_date.strftime("%d %B %Y")}
 
 Regards,
-Dr. Dhvani Patalia Physio Rehab
-                """.strip(),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[leave.staff.email],
-                fail_silently=True,
-            )
-        except Exception:
-            pass
+{clinic_title}""".strip(),
+                    recipient_list=[staff_email],
+                    hospital=leave.hospital,
+                    email_type="leave_auto_approved",
+                )
+        except Exception as exc:
+            logger.warning(f"Leave auto-approval email failed for leave {leave.id}: {exc}")
 
     # existing code continues below ──
     hospital = resolve_hospital(request.user)
@@ -2569,10 +2585,21 @@ def update_leave(request, leave_id, status):
         leave.save()
 
         # Email + notification
-        send_leave_status_email(leave)
-        notify_leave_decision(leave)
+        email_sent = False
+        try:
+            email_sent = bool(send_leave_status_email(leave))
+        except Exception as exc:
+            logger.error(f"Leave status email failed for leave {leave.id}: {exc.__class__.__name__} - {exc}")
 
-        messages.success(request, f"✅ Leave {status}.")
+        try:
+            notify_leave_decision(leave)
+        except Exception as exc:
+            logger.error(f"Leave decision notification failed for leave {leave.id}: {exc.__class__.__name__} - {exc}")
+
+        if email_sent:
+            messages.success(request, f"✅ Leave {status}. Notification email sent to staff.")
+        else:
+            messages.success(request, f"✅ Leave {status}. (Note: Notification email delivery failed or unavailable)")
     return redirect("admin_leaves")
 
 
@@ -2654,10 +2681,24 @@ def admin_salary(request):
         )
 
         # Email + notification
-        send_salary_paid_email(record)
-        notify_salary_paid(record)
+        email_sent = False
+        try:
+            email_sent = bool(send_salary_paid_email(record))
+        except Exception as exc:
+            logger.error(f"Salary payment email failed for record {record.id}: {exc.__class__.__name__} - {exc}")
 
-        messages.success(request, "✅ Salary record saved and email sent!")
+        try:
+            notify_salary_paid(record)
+        except Exception as exc:
+            logger.error(f"Salary notification failed for record {record.id}: {exc.__class__.__name__} - {exc}")
+
+        if email_sent:
+            messages.success(request, "✅ Salary record saved and notification email sent to staff!")
+        else:
+            messages.warning(
+                request,
+                f"✅ Salary record saved, but notification email could not be delivered to {staff_user.email}."
+            )
         return redirect("admin_salary")
 
     if hospital and not request.user.is_superuser:
@@ -3077,13 +3118,15 @@ def staff_attendance(request):
 
 def _send_late_email(user, shift_name, clock_time, late_mins):
     """Send late arrival email to staff."""
-    # from django.core.mail import send_mail
-    # from django.conf import settings
+    if not getattr(user, "email", None):
+        return False
+    from .email_utils import send_clinic_email, CLINIC_NAME
+    hospital = getattr(getattr(user, "staff_profile", None), "hospital", None)
+    clinic_title = hospital.name if hospital else CLINIC_NAME
     try:
-        send_mail(
+        return send_clinic_email(
             subject=f"⚠️ Late Attendance — {shift_name} Shift",
-            message=f"""
-Dear {user.get_full_name() or user.username},
+            message_text=f"""Dear {user.get_full_name() or user.username},
 
 You clocked in LATE for the {shift_name} Shift today.
 
@@ -3096,26 +3139,27 @@ Shift Timings:
   Evening  — 4:00 PM to 8:00 PM
 
 Regards,
-Dr. Dhvani Patalia Physio Rehab
-            """.strip(),
-            from_email=settings.DEFAULT_FROM_EMAIL,
+{clinic_title}""".strip(),
             recipient_list=[user.email],
-            fail_silently=True,
+            hospital=hospital,
+            email_type="attendance_late",
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning(f"Failed to send late attendance email to {user.email}: {exc}")
+        return False
 
 
 def _send_early_leave_email(user, shift_name, clock_time, short_mins):
     """Send early leave email to staff."""
-    from django.core.mail import send_mail
-    from django.conf import settings
-
+    if not getattr(user, "email", None):
+        return False
+    from .email_utils import send_clinic_email, CLINIC_NAME
+    hospital = getattr(getattr(user, "staff_profile", None), "hospital", None)
+    clinic_title = hospital.name if hospital else CLINIC_NAME
     try:
-        send_mail(
+        return send_clinic_email(
             subject=f"⚠️ Early Leave Detected — {shift_name} Shift",
-            message=f"""
-Dear {user.get_full_name() or user.username},
+            message_text=f"""Dear {user.get_full_name() or user.username},
 
 You clocked out EARLY from the {shift_name} Shift today.
 
@@ -3126,28 +3170,29 @@ You clocked out EARLY from the {shift_name} Shift today.
 If you had a valid reason, please inform the admin.
 
 Regards,
-Dr. Dhvani Patalia Physio Rehab
-            """.strip(),
-            from_email=settings.DEFAULT_FROM_EMAIL,
+{clinic_title}""".strip(),
             recipient_list=[user.email],
-            fail_silently=True,
+            hospital=hospital,
+            email_type="attendance_early_leave",
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning(f"Failed to send early leave email to {user.email}: {exc}")
+        return False
 
 
 def _send_half_day_email(user, missed_shift):
     """Send half day leave email to staff."""
-    from django.core.mail import send_mail
-    from django.conf import settings
-
+    if not getattr(user, "email", None):
+        return False
+    from .email_utils import send_clinic_email, CLINIC_NAME
     half = "First" if missed_shift == "Morning" else "Second"
     timing = "10:00 AM – 1:00 PM" if missed_shift == "Morning" else "4:00 PM – 8:00 PM"
+    hospital = getattr(getattr(user, "staff_profile", None), "hospital", None)
+    clinic_title = hospital.name if hospital else CLINIC_NAME
     try:
-        send_mail(
+        return send_clinic_email(
             subject=f"📋 {half} Half Leave Auto-Marked — {missed_shift} Shift Missed",
-            message=f"""
-Dear {user.get_full_name() or user.username},
+            message_text=f"""Dear {user.get_full_name() or user.username},
 
 Since you missed the {missed_shift} shift today, your attendance
 has been automatically marked as {half.upper()} HALF LEAVE.
@@ -3160,14 +3205,14 @@ A leave application has been auto-submitted on your behalf.
 If this was an error, please contact admin to correct it.
 
 Regards,
-Dr. Dhvani Patalia Physio Rehab
-            """.strip(),
-            from_email=settings.DEFAULT_FROM_EMAIL,
+{clinic_title}""".strip(),
             recipient_list=[user.email],
-            fail_silently=True,
+            hospital=hospital,
+            email_type="attendance_half_day",
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning(f"Failed to send half day attendance email to {user.email}: {exc}")
+        return False
 
 
 @login_required
@@ -7116,12 +7161,12 @@ def send_exercise_reminder(request, patient_id):
         message=f"🏃 Reminder from Dr. Dhvani: Please complete your exercises before {next_info}. Stay consistent for faster recovery!",
         link="/my-appointments/",
     )
+    email_sent = False
     if patient.email:
-        from .email_utils import send_clinic_email
-
-        send_clinic_email(
-            subject="Exercise Reminder from Dr. Dhvani Patalia",
-            message_text=f"""Dear {patient.get_full_name() or patient.username},
+        try:
+            email_sent = bool(send_clinic_email(
+                subject="Exercise Reminder from Dr. Dhvani Patalia",
+                message_text=f"""Dear {patient.get_full_name() or patient.username},
 
 This is a friendly reminder from Dr. Dhvani Patalia's PhysioRehab Clinic.
 
@@ -7131,12 +7176,28 @@ Consistency is key to a faster recovery. If you have any questions, feel free to
 
 Dr. Dhvani Patalia — PhysioRehab Clinic
 """,
-            recipient_list=[patient.email],
+                recipient_list=[patient.email],
+                hospital=hospital,
+                email_type="exercise_reminder",
+            ))
+        except Exception as exc:
+            logger.error(f"Exercise reminder email failed for {patient.email}: {exc.__class__.__name__} - {exc}")
+
+    if email_sent:
+        messages.success(
+            request,
+            f"✅ Exercise reminder notification sent to {patient.get_full_name() or patient.username}.",
         )
-    messages.success(
-        request,
-        f"✅ Exercise reminder sent to {patient.get_full_name() or patient.username}.",
-    )
+    elif patient.email:
+        messages.warning(
+            request,
+            f"Exercise reminder in-app notification created, but email delivery to {patient.email} failed.",
+        )
+    else:
+        messages.info(
+            request,
+            f"Exercise reminder in-app notification created for {patient.get_full_name() or patient.username} (no email address on file).",
+        )
     return redirect("admin_patients")
 
 
@@ -7622,6 +7683,98 @@ def api_inbound_email_webhook(request):
     return JsonResponse(result, status=200)
 
 
+@csrf_exempt
+def api_email_status_webhook(request):
+    """
+    Webhook endpoint for receiving email delivery status updates from mail providers
+    (e.g., Resend, SendGrid, Amazon SES, Mailgun).
+    Validates:
+      - HTTP POST method
+      - Secret authentication token (Bearer token, X-Webhook-Secret header, or secret param)
+      - Matches EMAIL_STATUS_WEBHOOK_SECRET or INBOUND_EMAIL_WEBHOOK_SECRET
+      - Validates and updates EmailLog status (accepted, delivered, bounced, failed)
+      - Records sanitized error reasons without secrets
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed. POST required."}, status=405)
+
+    import hmac
+    expected_secret = getattr(settings, "EMAIL_STATUS_WEBHOOK_SECRET", "") or getattr(settings, "INBOUND_EMAIL_WEBHOOK_SECRET", "")
+    auth_header = request.headers.get("Authorization", "")
+    token_header = request.headers.get("X-Webhook-Secret", "")
+    provided_secret = ""
+    if auth_header.startswith("Bearer "):
+        provided_secret = auth_header[7:].strip()
+    elif token_header:
+        provided_secret = token_header.strip()
+    else:
+        provided_secret = request.GET.get("secret", "").strip()
+
+    if expected_secret:
+        if not provided_secret or not hmac.compare_digest(provided_secret, expected_secret):
+            return JsonResponse({"error": "Unauthorized webhook signature/token"}, status=403)
+
+    try:
+        if request.content_type and "application/json" in request.content_type:
+            payload = json.loads(request.body.decode("utf-8"))
+        else:
+            payload = request.POST.dict()
+    except Exception as e:
+        return JsonResponse({"error": f"Invalid payload: {str(e)}"}, status=400)
+
+    # Handle standard Resend webhook format: {"type": "email.delivered", "data": {"email_id": "...", ...}}
+    event_type = payload.get("type", "")
+    event_data = payload.get("data", {}) if isinstance(payload.get("data"), dict) else {}
+
+    msg_id = (
+        payload.get("message_id")
+        or event_data.get("email_id")
+        or payload.get("id")
+        or event_data.get("id", "")
+    )
+
+    if not msg_id:
+        return JsonResponse({"error": "Missing message_id in payload"}, status=400)
+
+    if "delivered" in event_type or payload.get("status") == "delivered":
+        new_status = "delivered"
+    elif "bounced" in event_type or payload.get("status") == "bounced":
+        new_status = "bounced"
+    elif "complained" in event_type or payload.get("status") == "complained":
+        new_status = "bounced"
+    elif payload.get("status") in ("failed", "rejected"):
+        new_status = "failed"
+    elif payload.get("status") in ("accepted", "sent"):
+        new_status = payload.get("status")
+    else:
+        new_status = "accepted"
+
+    # Match EmailLog by message_id
+    from .models import EmailLog
+    clean_id = str(msg_id).strip("<> ")
+    log_entry = EmailLog.objects.filter(
+        Q(message_id=clean_id) | Q(message_id__icontains=clean_id)
+    ).first()
+
+    if not log_entry:
+        return JsonResponse({"status": "ignored", "reason": f"No matching EmailLog for message_id {clean_id}"}, status=200)
+
+    log_entry.status = new_status
+    reason = payload.get("error") or event_data.get("bounce_type") or payload.get("reason", "")
+    if reason:
+        safe_reason = re.sub(r'(re_[a-zA-Z0-9_\-]{10,}|Bearer\s+[^\s]+|password[=:\s]+[^\s&]+)', '***', str(reason))
+        log_entry.error_details = safe_reason[:500]
+    log_entry.save(update_fields=["status", "error_details"])
+
+    logger.info(f"Updated EmailLog #{log_entry.id} status to '{new_status}' via delivery webhook")
+    return JsonResponse({
+        "status": "success",
+        "log_id": log_entry.id,
+        "new_status": new_status,
+        "message_id": clean_id,
+    }, status=200)
+
+
 # ════════════════════════════════════════════════════════════
 # MULTI-PORTAL EMAIL CONFIGURATION & MANAGEMENT VIEWS
 # ════════════════════════════════════════════════════════════
@@ -7734,6 +7887,11 @@ def admin_email_settings(request):
         messages.success(request, f"Email account for {hospital.name} saved successfully.")
         return redirect("admin_email_settings")
 
+    recent_logs = (
+        EmailLog.objects.filter(hospital=hospital).order_by("-sent_at")[:15]
+        if hospital else EmailLog.objects.none()
+    )
+
     return render(
         request,
         "admin/admin_email_settings.html",
@@ -7741,6 +7899,7 @@ def admin_email_settings(request):
             "hospital": hospital,
             "account": account,
             "has_password": bool(account and account.encrypted_password),
+            "recent_logs": recent_logs,
         },
     )
 

@@ -439,8 +439,9 @@ urlpatterns = [
     # ── Bulk Import (Excel) ────────────────────────────────────
     path("bulk-import/", views.bulk_import, name="bulk_import"),
     path("bulk-import/template/<str:model_name>/", views.download_import_template, name="download_import_template"),
-    # ── Inbound Email Webhook API ──────────────────────────────
+    # ── Inbound & Delivery Status Email Webhooks ───────────────
     path("api/email/inbound/", views.api_inbound_email_webhook, name="api_inbound_email_webhook"),
+    path("api/email/status-webhook/", views.api_email_status_webhook, name="api_email_status_webhook"),
 ]
 
 if settings.DEBUG:

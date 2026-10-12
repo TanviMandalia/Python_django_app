@@ -1361,7 +1361,7 @@ class EmailAccount(models.Model):
 
         # In environments with Resend configured as EMAIL_BACKEND (e.g. Render Free blocking outbound SMTP ports),
         # route delivery through Resend HTTPS REST API unless force_smtp is explicitly requested
-        if not force_smtp and "ResendEmailBackend" in backend:
+        if not force_smtp and ("ResendEmailBackend" in backend or getattr(self, "provider", "") == "api"):
             return get_connection(backend="core.email_backend.ResendEmailBackend", fail_silently=fail_silently)
 
         # In development console backend, honor console unless force_smtp is explicitly requested
@@ -1395,7 +1395,11 @@ class EmailAccount(models.Model):
 
 class EmailLog(models.Model):
     STATUS_CHOICES = [
+        ("queued", "Queued"),
+        ("accepted", "Accepted by Provider"),
         ("sent", "Sent"),
+        ("delivered", "Delivered"),
+        ("bounced", "Bounced"),
         ("failed", "Failed"),
         ("retrying", "Retrying"),
     ]
@@ -1420,6 +1424,7 @@ class EmailLog(models.Model):
     subject = models.CharField(max_length=500)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="sent")
     error_category = models.CharField(max_length=100, blank=True)
+    error_details = models.TextField(blank=True, help_text="Sanitized technical failure details")
     message_id = models.CharField(max_length=255, blank=True, db_index=True)
     thread_id = models.CharField(max_length=255, blank=True, db_index=True)
     is_otp = models.BooleanField(default=False, db_index=True)

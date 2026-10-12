@@ -337,7 +337,8 @@ def send_platform_email(
         except Exception as exc:
             success_all = False
             err_category = exc.__class__.__name__
-            safe_err = str(exc).encode("ascii", errors="backslashreplace").decode("ascii")
+            raw_err = str(exc).encode("ascii", errors="backslashreplace").decode("ascii")
+            safe_err = re.sub(r'(re_[a-zA-Z0-9_\-]{10,}|Bearer\s+[^\s]+|password[=:\s]+[^\s&]+|[a-z]{4}\s+[a-z]{4}\s+[a-z]{4}\s+[a-z]{4})', '***', raw_err)
             logger.error(f"Platform email failed via '{account.name}' to {mask_email_for_logging(recipient)}: {err_category} - {safe_err}")
 
             try:
@@ -356,6 +357,7 @@ def send_platform_email(
                     is_otp=_is_otp,
                     expires_at=_expires_at,
                     error_category=err_category,
+                    error_details=safe_err[:500],
                     message_id=msg_id,
                     thread_id=clean_thread_id,
                     sent_at=timezone.now(),
@@ -501,7 +503,8 @@ def send_clinic_email(
         except Exception as exc:
             success_all = False
             err_category = exc.__class__.__name__
-            safe_err = str(exc).encode("ascii", errors="backslashreplace").decode("ascii")
+            raw_err = str(exc).encode("ascii", errors="backslashreplace").decode("ascii")
+            safe_err = re.sub(r'(re_[a-zA-Z0-9_\-]{10,}|Bearer\s+[^\s]+|password[=:\s]+[^\s&]+|[a-z]{4}\s+[a-z]{4}\s+[a-z]{4}\s+[a-z]{4})', '***', raw_err)
             logger.error(f"Email failed via account '{account.name}' to {mask_email_for_logging(recipient)}: {err_category} - {safe_err}")
 
             try:
@@ -520,6 +523,7 @@ def send_clinic_email(
                     is_otp=_is_otp,
                     expires_at=_expires_at,
                     error_category=err_category,
+                    error_details=safe_err[:500],
                     message_id=msg_id,
                     thread_id=clean_thread_id,
                     sent_at=timezone.now(),
@@ -582,8 +586,25 @@ def send_bulk_clinic_email(subject, message_text, recipient_list, html_message=N
 
             except Exception as e:
                 result["failed"] += 1
-                result["errors"].append({"email": mask_email_for_logging(addr), "error": str(e)})
-                logger.error(f"Bulk email failed for {mask_email_for_logging(addr)}: {e}")
+                raw_e = str(e)
+                safe_e = re.sub(r'(re_[a-zA-Z0-9_\-]{10,}|Bearer\s+[^\s]+|password[=:\s]+[^\s&]+|[a-z]{4}\s+[a-z]{4}\s+[a-z]{4}\s+[a-z]{4})', '***', raw_e)
+                result["errors"].append({"email": mask_email_for_logging(addr), "error": safe_e})
+                logger.error(f"Bulk email failed for {mask_email_for_logging(addr)}: {safe_e}")
+                try:
+                    from .models import EmailLog
+                    EmailLog.objects.create(
+                        direction="outgoing",
+                        hospital=hospital,
+                        email_type="bulk",
+                        recipient_email=addr,
+                        subject=clean_subject,
+                        status="failed",
+                        error_category=e.__class__.__name__,
+                        error_details=safe_e[:500],
+                        message_id=msg_id,
+                    )
+                except Exception:
+                    pass
     finally:
         try:
             connection.close()
