@@ -2116,7 +2116,11 @@ def _get_admin_doctor_chats(request):
 def admin_chat(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("home")
-    patient_chats = _get_admin_patient_chats(request)
+    try:
+        patient_chats = _get_admin_patient_chats(request)
+    except Exception as exc:
+        logger.error(f"Error loading admin patient chats: {exc}", exc_info=True)
+        patient_chats = []
     return render(
         request,
         "admin/admin_chat.html",
@@ -2213,7 +2217,11 @@ def admin_chat_detail(request, patient_id):
 def admin_doctor_chat(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
-    doctor_chats = _get_admin_doctor_chats(request)
+    try:
+        doctor_chats = _get_admin_doctor_chats(request)
+    except Exception as exc:
+        logger.error(f"Error loading admin doctor chats: {exc}", exc_info=True)
+        doctor_chats = []
     return render(
         request,
         "admin/admin_doctor_chat.html",

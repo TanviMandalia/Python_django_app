@@ -80,6 +80,8 @@ else:
         },
     }
 
+WHITENOISE_MANIFEST_STRICT = False
+
 # ------------------------------------------------------------------------------
 # Production Database Configuration
 # Supports DATABASE_URL with fallback to individual DB_* parameters.
