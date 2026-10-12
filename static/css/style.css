@@ -75,57 +75,78 @@ hr{
  ROOT VARIABLES
 ==================================================*/
 :root{
-
+    /* Brand Palette */
     --primary:#F5C518;
-    --primary-dark:#e2b400;
+    --primary-dark:#dfb00d;
+    --primary-soft:rgba(245, 197, 24, 0.12);
+    --primary-glow:rgba(245, 197, 24, 0.25);
 
     --dark:#2C2C2C;
     --dark-light:#3b3b3b;
+    --dark-deep:#1a1a1a;
 
     --white:#ffffff;
     --black:#000000;
 
+    /* Surfaces & Backgrounds */
     --bg:#f5f6fa;
     --bg-light:#fafafa;
+    --surface-ground:#f8fafc;
+    --surface-card:#ffffff;
+    --surface-subtle:#f1f5f9;
 
+    /* Borders & Dividers */
     --border:#ececec;
+    --border-subtle:#f1f5f9;
+    --border-default:#e2e8f0;
+    --border-strong:#cbd5e1;
 
+    /* Typography & Content Colors */
     --text:#2c2c2c;
+    --text-primary:#1e293b;
+    --text-secondary:#64748b;
     --text-light:#666666;
     --text-muted:#888888;
 
-    --success:#28a745;
-    --danger:#dc3545;
-    --warning:#f5c518;
-    --info:#17a2b8;
+    /* Status System */
+    --success:#16a34a;
+    --danger:#dc2626;
+    --warning:#d97706;
+    --info:#0284c7;
 
+    /* Radius Tokens */
     --radius-xs:6px;
-    --radius-sm:10px;
-    --radius-md:14px;
-    --radius-lg:18px;
+    --radius-sm:8px;
+    --radius-md:12px;
+    --radius-lg:16px;
     --radius-xl:24px;
+    --radius-full:9999px;
 
-    --shadow-xs:0 2px 6px rgba(0,0,0,.05);
-    --shadow-sm:0 4px 12px rgba(0,0,0,.08);
-    --shadow-md:0 8px 24px rgba(0,0,0,.10);
-    --shadow-lg:0 12px 30px rgba(0,0,0,.14);
+    /* Shadows */
+    --shadow-xs:0 1px 3px rgba(0,0,0,.05);
+    --shadow-sm:0 2px 8px rgba(0,0,0,.06);
+    --shadow-md:0 6px 18px rgba(0,0,0,.08);
+    --shadow-lg:0 12px 30px rgba(0,0,0,.12);
 
-    --transition:.25s ease;
+    /* Transitions & Interactions */
+    --transition:.2s cubic-bezier(0.16, 1, 0.3, 1);
+    --touch-target:44px;
+    --focus-ring:0 0 0 3px rgba(245, 197, 24, 0.35);
 
     /* Consistent Responsive Spacing System */
-    --space-3xs: clamp(2px, 0.5vw, 4px);
-    --space-2xs: clamp(4px, 1vw, 6px);
-    --space-xs: clamp(6px, 1.5vw, 8px);
-    --space-sm: clamp(8px, 2vw, 12px);
-    --space-md: clamp(12px, 2.5vw, 16px);
-    --space-lg: clamp(16px, 3vw, 24px);
-    --space-xl: clamp(20px, 4vw, 32px);
-    --space-2xl: clamp(28px, 5vw, 48px);
+    --space-3xs: 2px;
+    --space-2xs: 4px;
+    --space-xs: 8px;
+    --space-sm: 12px;
+    --space-md: 16px;
+    --space-lg: 20px;
+    --space-xl: 28px;
+    --space-2xl: 40px;
 
     /* Responsive Gutters & Card Spacing */
-    --page-pad-x: clamp(12px, 3vw, 28px);
-    --page-pad-y: clamp(14px, 3vw, 26px);
-    --card-pad: clamp(14px, 2.5vw, 24px);
+    --page-pad-x: clamp(14px, 3.5vw, 24px);
+    --page-pad-y: clamp(16px, 3vw, 24px);
+    --card-pad: clamp(14px, 3vw, 22px);
 }
 
 /*==================================================
@@ -1016,9 +1037,9 @@ body.sidebar-open {
 
 @media (max-width: 576px) {
     /* Responsive typography & headings */
-    h1 { font-size: clamp(1.25rem, 5vw, 1.6rem); }
-    h2 { font-size: clamp(1.1rem, 4.2vw, 1.35rem); }
-    h3 { font-size: clamp(1rem, 3.8vw, 1.2rem); }
+    h1 { font-size: clamp(1.2rem, 4.8vw, 1.5rem); }
+    h2 { font-size: clamp(1.05rem, 4vw, 1.3rem); }
+    h3 { font-size: clamp(0.95rem, 3.6vw, 1.15rem); }
 
     /* Topbars on small screens */
     .topbar,
@@ -1027,18 +1048,28 @@ body.sidebar-open {
     .client-topbar,
     .staff-header {
         height: 60px !important;
-        padding: 0 12px !important;
+        padding: 0 clamp(10px, 3vw, 16px) !important;
+        gap: 8px !important;
+    }
+
+    .topbar-left,
+    .sa-topbar-left,
+    .client-topbar-left,
+    .staff-header-left {
+        gap: 10px !important;
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
     }
 
     .topbar-title-wrap h1,
     .sa-topbar-titles h1,
     .client-page-title,
     .staff-header-title h1 {
-        font-size: clamp(0.95rem, 4vw, 1.12rem) !important;
+        font-size: clamp(0.95rem, 3.8vw, 1.1rem) !important;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 190px;
+        max-width: clamp(140px, 45vw, 220px);
     }
 
     .topbar-title-wrap p,
@@ -1049,16 +1080,62 @@ body.sidebar-open {
         display: none !important;
     }
 
+    /* Topbar right items & user pill on mobile */
+    .topbar-right,
+    .sa-topbar-right,
+    .client-topbar-right,
+    .staff-header-right {
+        gap: 6px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .topbar-user-name,
+    .sa-user-pill span:not(.crown),
+    .client-user-pill span,
+    .staff-user-name,
+    .topbar-right a span:not(.topbar-badge-count),
+    .sa-topbar-right .sa-btn span,
+    .client-topbar-right .client-btn span {
+        display: none !important;
+    }
+
+    .topbar-user-pill,
+    .sa-user-pill,
+    .client-user-pill {
+        padding: 4px !important;
+        border-radius: 50% !important;
+        width: 36px !important;
+        height: 36px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .topbar-user-avatar {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 0.8rem !important;
+    }
+
     .menu-btn,
     .menu-toggle,
     .sidebar-toggle-btn,
     .sa-toggle-btn,
     .client-toggle-btn,
-    .topbar-toggle-btn {
+    .topbar-toggle-btn,
+    .topbar-icon-btn,
+    .client-icon-btn,
+    .sa-btn-sm {
         width: 38px !important;
         height: 38px !important;
         min-width: 38px !important;
-        font-size: 1rem !important;
+        min-height: 38px !important;
+        font-size: 0.95rem !important;
+        border-radius: 8px !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
     /* Card padding optimization */
@@ -1070,68 +1147,146 @@ body.sidebar-open {
     .page-header-card {
         padding: var(--card-pad) !important;
         border-radius: 14px !important;
-        margin-bottom: 16px !important;
+        margin-bottom: 14px !important;
     }
 
     .card-body,
     .sa-card-body,
     .client-card-body {
-        padding: 14px 12px !important;
+        padding: 12px 10px !important;
     }
 
     .card-header,
     .sa-card-header,
     .client-card-header {
-        padding: 12px 14px !important;
-        flex-direction: column !important;
-        align-items: flex-start !important;
+        padding: 10px 12px !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
         gap: 8px !important;
     }
 
-    /* Stats Grids */
+    .card-header h3,
+    .sa-card-header h3,
+    .client-card-title {
+        font-size: 0.95rem !important;
+    }
+
+    /* Professional 2-Column Stats Grid */
     .admin-stats-grid,
     .sa-stats-grid,
     .stats-grid,
     .client-stats-grid,
-    .staff-stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+    .staff-stats-grid,
+    .staff-metrics-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px !important;
-        margin-bottom: 16px !important;
+        margin-bottom: 14px !important;
     }
 
     .admin-stat-card,
     .sa-stat-card,
     .client-stat-card,
-    .stat-card {
-        padding: 14px 12px !important;
-        gap: 12px !important;
+    .stat-card,
+    .staff-stat-card {
+        padding: 12px 10px !important;
+        gap: 10px !important;
         border-radius: 12px !important;
+        display: flex !important;
+        align-items: center !important;
     }
 
     .stat-icon-wrap,
     .sa-stat-icon,
     .client-stat-icon,
-    .stat-icon {
-        width: 42px !important;
-        height: 42px !important;
-        min-width: 42px !important;
-        font-size: 1.15rem !important;
+    .stat-icon,
+    .stat-icon-wrapper {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        font-size: 1.05rem !important;
+        border-radius: 10px !important;
     }
 
-    /* Page headers & toolbars */
+    .stat-info .stat-val,
+    .client-stat-info h3,
+    .stat-content h3 {
+        font-size: 1.35rem !important;
+        line-height: 1.1 !important;
+    }
+
+    .stat-info .stat-lbl,
+    .client-stat-info p,
+    .stat-content .stat-label {
+        font-size: 0.72rem !important;
+        margin-top: 3px !important;
+        letter-spacing: 0.3px !important;
+    }
+
+    /* Intentional Page Header & Actions */
     .page-header-card {
         flex-direction: column !important;
         align-items: stretch !important;
         gap: 12px !important;
     }
 
-    .page-header-actions,
-    .admin-toolbar,
-    .admin-filter-group {
+    .page-header-title {
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+    }
+
+    .page-header-icon {
+        width: 42px !important;
+        height: 42px !important;
+        border-radius: 10px !important;
+        font-size: 1.15rem !important;
+    }
+
+    .page-header-text h2 {
+        font-size: 1.12rem !important;
+        line-height: 1.25 !important;
+    }
+
+    .page-header-text p {
+        font-size: 0.78rem !important;
+        margin-top: 2px !important;
+    }
+
+    .page-header-actions {
         display: flex !important;
         flex-wrap: wrap !important;
         width: 100% !important;
         gap: 8px !important;
+        align-items: center !important;
+    }
+
+    .page-header-actions a,
+    .page-header-actions button {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        padding: 8px 14px !important;
+        min-height: 40px !important;
+        font-size: 0.82rem !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        flex: 1 1 calc(50% - 4px) !important;
+        min-width: 120px !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Filter & Search Toolbar */
+    .admin-toolbar {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        width: 100% !important;
     }
 
     .admin-search-box {
@@ -1139,13 +1294,20 @@ body.sidebar-open {
         width: 100% !important;
     }
 
-    .page-header-actions a,
-    .page-header-actions button,
+    .admin-filter-group {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
     .admin-filter-group select,
     .admin-filter-group input {
-        flex: 1 1 auto !important;
-        width: 100% !important;
-        text-align: center;
+        flex: 1 1 calc(50% - 4px) !important;
+        min-width: 120px !important;
+        height: 40px !important;
+        border-radius: 8px !important;
+        font-size: 0.84rem !important;
     }
 
     /* Data table responsiveness & safe wrapping */
@@ -1158,9 +1320,11 @@ body.sidebar-open {
         max-width: 100% !important;
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior-x: contain !important;
         display: block !important;
         margin: 0 !important;
-        border-radius: 10px;
+        border-radius: 10px !important;
+        border: 1px solid var(--border-default, #e2e8f0) !important;
     }
 
     .table th,
@@ -1173,15 +1337,19 @@ body.sidebar-open {
     .client-table td,
     .staff-table th,
     .staff-table td {
-        padding: 10px 12px !important;
-        font-size: 0.82rem !important;
+        padding: 9px 10px !important;
+        font-size: 0.8rem !important;
         overflow-wrap: break-word;
         word-break: normal;
     }
 
     /* Prevent mobile input zoom in iOS Safari */
-    input, select, textarea {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
         font-size: 16px !important;
+        min-height: 44px !important;
+        box-sizing: border-box !important;
     }
 }
 
@@ -1191,21 +1359,50 @@ body.sidebar-open {
     .sa-stats-grid,
     .stats-grid,
     .client-stats-grid,
-    .staff-stats-grid {
+    .staff-stats-grid,
+    .staff-metrics-grid {
         grid-template-columns: 1fr !important;
+        gap: 8px !important;
     }
 
     .topbar-title-wrap h1,
     .sa-topbar-titles h1,
     .client-page-title,
     .staff-header-title h1 {
-        max-width: 140px;
+        max-width: 130px !important;
     }
 
-    .topbar-user-pill,
-    .sa-user-pill,
-    .client-user-pill {
-        padding: 4px 6px !important;
+    .page-header-actions a,
+    .page-header-actions button {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        max-width: 100% !important;
+    }
+
+    .admin-filter-group select,
+    .admin-filter-group input {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+    }
+}
+
+/* Accessible focus ring */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--primary) !important;
+    outline-offset: 2px !important;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }
 

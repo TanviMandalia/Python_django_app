@@ -224,10 +224,11 @@ button:active{
    ACCESSIBILITY
 ================================= */
 
-button:focus,
-input:focus,
-a:focus{
-    outline:none;
+button:focus-visible,
+input:focus-visible,
+a:focus-visible{
+    outline: 2px solid #F5C518;
+    outline-offset: 2px;
 }
 
 ::placeholder{

@@ -517,7 +517,8 @@
 
     .sa-input,
     .sa-select,
-    .sa-textarea {
+    .sa-textarea,
+    .sa-form-input {
       width: 100%;
       padding: 10px 14px;
       border-radius: var(--sa-radius-sm);
@@ -527,11 +528,13 @@
       font-size: 0.88rem;
       font-family: inherit;
       transition: all 0.2s ease;
+      box-sizing: border-box;
     }
 
     .sa-input:focus,
     .sa-select:focus,
-    .sa-textarea:focus {
+    .sa-textarea:focus,
+    .sa-form-input:focus {
       outline: none;
       border-color: var(--sa-purple);
       box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
@@ -578,25 +581,30 @@
 
     @media (max-width: 768px) {
       .sa-body {
-        padding: 16px 14px;
+        padding: 16px clamp(12px, 3vw, 18px);
       }
       .sa-card {
-        margin-bottom: 16px;
+        margin-bottom: 14px;
       }
       .sa-stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
-        gap: 12px;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px;
       }
     }
 
     @media (max-width: 576px) {
       .sa-topbar {
         height: 60px;
-        padding: 0 12px;
+        padding: 0 clamp(10px, 3vw, 16px);
+        gap: 8px;
+      }
+      .sa-topbar-left {
+        gap: 10px;
+        min-width: 0;
       }
       .sa-topbar-titles h1 {
         font-size: 1.02rem;
-        max-width: 170px;
+        max-width: clamp(140px, 45vw, 200px);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -604,33 +612,62 @@
       .sa-topbar-titles p {
         display: none !important;
       }
+      .sa-topbar-right {
+        gap: 6px;
+      }
+      .sa-user-pill {
+        padding: 6px !important;
+        border-radius: 50% !important;
+        width: 36px;
+        height: 36px;
+        justify-content: center;
+      }
+      .sa-user-pill span:not(.crown) {
+        display: none !important;
+      }
+      .sa-topbar-right .sa-btn span {
+        display: none !important;
+      }
+      .sa-topbar-right .sa-btn {
+        padding: 8px 10px !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
       .sa-card-header {
         padding: 12px 14px;
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
         gap: 8px;
       }
       .sa-card-body {
-        padding: 14px 12px;
+        padding: 12px 10px;
       }
       .sa-stat-card {
-        padding: 14px 12px;
-        gap: 12px;
+        padding: 12px 10px;
+        gap: 10px;
+        border-radius: 12px;
       }
       .sa-stat-icon {
-        width: 42px;
-        height: 42px;
-        font-size: 1.15rem;
+        width: 38px;
+        height: 38px;
+        font-size: 1.05rem;
+        border-radius: 10px;
       }
       .sa-table th, .sa-table td {
-        padding: 10px 12px;
-        font-size: 0.82rem;
+        padding: 9px 10px;
+        font-size: 0.8rem;
       }
     }
 
     @media (max-width: 360px) {
       .sa-stats-grid {
         grid-template-columns: 1fr !important;
+        gap: 8px;
       }
       .sa-topbar-titles h1 {
         max-width: 130px;

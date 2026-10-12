@@ -752,25 +752,30 @@
 
     @media (max-width: 768px) {
       .client-body {
-        padding: 16px 14px;
+        padding: 16px clamp(12px, 3vw, 18px);
       }
       .client-welcome-banner {
-        padding: 22px 18px;
+        padding: 20px 16px;
       }
       .client-stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
       }
     }
 
     @media (max-width: 576px) {
       .client-topbar {
         height: 60px;
-        padding: 0 12px;
+        padding: 0 clamp(10px, 3vw, 16px);
+        gap: 8px;
+      }
+      .client-topbar-left {
+        gap: 10px;
+        min-width: 0;
       }
       .client-page-title {
         font-size: 1.02rem;
-        max-width: 160px;
+        max-width: clamp(140px, 45vw, 200px);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -779,8 +784,18 @@
       .client-user-details {
         display: none !important;
       }
+      .client-topbar-right {
+        gap: 6px;
+      }
+      .client-topbar-right .client-btn {
+        display: none !important;
+      }
       .client-user-pill {
         padding: 4px;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        justify-content: center;
       }
       .client-welcome-banner {
         padding: 18px 14px;
@@ -788,42 +803,57 @@
       }
       .client-welcome-actions {
         width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
       }
       .client-welcome-actions a {
-        flex: 1 1 auto;
+        flex: 1 1 calc(50% - 4px);
+        min-width: 120px;
         text-align: center;
         justify-content: center;
       }
       .client-stat-card {
-        padding: 14px 12px;
-        gap: 12px;
+        padding: 12px 10px;
+        gap: 10px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
       }
       .client-stat-icon {
-        width: 42px;
-        height: 42px;
-        font-size: 1.15rem;
+        width: 38px;
+        height: 38px;
+        font-size: 1.05rem;
+        border-radius: 10px;
       }
       .client-card {
         border-radius: 14px;
-        margin-bottom: 16px;
+        margin-bottom: 14px;
       }
       .client-card-header {
-        padding: 12px 14px;
-        flex-direction: column;
-        align-items: flex-start;
+        padding: 10px 12px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
         gap: 8px;
       }
       .client-card-body {
-        padding: 14px 12px;
+        padding: 12px 10px;
       }
     }
 
     @media (max-width: 360px) {
       .client-stats-grid {
         grid-template-columns: 1fr;
+        gap: 8px;
       }
       .client-page-title {
         max-width: 130px;
+      }
+      .client-welcome-actions a {
+        flex: 1 1 100%;
+        width: 100%;
       }
     }
   </style>

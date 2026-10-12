@@ -12,6 +12,29 @@
 {% endblock %}
 
 {% block content %}
+<style>
+  @media (max-width: 576px) {
+    .appt-card-item {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 12px !important;
+      padding: 14px 12px !important;
+    }
+    .appt-card-item > div:last-child {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      width: 100% !important;
+      padding-top: 10px !important;
+      border-top: 1px solid #f1f5f9 !important;
+      gap: 8px !important;
+    }
+    .appt-card-item .client-btn-sm {
+      padding: 6px 10px !important;
+      font-size: 0.78rem !important;
+    }
+  }
+</style>
 <div class="client-card">
   <div class="client-card-header">
     <div class="client-card-title">

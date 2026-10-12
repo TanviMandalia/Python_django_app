@@ -637,11 +637,11 @@
     @media (max-width: 576px) {
       .admin-topbar {
         height: 60px;
-        padding: 0 12px;
+        padding: 0 clamp(10px, 3vw, 16px);
       }
       .topbar-title-wrap h1 {
         font-size: 1.02rem;
-        max-width: 170px;
+        max-width: clamp(140px, 45vw, 200px);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -650,16 +650,17 @@
         display: none;
       }
       .admin-body {
-        padding: 14px 10px;
+        padding: 16px 12px;
       }
       .admin-stats-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
       }
       .page-header-card {
         flex-direction: column;
         align-items: stretch;
         gap: 12px;
+        padding: 16px 14px;
       }
       .page-header-actions {
         width: 100%;
@@ -668,13 +669,16 @@
         gap: 8px;
       }
       .page-header-actions a, .page-header-actions button {
-        flex: 1 1 auto;
+        flex: 1 1 calc(50% - 4px);
+        min-width: 120px;
         justify-content: center;
-        width: 100%;
+        width: auto;
+        box-sizing: border-box;
       }
       .admin-toolbar {
         flex-direction: column;
         align-items: stretch;
+        gap: 10px;
       }
       .admin-search-box {
         min-width: 100%;
@@ -682,8 +686,31 @@
       }
       .admin-filter-group {
         width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
       }
       .admin-filter-group select, .admin-filter-group input {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 120px;
+        width: auto;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .admin-stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .topbar-title-wrap h1 {
+        max-width: 130px;
+      }
+      .page-header-actions a, .page-header-actions button {
+        flex: 1 1 auto;
+        width: auto;
+        max-width: 100%;
+      }
+      .admin-filter-group select, .admin-filter-group input {
+        flex: 1 1 100%;
         width: 100%;
       }
     }

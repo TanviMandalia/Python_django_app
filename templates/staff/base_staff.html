@@ -484,16 +484,23 @@
         max-width: 100% !important;
       }
       .staff-page-content {
-        padding: 16px;
+        padding: 16px clamp(12px, 3vw, 18px);
       }
+    }
+
     @media (max-width: 576px) {
       .staff-header {
         height: 60px !important;
-        padding: 0 12px !important;
+        padding: 0 clamp(10px, 3vw, 16px) !important;
+        gap: 8px !important;
+      }
+      .staff-header-left {
+        gap: 10px !important;
+        min-width: 0 !important;
       }
       .staff-header-title h1 {
         font-size: 1.02rem !important;
-        max-width: 170px;
+        max-width: clamp(140px, 45vw, 200px);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -502,29 +509,75 @@
       .topbar-badge-role {
         display: none !important;
       }
-      .staff-page-content {
-        padding: 14px 10px !important;
+      .staff-header-right {
+        gap: 6px !important;
       }
-      .staff-stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+      .staff-header-right .topbar-action-link span {
+        display: none !important;
+      }
+      .staff-header-right .topbar-action-link {
+        padding: 0 !important;
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 8px !important;
+      }
+      .staff-page-content {
+        padding: 16px 12px !important;
+      }
+      .staff-stats-grid,
+      .staff-metrics-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px !important;
       }
-      .stat-card {
-        padding: 14px 12px !important;
+      .stat-card,
+      .staff-stat-card {
+        padding: 12px 10px !important;
+        gap: 10px !important;
+        border-radius: 12px !important;
+      }
+      .stat-icon-wrapper {
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 1.05rem !important;
       }
       .page-header-card {
         flex-direction: column !important;
         align-items: stretch !important;
         gap: 12px !important;
       }
+      .page-header-actions {
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      .page-header-actions a,
+      .page-header-actions button {
+        flex: 1 1 calc(50% - 4px) !important;
+        min-width: 120px !important;
+        justify-content: center !important;
+      }
     }
 
     @media (max-width: 360px) {
-      .staff-stats-grid {
+      .staff-stats-grid,
+      .staff-metrics-grid {
         grid-template-columns: 1fr !important;
+        gap: 8px !important;
       }
       .staff-header-title h1 {
         max-width: 130px;
+      }
+      .page-header-actions a,
+      .page-header-actions button {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        max-width: 100% !important;
       }
     }
   </style>
