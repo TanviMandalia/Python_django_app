@@ -201,6 +201,7 @@ DEFAULT_FROM_EMAIL = os.getenv(
 SERVER_EMAIL = EMAIL_HOST_USER or "noreply@physiorehab.com"
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", 15))
 INBOUND_EMAIL_WEBHOOK_SECRET = os.getenv("INBOUND_EMAIL_WEBHOOK_SECRET", "")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 
 # =========================
 # PLATFORM EMAIL IDENTITY (TechCraft)

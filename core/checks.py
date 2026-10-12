@@ -70,4 +70,39 @@ def check_smtp_configuration(app_configs, **kwargs):
                 )
             )
 
+    # Validate credentials when using Resend HTTPS API backend
+    elif backend == "core.email_backend.ResendEmailBackend":
+        resend_key = getattr(settings, "RESEND_API_KEY", "")
+        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "")
+        debug = getattr(settings, "DEBUG", False)
+
+        missing_fields = []
+        if not resend_key:
+            missing_fields.append("RESEND_API_KEY")
+        if not from_email:
+            missing_fields.append("DEFAULT_FROM_EMAIL")
+
+        if missing_fields:
+            msg = (
+                f"Incomplete Resend HTTPS email configuration. Missing required setting(s): {', '.join(missing_fields)}. "
+                "Ensure environment variables are populated for HTTPS API email delivery."
+            )
+            hint = "Set RESEND_API_KEY and DEFAULT_FROM_EMAIL (e.g. 'Clinic <onboarding@resend.dev>') in environment variables."
+            if debug:
+                errors.append(
+                    Warning(
+                        msg,
+                        hint=hint,
+                        id="core.W003",
+                    )
+                )
+            else:
+                errors.append(
+                    Error(
+                        msg,
+                        hint=hint,
+                        id="core.E003",
+                    )
+                )
+
     return errors

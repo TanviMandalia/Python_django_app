@@ -121,14 +121,25 @@ else:
 
 # ------------------------------------------------------------------------------
 # Production Email Configuration
-# If SMTP credentials are provided, use SMTP; otherwise fallback to console backend
-# to allow initial deployment, build steps, and health checks to succeed safely.
+# Priority:
+# 1. Explicit EMAIL_BACKEND environment variable if provided.
+# 2. Resend REST API (HTTPS Port 443) when RESEND_API_KEY is provided:
+#    Reliable delivery bypassing cloud firewall SMTP blocks (e.g. Render Free).
+# 3. Standard SMTP backend if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD are provided.
+# 4. Fallback to console backend to allow zero-downtime boots and health checks.
 # ------------------------------------------------------------------------------
+email_backend_env = os.getenv("EMAIL_BACKEND", "").strip()
+resend_api_key = os.getenv("RESEND_API_KEY", "").strip()
 email_user = os.getenv("EMAIL_HOST_USER", "").strip()
 email_password = os.getenv("EMAIL_HOST_PASSWORD", "").strip()
 
-if email_user and email_password:
-    EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+if email_backend_env:
+    EMAIL_BACKEND = email_backend_env
+elif resend_api_key:
+    EMAIL_BACKEND = "core.email_backend.ResendEmailBackend"
+    RESEND_API_KEY = resend_api_key
+elif email_user and email_password:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 

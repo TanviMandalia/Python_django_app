@@ -26,29 +26,29 @@
     {% if appointments %}
       <div style="display:flex; flex-direction:column; gap:16px;">
         {% for appt in appointments %}
-          <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 20px; background:#ffffff; border:1px solid var(--client-border); border-radius:14px; box-shadow:var(--client-shadow-sm); gap:18px; flex-wrap:wrap; transition:all 0.2s;" onmouseover="this.style.boxShadow='var(--client-shadow-md)'; this.style.borderColor='rgba(245,197,24,0.4)';" onmouseout="this.style.boxShadow='var(--client-shadow-sm)'; this.style.borderColor='var(--client-border)';">
+          <div class="appt-card-item" style="display:flex; align-items:center; justify-content:space-between; padding: clamp(12px, 3vw, 18px) clamp(12px, 3vw, 20px); background:#ffffff; border:1px solid var(--client-border); border-radius:14px; box-shadow:var(--client-shadow-sm); gap:14px; flex-wrap:wrap; transition:all 0.2s;" onmouseover="this.style.boxShadow='var(--client-shadow-md)'; this.style.borderColor='rgba(245,197,24,0.4)';" onmouseout="this.style.boxShadow='var(--client-shadow-sm)'; this.style.borderColor='var(--client-border)';">
             <!-- Left Date & Info -->
-            <div style="display:flex; align-items:center; gap:18px; min-width:0; flex:1;">
+            <div style="display:flex; align-items:center; gap:14px; min-width:0; flex:1 1 240px;">
               <!-- Date Badge Box -->
-              <div style="background:var(--client-primary-subtle); border:1px solid rgba(245,197,24,0.35); border-radius:12px; padding:10px 14px; text-align:center; min-width:68px; flex-shrink:0;">
-                <div style="font-family:'Outfit', sans-serif; font-size:1.5rem; font-weight:800; color:var(--client-dark); line-height:1;">
+              <div style="background:var(--client-primary-subtle); border:1px solid rgba(245,197,24,0.35); border-radius:12px; padding:8px 12px; text-align:center; min-width:62px; flex-shrink:0;">
+                <div style="font-family:'Outfit', sans-serif; font-size:1.4rem; font-weight:800; color:var(--client-dark); line-height:1;">
                   {{ appt.date|date:"d" }}
                 </div>
-                <div style="font-size:0.75rem; font-weight:700; color:var(--client-primary-dark); text-transform:uppercase; margin-top:2px;">
+                <div style="font-size:0.72rem; font-weight:700; color:var(--client-primary-dark); text-transform:uppercase; margin-top:2px;">
                   {{ appt.date|date:"M Y" }}
                 </div>
               </div>
 
               <!-- Details -->
-              <div style="min-width:0;">
-                <h3 style="font-family:'Outfit', sans-serif; font-size:1.05rem; font-weight:700; color:var(--client-dark); margin-bottom:6px;">
+              <div style="min-width:0; flex:1;">
+                <h3 style="font-family:'Outfit', sans-serif; font-size:1.02rem; font-weight:700; color:var(--client-dark); margin-bottom:4px; word-break:break-word;">
                   {{ appt.get_service_display|default:appt.service }}
                 </h3>
-                <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; font-size:0.82rem; color:var(--client-text-muted);">
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:0.82rem; color:var(--client-text-muted);">
                   <span><i class="fas fa-clock" style="color:var(--client-primary-dark); margin-right:4px;"></i> {{ appt.time }}</span>
                   <span><i class="fas fa-calendar-day" style="color:var(--client-primary-dark); margin-right:4px;"></i> {{ appt.date|date:"l, d F Y" }}</span>
                   {% if appt.notes %}
-                    <span style="max-width:320px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    <span style="max-width:100%; word-break:break-word;">
                       <i class="fas fa-comment-medical" style="color:var(--client-primary-dark); margin-right:4px;"></i> {{ appt.notes }}
                     </span>
                   {% endif %}

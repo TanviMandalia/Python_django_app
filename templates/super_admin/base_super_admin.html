@@ -575,6 +575,67 @@
       from { opacity: 0; transform: translateY(-4px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    @media (max-width: 768px) {
+      .sa-body {
+        padding: 16px 14px;
+      }
+      .sa-card {
+        margin-bottom: 16px;
+      }
+      .sa-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+        gap: 12px;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .sa-topbar {
+        height: 60px;
+        padding: 0 12px;
+      }
+      .sa-topbar-titles h1 {
+        font-size: 1.02rem;
+        max-width: 170px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .sa-topbar-titles p {
+        display: none !important;
+      }
+      .sa-card-header {
+        padding: 12px 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .sa-card-body {
+        padding: 14px 12px;
+      }
+      .sa-stat-card {
+        padding: 14px 12px;
+        gap: 12px;
+      }
+      .sa-stat-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 1.15rem;
+      }
+      .sa-table th, .sa-table td {
+        padding: 10px 12px;
+        font-size: 0.82rem;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .sa-stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .sa-topbar-titles h1 {
+        max-width: 130px;
+      }
+    }
   </style>
 
   {% block extra_css %}{% endblock %}

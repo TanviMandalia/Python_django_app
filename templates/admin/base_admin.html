@@ -641,6 +641,10 @@
       }
       .topbar-title-wrap h1 {
         font-size: 1.02rem;
+        max-width: 170px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .topbar-title-wrap p {
         display: none;
@@ -652,12 +656,35 @@
         grid-template-columns: 1fr;
         gap: 12px;
       }
+      .page-header-card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
       .page-header-actions {
         width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
       }
       .page-header-actions a, .page-header-actions button {
-        flex: 1;
+        flex: 1 1 auto;
         justify-content: center;
+        width: 100%;
+      }
+      .admin-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .admin-search-box {
+        min-width: 100%;
+        width: 100%;
+      }
+      .admin-filter-group {
+        width: 100%;
+      }
+      .admin-filter-group select, .admin-filter-group input {
+        width: 100%;
       }
     }
   </style>

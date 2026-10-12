@@ -1350,6 +1350,7 @@ class EmailAccount(models.Model):
         return clean_pwd
 
     def get_connection(self, fail_silently=False, timeout=15, force_smtp=False):
+        import os
         from django.conf import settings
         from django.core.mail import get_connection
 
@@ -1357,6 +1358,15 @@ class EmailAccount(models.Model):
         # In unit tests, honor locmem unless force_smtp is explicitly requested
         if not force_smtp and "locmem" in backend:
             return get_connection(backend=backend)
+
+        # In environments with Resend configured as EMAIL_BACKEND (e.g. Render Free blocking outbound SMTP ports),
+        # route delivery through Resend HTTPS REST API unless force_smtp is explicitly requested
+        if not force_smtp and "ResendEmailBackend" in backend:
+            return get_connection(backend="core.email_backend.ResendEmailBackend", fail_silently=fail_silently)
+
+        # In development console backend, honor console unless force_smtp is explicitly requested
+        if not force_smtp and "console" in backend:
+            return get_connection(backend=backend, fail_silently=fail_silently)
 
         # Enforce encryption mutual exclusivity
         effective_tls = self.use_tls

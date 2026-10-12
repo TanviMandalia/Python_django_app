@@ -1757,14 +1757,25 @@ def book_appointment(request):
                 "notes": notes,
             })
 
-        # Email patient + alert admin
-        send_appointment_confirmation(appt)
-        admin = get_admin_user(hospital)
-        if admin:
-            send_admin_new_appointment_alert(appt)
-            notify_appointment_booked(appt, admin)
+        # Email patient + alert admin (Executed outside atomic block after successful DB commit)
+        email_sent = False
+        try:
+            email_sent = bool(send_appointment_confirmation(appt))
+        except Exception as exc:
+            logger.error(f"Appointment confirmation email failed for appt {appt.id}: {exc.__class__.__name__} - {exc}")
 
-        messages.success(request, f"✅ Appointment booked for {appt.date} at {appt.time}! Confirmation email sent.")
+        try:
+            admin = get_admin_user(hospital)
+            if admin:
+                send_admin_new_appointment_alert(appt)
+                notify_appointment_booked(appt, admin)
+        except Exception as exc:
+            logger.error(f"Admin notification failed for appt {appt.id}: {exc.__class__.__name__} - {exc}")
+
+        if email_sent:
+            messages.success(request, f"✅ Appointment booked for {appt.date} at {appt.time}! Confirmation email sent.")
+        else:
+            messages.success(request, f"✅ Appointment booked for {appt.date} at {appt.time}! (Note: Confirmation email delivery was delayed or unavailable, but your appointment is secured.)")
         return redirect("my_appointments")
     return render(request, "client/book_appointment.html")
 
@@ -1817,10 +1828,21 @@ def update_appointment(request, appt_id, status):
     appt.save()
 
     # Email + notification
-    send_appointment_status_update(appt)
-    notify_appointment_status(appt)
+    email_sent = False
+    try:
+        email_sent = bool(send_appointment_status_update(appt))
+    except Exception as exc:
+        logger.error(f"Appointment status email failed for appt {appt.id}: {exc.__class__.__name__} - {exc}")
 
-    messages.success(request, f"✅ Appointment {status}.")
+    try:
+        notify_appointment_status(appt)
+    except Exception as exc:
+        logger.error(f"Notification status failed for appt {appt.id}: {exc.__class__.__name__} - {exc}")
+
+    if email_sent:
+        messages.success(request, f"✅ Appointment {status}. Notification email sent.")
+    else:
+        messages.success(request, f"✅ Appointment {status}.")
     return redirect("admin_appointments")
 
 

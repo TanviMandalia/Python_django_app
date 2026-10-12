@@ -486,8 +486,45 @@
       .staff-page-content {
         padding: 16px;
       }
+    @media (max-width: 576px) {
+      .staff-header {
+        height: 60px !important;
+        padding: 0 12px !important;
+      }
+      .staff-header-title h1 {
+        font-size: 1.02rem !important;
+        max-width: 170px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .staff-header-title p,
+      .topbar-badge-role {
+        display: none !important;
+      }
+      .staff-page-content {
+        padding: 14px 10px !important;
+      }
+      .staff-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+        gap: 10px !important;
+      }
+      .stat-card {
+        padding: 14px 12px !important;
+      }
       .page-header-card {
-        padding: 16px;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .staff-stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .staff-header-title h1 {
+        max-width: 130px;
       }
     }
   </style>

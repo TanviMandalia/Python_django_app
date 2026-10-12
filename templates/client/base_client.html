@@ -749,6 +749,83 @@
       margin-bottom: 20px;
       line-height: 1.5;
     }
+
+    @media (max-width: 768px) {
+      .client-body {
+        padding: 16px 14px;
+      }
+      .client-welcome-banner {
+        padding: 22px 18px;
+      }
+      .client-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 12px;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .client-topbar {
+        height: 60px;
+        padding: 0 12px;
+      }
+      .client-page-title {
+        font-size: 1.02rem;
+        max-width: 160px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .client-breadcrumb,
+      .client-user-details {
+        display: none !important;
+      }
+      .client-user-pill {
+        padding: 4px;
+      }
+      .client-welcome-banner {
+        padding: 18px 14px;
+        border-radius: 14px;
+      }
+      .client-welcome-actions {
+        width: 100%;
+      }
+      .client-welcome-actions a {
+        flex: 1 1 auto;
+        text-align: center;
+        justify-content: center;
+      }
+      .client-stat-card {
+        padding: 14px 12px;
+        gap: 12px;
+      }
+      .client-stat-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 1.15rem;
+      }
+      .client-card {
+        border-radius: 14px;
+        margin-bottom: 16px;
+      }
+      .client-card-header {
+        padding: 12px 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .client-card-body {
+        padding: 14px 12px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .client-stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .client-page-title {
+        max-width: 130px;
+      }
+    }
   </style>
 
   {% block extra_css %}{% endblock %}
