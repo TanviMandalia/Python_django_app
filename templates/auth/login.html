@@ -774,6 +774,9 @@
       <!-- Sign In Form -->
       <form method="POST" action="{% url 'login' %}" id="loginForm" novalidate>
         {% csrf_token %}
+        {% if next %}
+          <input type="hidden" name="next" value="{{ next }}" />
+        {% endif %}
 
         <!-- Username Field -->
         <div class="form-group">
@@ -788,6 +791,7 @@
               type="text"
               id="username"
               name="username"
+              value="{{ username|default:'' }}"
               class="form-input"
               placeholder="Enter your username"
               autocomplete="username"
@@ -832,7 +836,13 @@
         <!-- Utility Row: Remember Me & Forgot Password -->
         <div class="form-utility-row">
           <label class="remember-label" for="rememberMe">
-            <input type="checkbox" id="rememberMe" name="remember_me" class="remember-checkbox" />
+            <input
+              type="checkbox"
+              id="rememberMe"
+              name="remember_me"
+              class="remember-checkbox"
+              {% if remember_me %}checked{% endif %}
+            />
             <span>Remember me</span>
           </label>
           <a href="{% url 'request_otp' %}" class="forgot-link">Forgot password?</a>

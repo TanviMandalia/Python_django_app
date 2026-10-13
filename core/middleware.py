@@ -39,25 +39,33 @@ class SessionTimeoutMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated:
-            last_activity = request.session.get('last_activity')
+            # If the user selected "Remember Me", their session is persistent across
+            # browser restarts and days, governed by the 14-day persistent cookie expiry.
+            # Do not force a premature 30-minute idle logout on remembered sessions.
+            is_remembered = request.session.get("remember_me", False)
 
-            if last_activity:
-                from datetime import datetime
+            if not is_remembered:
+                last_activity = request.session.get("last_activity")
 
-                last_dt = datetime.fromisoformat(last_activity)
-                now_dt = timezone.now().replace(tzinfo=None)
+                if last_activity:
+                    from datetime import datetime
 
-                inactive = (now_dt - last_dt).seconds // 60
+                    last_dt = datetime.fromisoformat(last_activity)
+                    now_dt = timezone.now().replace(tzinfo=None)
 
-                if inactive >= SESSION_MINS:
-                    logout(request)
-                    messages.warning(
-                        request,
-                        f'⏱️ Logged out after {SESSION_MINS} minutes inactivity.'
-                    )
-                    return redirect('login')
+                    # Use total_seconds() to accurately compute gaps >= 24 hours
+                    inactive_seconds = (now_dt - last_dt).total_seconds()
+                    inactive_mins = int(inactive_seconds // 60)
 
-            request.session['last_activity'] = timezone.now().replace(
+                    if inactive_mins >= SESSION_MINS:
+                        logout(request)
+                        messages.warning(
+                            request,
+                            f"⏱️ Logged out after {SESSION_MINS} minutes inactivity."
+                        )
+                        return redirect("login")
+
+            request.session["last_activity"] = timezone.now().replace(
                 tzinfo=None
             ).isoformat()
 

@@ -924,6 +924,96 @@ class Blog(models.Model):
         super().save(*args, **kwargs)
 
 
+class TreatmentCategory(models.Model):
+    name = models.CharField(max_length=120)
+    slug = models.SlugField(max_length=140, unique=True)
+    description = models.TextField(blank=True)
+    icon_class = models.CharField(max_length=60, default="fas fa-stethoscope", blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["order", "name"]
+        verbose_name_plural = "Treatment Categories"
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+
+class Treatment(models.Model):
+    hospital = models.ForeignKey(
+        "Hospital",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="treatments",
+    )
+    category = models.ForeignKey(
+        TreatmentCategory,
+        on_delete=models.CASCADE,
+        related_name="treatments",
+    )
+    name = models.CharField(max_length=160)
+    slug = models.SlugField(max_length=180, unique=True)
+    short_description = models.CharField(max_length=350)
+    full_description = models.TextField()
+    symptoms = models.TextField(
+        blank=True,
+        help_text="Key symptoms treated, separated by commas or newlines",
+    )
+    techniques = models.TextField(
+        blank=True,
+        help_text="Therapy techniques applied, separated by commas or newlines",
+    )
+    duration = models.CharField(max_length=60, default="45 - 60 Mins", blank=True)
+    icon_class = models.CharField(max_length=60, default="fas fa-user-md", blank=True)
+    image = models.ImageField(upload_to="treatments/", blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    # SEO Metadata
+    seo_title = models.CharField(max_length=160, blank=True)
+    seo_meta_description = models.CharField(max_length=320, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["order", "name"]
+        indexes = [
+            models.Index(fields=["is_active", "order"]),
+            models.Index(fields=["slug"]),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        if not self.seo_title:
+            self.seo_title = f"{self.name} in Jamnagar | Dr. Dhvani Patalia Physio Rehab"
+        if not self.seo_meta_description and self.short_description:
+            self.seo_meta_description = self.short_description[:300]
+        super().save(*args, **kwargs)
+
+    def get_symptoms_list(self):
+        if not self.symptoms:
+            return []
+        return [s.strip() for s in self.symptoms.replace("\n", ",").split(",") if s.strip()]
+
+    def get_techniques_list(self):
+        if not self.techniques:
+            return []
+        return [t.strip() for t in self.techniques.replace("\n", ",").split(",") if t.strip()]
+
+
 class Review(models.Model):
     RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
     hospital = models.ForeignKey(
@@ -936,12 +1026,24 @@ class Review(models.Model):
     patient = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviews"
     )
+    treatment = models.ForeignKey(
+        Treatment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviews",
+    )
     reviewer_name = models.CharField(max_length=100)
     reviewer_title = models.CharField(max_length=100, blank=True)
+    reviewer_photo_url = models.URLField(max_length=500, blank=True, null=True)
     rating = models.PositiveIntegerField(choices=RATING_CHOICES, default=5)
     message = models.TextField()
     is_approved = models.BooleanField(default=False)
     source = models.CharField(max_length=50, default="Verified Patient", blank=True)
+    external_review_id = models.CharField(
+        max_length=255, blank=True, null=True, unique=True
+    )
+    relative_time = models.CharField(max_length=100, blank=True)
     is_verified = models.BooleanField(default=True)
     added_by_admin = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -959,11 +1061,13 @@ class Review(models.Model):
         super().save(*args, **kwargs)
         from django.core.cache import cache
         cache.delete("public_homepage_approved_reviews_v1")
+        cache.delete("google_reviews_summary_data")
 
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
         from django.core.cache import cache
         cache.delete("public_homepage_approved_reviews_v1")
+        cache.delete("google_reviews_summary_data")
 
 
 class PaymentRecord(models.Model):

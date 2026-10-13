@@ -70,9 +70,11 @@
     </div>
     <div class="footer-bottom">
         <div class="footer-container footer-bottom-inner">
-            <p>© 2026 Dr. Dhvani Patalia Physio Rehab. All rights reserved.</p>
-            <div style="font-size: 0.82em; color: #888;">
-                <a href="#privacyNoticeModal" id="openPrivacyModalLink" style="color: #bbb; text-decoration: underline; margin-right: 12px;">Privacy &amp; Cookie Preferences</a>
+            <p class="footer-copyright">© 2026 Dr. Dhvani Patalia Physio Rehab. All rights reserved.</p>
+            <div class="creator-credit">Created by Tanvi Mandaliya</div>
+            <div class="footer-privacy-wrap">
+                <a href="#privacyNoticeModal" id="openPrivacyModalLink">Privacy &amp; Cookie Preferences</a>
+                <span class="footer-privacy-divider">·</span>
                 <span>Anonymous active-time analytics (No invasive profiling)</span>
             </div>
         </div>
@@ -273,11 +275,13 @@
         box-sizing: border-box;
     }
 
-    .footer-bottom-inner {
+    .footer-container.footer-bottom-inner {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 15px clamp(16px, 4vw, 25px);
+        flex-wrap: wrap;
+        gap: 14px;
+        padding: 16px clamp(16px, 4vw, 25px);
     }
 
     .footer-brand img {
@@ -424,13 +428,54 @@
 
     .footer-bottom {
         background: #111;
-        border-top: 1px solid #333;
+        border-top: 1px solid #282828;
     }
 
-    .footer-bottom p {
-        color: #555;
+    .footer-bottom p,
+    .footer-copyright {
+        color: #666;
         font-size: 0.82em;
         margin: 0;
+        line-height: 1.5;
+    }
+
+    .creator-credit {
+        color: #888;
+        font-size: 0.82em;
+        font-weight: 500;
+        letter-spacing: 0.25px;
+        margin: 0;
+        text-align: center;
+        transition: color 0.3s ease;
+    }
+
+    .creator-credit:hover {
+        color: #F5C518;
+    }
+
+    .footer-privacy-wrap {
+        font-size: 0.82em;
+        color: #777;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .footer-privacy-wrap a {
+        color: #aaa;
+        text-decoration: underline;
+        font-size: 0.95em;
+        transition: color 0.3s;
+    }
+
+    .footer-privacy-wrap a:hover {
+        color: #F5C518;
+    }
+
+    .footer-privacy-divider {
+        color: #444;
+        user-select: none;
     }
 
     .footer-bottom a {
@@ -450,14 +495,28 @@
         }
     }
 
+    @media (max-width: 768px) {
+        .footer-container.footer-bottom-inner {
+            flex-direction: column;
+            text-align: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .footer-privacy-wrap {
+            justify-content: center;
+            text-align: center;
+        }
+    }
+
     @media (max-width: 600px) {
         .footer-container {
             grid-template-columns: 1fr;
         }
-        .footer-bottom-inner {
+        .footer-container.footer-bottom-inner {
             flex-direction: column;
             text-align: center;
             gap: 8px;
+            padding: 14px 16px;
         }
     }
 </style>

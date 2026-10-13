@@ -148,7 +148,10 @@ CACHES = {
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_NAME = "physiorehab_sessionid"
-SESSION_COOKIE_AGE = 86400
+REMEMBER_ME_DAYS = 14
+REMEMBER_ME_EXPIRY = REMEMBER_ME_DAYS * 24 * 60 * 60  # 1,209,600 seconds (14 days)
+SESSION_COOKIE_AGE = REMEMBER_ME_EXPIRY
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
@@ -305,5 +308,16 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "django.google_reviews": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
+
+# --- Google Business Profile & Places API Settings ---
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
+GOOGLE_PLACE_ID = os.getenv("GOOGLE_PLACE_ID", "").strip()
+GOOGLE_REVIEWS_CACHE_TTL = int(os.getenv("GOOGLE_REVIEWS_CACHE_TTL", 86400))
+

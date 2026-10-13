@@ -23,6 +23,7 @@ from django.db import models, transaction, IntegrityError
 from django.http import JsonResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.contrib.auth.hashers import check_password
@@ -51,6 +52,8 @@ from .models import (
     ClinicSettings,
     Blog,
     Review,
+    TreatmentCategory,
+    Treatment,
     Hospital,
     ClinicAdmin,
     SubscriptionPlan,
@@ -138,16 +141,42 @@ def is_online(user):
 
 
 def home(request):
-    reviews_cache_key = "public_homepage_approved_reviews_v1"
-    approved_reviews = cache.get(reviews_cache_key)
-    if approved_reviews is None:
-        approved_reviews = list(
-            Review.objects.filter(is_approved=True)
-            .order_by("-created_at")[:8]
-        )
-        cache.set(reviews_cache_key, approved_reviews, timeout=300)
+    """
+    Public Homepage: Renders dynamic Google reviews summary, rating breakdown,
+    official Google Maps links, and featured clinical treatments.
+    """
+    from .google_reviews import get_public_reviews_summary
+    reviews_data = get_public_reviews_summary()
 
-    return render(request, "public/home.html", {"approved_reviews": approved_reviews})
+    # Optional server-side review sorting
+    sort_param = request.GET.get("review_sort", "newest").strip().lower()
+    reviews = list(reviews_data.get("reviews", []))
+    if sort_param == "highest":
+        reviews.sort(key=lambda r: r.get("rating", 0), reverse=True)
+    elif sort_param == "lowest":
+        reviews.sort(key=lambda r: r.get("rating", 0))
+
+    # Optional verified treatment filter (strictly applies only to reviews with verified treatment association)
+    treatment_filter = request.GET.get("review_treatment", "").strip().lower()
+    if treatment_filter and treatment_filter != "all":
+        reviews = [r for r in reviews if r.get("treatment_slug") == treatment_filter]
+
+    reviews_data["filtered_reviews"] = reviews
+    reviews_data["active_sort"] = sort_param
+    reviews_data["active_treatment_filter"] = treatment_filter
+
+    # Featured treatments for homepage highlights
+    featured_treatments = Treatment.objects.filter(is_active=True).select_related("category").order_by("order")[:6]
+
+    return render(
+        request,
+        "public/home.html",
+        {
+            "reviews_data": reviews_data,
+            "approved_reviews": reviews,  # Backwards compatibility for existing loops
+            "featured_treatments": featured_treatments,
+        },
+    )
 
 
 def about(request):
@@ -155,7 +184,137 @@ def about(request):
 
 
 def services(request):
-    return render(request, "public/services.html")
+    """
+    Public Treatments page with category chips filter, search bar, and treatment cards.
+    Supports ?category=<slug> and ?q=<query>.
+    """
+    categories = TreatmentCategory.objects.filter(is_active=True).annotate(
+        active_treatments_count=Count("treatments", filter=Q(treatments__is_active=True))
+    ).order_by("order", "name")
+
+    total_treatments_count = Treatment.objects.filter(is_active=True).count()
+
+    active_category_slug = request.GET.get("category", "").strip().lower()
+    search_query = request.GET.get("q", "").strip()
+
+    treatments_qs = Treatment.objects.filter(is_active=True).select_related("category")
+
+    active_category = None
+    if active_category_slug and active_category_slug != "all":
+        active_category = categories.filter(slug=active_category_slug).first()
+        if active_category:
+            treatments_qs = treatments_qs.filter(category=active_category)
+
+    if search_query:
+        treatments_qs = treatments_qs.filter(
+            Q(name__icontains=search_query)
+            | Q(short_description__icontains=search_query)
+            | Q(full_description__icontains=search_query)
+            | Q(symptoms__icontains=search_query)
+            | Q(techniques__icontains=search_query)
+        )
+
+    treatments = list(treatments_qs.order_by("order", "name"))
+
+    context = {
+        "categories": categories,
+        "treatments": treatments,
+        "active_category_slug": active_category_slug or "all",
+        "active_category": active_category,
+        "search_query": search_query,
+        "total_treatments_count": total_treatments_count,
+        "displayed_count": len(treatments),
+        "seo_title": (
+            f"{active_category.name} in Jamnagar | Dr. Dhvani Patalia Physio Rehab"
+            if active_category
+            else "Physiotherapy Treatments & Rehabilitation in Jamnagar | Dr. Dhvani Patalia"
+        ),
+        "seo_description": (
+            (active_category.description if active_category and active_category.description else "")
+            or "Comprehensive physiotherapy treatments in Jamnagar for back pain, frozen shoulder, knee pain, sciatica, neck pain, and sports injuries by Dr. Dhvani Patalia."
+        )[:160],
+    }
+    return render(request, "public/services.html", context)
+
+
+def treatment_detail(request, slug):
+    """
+    Individual public treatment landing page with rich SEO metadata,
+    symptoms breakdown, clinical techniques, breadcrumb navigation, and direct appointment CTA.
+    """
+    treatment = get_object_or_404(
+        Treatment.objects.select_related("category"),
+        slug=slug,
+        is_active=True,
+    )
+
+    # Related treatments
+    related_treatments = list(
+        Treatment.objects.filter(
+            category=treatment.category,
+            is_active=True,
+        )
+        .exclude(pk=treatment.pk)
+        .order_by("order")[:3]
+    )
+
+    if len(related_treatments) < 3:
+        existing_ids = [t.id for t in related_treatments] + [treatment.id]
+        fallback_related = list(
+            Treatment.objects.filter(is_active=True)
+            .exclude(id__in=existing_ids)
+            .order_by("order")[: 3 - len(related_treatments)]
+        )
+        related_treatments.extend(fallback_related)
+
+    # Specific verified patient reviews for this treatment
+    treatment_reviews = list(
+        Review.objects.filter(treatment=treatment, is_approved=True).order_by("-created_at")[:5]
+    )
+
+    context = {
+        "treatment": treatment,
+        "category": treatment.category,
+        "related_treatments": related_treatments,
+        "treatment_reviews": treatment_reviews,
+        "seo_title": treatment.seo_title or f"{treatment.name} in Jamnagar | Dr. Dhvani Patalia Physio Rehab",
+        "seo_description": treatment.seo_meta_description or (treatment.short_description or treatment.full_description[:150]),
+    }
+    return render(request, "public/treatment_detail.html", context)
+
+
+def public_reviews_api(request):
+    """
+    JSON API endpoint for client-side sorting and filtering of reviews without full-page reloads.
+    """
+    from .google_reviews import get_public_reviews_summary
+
+    data = get_public_reviews_summary()
+    reviews = list(data.get("reviews", []))
+
+    sort_param = request.GET.get("sort", "newest").strip().lower()
+    treatment_param = request.GET.get("treatment", "").strip().lower()
+
+    if treatment_param and treatment_param != "all":
+        # Strictly only include verified treatment reviews; Google reviews are unclassified
+        reviews = [r for r in reviews if r.get("treatment_slug") == treatment_param]
+
+    if sort_param == "highest":
+        reviews.sort(key=lambda r: r.get("rating", 0), reverse=True)
+    elif sort_param == "lowest":
+        reviews.sort(key=lambda r: r.get("rating", 0))
+
+    return JsonResponse(
+        {
+            "status": "success",
+            "average_rating": data.get("average_rating"),
+            "total_reviews_count": data.get("total_reviews_count"),
+            "rating_breakdown": data.get("rating_breakdown"),
+            "rating_breakdown_pct": data.get("rating_breakdown_pct"),
+            "reviews": reviews,
+            "count": len(reviews),
+        }
+    )
 
 
 def contact(request):
@@ -514,10 +673,19 @@ def login_view(request):
     if request.user.is_authenticated:
         return _redirect_by_role(request.user)
 
+    username = ""
+    remember_me = False
+    next_url = request.POST.get("next") or request.GET.get("next", "").strip()
+
     if request.method == "POST":
         ip = _get_client_ip(request)
         cache_key = f"login_attempts_{ip}"
         attempts = cache.get(cache_key, 0)
+
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
+        remember_raw = request.POST.get("remember_me")
+        remember_me = remember_raw in ("on", "true", "1", "True", True)
 
         # Double-check lockout (middleware also checks)
         if attempts >= 5:
@@ -525,16 +693,36 @@ def login_view(request):
             messages.error(
                 request, f"🔒 Account locked. Try again in {remaining} minute(s)."
             )
-            return render(request, "auth/login.html")
+            return render(
+                request,
+                "auth/login.html",
+                {"username": username, "remember_me": remember_me, "next": next_url},
+            )
 
-        username = request.POST.get("username", "").strip()
-        password = request.POST.get("password", "")
         user = authenticate(request, username=username, password=password)
 
         if user:
             # ✅ Success — clear failed attempts
             cache.delete(cache_key)
             login(request, user)
+
+            # Connect Remember Me checkbox to Django session expiry:
+            if remember_me:
+                # 14 days persistent session duration
+                expiry = getattr(settings, "REMEMBER_ME_EXPIRY", 1209600)
+                request.session.set_expiry(expiry)
+                request.session["remember_me"] = True
+            else:
+                # Browser-session cookie: expires when browser closes
+                request.session.set_expiry(0)
+                request.session["remember_me"] = False
+
+            # Safe redirect: check 'next' parameter if valid and safe
+            if next_url and url_has_allowed_host_and_scheme(
+                next_url, allowed_hosts={request.get_host()}
+            ):
+                return redirect(next_url)
+
             return _redirect_by_role(user)
         else:
             # ❌ Failed — increment counter
@@ -554,7 +742,11 @@ def login_view(request):
                     "🔒 Too many failed attempts. Account locked for 15 minutes.",
                 )
 
-    return render(request, "auth/login.html")
+    return render(
+        request,
+        "auth/login.html",
+        {"username": username, "remember_me": remember_me, "next": next_url},
+    )
 
 
 def _get_client_ip(request):
@@ -8151,6 +8343,18 @@ def sitemap_xml(request):
         {"loc": f"{configured_base}/blogs/", "changefreq": "weekly", "priority": "0.7"},
     ]
 
+    # Dynamic treatment service pages
+    treatment_urls = []
+    for t in Treatment.objects.filter(is_active=True, slug__isnull=False).exclude(slug="").order_by("order"):
+        item = {
+            "loc": f"{configured_base}/services/{t.slug}/",
+            "changefreq": "monthly",
+            "priority": "0.8",
+        }
+        if t.updated_at:
+            item["lastmod"] = t.updated_at.strftime("%Y-%m-%d")
+        treatment_urls.append(item)
+
     # Dynamic blog articles
     blog_urls = []
     for b in Blog.objects.filter(slug__isnull=False).exclude(slug="").order_by("-created_at"):
@@ -8163,7 +8367,7 @@ def sitemap_xml(request):
             item["lastmod"] = b.created_at.strftime("%Y-%m-%d")
         blog_urls.append(item)
 
-    all_urls = static_urls + blog_urls
+    all_urls = static_urls + treatment_urls + blog_urls
 
     xml_lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',

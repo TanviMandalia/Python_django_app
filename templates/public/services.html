@@ -5,24 +5,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Physiotherapy &amp; Chiropractic Services in Jamnagar | Dr. Dhvani Patalia Physio Rehab</title>
-    <meta name="description" content="Specialized physiotherapy and chiropractic services in Jamnagar by Dr. Dhvani Patalia. Spinal adjustments, sports injury rehab, neuro therapy, and pain management.">
+    <title>{{ seo_title|default:"Physiotherapy & Chiropractic Treatments in Jamnagar | Dr. Dhvani Patalia Physio Rehab" }}</title>
+    <meta name="description" content="{{ seo_description|default:'Specialized clinical physiotherapy treatments in Jamnagar by Dr. Dhvani Patalia. Back pain, frozen shoulder, knee pain, sciatica, neck pain, posture correction, and rehabilitation.' }}">
     <link rel="canonical" href="{{ canonical_url }}">
 
     <!-- Open Graph Metadata -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Dr. Dhvani Patalia Physio Rehab">
     <meta property="og:url" content="{{ canonical_url }}">
-    <meta property="og:title" content="Physiotherapy &amp; Chiropractic Services in Jamnagar | Dr. Dhvani Patalia Physio Rehab">
-    <meta property="og:description" content="Explore clinical physiotherapy, chiropractic adjustments, and physical rehabilitation services at Dr. Dhvani Patalia Physio Rehab in Jamnagar, Gujarat.">
-    <meta property="og:image" content="{{ canonical_base }}{% static 'images/clinic_image.webp' %}">
+    <meta property="og:title" content="{{ seo_title|default:'Physiotherapy & Chiropractic Treatments in Jamnagar' }}">
+    <meta property="og:description" content="{{ seo_description|default:'Comprehensive evidence-based physiotherapy, chiropractic care, and physical rehabilitation in Jamnagar.' }}">
+    <meta property="og:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}">
     <meta property="og:locale" content="en_IN">
 
     <!-- Twitter Card Metadata -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Physiotherapy &amp; Chiropractic Services in Jamnagar">
-    <meta name="twitter:description" content="Explore evidence-based physiotherapy, chiropractic care, and rehabilitation therapies in Jamnagar by Dr. Dhvani Patalia.">
-    <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/clinic_image.webp' %}">
+    <meta name="twitter:title" content="{{ seo_title|default:'Physiotherapy Treatments in Jamnagar' }}">
+    <meta name="twitter:description" content="{{ seo_description|default:'Specialized physical rehabilitation and chiropractic adjustments in Jamnagar by Dr. Dhvani Patalia.' }}">
+    <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}">
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
@@ -30,10 +30,9 @@
     <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
 
-    <!-- Preconnect CDNs -->
+    <!-- Preconnect CDNs & Fonts -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></noscript>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Schema.org JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -52,75 +51,47 @@
             {
               "@type": "ListItem",
               "position": 2,
-              "name": "Services",
+              "name": "Treatments",
               "item": "{{ canonical_url }}"
             }
           ]
         },
         {
           "@type": ["MedicalClinic", "MedicalBusiness"],
-          "name": "{{ clinic_nap.name }}",
+          "name": "{{ clinic_nap.name|default:'Dr. Dhvani Patalia Physio Rehab' }}",
           "url": "{{ canonical_base }}/",
-          "telephone": "{{ clinic_nap.phone }}",
-          "email": "{{ clinic_nap.email }}",
+          "telephone": "{{ clinic_nap.phone|default:'+919409510501' }}",
+          "email": "{{ clinic_nap.email|default:'physio.rehab.guj@gmail.com' }}",
           "address": {
             "@type": "PostalAddress",
-            "streetAddress": "{{ clinic_nap.street_address }}",
-            "addressLocality": "{{ clinic_nap.locality }}",
-            "addressRegion": "{{ clinic_nap.region }}",
-            "postalCode": "{{ clinic_nap.postal_code }}",
-            "addressCountry": "{{ clinic_nap.country }}"
+            "streetAddress": "{{ clinic_nap.street_address|default:'Sheetal Guest House Building, Bedi Rd, opp. New Super Medical' }}",
+            "addressLocality": "{{ clinic_nap.locality|default:'Jamnagar' }}",
+            "addressRegion": "{{ clinic_nap.region|default:'Gujarat' }}",
+            "postalCode": "{{ clinic_nap.postal_code|default:'361006' }}",
+            "addressCountry": "IN"
           },
           "hasOfferCatalog": {
             "@type": "OfferCatalog",
-            "name": "Clinical Physiotherapy & Rehabilitation Services",
+            "name": "Clinical Physiotherapy Treatments Catalog",
             "itemListElement": [
+              {% for t in treatments|slice:":10" %}
               {
                 "@type": "Offer",
                 "itemOffered": {
                   "@type": "MedicalProcedure",
-                  "name": "Orthopedic Physiotherapy",
-                  "description": "Comprehensive treatment for back pain, neck pain, arthritis, sciatica, and joint dysfunction."
+                  "name": "{{ t.name|escapejs }}",
+                  "description": "{{ t.short_description|escapejs }}",
+                  "url": "{{ canonical_base }}/services/{{ t.slug }}/"
                 }
-              },
-              {
-                "@type": "Offer",
-                "itemOffered": {
-                  "@type": "MedicalProcedure",
-                  "name": "Chiropractic Spinal Alignment",
-                  "description": "Specialized manual manipulation and spinal mobilization techniques by certified chiropractor."
-                }
-              },
-              {
-                "@type": "Offer",
-                "itemOffered": {
-                  "@type": "MedicalProcedure",
-                  "name": "Neurological Rehabilitation",
-                  "description": "Evidence-based therapy for stroke recovery, Parkinson's disease, and neurological mobility disorders."
-                }
-              },
-              {
-                "@type": "Offer",
-                "itemOffered": {
-                  "@type": "MedicalProcedure",
-                  "name": "Sports Injury Rehabilitation",
-                  "description": "Targeted recovery for ligament tears, muscle sprains, tennis elbow, and athletic conditioning."
-                }
-              },
-              {
-                "@type": "Offer",
-                "itemOffered": {
-                  "@type": "MedicalProcedure",
-                  "name": "Post-Operative Rehabilitation",
-                  "description": "Guided post-surgical physical therapy for joint replacements, fracture repairs, and spine surgeries."
-                }
-              }
+              }{% if not forloop.last %},{% endif %}
+              {% endfor %}
             ]
           }
         }
       ]
     }
     </script>
+
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -141,363 +112,445 @@
         }
 
         /* ── HERO ── */
-        .hero {
-            padding: 90px 20px 60px;
+        .treatments-hero {
+            padding: 80px 20px 40px;
             max-width: 1200px;
             margin: 0 auto;
-        }
-
-        .hero-grid {
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 48px;
-            align-items: center;
+            text-align: center;
         }
 
         .hero-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 18px;
+            padding: 8px 20px;
             border-radius: 999px;
             background: rgba(245, 197, 24, 0.15);
-            border: 1px solid rgba(245, 197, 24, 0.3);
+            border: 1px solid rgba(245, 197, 24, 0.35);
             color: #997400;
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             font-weight: 700;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
-        .hero-headline {
-            font-size: clamp(2.2rem, 4vw, 3.4rem);
+        .hero-title {
+            font-size: clamp(2.2rem, 4.5vw, 3.4rem);
             font-weight: 800;
-            line-height: 1.15;
-            color: #2C2C2C;
-            margin-bottom: 20px;
+            line-height: 1.18;
+            color: #1e293b;
+            margin-bottom: 16px;
         }
 
-        .hero-headline .accent {
+        .hero-title span {
             color: #d49e00;
         }
 
-        .hero-desc {
-            font-size: 1.05rem;
+        .hero-subtitle {
+            font-size: 1.1rem;
             color: #64748b;
+            max-width: 720px;
+            margin: 0 auto 32px;
             line-height: 1.7;
-            margin-bottom: 30px;
         }
 
-        .hero-btns {
+        /* ── SEARCH & FILTER CONTROLS ── */
+        .search-controls-bar {
+            max-width: 680px;
+            margin: 0 auto 36px;
+            position: relative;
+        }
+
+        .search-box-wrap {
             display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .btn-dark {
-            padding: 14px 28px;
-            background: #2C2C2C;
-            color: #fff;
-            border: none;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            transition: background 0.2s;
-            box-shadow: 0 4px 15px rgba(44,44,44,0.15);
-        }
-
-        .btn-dark:hover { background: #1a1a1a; }
-
-        .btn-outline {
-            padding: 14px 28px;
-            background: #fff;
-            color: #2C2C2C;
+            background: #ffffff;
             border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 0.95rem;
+            border-radius: 999px;
+            padding: 6px 12px 6px 20px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
+        }
+
+        .search-box-wrap:focus-within {
+            border-color: #F5C518;
+            box-shadow: 0 4px 20px rgba(245, 197, 24, 0.2);
+        }
+
+        .search-box-wrap i {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            margin-right: 12px;
+        }
+
+        .search-input {
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            color: #1e293b;
+            width: 100%;
+            background: transparent;
+        }
+
+        .search-submit-btn {
+            background: #2C2C2C;
+            color: #ffffff;
+            border: none;
+            border-radius: 999px;
+            padding: 10px 22px;
             font-weight: 700;
+            font-size: 0.9rem;
             cursor: pointer;
-            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+
+        .search-submit-btn:hover {
+            background: #F5C518;
+            color: #2C2C2C;
+        }
+
+        /* ── TREATMENT CATEGORY CHIPS AREA ── */
+        .category-chips-section {
+            margin-bottom: 40px;
+        }
+
+        .chips-scroll-container {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 4px 18px;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .chips-scroll-container::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .chips-scroll-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chips-scroll-container::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 6px;
+        }
+
+        .treatment-chip {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.2s;
-        }
-
-        .btn-outline:hover { border-color: #F5C518; background: #fffdf5; }
-
-        /* Clinical Pillars Grid (Replacing fabricated stats) */
-        .pillars-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-        }
-
-        .pillar-card {
+            padding: 10px 20px;
+            border-radius: 999px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: #334155;
             background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 22px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            border-left: 4px solid #F5C518;
+            border: 1px solid #cbd5e1;
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            flex-shrink: 0;
         }
 
-        .pillar-card i {
-            font-size: 1.5rem;
-            color: #d49e00;
-            margin-bottom: 10px;
+        .treatment-chip:hover {
+            border-color: #F5C518;
+            color: #1e293b;
+            background: #fffdf5;
+            transform: translateY(-1px);
         }
 
-        .pillar-card h4 {
-            font-size: 0.98rem;
+        /* Active gold chip matching reference screenshot */
+        .treatment-chip.active {
+            background: #F5C518;
+            color: #1e293b;
+            border-color: #F5C518;
             font-weight: 700;
+            box-shadow: 0 4px 12px rgba(245, 197, 24, 0.35);
+        }
+
+        .chip-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.76rem;
+            font-weight: 700;
+            background: rgba(0, 0, 0, 0.08);
+            color: inherit;
+            padding: 2px 7px;
+            border-radius: 999px;
+            min-width: 20px;
+        }
+
+        .treatment-chip.active .chip-count {
+            background: rgba(0,0,0,0.18);
             color: #1e293b;
-            margin-bottom: 4px;
         }
 
-        .pillar-card p {
-            font-size: 0.82rem;
+        /* Results summary text */
+        .results-meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.92rem;
             color: #64748b;
-            line-height: 1.4;
-            margin-bottom: 0;
         }
 
-        /* ── SERVICES REDESIGN SECTION ── */
-        .services-section {
-            padding: 80px 0;
-            background: #ffffff;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .section-header {
-            text-align: center;
-            max-width: 700px;
-            margin: 0 auto 50px;
-        }
-
-        .section-header h2 {
-            font-size: clamp(1.8rem, 3.5vw, 2.5rem);
-            font-weight: 800;
+        .results-meta-row strong {
             color: #1e293b;
-            margin-bottom: 12px;
         }
 
-        .section-header p {
-            color: #64748b;
-            font-size: 1rem;
+        .reset-filter-link {
+            color: #d49e00;
+            text-decoration: none;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .services-cards-grid {
+        .reset-filter-link:hover {
+            text-decoration: underline;
+        }
+
+        /* ── TREATMENT CARDS GRID ── */
+        .treatments-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 28px;
+            margin-bottom: 60px;
         }
 
-        .service-box {
-            background: #f8fafc;
+        .treatment-card {
+            background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 18px;
             padding: 30px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
             position: relative;
+            overflow: hidden;
         }
 
-        .service-box:hover {
-            transform: translateY(-4px);
-            border-color: #F5C518;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+        .treatment-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #F5C518;
+            opacity: 0;
+            transition: opacity 0.2s ease;
         }
 
-        .service-icon-wrap {
-            width: 54px;
-            height: 54px;
-            border-radius: 14px;
-            background: rgba(245, 197, 24, 0.15);
+        .treatment-card:hover {
+            transform: translateY(-3px);
+            border-color: #cbd5e1;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .treatment-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-top-meta {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            margin-bottom: 18px;
-            font-size: 1.4rem;
+            margin-bottom: 14px;
+        }
+
+        .category-badge {
+            background: rgba(245, 197, 24, 0.14);
+            color: #997400;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(245, 197, 24, 0.25);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .duration-badge {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .treatment-name {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        .treatment-name a {
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .treatment-name a:hover {
             color: #d49e00;
         }
 
-        .service-box h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 10px;
-        }
-
-        .service-desc {
-            color: #475569;
-            font-size: 0.92rem;
+        .treatment-short-desc {
+            font-size: 0.94rem;
+            color: #64748b;
             line-height: 1.6;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
-        .service-tags {
+        /* Symptoms and Techniques Chips */
+        .feature-block-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #475569;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pill-tags-list {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
-            margin-bottom: 22px;
+            margin-bottom: 18px;
         }
 
-        .service-tag {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            color: #64748b;
+        .pill-tag {
+            background: #f1f5f9;
+            color: #475569;
             font-size: 0.78rem;
             font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 20px;
-        }
-
-        .service-detail-collapse {
-            display: none;
-            background: #ffffff;
+            padding: 3px 10px;
+            border-radius: 8px;
             border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 14px;
-            margin-bottom: 18px;
-            font-size: 0.86rem;
-            color: #334155;
-            line-height: 1.5;
         }
 
-        .service-actions {
+        .pill-tag.tech {
+            background: #fffdf5;
+            color: #997400;
+            border-color: #fef08a;
+        }
+
+        /* Card Action Buttons */
+        .card-actions-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding-top: 16px;
-            border-top: 1px solid #e2e8f0;
+            padding-top: 18px;
+            border-top: 1px solid #f1f5f9;
+            margin-top: auto;
         }
 
-        .btn-learn-more {
+        .btn-view-treatment {
             color: #1e293b;
-            background: none;
-            border: none;
-            font-size: 0.88rem;
+            font-size: 0.9rem;
             font-weight: 700;
-            cursor: pointer;
+            text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 6px 0;
-            transition: color 0.2s;
+            transition: color 0.2s ease;
         }
 
-        .btn-learn-more:hover {
+        .btn-view-treatment:hover {
             color: #d49e00;
         }
 
-        .btn-book-cta {
+        .btn-card-book {
             background: #2C2C2C;
             color: #ffffff;
             padding: 9px 18px;
-            border-radius: 8px;
-            font-size: 0.85rem;
+            border-radius: 10px;
+            font-size: 0.86rem;
             font-weight: 700;
             text-decoration: none;
-            transition: all 0.2s;
-        }
-
-        .btn-book-cta:hover {
-            background: #F5C518;
-            color: #2C2C2C;
-        }
-
-        /* ── HOW REHABILITATION WORKS ── */
-        .process-section {
-            padding: 80px 0;
-            background: #f8fafc;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .process-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 24px;
-        }
-
-        .process-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 28px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-        }
-
-        .process-step-num {
-            width: 44px;
-            height: 44px;
-            background: #F5C518;
-            color: #2C2C2C;
-            font-weight: 800;
-            font-size: 1rem;
-            border-radius: 50%;
-            display: flex;
+            transition: all 0.2s ease;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
+            gap: 6px;
         }
 
-        .process-card h4 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 8px;
+        .btn-card-book:hover {
+            background: #F5C518;
+            color: #2C2C2C;
         }
 
-        .process-card p {
-            color: #64748b;
-            font-size: 0.88rem;
-            line-height: 1.55;
-            margin-bottom: 0;
-        }
-
-        /* ── CTA ── */
-        .cta-banner-section {
-            padding: 70px 0;
-            background: #ffffff;
-        }
-
-        .cta-banner-box {
-            background: linear-gradient(135deg, #2C2C2C 0%, #1a1a1a 100%);
-            border-radius: 20px;
-            padding: 60px 40px;
+        /* ── EMPTY STATE ── */
+        .empty-treatments-state {
             text-align: center;
-            color: #ffffff;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            padding: 60px 20px;
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px dashed #cbd5e1;
+            margin-bottom: 60px;
         }
 
-        .cta-banner-box h2 {
-            font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+        .empty-icon {
+            font-size: 3rem;
+            color: #d49e00;
+            margin-bottom: 16px;
+        }
+
+        .empty-treatments-state h3 {
+            font-size: 1.35rem;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        .empty-treatments-state p {
+            color: #64748b;
+            max-width: 500px;
+            margin: 0 auto 24px;
+        }
+
+        /* ── CALL TO ACTION SECTION ── */
+        .booking-cta-section {
+            background: #2C2C2C;
+            border-radius: 24px;
+            padding: 50px 30px;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 80px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .booking-cta-section h2 {
+            font-size: clamp(1.8rem, 3.5vw, 2.4rem);
             font-weight: 800;
             margin-bottom: 14px;
         }
 
-        .cta-banner-box p {
-            font-size: 1.05rem;
-            color: #cbd5e1;
-            margin-bottom: 30px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
+        .booking-cta-section h2 span {
+            color: #F5C518;
         }
 
-        .cta-banner-btns {
+        .booking-cta-section p {
+            color: #cbd5e1;
+            font-size: 1.05rem;
+            max-width: 600px;
+            margin: 0 auto 28px;
+        }
+
+        .cta-action-btns {
             display: flex;
             gap: 16px;
             justify-content: center;
@@ -507,68 +560,45 @@
         .btn-gold-pill {
             background: #F5C518;
             color: #2C2C2C;
-            padding: 14px 34px;
-            border-radius: 30px;
-            font-weight: 700;
-            font-size: 1rem;
+            font-weight: 800;
+            padding: 14px 30px;
+            border-radius: 999px;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
 
         .btn-gold-pill:hover {
-            background: #e6b800;
+            background: #e5b610;
             transform: translateY(-2px);
         }
 
-        .btn-wa-pill {
-            background: transparent;
+        .btn-call-outline {
+            border: 2px solid #ffffff;
             color: #ffffff;
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            padding: 14px 32px;
-            border-radius: 30px;
             font-weight: 700;
-            font-size: 1rem;
+            padding: 14px 28px;
+            border-radius: 999px;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
 
-        .btn-wa-pill:hover {
-            border-color: #25D366;
-            color: #25D366;
-            background: rgba(37, 211, 102, 0.1);
+        .btn-call-outline:hover {
+            background: #ffffff;
+            color: #2C2C2C;
         }
 
-        @media (max-width: 900px) {
-            .hero-grid { grid-template-columns: 1fr; }
-            .pillars-grid { grid-template-columns: 1fr 1fr; }
-        }
-
-        @media (max-width: 600px) {
-            .hero { padding: clamp(35px, 6vw, 55px) 16px 35px; }
-            .pillars-grid { grid-template-columns: 1fr; }
-            .cta-banner-box { padding: clamp(30px, 5vw, 40px) 16px; }
-            .services-section { padding: clamp(40px, 6vw, 60px) 0; }
-            .process-section { padding: clamp(40px, 6vw, 60px) 0; }
-        }
-
-        @media (max-width: 480px) {
-            .hero-btns a,
-            .cta-banner-btns a {
-                width: 100%;
-                box-sizing: border-box;
-                text-align: center;
-                min-height: 48px;
-                justify-content: center;
+        @media (max-width: 768px) {
+            .treatments-grid {
+                grid-template-columns: 1fr;
             }
-            .hero-badge {
-                font-size: 0.8rem;
-                padding: 6px 14px;
+            .booking-cta-section {
+                padding: 36px 20px;
             }
         }
     </style>
@@ -577,339 +607,174 @@
 <body>
     {% include 'shared/navbar.html' %}
 
-    <!-- HERO -->
-    <header class="hero">
-        <div class="hero-grid">
-            <div>
-                <div class="hero-badge">
-                    <i class="fas fa-stethoscope"></i> Specialized Clinical Rehabilitation
-                </div>
-                <h1 class="hero-headline">
-                    Restore Mobility.<br>
-                    <span class="accent">Target The Root Cause.</span>
-                </h1>
-                <p class="hero-desc">
-                    Dr. Dhvani Patalia Physio Rehab provides evidence-based physiotherapy, chiropractic alignment, and structured recovery programs tailored to your daily life in Jamnagar.
-                </p>
-                <div class="hero-btns">
-                    <a href="{% url 'book_appointment' %}" class="btn-dark">
-                        <i class="fas fa-calendar-check"></i> Book An Appointment
-                    </a>
-                    <a href="#clinical-services" class="btn-outline">
-                        <i class="fas fa-list-ul"></i> Explore Services
-                    </a>
-                </div>
-            </div>
-
-            <!-- Clinical Care Pillars -->
-            <div class="pillars-grid">
-                <div class="pillar-card">
-                    <i class="fas fa-user-md"></i>
-                    <h4>Certified Chiropractor</h4>
-                    <p>Skilled in spinal mobilization and neuromuscular techniques.</p>
-                </div>
-                <div class="pillar-card">
-                    <i class="fas fa-search"></i>
-                    <h4>Root Cause Assessment</h4>
-                    <p>Focusing on underlying biomechanical dysfunctions, not just symptoms.</p>
-                </div>
-                <div class="pillar-card">
-                    <i class="fas fa-clipboard-check"></i>
-                    <h4>Customized Plans</h4>
-                    <p>Individualized treatment protocols matched to patient mobility goals.</p>
-                </div>
-                <div class="pillar-card">
-                    <i class="fas fa-hands-helping"></i>
-                    <h4>One-to-One Care</h4>
-                    <p>Dedicated clinical guidance and supportive recovery monitoring.</p>
-                </div>
-            </div>
+    <!-- HERO SECTION -->
+    <header class="treatments-hero">
+        <div class="hero-badge">
+            <i class="fas fa-stethoscope"></i> Specialized Physiotherapy &amp; Rehabilitation
         </div>
+        <h1 class="hero-title">
+            Evidence-Based <span>Treatments</span>
+        </h1>
+        <p class="hero-subtitle">
+            Personalized recovery plans and certified chiropractic realignment targeting the root cause of acute and chronic musculoskeletal conditions in Jamnagar.
+        </p>
+
+        <!-- Search Bar -->
+        <form method="GET" action="{% url 'services' %}" class="search-controls-bar" id="treatmentSearchForm">
+            {% if active_category_slug and active_category_slug != 'all' %}
+                <input type="hidden" name="category" value="{{ active_category_slug }}">
+            {% endif %}
+            <div class="search-box-wrap">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input type="text"
+                       name="q"
+                       id="treatmentSearchInput"
+                       class="search-input"
+                       placeholder="Search treatments, conditions, or symptoms (e.g. Back Pain, Sciatica)..."
+                       value="{{ search_query }}"
+                       aria-label="Search clinical treatments">
+                <button type="submit" class="search-submit-btn">Search</button>
+            </div>
+        </form>
     </header>
 
-    <!-- SERVICES CARDS -->
-    <section class="services-section" id="clinical-services">
-        <div class="container">
-            <div class="section-header">
-                <h2>Clinical <span>Services</span></h2>
-                <p>Specialized treatments tailored to eliminate pain, recover motor function, and improve posture</p>
-            </div>
+    <main class="container">
+        <!-- CATEGORY CHIPS BAR (Matching Reference Screenshot Design) -->
+        <section class="category-chips-section" aria-label="Treatment Categories">
+            <div class="chips-scroll-container" id="categoryChipsBar" role="tablist">
+                <!-- All Treatments Pill -->
+                <a href="{% url 'services' %}{% if search_query %}?q={{ search_query }}{% endif %}"
+                   class="treatment-chip {% if active_category_slug == 'all' or not active_category_slug %}active{% endif %}"
+                   role="tab"
+                   aria-selected="{% if active_category_slug == 'all' or not active_category_slug %}true{% else %}false{% endif %}"
+                   data-category="all">
+                    <span>All Treatments</span>
+                    <span class="chip-count">{{ total_treatments_count }}</span>
+                </a>
 
-            <div class="services-cards-grid">
-                <!-- 1. Pain Management -->
-                <div class="service-box">
-                    <div>
-                        <div class="service-icon-wrap"><i class="fas fa-shield-alt"></i></div>
-                        <h3>Pain Management</h3>
-                        <p class="service-desc">Targeted therapeutic solutions for acute and chronic neck, back, knee, and joint pain utilizing advanced manual therapy and corrective exercises.</p>
-                        <div class="service-tags">
-                            <span class="service-tag">Neck Pain</span>
-                            <span class="service-tag">Back Pain</span>
-                            <span class="service-tag">Sciatica</span>
-                            <span class="service-tag">Knee Pain</span>
-                        </div>
-                        <div class="service-detail-collapse" id="detail-1">
-                            Comprehensive assessment identifies muscular imbalances and joint restrictions. Treatments incorporate manual joint mobilization, soft tissue release, and ergonomic education for long-term symptom relief.
-                        </div>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-learn-more" onclick="toggleDetail('detail-1')">
-                            Learn More <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <a href="{% url 'book_appointment' %}" class="btn-book-cta">Book Appointment</a>
-                    </div>
-                </div>
-
-                <!-- 2. Frozen Shoulder -->
-                <div class="service-box">
-                    <div>
-                        <div class="service-icon-wrap"><i class="fas fa-bone"></i></div>
-                        <h3>Frozen Shoulder Rehab</h3>
-                        <p class="service-desc">Graded mobilization and therapeutic stretching protocols designed to systematically restore shoulder joint range of motion and relieve stiffness.</p>
-                        <div class="service-tags">
-                            <span class="service-tag">Frozen Shoulder</span>
-                            <span class="service-tag">Shoulder Stiffness</span>
-                            <span class="service-tag">Rotator Cuff Care</span>
-                        </div>
-                        <div class="service-detail-collapse" id="detail-2">
-                            Phase-by-phase recovery focused on pain reduction, capsular stretching, strengthening peri-scapular muscles, and restoring daily functional arm reach.
-                        </div>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-learn-more" onclick="toggleDetail('detail-2')">
-                            Learn More <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <a href="{% url 'book_appointment' %}" class="btn-book-cta">Book Appointment</a>
-                    </div>
-                </div>
-
-                <!-- 3. Spine & Posture -->
-                <div class="service-box">
-                    <div>
-                        <div class="service-icon-wrap"><i class="fas fa-heartbeat"></i></div>
-                        <h3>Spine &amp; Posture Care</h3>
-                        <p class="service-desc">Specialized chiropractic alignment, cervical and lumbar spondylosis rehabilitation, and postural re-education to alleviate nerve compression.</p>
-                        <div class="service-tags">
-                            <span class="service-tag">Cervical Spondylosis</span>
-                            <span class="service-tag">Lumbar Spondylosis</span>
-                            <span class="service-tag">Posture Correction</span>
-                        </div>
-                        <div class="service-detail-collapse" id="detail-3">
-                            Focuses on spinal decompressive exercises, core stability activation, and ergonomic posture modifications to reduce disc strain and prevent recurring episodes.
-                        </div>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-learn-more" onclick="toggleDetail('detail-3')">
-                            Learn More <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <a href="{% url 'book_appointment' %}" class="btn-book-cta">Book Appointment</a>
-                    </div>
-                </div>
-
-                <!-- 4. Sports Rehabilitation -->
-                <div class="service-box">
-                    <div>
-                        <div class="service-icon-wrap"><i class="fas fa-running"></i></div>
-                        <h3>Sports &amp; Orthopaedic Rehab</h3>
-                        <p class="service-desc">Structured rehabilitation protocols for athletes and active individuals recovering from ligament sprains, meniscus tears, or orthopedic surgeries.</p>
-                        <div class="service-tags">
-                            <span class="service-tag">Ligament Injury</span>
-                            <span class="service-tag">ACL Rehab</span>
-                            <span class="service-tag">Post-Surgery Care</span>
-                        </div>
-                        <div class="service-detail-collapse" id="detail-4">
-                            Progressive conditioning restoring strength, proprioception, and agility. Safe return-to-sport testing minimizes risk of re-injury.
-                        </div>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-learn-more" onclick="toggleDetail('detail-4')">
-                            Learn More <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <a href="{% url 'book_appointment' %}" class="btn-book-cta">Book Appointment</a>
-                    </div>
-                </div>
-
-                <!-- 5. Neurological Physiotherapy -->
-                <div class="service-box">
-                    <div>
-                        <div class="service-icon-wrap"><i class="fas fa-brain"></i></div>
-                        <h3>Neurological Physiotherapy</h3>
-                        <p class="service-desc">Evidence-based neurological rehabilitation facilitating neuroplasticity, gait training, and motor recovery following stroke or neurological events.</p>
-                        <div class="service-tags">
-                            <span class="service-tag">Stroke Rehab</span>
-                            <span class="service-tag">Paralysis Care</span>
-                            <span class="service-tag">Balance Training</span>
-                        </div>
-                        <div class="service-detail-collapse" id="detail-5">
-                            Individualized functional tasks rebuild muscle tone, coordination, and equilibrium to help patients maximize independence in daily activities.
-                        </div>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-learn-more" onclick="toggleDetail('detail-5')">
-                            Learn More <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <a href="{% url 'book_appointment' %}" class="btn-book-cta">Book Appointment</a>
-                    </div>
-                </div>
-
-                <!-- 6. Women's Health -->
-                <div class="service-box">
-                    <div>
-                        <div class="service-icon-wrap"><i class="fas fa-female"></i></div>
-                        <h3>Women's Health</h3>
-                        <p class="service-desc">Specialized physiotherapy programs focused on antenatal and postpartum recovery, core reconditioning, and musculoskeletal pelvic health.</p>
-                        <div class="service-tags">
-                            <span class="service-tag">Pregnancy Physio</span>
-                            <span class="service-tag">Postpartum Recovery</span>
-                            <span class="service-tag">Core Health</span>
-                        </div>
-                        <div class="service-detail-collapse" id="detail-6">
-                            Gentle, customized exercise regimens designed to ease pregnancy-related pelvic girdle discomfort and assist safe postnatal strength rebuilding.
-                        </div>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-learn-more" onclick="toggleDetail('detail-6')">
-                            Learn More <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <a href="{% url 'book_appointment' %}" class="btn-book-cta">Book Appointment</a>
-                    </div>
-                </div>
-
-                <!-- 7. Advanced Clinical Modalities -->
-                <div class="service-box">
-                    <div>
-                        <div class="service-icon-wrap"><i class="fas fa-bolt"></i></div>
-                        <h3>Advanced Clinical Modalities</h3>
-                        <p class="service-desc">Integrative physical therapies including dry needling, cupping therapy, kinesiology taping, electrotherapy, and ultrasound for accelerated tissue healing.</p>
-                        <div class="service-tags">
-                            <span class="service-tag">Dry Needling</span>
-                            <span class="service-tag">Cupping Therapy</span>
-                            <span class="service-tag">Taping &amp; TENS</span>
-                        </div>
-                        <div class="service-detail-collapse" id="detail-7">
-                            Applied selectively based on clinical indications to reduce hypertonic trigger points, improve local circulation, and alleviate deep muscle spasms.
-                        </div>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-learn-more" onclick="toggleDetail('detail-7')">
-                            Learn More <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <a href="{% url 'book_appointment' %}" class="btn-book-cta">Book Appointment</a>
-                    </div>
-                </div>
-
-                <!-- 8. Pediatric Therapy -->
-                <div class="service-box">
-                    <div>
-                        <div class="service-icon-wrap"><i class="fas fa-child"></i></div>
-                        <h3>Pediatric Physiotherapy</h3>
-                        <p class="service-desc">Developmentally focused physiotherapy helping children attain key gross motor milestones, improve posture, and enhance functional movement.</p>
-                        <div class="service-tags">
-                            <span class="service-tag">Motor Milestones</span>
-                            <span class="service-tag">Postural Balance</span>
-                            <span class="service-tag">Gentle Therapy</span>
-                        </div>
-                        <div class="service-detail-collapse" id="detail-8">
-                            Play-informed exercise routines designed to improve coordination, muscular flexibility, and stability in a friendly, supportive environment.
-                        </div>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-learn-more" onclick="toggleDetail('detail-8')">
-                            Learn More <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <a href="{% url 'book_appointment' %}" class="btn-book-cta">Book Appointment</a>
-                    </div>
-                </div>
-
-                <!-- 9. Home Visit Care -->
-                <div class="service-box">
-                    <div>
-                        <div class="service-icon-wrap"><i class="fas fa-home"></i></div>
-                        <h3>Home Visit Care</h3>
-                        <p class="service-desc">Dedicated in-home clinical physiotherapy visits arranged by appointment for elderly patients and individuals unable to commute to the clinic.</p>
-                        <div class="service-tags">
-                            <span class="service-tag">Home Care</span>
-                            <span class="service-tag">Elderly Mobility</span>
-                            <span class="service-tag">By Appointment</span>
-                        </div>
-                        <div class="service-detail-collapse" id="detail-9">
-                            Bringing professional rehabilitation tools and guidance to the comfort of the patient's home, ensuring consistent recovery without travel strain.
-                        </div>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-learn-more" onclick="toggleDetail('detail-9')">
-                            Learn More <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <a href="{% url 'book_appointment' %}" class="btn-book-cta">Book Appointment</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- REHABILITATION PROCESS -->
-    <section class="process-section">
-        <div class="container">
-            <div class="section-header">
-                <h2>Clinical <span>Care Pathway</span></h2>
-                <p>A systematic, transparent process to guide your journey from assessment to lasting mobility</p>
-            </div>
-
-            <div class="process-grid">
-                <div class="process-card">
-                    <div class="process-step-num">1</div>
-                    <h4>Initial Consultation</h4>
-                    <p>Thorough history intake, postural examination, and range of motion assessment.</p>
-                </div>
-                <div class="process-card">
-                    <div class="process-step-num">2</div>
-                    <h4>Root-Cause Diagnosis</h4>
-                    <p>Identifying the biomechanical origin of pain to formulate a targeted treatment plan.</p>
-                </div>
-                <div class="process-card">
-                    <div class="process-step-num">3</div>
-                    <h4>Active Therapy</h4>
-                    <p>Chiropractic alignment, manual joint mobilization, and guided therapeutic exercises.</p>
-                </div>
-                <div class="process-card">
-                    <div class="process-step-num">4</div>
-                    <h4>Self-Care &amp; Prevention</h4>
-                    <p>Home exercise prescription and ergonomic guidance to maintain ongoing recovery.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA BANNER -->
-    <section class="cta-banner-section">
-        <div class="container">
-            <div class="cta-banner-box">
-                <h2>Ready to Start Your Recovery Journey?</h2>
-                <p>Book your clinical session with Dr. Dhvani Patalia Physio Rehab today.</p>
-                <div class="cta-banner-btns">
-                    <a href="{% url 'book_appointment' %}" class="btn-gold-pill">
-                        <i class="fas fa-calendar-check"></i> Book An Appointment
+                <!-- Dynamic Category Pills -->
+                {% for cat in categories %}
+                    <a href="{% url 'services' %}?category={{ cat.slug }}{% if search_query %}&q={{ search_query }}{% endif %}"
+                       class="treatment-chip {% if active_category_slug == cat.slug %}active{% endif %}"
+                       role="tab"
+                       aria-selected="{% if active_category_slug == cat.slug %}true{% else %}false{% endif %}"
+                       data-category="{{ cat.slug }}">
+                        {% if cat.icon %}<i class="{{ cat.icon }}"></i>{% endif %}
+                        <span>{{ cat.name }}</span>
+                        {% if cat.active_treatments_count %}
+                            <span class="chip-count">{{ cat.active_treatments_count }}</span>
+                        {% endif %}
                     </a>
-                    <a href="https://wa.me/919409510501" target="_blank" rel="noopener noreferrer" class="btn-wa-pill">
-                        <i class="fab fa-whatsapp"></i> Chat on WhatsApp (94095 10501)
-                    </a>
-                </div>
+                {% endfor %}
             </div>
+        </section>
+
+        <!-- RESULTS COUNT & STATUS -->
+        <div class="results-meta-row">
+            <div>
+                Showing <strong>{{ displayed_count }}</strong> of <strong>{{ total_treatments_count }}</strong> clinical treatments
+                {% if active_category %}
+                    in <strong>{{ active_category.name }}</strong>
+                {% endif %}
+                {% if search_query %}
+                    for "<strong>{{ search_query }}</strong>"
+                {% endif %}
+            </div>
+            {% if active_category or search_query %}
+                <a href="{% url 'services' %}" class="reset-filter-link">
+                    <i class="fas fa-times-circle"></i> Clear Filters
+                </a>
+            {% endif %}
         </div>
-    </section>
+
+        <!-- TREATMENT CARDS GRID -->
+        {% if treatments %}
+            <div class="treatments-grid" id="treatmentsGrid">
+                {% for t in treatments %}
+                <article class="treatment-card" data-category="{{ t.category.slug }}">
+                    <div>
+                        <div class="card-top-meta">
+                            <span class="category-badge">
+                                <i class="fas fa-notes-medical"></i> {{ t.category.name }}
+                            </span>
+                            <span class="duration-badge">
+                                <i class="fas fa-clock"></i> {{ t.duration|default:"45 - 60 Mins" }}
+                            </span>
+                        </div>
+
+                        <h2 class="treatment-name">
+                            <a href="{% url 'treatment_detail' slug=t.slug %}">{{ t.name }}</a>
+                        </h2>
+
+                        <p class="treatment-short-desc">
+                            {{ t.short_description|default:t.full_description|truncatewords:24 }}
+                        </p>
+
+                        <!-- Symptoms Addressed -->
+                        {% if t.symptoms %}
+                            <div class="feature-block-title">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i> Key Symptoms
+                            </div>
+                            <div class="pill-tags-list">
+                                {% for s in t.get_symptoms_list|slice:":4" %}
+                                    <span class="pill-tag">{{ s }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Techniques Used -->
+                        {% if t.techniques %}
+                            <div class="feature-block-title">
+                                <i class="fas fa-hands-helping" style="color: #d49e00;"></i> Clinical Modalities
+                            </div>
+                            <div class="pill-tags-list">
+                                {% for tech in t.get_techniques_list|slice:":4" %}
+                                    <span class="pill-tag tech">{{ tech }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="card-actions-row">
+                        <a href="{% url 'treatment_detail' slug=t.slug %}" class="btn-view-treatment">
+                            Treatment Details <i class="fas fa-arrow-right"></i>
+                        </a>
+                        <a href="{% url 'book_appointment' %}" class="btn-card-book">
+                            <i class="fas fa-calendar-check"></i> Book Now
+                        </a>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- EMPTY STATE -->
+            <div class="empty-treatments-state">
+                <i class="fas fa-search-minus empty-icon"></i>
+                <h3>No Treatments Found</h3>
+                <p>We couldn't find treatments matching your current search or category filter. Try clearing your search query or selecting "All Treatments".</p>
+                <a href="{% url 'services' %}" class="btn-gold-pill">
+                    <i class="fas fa-redo"></i> Reset Filter &amp; View All Treatments
+                </a>
+            </div>
+        {% endif %}
+
+        <!-- CALL TO ACTION BANNER -->
+        <section class="booking-cta-section">
+            <h2>Need Personalized Clinical Guidance?</h2>
+            <p>Consult with Dr. Dhvani Patalia for an in-depth musculoskeletal assessment and a tailored treatment plan designed for your lifestyle.</p>
+            <div class="cta-action-btns">
+                <a href="{% url 'book_appointment' %}" class="btn-gold-pill">
+                    <i class="fas fa-calendar-alt"></i> Schedule Your Consultation
+                </a>
+                <a href="tel:9409510501" class="btn-call-outline">
+                    <i class="fas fa-phone-alt"></i> Call +91 94095 10501
+                </a>
+            </div>
+        </section>
+    </main>
 
     {% include 'shared/footer.html' %}
     <script src="{% static 'js/layout.js' %}" defer></script>
-    <script>
-        function toggleDetail(id) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            if (el.style.display === 'block') {
-                el.style.display = 'none';
-            } else {
-                el.style.display = 'block';
-            }
-        }
-    </script>
 </body>
+
 </html>

@@ -1,0 +1,581 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo_title }}</title>
+    <meta name="description" content="{{ seo_description }}">
+    <link rel="canonical" href="{{ canonical_url }}">
+
+    <!-- Open Graph Metadata -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Dr. Dhvani Patalia Physio Rehab">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:title" content="{{ seo_title }}">
+    <meta property="og:description" content="{{ seo_description }}">
+    <meta property="og:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}">
+    <meta property="og:locale" content="en_IN">
+
+    <!-- Twitter Card Metadata -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo_title }}">
+    <meta name="twitter:description" content="{{ seo_description }}">
+    <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+
+    <!-- Preconnect CDNs & Fonts -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Schema.org JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "{{ canonical_base }}/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Treatments",
+              "item": "{{ canonical_base }}/services/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "{{ treatment.name|escapejs }}",
+              "item": "{{ canonical_url }}"
+            }
+          ]
+        },
+        {
+          "@type": "MedicalProcedure",
+          "name": "{{ treatment.name|escapejs }}",
+          "description": "{{ treatment.short_description|escapejs }}",
+          "procedureType": "NoninvasiveProcedure",
+          "howPerformed": "{{ treatment.techniques|escapejs }}",
+          "url": "{{ canonical_url }}",
+          "provider": {
+            "@type": ["MedicalClinic", "MedicalBusiness"],
+            "name": "{{ clinic_nap.name|default:'Dr. Dhvani Patalia Physio Rehab' }}",
+            "telephone": "{{ clinic_nap.phone|default:'+919409510501' }}",
+            "url": "{{ canonical_base }}/",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "{{ clinic_nap.street_address|default:'Sheetal Guest House Building, Bedi Rd, opp. New Super Medical' }}",
+              "addressLocality": "{{ clinic_nap.locality|default:'Jamnagar' }}",
+              "addressRegion": "{{ clinic_nap.region|default:'Gujarat' }}",
+              "postalCode": "{{ clinic_nap.postal_code|default:'361006' }}",
+              "addressCountry": "IN"
+            }
+          }
+        }
+      ]
+    }
+    </script>
+
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #fafaf9;
+            color: #2C2C2C;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ── BREADCRUMBS ── */
+        .breadcrumbs-nav {
+            padding: 24px 0 12px;
+            font-size: 0.88rem;
+            color: #64748b;
+        }
+
+        .breadcrumbs-nav a {
+            color: #475569;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .breadcrumbs-nav a:hover {
+            color: #d49e00;
+        }
+
+        .breadcrumbs-nav .separator {
+            margin: 0 8px;
+            color: #cbd5e1;
+        }
+
+        .breadcrumbs-nav .current {
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        /* ── TREATMENT HERO ── */
+        .detail-hero {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 24px;
+            padding: 44px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            border-left: 6px solid #F5C518;
+        }
+
+        .detail-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .detail-category-badge {
+            background: rgba(245, 197, 24, 0.15);
+            color: #997400;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(245, 197, 24, 0.35);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detail-time-badge {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detail-headline {
+            font-size: clamp(2rem, 3.8vw, 3rem);
+            font-weight: 800;
+            line-height: 1.2;
+            color: #1e293b;
+            margin-bottom: 20px;
+        }
+
+        .detail-lead-desc {
+            font-size: 1.12rem;
+            color: #475569;
+            line-height: 1.7;
+            margin-bottom: 30px;
+        }
+
+        .detail-hero-actions {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn-gold-action {
+            background: #F5C518;
+            color: #2C2C2C;
+            font-weight: 800;
+            padding: 13px 26px;
+            border-radius: 12px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-gold-action:hover {
+            background: #e5b610;
+            transform: translateY(-2px);
+        }
+
+        .btn-back-services {
+            background: #f1f5f9;
+            color: #334155;
+            font-weight: 700;
+            padding: 13px 22px;
+            border-radius: 12px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-back-services:hover {
+            background: #e2e8f0;
+        }
+
+        /* ── DETAIL CONTENT SECTION ── */
+        .detail-body-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 36px;
+            margin-bottom: 60px;
+        }
+
+        .content-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 34px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.02);
+            margin-bottom: 28px;
+        }
+
+        .content-card h2 {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .content-card h2 i {
+            color: #d49e00;
+            font-size: 1.25rem;
+        }
+
+        .text-body {
+            font-size: 1rem;
+            color: #334155;
+            line-height: 1.75;
+        }
+
+        .checklist-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .checklist-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .checklist-item i {
+            color: #10b981;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+
+        /* Sidebar Cards */
+        .sidebar-sticky {
+            position: sticky;
+            top: 100px;
+        }
+
+        .clinic-summary-box {
+            background: #1e293b;
+            color: #ffffff;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+
+        .clinic-summary-box h3 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #F5C518;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .clinic-info-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            margin-bottom: 24px;
+        }
+
+        .clinic-info-list li {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .clinic-info-list i {
+            color: #F5C518;
+            margin-top: 4px;
+        }
+
+        .btn-sidebar-book {
+            width: 100%;
+            background: #F5C518;
+            color: #1e293b;
+            font-weight: 800;
+            padding: 12px 20px;
+            border-radius: 12px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-sidebar-book:hover {
+            background: #e5b610;
+        }
+
+        .related-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 24px;
+        }
+
+        .related-card h4 {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 14px;
+        }
+
+        .related-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .related-item-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #1e293b;
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .related-item-link:hover {
+            background: #fffdf5;
+            color: #d49e00;
+            border-color: #F5C518;
+        }
+
+        @media (max-width: 850px) {
+            .detail-body-grid {
+                grid-template-columns: 1fr;
+            }
+            .checklist-grid {
+                grid-template-columns: 1fr;
+            }
+            .detail-hero {
+                padding: 28px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    {% include 'shared/navbar.html' %}
+
+    <main class="container">
+        <!-- BREADCRUMBS -->
+        <nav class="breadcrumbs-nav" aria-label="Breadcrumb">
+            <a href="{% url 'home' %}"><i class="fas fa-home"></i> Home</a>
+            <span class="separator">/</span>
+            <a href="{% url 'services' %}">Treatments</a>
+            <span class="separator">/</span>
+            <a href="{% url 'services' %}?category={{ category.slug }}">{{ category.name }}</a>
+            <span class="separator">/</span>
+            <span class="current">{{ treatment.name }}</span>
+        </nav>
+
+        <!-- TREATMENT HERO -->
+        <article class="detail-hero">
+            <div class="detail-meta-row">
+                <span class="detail-category-badge">
+                    <i class="fas fa-notes-medical"></i> {{ category.name }}
+                </span>
+                <span class="detail-time-badge">
+                    <i class="fas fa-clock"></i> Typical Session: {{ treatment.duration|default:"45 - 60 Mins" }}
+                </span>
+            </div>
+
+            <h1 class="detail-headline">{{ treatment.name }}</h1>
+
+            <p class="detail-lead-desc">
+                {{ treatment.short_description|default:treatment.full_description|truncatewords:45 }}
+            </p>
+
+            <div class="detail-hero-actions">
+                <a href="{% url 'book_appointment' %}" class="btn-gold-action">
+                    <i class="fas fa-calendar-check"></i> Book Consultation For This Treatment
+                </a>
+                <a href="{% url 'services' %}" class="btn-back-services">
+                    <i class="fas fa-arrow-left"></i> All Treatments
+                </a>
+            </div>
+        </article>
+
+        <!-- DETAIL BODY GRID -->
+        <div class="detail-body-grid">
+            <div class="main-content-col">
+                <!-- Clinical Description -->
+                <section class="content-card">
+                    <h2><i class="fas fa-stethoscope"></i> Clinical Overview</h2>
+                    <div class="text-body">
+                        {{ treatment.full_description|linebreaks }}
+                    </div>
+                </section>
+
+                <!-- Symptoms Addressed -->
+                {% if treatment.symptoms %}
+                <section class="content-card">
+                    <h2><i class="fas fa-bullseye"></i> Symptoms &amp; Conditions Addressed</h2>
+                    <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 14px;">
+                        This specialized protocol is clinically indicated if you experience:
+                    </p>
+                    <div class="checklist-grid">
+                        {% for symptom in treatment.get_symptoms_list %}
+                            <div class="checklist-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>{{ symptom }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+
+                <!-- Techniques & Modalities -->
+                {% if treatment.techniques %}
+                <section class="content-card">
+                    <h2><i class="fas fa-hands-helping"></i> Specialized Modalities &amp; Techniques</h2>
+                    <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 14px;">
+                        Evidence-based clinical techniques utilized by Dr. Dhvani Patalia:
+                    </p>
+                    <div class="checklist-grid">
+                        {% for tech in treatment.get_techniques_list %}
+                            <div class="checklist-item">
+                                <i class="fas fa-plus-circle" style="color: #d49e00;"></i>
+                                <span>{{ tech }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+
+                <!-- Treatment Reviews -->
+                {% if treatment_reviews %}
+                <section class="content-card">
+                    <h2><i class="fas fa-star" style="color:#F5C518;"></i> Patient Testimonials for {{ treatment.name }}</h2>
+                    <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 14px;">
+                        {% for tr in treatment_reviews %}
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <strong style="color: #1e293b;">{{ tr.reviewer_name }}</strong>
+                                <span style="color: #F5C518;">
+                                    {% for i in "12345" %}{% if forloop.counter <= tr.rating %}★{% else %}☆{% endif %}{% endfor %}
+                                </span>
+                            </div>
+                            <p style="color: #475569; font-style: italic; font-size: 0.92rem; margin: 0;">“{{ tr.message }}”</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+            </div>
+
+            <!-- SIDEBAR -->
+            <aside class="sidebar-col">
+                <div class="sidebar-sticky">
+                    <div class="clinic-summary-box">
+                        <h3><i class="fas fa-clinic-medical"></i> Clinic Details</h3>
+                        <ul class="clinic-info-list">
+                            <li>
+                                <i class="fas fa-user-md"></i>
+                                <span><strong>Dr. Dhvani Patalia</strong><br>B.P.T, Certified Chiropractor</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>Sheetal Guest House Building, Bedi Rd, opp. New Super Medical, Jamnagar</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-phone-alt"></i>
+                                <span>+91 94095 10501</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-clock"></i>
+                                <span>Mon - Sat: 10AM - 1PM &amp; 4PM - 8PM</span>
+                            </li>
+                        </ul>
+                        <a href="{% url 'book_appointment' %}" class="btn-sidebar-book">
+                            <i class="fas fa-calendar-check"></i> Book An Appointment
+                        </a>
+                    </div>
+
+                    {% if related_treatments %}
+                    <div class="related-card">
+                        <h4>Related Treatments</h4>
+                        <ul class="related-list">
+                            {% for rel in related_treatments %}
+                            <li>
+                                <a href="{% url 'treatment_detail' slug=rel.slug %}" class="related-item-link">
+                                    <span>{{ rel.name }}</span>
+                                    <i class="fas fa-chevron-right" style="font-size: 0.75rem; color: #94a3b8;"></i>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    {% include 'shared/footer.html' %}
+    <script src="{% static 'js/layout.js' %}" defer></script>
+</body>
+
+</html>
