@@ -948,9 +948,22 @@ class Review(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["is_approved", "-created_at"]),
+        ]
 
     def __str__(self):
         return f"{self.reviewer_name} — {self.rating}★"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete("public_homepage_approved_reviews_v1")
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete("public_homepage_approved_reviews_v1")
 
 
 class PaymentRecord(models.Model):

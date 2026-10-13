@@ -138,9 +138,15 @@ def is_online(user):
 
 
 def home(request):
-    approved_reviews = Review.objects.filter(is_approved=True).order_by("-created_at")[
-        :8
-    ]
+    reviews_cache_key = "public_homepage_approved_reviews_v1"
+    approved_reviews = cache.get(reviews_cache_key)
+    if approved_reviews is None:
+        approved_reviews = list(
+            Review.objects.filter(is_approved=True)
+            .order_by("-created_at")[:8]
+        )
+        cache.set(reviews_cache_key, approved_reviews, timeout=300)
+
     return render(request, "public/home.html", {"approved_reviews": approved_reviews})
 
 
