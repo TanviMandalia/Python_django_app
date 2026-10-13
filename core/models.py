@@ -1476,4 +1476,171 @@ class InboundEmail(models.Model):
         ordering = ["-received_at"]
 
     def __str__(self):
-        return f"[{self.status}] {self.sender} -> {self.recipient}: {self.subject[:30]}"
+        return f"[{self.status}] {self.sender} -> {self.recipient}: {self.subject[:30]}"
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# SECURE WEBSITE VISITOR ANALYTICS & LEAD MANAGEMENT (SUPER ADMIN EXCLUSIVE)
+# ═════════════════════════════════════════════════════════════════════════════
+
+class VisitorSession(models.Model):
+    """
+    Privacy-conscious anonymous session for marketing/public website analytics.
+    Uses an ephemeral cryptographically random session token (no IP or invasive fingerprinting).
+    """
+    DEVICE_CHOICES = [
+        ("desktop", "Desktop"),
+        ("mobile", "Mobile"),
+        ("tablet", "Tablet"),
+        ("bot", "Bot / Crawler"),
+        ("unknown", "Unknown"),
+    ]
+    REFERRER_CHOICES = [
+        ("direct", "Direct"),
+        ("search", "Organic Search"),
+        ("social", "Social Media"),
+        ("referral", "Referral Website"),
+        ("campaign", "Marketing Campaign"),
+        ("other", "Other"),
+    ]
+
+    session_key = models.CharField(max_length=64, unique=True, db_index=True)
+    started_at = models.DateTimeField(default=timezone.now, db_index=True)
+    last_activity = models.DateTimeField(default=timezone.now, db_index=True)
+    device_category = models.CharField(max_length=20, choices=DEVICE_CHOICES, default="unknown", db_index=True)
+    browser_family = models.CharField(max_length=50, blank=True)
+    os_family = models.CharField(max_length=50, blank=True)
+    referrer_category = models.CharField(max_length=20, choices=REFERRER_CHOICES, default="direct", db_index=True)
+    referrer_domain = models.CharField(max_length=200, blank=True)
+    entry_page = models.CharField(max_length=200, default="/", db_index=True)
+    exit_page = models.CharField(max_length=200, default="/")
+    total_page_views = models.PositiveIntegerField(default=1)
+    total_active_seconds = models.PositiveIntegerField(default=0, help_text="Estimated active engaged time (paused when tab hidden)")
+    has_converted = models.BooleanField(default=False, db_index=True, help_text="True if visitor voluntarily submitted enquiry")
+    consent_given = models.BooleanField(default=False, help_text="True if visitor accepted analytics tracking")
+
+    class Meta:
+        ordering = ["-last_activity"]
+        indexes = [
+            models.Index(fields=["started_at", "device_category"]),
+            models.Index(fields=["started_at", "referrer_category"]),
+            models.Index(fields=["started_at", "has_converted"]),
+        ]
+
+    def __str__(self):
+        return f"VisitorSession {self.session_key[:8]} ({self.device_category}, {self.total_page_views} views)"
+
+
+class PageViewEvent(models.Model):
+    """
+    Individual public page views and section engagements.
+    Aggregates active reading time without storing PII.
+    """
+    session = models.ForeignKey(VisitorSession, on_delete=models.CASCADE, related_name="page_views")
+    path = models.CharField(max_length=200, db_index=True)
+    page_title = models.CharField(max_length=200, blank=True)
+    section_name = models.CharField(max_length=100, blank=True, help_text="Named section anchor/identifier e.g. #services, #contact")
+    active_seconds = models.PositiveIntegerField(default=0, help_text="Active seconds on this specific page/section")
+    view_count = models.PositiveIntegerField(default=1)
+    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
+        indexes = [
+            models.Index(fields=["path", "timestamp"]),
+        ]
+
+    def __str__(self):
+        return f"{self.path} ({self.active_seconds}s) - {self.timestamp:%Y-%m-%d %H:%M}"
+
+
+class VisitorLead(models.Model):
+    """
+    Voluntarily submitted public marketing enquiries.
+    Stored securely with follow-up tracking for Super Admin.
+    """
+    STATUS_CHOICES = [
+        ("new", "New"),
+        ("contacted", "Contacted"),
+        ("qualified", "Qualified"),
+        ("closed", "Closed"),
+        ("spam", "Spam / Discarded"),
+    ]
+    CATEGORY_CHOICES = [
+        ("General Enquiry", "General Enquiry"),
+        ("Book Appointment", "Book Appointment"),
+        ("Service Information", "Service Information"),
+        ("Home Visit Request", "Home Visit Request"),
+        ("SaaS Partnership", "SaaS / Clinic Partnership"),
+        ("Other", "Other"),
+    ]
+
+    session = models.ForeignKey(VisitorSession, on_delete=models.SET_NULL, null=True, blank=True, related_name="leads")
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100, blank=True)
+    email = models.EmailField(db_index=True)
+    phone = models.CharField(max_length=30, blank=True)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default="General Enquiry", db_index=True)
+    message = models.TextField()
+    source_page = models.CharField(max_length=200, default="/contact/", blank=True)
+    marketing_consent = models.BooleanField(default=False, help_text="Optional consent for marketing communications")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new", db_index=True)
+    admin_notes = models.TextField(blank=True, help_text="Super Admin follow-up notes")
+    contacted_at = models.DateTimeField(null=True, blank=True)
+    submitted_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-submitted_at"]
+
+    def __str__(self):
+        return f"Lead: {self.first_name} {self.last_name} <{self.email}> [{self.status}]"
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}".strip()
+
+
+class AnalyticsAuditLog(models.Model):
+    """
+    Security audit trail for Super Admin access to visitor records, lead details, settings, and exports.
+    """
+    ACTION_CHOICES = [
+        ("view_overview", "Viewed Analytics Overview"),
+        ("view_sessions", "Viewed Visitor Sessions"),
+        ("view_leads", "Viewed Leads List"),
+        ("view_lead_detail", "Viewed Lead Detail"),
+        ("update_lead", "Updated Lead Status/Notes"),
+        ("export_leads", "Exported Leads CSV"),
+        ("update_settings", "Updated Privacy & Retention Settings"),
+        ("purge_data", "Purged Expired Analytics Data"),
+    ]
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=50, choices=ACTION_CHOICES, db_index=True)
+    details = models.TextField(blank=True)
+    ip_address = models.CharField(max_length=50, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Audit {self.action} by {self.user} at {self.created_at:%Y-%m-%d %H:%M:%S}"
+
+
+class AnalyticsSetting(models.Model):
+    """
+    Configurable retention and privacy policies for the SaaS platform.
+    Singleton pattern.
+    """
+    retention_days = models.PositiveIntegerField(default=90, help_text="Days to retain anonymous sessions and pageviews (default 90)")
+    require_consent = models.BooleanField(default=True, help_text="Require explicit consent banner before recording analytics")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def get_settings(cls):
+        setting, _ = cls.objects.get_or_create(id=1, defaults={"retention_days": 90, "require_consent": True})
+        return setting
+
+    def __str__(self):
+        return f"AnalyticsSettings (Retention: {self.retention_days} days, Require Consent: {self.require_consent})"
+

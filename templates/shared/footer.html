@@ -71,9 +71,186 @@
     <div class="footer-bottom">
         <div class="footer-container footer-bottom-inner">
             <p>© 2026 Dr. Dhvani Patalia Physio Rehab. All rights reserved.</p>
+            <div style="font-size: 0.82em; color: #888;">
+                <a href="#privacyNoticeModal" id="openPrivacyModalLink" style="color: #bbb; text-decoration: underline; margin-right: 12px;">Privacy &amp; Cookie Preferences</a>
+                <span>Anonymous active-time analytics (No invasive profiling)</span>
+            </div>
         </div>
     </div>
 </footer>
+
+<!-- ════ PRIVACY & ANALYTICS CONSENT BANNER ════ -->
+<div id="vaConsentBanner" style="display:none; position:fixed; bottom:20px; right:20px; max-width:420px; background:#1e1e2f; color:#fff; padding:20px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.4); z-index:99999; border:1px solid #3b3b54; font-family:system-ui,-apple-system,sans-serif; font-size:14px; line-height:1.5;">
+    <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:12px;">
+        <i class="fas fa-shield-halved" style="color:#F5C518; font-size:22px; margin-top:2px;"></i>
+        <div>
+            <strong style="display:block; font-size:15px; margin-bottom:4px; color:#fff;">Privacy &amp; Analytics Consent</strong>
+            <p style="margin:0; color:#cbd5e1; font-size:13px;">
+                We use privacy-first, anonymous active-reading measurements to improve our clinic website. We do <strong>not</strong> track personal identity, sell data, or store raw IP addresses.
+            </p>
+        </div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
+        <button id="vaDeclineBtn" type="button" style="background:transparent; color:#94a3b8; border:1px solid #475569; padding:7px 14px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500;">
+            Decline
+        </button>
+        <button id="vaAcceptBtn" type="button" style="background:#F5C518; color:#1a1a2e; border:none; padding:7px 18px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:700;">
+            Accept &amp; Continue
+        </button>
+    </div>
+</div>
+
+<!-- ════ PRIVACY-CONSCIOUS ACTIVE TIME ANALYTICS CLIENT ════ -->
+<script>
+(function() {
+    // Only track public marketing pages; never authenticated clinic portals
+    var path = window.location.pathname;
+    if (path.indexOf('/admin') === 0 || path.indexOf('/super-admin') === 0 || path.indexOf('/staff') === 0 || path.indexOf('/client') === 0) {
+        return;
+    }
+
+    var CONSENT_KEY = 'va_consent_choice';
+    var SESSION_KEY = 'va_session';
+
+    function getCookie(name) {
+        var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? match[2] : null;
+    }
+
+    function setCookie(name, value, days) {
+        var d = new Date();
+        d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+        document.cookie = name + '=' + value + ';path=/;SameSite=Lax;' + (location.protocol === 'https:' ? 'Secure;' : '');
+    }
+
+    var consentChoice = localStorage.getItem(CONSENT_KEY);
+    var banner = document.getElementById('vaConsentBanner');
+
+    if (!consentChoice && banner) {
+        banner.style.display = 'block';
+    }
+
+    var acceptBtn = document.getElementById('vaAcceptBtn');
+    var declineBtn = document.getElementById('vaDeclineBtn');
+    var openModalLink = document.getElementById('openPrivacyModalLink');
+
+    if (acceptBtn) {
+        acceptBtn.addEventListener('click', function() {
+            localStorage.setItem(CONSENT_KEY, 'accepted');
+            if (banner) banner.style.display = 'none';
+            initTracker(true);
+        });
+    }
+
+    if (declineBtn) {
+        declineBtn.addEventListener('click', function() {
+            localStorage.setItem(CONSENT_KEY, 'declined');
+            if (banner) banner.style.display = 'none';
+        });
+    }
+
+    if (openModalLink) {
+        openModalLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (banner) banner.style.display = 'block';
+        });
+    }
+
+    if (consentChoice === 'accepted') {
+        initTracker(false);
+    }
+
+    function initTracker(isNewConsent) {
+        var sessionKey = getCookie(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
+        if (!sessionKey) {
+            sessionKey = 'vs_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            setCookie(SESSION_KEY, sessionKey, 30);
+            localStorage.setItem(SESSION_KEY, sessionKey);
+        }
+
+        var activeSeconds = 0;
+        var isVisible = !document.hidden;
+        var timer = null;
+
+        // Active timer increments only when page is foregrounded and active
+        function startActiveTimer() {
+            if (timer) clearInterval(timer);
+            timer = setInterval(function() {
+                if (isVisible && !document.hidden) {
+                    activeSeconds += 1;
+                }
+            }, 1000);
+        }
+
+        startActiveTimer();
+
+        document.addEventListener('visibilitychange', function() {
+            isVisible = !document.hidden;
+            if (document.hidden) {
+                sendPing(false);
+            }
+        });
+
+        // Detect named section in view
+        var currentSection = '';
+        var sections = document.querySelectorAll('section[id], div[id]');
+        if ('IntersectionObserver' in window && sections.length > 0) {
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting && entry.intersectionRatio > 0.4) {
+                        currentSection = '#' + entry.target.id;
+                    }
+                });
+            }, { threshold: 0.4 });
+            sections.forEach(function(sec) { observer.observe(sec); });
+        }
+
+        function sendPing(isUnload) {
+            if (activeSeconds < 2 && !isNewConsent && !isUnload) return;
+            var payload = {
+                session_key: sessionKey,
+                path: path,
+                title: document.title || '',
+                section: currentSection,
+                active_seconds: activeSeconds,
+                referrer: document.referrer || '',
+                consent: true,
+                is_new_page: isNewConsent
+            };
+
+            // Reset active batch count
+            activeSeconds = 0;
+
+            var endpoint = '/api/analytics/track/';
+            if (isUnload && navigator.sendBeacon) {
+                navigator.sendBeacon(endpoint, JSON.stringify(payload));
+            } else {
+                fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    keepalive: true
+                }).catch(function() {});
+            }
+        }
+
+        // Periodic batch ping every 30 seconds
+        setInterval(function() {
+            if (isVisible && activeSeconds >= 5) {
+                sendPing(false);
+            }
+        }, 30000);
+
+        // Ping on unload
+        window.addEventListener('beforeunload', function() {
+            sendPing(true);
+        });
+
+        // Initial hit
+        sendPing(false);
+    }
+})();
+</script>
 
 <style>
     .main-footer {

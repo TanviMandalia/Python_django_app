@@ -59,6 +59,9 @@
       <a href="{% url 'super_admin_analytics' %}" class="nav-item{% if url_name == 'super_admin_analytics' %} active{% endif %}" title="Analytics">
         <i class="fas fa-chart-line"></i> <span>Analytics</span>
       </a>
+      <a href="{% url 'super_admin_visitor_analytics' %}" class="nav-item{% if url_name in 'super_admin_visitor_analytics super_admin_visitor_lead_detail' %} active{% endif %}" title="Website Visitors & Leads">
+        <i class="fas fa-users-viewfinder"></i> <span>Website Visitors</span>
+      </a>
 
       <div class="nav-section">Support & System</div>
       <a href="{% url 'super_admin_support' %}" class="nav-item{% if url_name in 'super_admin_support super_admin_support_reply' %} active{% endif %}" title="Support Tickets">

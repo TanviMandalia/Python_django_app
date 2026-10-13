@@ -439,6 +439,38 @@ urlpatterns = [
     # ── Bulk Import (Excel) ────────────────────────────────────
     path("bulk-import/", views.bulk_import, name="bulk_import"),
     path("bulk-import/template/<str:model_name>/", views.download_import_template, name="download_import_template"),
+    # ── Super Admin Website Visitor Analytics & Lead Management ─
+    path(
+        "super-admin/visitor-analytics/",
+        views.super_admin_visitor_analytics,
+        name="super_admin_visitor_analytics",
+    ),
+    path(
+        "super-admin/visitor-analytics/leads/<int:lead_id>/",
+        views.super_admin_visitor_lead_detail,
+        name="super_admin_visitor_lead_detail",
+    ),
+    path(
+        "super-admin/visitor-analytics/leads/export/",
+        views.super_admin_export_leads_csv,
+        name="super_admin_export_leads_csv",
+    ),
+    path(
+        "super-admin/visitor-analytics/settings/",
+        views.super_admin_analytics_settings,
+        name="super_admin_analytics_settings",
+    ),
+    path(
+        "super-admin/visitor-analytics/purge/",
+        views.super_admin_analytics_purge,
+        name="super_admin_analytics_purge",
+    ),
+    # ── Privacy-Conscious Public Analytics Ingestion API ───────
+    path(
+        "api/analytics/track/",
+        views.api_analytics_track,
+        name="api_analytics_track",
+    ),
     # ── Inbound & Delivery Status Email Webhooks ───────────────
     path("api/email/inbound/", views.api_inbound_email_webhook, name="api_inbound_email_webhook"),
     path("api/email/status-webhook/", views.api_email_status_webhook, name="api_email_status_webhook"),

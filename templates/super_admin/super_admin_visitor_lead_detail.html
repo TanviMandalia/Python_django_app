@@ -1,0 +1,119 @@
+{% extends "super_admin/base_super_admin.html" %}
+{% load static %}
+
+{% block title %}Lead #{{ lead.id }} — {{ lead.full_name }} — Super Admin{% endblock %}
+
+{% block content %}
+<div class="sa-container" style="padding: 24px; max-width: 900px; margin: 0 auto;">
+
+  <!-- Back button -->
+  <div style="margin-bottom: 20px;">
+    <a href="{% url 'super_admin_visitor_analytics' %}" style="display: inline-flex; align-items: center; gap: 6px; color: var(--sa-purple); text-decoration: none; font-size: 0.9rem; font-weight: 600;">
+      <i class="fas fa-arrow-left"></i> Back to Website Visitors &amp; Leads
+    </a>
+  </div>
+
+  <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 28px; box-shadow: var(--sa-shadow-sm);">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--sa-border);">
+      <div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: var(--sa-dark); margin: 0 0 6px 0;">
+          {{ lead.full_name }}
+        </h1>
+        <div style="color: var(--sa-text-muted); font-size: 0.88rem;">
+          Submitted on {{ lead.submitted_at|date:"F d, Y at H:i:s" }} UTC via <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">{{ lead.source_page }}</code>
+        </div>
+      </div>
+
+      <div>
+        {% if lead.status == 'new' %}
+          <span style="background: #e0f2fe; color: #0369a1; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 0.85rem;">New Lead</span>
+        {% elif lead.status == 'contacted' %}
+          <span style="background: #fef3c7; color: #92400e; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 0.85rem;">Contacted</span>
+        {% elif lead.status == 'qualified' %}
+          <span style="background: #d1fae5; color: #065f46; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 0.85rem;">Qualified</span>
+        {% elif lead.status == 'closed' %}
+          <span style="background: #f1f5f9; color: #475569; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 0.85rem;">Closed</span>
+        {% else %}
+          <span style="background: #fee2e2; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 0.85rem;">Spam / Discarded</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Contact & Lead Details -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 24px;">
+      <div style="background: #f8fafc; padding: 14px; border-radius: 8px;">
+        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--sa-text-muted); font-weight: 600; margin-bottom: 4px;">Email Address</div>
+        <div style="font-size: 0.95rem; font-weight: 600; color: var(--sa-dark);">
+          <a href="mailto:{{ lead.email }}" style="color: var(--sa-purple); text-decoration: none;">{{ lead.email }}</a>
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; padding: 14px; border-radius: 8px;">
+        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--sa-text-muted); font-weight: 600; margin-bottom: 4px;">Phone Number</div>
+        <div style="font-size: 0.95rem; font-weight: 600; color: var(--sa-dark);">
+          {% if lead.phone %}{{ lead.phone }}{% else %}<span style="color: var(--sa-text-muted); font-weight: normal;">Not provided</span>{% endif %}
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; padding: 14px; border-radius: 8px;">
+        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--sa-text-muted); font-weight: 600; margin-bottom: 4px;">Enquiry Category</div>
+        <div style="font-size: 0.95rem; font-weight: 600; color: var(--sa-dark);">{{ lead.category }}</div>
+      </div>
+
+      <div style="background: #f8fafc; padding: 14px; border-radius: 8px;">
+        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--sa-text-muted); font-weight: 600; margin-bottom: 4px;">Marketing Opt-in</div>
+        <div style="font-size: 0.95rem; font-weight: 600; color: var(--sa-dark);">
+          {% if lead.marketing_consent %}
+            <span style="color: #059669;"><i class="fas fa-check-circle"></i> Granted</span>
+          {% else %}
+            <span style="color: var(--sa-text-muted); font-weight: normal;">No marketing opt-in</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Enquiry Message (Securely Escaped) -->
+    <div style="margin-bottom: 28px;">
+      <h3 style="font-size: 1rem; font-weight: 700; color: var(--sa-dark); margin-bottom: 8px;">
+        Visitor Message:
+      </h3>
+      <div style="background: #fdfdfd; border: 1px solid var(--sa-border); border-radius: 8px; padding: 18px; font-size: 0.92rem; line-height: 1.6; color: #1e293b; white-space: pre-wrap;">
+        {{ lead.message }}
+      </div>
+    </div>
+
+    <!-- Management Form -->
+    <form method="POST" style="background: #f8fafc; border: 1px solid var(--sa-border); border-radius: 10px; padding: 20px;">
+      {% csrf_token %}
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--sa-dark); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-tasks" style="color: var(--sa-purple);"></i> Update Status &amp; Follow-up Notes
+      </h3>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--sa-dark); margin-bottom: 6px;">Follow-up Status</label>
+        <select name="status" style="width: 100%; max-width: 320px; padding: 8px 12px; border: 1px solid var(--sa-border); border-radius: 6px; font-size: 0.9rem; background: #fff;">
+          <option value="new" {% if lead.status == 'new' %}selected{% endif %}>New</option>
+          <option value="contacted" {% if lead.status == 'contacted' %}selected{% endif %}>Contacted</option>
+          <option value="qualified" {% if lead.status == 'qualified' %}selected{% endif %}>Qualified</option>
+          <option value="closed" {% if lead.status == 'closed' %}selected{% endif %}>Closed</option>
+          <option value="spam" {% if lead.status == 'spam' %}selected{% endif %}>Spam / Discarded</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--sa-dark); margin-bottom: 6px;">Super Admin Internal Notes</label>
+        <textarea name="admin_notes" rows="4" style="width: 100%; padding: 10px; border: 1px solid var(--sa-border); border-radius: 6px; font-size: 0.9rem; font-family: inherit;">{{ lead.admin_notes }}</textarea>
+        <span style="font-size: 0.78rem; color: var(--sa-text-muted);">Confidential internal notes visible only to Platform Super Admins.</span>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <a href="{% url 'super_admin_visitor_analytics' %}" class="btn" style="background: #e2e8f0; color: var(--sa-text); padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.88rem;">Cancel</a>
+        <button type="submit" class="btn" style="background: var(--sa-purple); color: #fff; border: none; padding: 8px 20px; border-radius: 6px; font-size: 0.88rem; font-weight: 600; cursor: pointer;">
+          Save Lead Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

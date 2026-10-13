@@ -877,8 +877,27 @@
                 <textarea name="message" placeholder="Write your message here..." required></textarea>
               </div>
             </div>
+            <input type="hidden" name="va_session" id="id_va_session" value="" />
+            <div class="form-group" style="margin-top: 10px;">
+              <label style="display: flex; align-items: flex-start; gap: 10px; font-weight: normal; font-size: 13.5px; color: #475569; cursor: pointer;">
+                <input type="checkbox" name="marketing_consent" value="1" style="width: auto; min-height: auto; margin-top: 3px;" />
+                <span>(Optional) I consent to receiving clinic updates and health news via email. We never sell your contact info.</span>
+              </label>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-top: 8px; margin-bottom: 16px;">
+              🔒 <em>Privacy Notice:</em> Your contact details are stored securely and used solely to reply to your inquiry. We do not collect medical history through this contact form.
+            </p>
             <button type="submit" class="btn-submit"><i class="fas fa-paper-plane"></i> Send Message</button>
           </form>
+          <script>
+            document.addEventListener("DOMContentLoaded", function() {
+              var m = document.cookie.match(/(^| )va_session=([^;]+)/);
+              if (m) {
+                var el = document.getElementById("id_va_session");
+                if (el) el.value = m[2];
+              }
+            });
+          </script>
         </div>
       </div>
     </div>
