@@ -69,6 +69,7 @@ MIDDLEWARE = [
     "core.middleware.SubscriptionGateMiddleware",
     "core.middleware.PreventBackAfterLogoutMiddleware",
     "core.middleware.SEORobotsTagMiddleware",
+    "core.middleware.PublicVisitorTrackingMiddleware",
 ]
 
 ROOT_URLCONF = "myproject.urls"

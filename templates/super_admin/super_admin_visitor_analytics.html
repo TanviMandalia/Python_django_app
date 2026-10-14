@@ -26,10 +26,15 @@
           <option value="7d" {% if range_filter == '7d' %}selected{% endif %}>Last 7 Days</option>
           <option value="30d" {% if range_filter == '30d' %}selected{% endif %}>Last 30 Days</option>
           <option value="90d" {% if range_filter == '90d' %}selected{% endif %}>Last 90 Days</option>
+          <option value="all" {% if range_filter == 'all' %}selected{% endif %}>All Time</option>
         </select>
-        {% if device_filter %}<input type="hidden" name="device" value="{{ device_filter }}" />{% endif %}
-        {% if referrer_filter %}<input type="hidden" name="referrer" value="{{ referrer_filter }}" />{% endif %}
+        {% if consent_filter %}<input type="hidden" name="consent" value="{{ consent_filter }}" />{% endif %}
+        {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}" />{% endif %}
       </form>
+
+      <a href="{% url 'super_admin_export_visitors_csv' %}?range={{ range_filter }}&consent={{ consent_filter }}&q={{ search_query }}" class="btn" style="background: var(--sa-purple); color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 0.88rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fas fa-file-csv"></i> Export Visitors CSV
+      </a>
 
       <a href="{% url 'super_admin_export_leads_csv' %}" class="btn" style="background: var(--sa-dark); color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 0.88rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
         <i class="fas fa-file-csv"></i> Export Leads CSV
@@ -46,7 +51,7 @@
     <div style="display: flex; align-items: center; gap: 10px;">
       <i class="fas fa-shield-alt" style="font-size: 1.15rem; color: #2563eb;"></i>
       <span>
-        <strong>Privacy Assurance:</strong> Anonymous tracking captures ephemeral tokens and estimated active tab engagement time. No raw IP addresses, patient health records, or personal tracking cookies are collected. Section-level engagement is a mathematical estimate.
+        <strong>Privacy Assurance:</strong> Client IPs are validated via trusted proxy resolution. Anonymous pseudonymous IDs and active engagement times are recorded. IPs reflect network routing and are not verified personal identities. Authenticated Super Admin requests are excluded from all analytics.
       </span>
     </div>
     <span style="font-size: 0.8rem; background: #dbeafe; padding: 4px 10px; border-radius: 6px; font-weight: 600;">
@@ -54,9 +59,33 @@
     </span>
   </div>
 
-  <!-- KPI Overview Cards -->
+  <!-- 8 Required Summary KPI Cards -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 28px;">
-    <!-- Card 1: Visitors Today -->
+    <!-- 1. Total Eligible Page Views -->
+    <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 18px; box-shadow: var(--sa-shadow-sm);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Total Page Views</span>
+        <span style="width: 36px; height: 36px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); color: #059669; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-file-invoice"></i>
+        </span>
+      </div>
+      <div style="font-size: 1.75rem; font-weight: 800; color: var(--sa-dark);">{{ total_page_views }}</div>
+      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Public pages viewed in period</div>
+    </div>
+
+    <!-- 2. Estimated Unique Visitors -->
+    <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 18px; box-shadow: var(--sa-shadow-sm);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Est. Unique Visitors</span>
+        <span style="width: 36px; height: 36px; border-radius: 8px; background: rgba(139, 92, 246, 0.1); color: var(--sa-purple); display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-user-check"></i>
+        </span>
+      </div>
+      <div style="font-size: 1.75rem; font-weight: 800; color: var(--sa-dark);">{{ estimated_unique_visitors }}</div>
+      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Pseudonymous browser estimates</div>
+    </div>
+
+    <!-- 3. Visitors Today -->
     <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 18px; box-shadow: var(--sa-shadow-sm);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Visitors Today</span>
@@ -65,57 +94,72 @@
         </span>
       </div>
       <div style="font-size: 1.75rem; font-weight: 800; color: var(--sa-dark);">{{ visitors_today }}</div>
-      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Unique active sessions today</div>
+      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Active sessions since midnight</div>
     </div>
 
-    <!-- Card 2: Total Period Sessions -->
+    <!-- 4. Visitors Last 7 Days -->
     <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 18px; box-shadow: var(--sa-shadow-sm);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Total Sessions</span>
-        <span style="width: 36px; height: 36px; border-radius: 8px; background: rgba(139, 92, 246, 0.1); color: var(--sa-purple); display: flex; align-items: center; justify-content: center;">
-          <i class="fas fa-users"></i>
+        <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Visitors (7 Days)</span>
+        <span style="width: 36px; height: 36px; border-radius: 8px; background: rgba(14, 165, 233, 0.1); color: #0284c7; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-calendar-week"></i>
         </span>
       </div>
-      <div style="font-size: 1.75rem; font-weight: 800; color: var(--sa-dark);">{{ total_sessions }}</div>
-      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">In selected period ({{ range_filter }})</div>
+      <div style="font-size: 1.75rem; font-weight: 800; color: var(--sa-dark);">{{ visitors_7d }}</div>
+      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Last 7 rolling days</div>
     </div>
 
-    <!-- Card 3: Total Page Views -->
+    <!-- 5. Visitors Last 30 Days -->
     <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 18px; box-shadow: var(--sa-shadow-sm);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Page Views</span>
+        <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Visitors (30 Days)</span>
+        <span style="width: 36px; height: 36px; border-radius: 8px; background: rgba(99, 102, 241, 0.1); color: #4f46e5; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-calendar-alt"></i>
+        </span>
+      </div>
+      <div style="font-size: 1.75rem; font-weight: 800; color: var(--sa-dark);">{{ visitors_30d }}</div>
+      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Last 30 rolling days</div>
+    </div>
+
+    <!-- 6. Consent Accepted -->
+    <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 18px; box-shadow: var(--sa-shadow-sm);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Consent Accepted</span>
         <span style="width: 36px; height: 36px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); color: #059669; display: flex; align-items: center; justify-content: center;">
-          <i class="fas fa-file-invoice"></i>
+          <i class="fas fa-check-circle"></i>
         </span>
       </div>
-      <div style="font-size: 1.75rem; font-weight: 800; color: var(--sa-dark);">{{ total_page_views }}</div>
-      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Public marketing pages viewed</div>
+      <div style="font-size: 1.75rem; font-weight: 800; color: #059669;">
+        {{ consent_accepted_count }}
+        {% if consent_acceptance_rate %}
+          <span style="font-size: 0.85rem; font-weight: 600; color: #059669;">({{ consent_acceptance_rate }}%)</span>
+        {% endif %}
+      </div>
+      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Opted into optional analytics</div>
     </div>
 
-    <!-- Card 4: Avg Active Time -->
+    <!-- 7. Consent Declined -->
     <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 18px; box-shadow: var(--sa-shadow-sm);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Avg Active Time</span>
-        <span style="width: 36px; height: 36px; border-radius: 8px; background: rgba(245, 158, 11, 0.1); color: #d97706; display: flex; align-items: center; justify-content: center;">
-          <i class="fas fa-clock"></i>
+        <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Consent Declined</span>
+        <span style="width: 36px; height: 36px; border-radius: 8px; background: rgba(239, 68, 68, 0.1); color: #dc2626; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-ban"></i>
         </span>
       </div>
-      <div style="font-size: 1.75rem; font-weight: 800; color: var(--sa-dark);">{{ avg_active_mins }} <span style="font-size: 0.95rem; font-weight: 600;">min</span></div>
-      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">{{ avg_active_sec }}s foreground active time</div>
+      <div style="font-size: 1.75rem; font-weight: 800; color: #dc2626;">{{ consent_declined_count }}</div>
+      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Opted out of optional analytics</div>
     </div>
 
-    <!-- Card 5: Leads & Conversion -->
+    <!-- 8. Consent Pending / Unavailable -->
     <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 18px; box-shadow: var(--sa-shadow-sm);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Leads &amp; Conversion</span>
-        <span style="width: 36px; height: 36px; border-radius: 8px; background: rgba(236, 72, 153, 0.1); color: #db2777; display: flex; align-items: center; justify-content: center;">
-          <i class="fas fa-bullseye"></i>
+        <span style="font-size: 0.85rem; color: var(--sa-text-muted); font-weight: 500;">Consent Pending</span>
+        <span style="width: 36px; height: 36px; border-radius: 8px; background: rgba(100, 116, 139, 0.1); color: #64748b; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-hourglass-half"></i>
         </span>
       </div>
-      <div style="font-size: 1.75rem; font-weight: 800; color: var(--sa-dark);">
-        {{ leads_count }} <span style="font-size: 0.95rem; font-weight: 600; color: #059669;">({{ conversion_rate }}%)</span>
-      </div>
-      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">Voluntarily submitted enquiries</div>
+      <div style="font-size: 1.75rem; font-weight: 800; color: #64748b;">{{ consent_pending_count }}</div>
+      <div style="font-size: 0.78rem; color: var(--sa-text-muted); margin-top: 4px;">No decision recorded yet</div>
     </div>
   </div>
 
@@ -170,236 +214,105 @@
     </div>
   </div>
 
-  <!-- Grid: Popular Pages & Engaged Sections -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 28px;">
-    <!-- Popular Pages -->
-    <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 20px; box-shadow: var(--sa-shadow-sm);">
-      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--sa-dark); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-        <i class="fas fa-chart-simple" style="color: #2563eb;"></i> Most Frequently Viewed Pages
-      </h3>
-      {% if popular_pages %}
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-            <thead>
-              <tr style="border-bottom: 2px solid var(--sa-border); text-align: left; color: var(--sa-text-muted);">
-                <th style="padding: 8px 10px;">Page Path</th>
-                <th style="padding: 8px 10px; text-align: right;">Views</th>
-                <th style="padding: 8px 10px; text-align: right;">Active Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in popular_pages %}
-                <tr style="border-bottom: 1px solid var(--sa-border);">
-                  <td style="padding: 10px; font-weight: 600; color: var(--sa-dark);">{{ p.path }}</td>
-                  <td style="padding: 10px; text-align: right; color: var(--sa-text);">{{ p.views }}</td>
-                  <td style="padding: 10px; text-align: right; color: var(--sa-text-muted);">{{ p.active_time }}s</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <p style="color: var(--sa-text-muted); font-size: 0.9rem; text-align: center; padding: 24px 0;">No pageview events recorded.</p>
-      {% endif %}
-    </div>
-
-    <!-- Engaged Sections -->
-    <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 20px; box-shadow: var(--sa-shadow-sm);">
-      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--sa-dark); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-        <i class="fas fa-layer-group" style="color: #d97706;"></i> Section-Level Active Engagement (Estimates)
-      </h3>
-      {% if popular_sections %}
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-            <thead>
-              <tr style="border-bottom: 2px solid var(--sa-border); text-align: left; color: var(--sa-text-muted);">
-                <th style="padding: 8px 10px;">Section Anchor</th>
-                <th style="padding: 8px 10px;">Path</th>
-                <th style="padding: 8px 10px; text-align: right;">Active Engagement</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for s in popular_sections %}
-                <tr style="border-bottom: 1px solid var(--sa-border);">
-                  <td style="padding: 10px; font-weight: 600; color: var(--sa-dark);">{{ s.section_name }}</td>
-                  <td style="padding: 10px; color: var(--sa-text-muted);">{{ s.path }}</td>
-                  <td style="padding: 10px; text-align: right; color: #d97706; font-weight: 600;">{{ s.active_time }}s</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <p style="color: var(--sa-text-muted); font-size: 0.9rem; text-align: center; padding: 24px 0;">No section-level engagement recorded yet.</p>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- Visitor Enquiries & Leads Section -->
+  <!-- Visitor Records Section -->
   <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 22px; box-shadow: var(--sa-shadow-sm); margin-bottom: 28px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--sa-border);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--sa-border);">
       <div>
         <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--sa-dark); margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px;">
-          <i class="fas fa-inbox" style="color: var(--sa-purple);"></i> Visitor Enquiries &amp; Leads
+          <i class="fas fa-network-wired" style="color: var(--sa-purple);"></i> Visitor Records Table
         </h3>
-        <p style="font-size: 0.85rem; color: var(--sa-text-muted); margin: 0;">
-          Voluntarily submitted public website contact inquiries. Super Admin can manage follow-ups and notes.
+        <p style="font-size: 0.82rem; color: var(--sa-text-muted); margin: 0;">
+          Resolved client IPs, pseudonymous visitor IDs, public pages visited, and recorded analytics consent status.
         </p>
       </div>
 
-      <!-- Lead Search & Status Filter -->
+      <!-- Visitor Search & Filters -->
       <form method="GET" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-        {% if range_filter %}<input type="hidden" name="range" value="{{ range_filter }}" />{% endif %}
-        <select name="lead_status" onchange="this.form.submit()" style="padding: 7px 10px; border: 1px solid var(--sa-border); border-radius: 6px; font-size: 0.85rem; background: #fff;">
-          <option value="">All Follow-up Statuses</option>
-          <option value="new" {% if lead_status_filter == 'new' %}selected{% endif %}>New</option>
-          <option value="contacted" {% if lead_status_filter == 'contacted' %}selected{% endif %}>Contacted</option>
-          <option value="qualified" {% if lead_status_filter == 'qualified' %}selected{% endif %}>Qualified</option>
-          <option value="closed" {% if lead_status_filter == 'closed' %}selected{% endif %}>Closed</option>
-          <option value="spam" {% if lead_status_filter == 'spam' %}selected{% endif %}>Spam</option>
+        <input type="hidden" name="range" value="{{ range_filter }}" />
+        <select name="consent" onchange="this.form.submit()" style="padding: 7px 10px; border: 1px solid var(--sa-border); border-radius: 6px; font-size: 0.85rem; background: #fff;">
+          <option value="">All Consent States</option>
+          <option value="accepted" {% if consent_filter == 'accepted' %}selected{% endif %}>Consent Accepted</option>
+          <option value="declined" {% if consent_filter == 'declined' %}selected{% endif %}>Consent Declined</option>
+          <option value="pending" {% if consent_filter == 'pending' %}selected{% endif %}>Consent Pending</option>
         </select>
-        <input type="text" name="lead_q" value="{{ lead_q|default:'' }}" placeholder="Search leads..." style="padding: 7px 10px; border: 1px solid var(--sa-border); border-radius: 6px; font-size: 0.85rem; width: 180px;" />
+        <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="Search IP, ID, page, OS..." style="padding: 7px 10px; border: 1px solid var(--sa-border); border-radius: 6px; font-size: 0.85rem; width: 200px;" />
         <button type="submit" class="btn" style="background: var(--sa-purple); color: #fff; border: none; padding: 7px 12px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">
           <i class="fas fa-search"></i>
         </button>
+        {% if search_query or consent_filter %}
+          <a href="?range={{ range_filter }}" style="font-size: 0.82rem; color: #dc2626; text-decoration: none;">Clear</a>
+        {% endif %}
       </form>
     </div>
 
-    {% if leads_page %}
-      <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-          <thead>
-            <tr style="background: #f8fafc; border-bottom: 2px solid var(--sa-border); text-align: left; color: var(--sa-dark);">
-              <th style="padding: 10px 12px;">Submitted</th>
-              <th style="padding: 10px 12px;">Contact Name</th>
-              <th style="padding: 10px 12px;">Email &amp; Phone</th>
-              <th style="padding: 10px 12px;">Category</th>
-              <th style="padding: 10px 12px;">Status</th>
-              <th style="padding: 10px 12px;">Marketing Consent</th>
-              <th style="padding: 10px 12px; text-align: right;">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for lead in leads_page %}
-              <tr style="border-bottom: 1px solid var(--sa-border);">
-                <td style="padding: 10px 12px; white-space: nowrap; color: var(--sa-text-muted);">
-                  {{ lead.submitted_at|date:"M d, Y H:i" }}
-                </td>
-                <td style="padding: 10px 12px; font-weight: 600; color: var(--sa-dark);">
-                  {{ lead.full_name }}
-                </td>
-                <td style="padding: 10px 12px;">
-                  <div style="font-weight: 500;">{{ lead.email }}</div>
-                  {% if lead.phone %}<div style="font-size: 0.78rem; color: var(--sa-text-muted);">{{ lead.phone }}</div>{% endif %}
-                </td>
-                <td style="padding: 10px 12px;">
-                  <span style="background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 0.78rem;">
-                    {{ lead.category }}
-                  </span>
-                </td>
-                <td style="padding: 10px 12px;">
-                  {% if lead.status == 'new' %}
-                    <span style="background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.78rem;">New</span>
-                  {% elif lead.status == 'contacted' %}
-                    <span style="background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.78rem;">Contacted</span>
-                  {% elif lead.status == 'qualified' %}
-                    <span style="background: #d1fae5; color: #065f46; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.78rem;">Qualified</span>
-                  {% elif lead.status == 'closed' %}
-                    <span style="background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 0.78rem;">Closed</span>
-                  {% else %}
-                    <span style="background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 4px; font-size: 0.78rem;">Spam</span>
-                  {% endif %}
-                </td>
-                <td style="padding: 10px 12px;">
-                  {% if lead.marketing_consent %}
-                    <span style="color: #059669; font-weight: 600; font-size: 0.78rem;"><i class="fas fa-check-circle"></i> Granted</span>
-                  {% else %}
-                    <span style="color: #94a3b8; font-size: 0.78rem;"><i class="fas fa-times-circle"></i> No</span>
-                  {% endif %}
-                </td>
-                <td style="padding: 10px 12px; text-align: right;">
-                  <a href="{% url 'super_admin_visitor_lead_detail' lead.id %}" class="btn" style="background: var(--sa-purple); color: #fff; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                    <i class="fas fa-eye"></i> View &amp; Manage
-                  </a>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Pagination for Leads -->
-      {% if leads_page.has_other_pages %}
-        <div style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;">
-          {% if leads_page.has_previous %}
-            <a href="?lpage={{ leads_page.previous_page_number }}&range={{ range_filter }}&lead_status={{ lead_status_filter }}" style="padding: 6px 12px; border: 1px solid var(--sa-border); border-radius: 6px; text-decoration: none; font-size: 0.82rem; color: var(--sa-text);">&laquo; Previous</a>
-          {% endif %}
-          <span style="padding: 6px 12px; font-size: 0.82rem; color: var(--sa-text-muted);">Page {{ leads_page.number }} of {{ leads_page.paginator.num_pages }}</span>
-          {% if leads_page.has_next %}
-            <a href="?lpage={{ leads_page.next_page_number }}&range={{ range_filter }}&lead_status={{ lead_status_filter }}" style="padding: 6px 12px; border: 1px solid var(--sa-border); border-radius: 6px; text-decoration: none; font-size: 0.82rem; color: var(--sa-text);">Next &raquo;</a>
-          {% endif %}
-        </div>
-      {% endif %}
-    {% else %}
-      <p style="text-align: center; color: var(--sa-text-muted); padding: 36px 0; font-size: 0.95rem;">
-        No visitor leads found matching criteria.
-      </p>
-    {% endif %}
-  </div>
-
-  <!-- Anonymous Visitor Sessions List -->
-  <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 22px; box-shadow: var(--sa-shadow-sm); margin-bottom: 28px;">
-    <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--sa-dark); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
-      <i class="fas fa-fingerprint" style="color: #64748b;"></i> Anonymous Visitor Sessions
-    </h3>
+    <!-- IP Address Disclaimer -->
+    <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 16px; font-size: 0.8rem; color: #64748b;">
+      <i class="fas fa-info-circle"></i> <strong>Note on Visitor IPs:</strong> An IP address represents a network connection point (e.g. broadband gateway, mobile carrier, VPN, or public Wi-Fi). It does not identify a verified individual person.
+    </div>
 
     {% if sessions_page %}
       <div style="overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
           <thead>
             <tr style="background: #f8fafc; border-bottom: 2px solid var(--sa-border); text-align: left; color: var(--sa-dark);">
-              <th style="padding: 10px 12px;">Started (UTC)</th>
-              <th style="padding: 10px 12px;">Session Key</th>
-              <th style="padding: 10px 12px;">Device &amp; OS</th>
+              <th style="padding: 10px 12px;">Visitor IP</th>
+              <th style="padding: 10px 12px;">First Visit</th>
+              <th style="padding: 10px 12px;">Last Seen</th>
+              <th style="padding: 10px 12px;">Page Views</th>
+              <th style="padding: 10px 12px;">Recent Public Page</th>
+              <th style="padding: 10px 12px;">Browser &amp; OS</th>
+              <th style="padding: 10px 12px;">Consent Status</th>
               <th style="padding: 10px 12px;">Referrer</th>
-              <th style="padding: 10px 12px;">Entry &rarr; Exit</th>
-              <th style="padding: 10px 12px; text-align: right;">Views</th>
-              <th style="padding: 10px 12px; text-align: right;">Active Time</th>
-              <th style="padding: 10px 12px; text-align: center;">Converted</th>
+              <th style="padding: 10px 12px; text-align: right;">Action</th>
             </tr>
           </thead>
           <tbody>
             {% for s in sessions_page %}
               <tr style="border-bottom: 1px solid var(--sa-border);">
-                <td style="padding: 10px 12px; white-space: nowrap; color: var(--sa-text-muted);">
+                <td style="padding: 10px 12px; font-family: monospace; font-weight: 600; color: var(--sa-dark);">
+                  {{ s.ip_address|default:"Unknown IP" }}
+                  {% if s.visitor_id %}
+                    <div style="font-size: 0.72rem; color: #94a3b8; font-weight: normal;">ID: {{ s.visitor_id|truncatechars:12 }}</div>
+                  {% endif %}
+                </td>
+                <td style="padding: 10px 12px; white-space: nowrap; color: var(--sa-text-muted); font-size: 0.8rem;">
                   {{ s.started_at|date:"M d, H:i" }}
                 </td>
-                <td style="padding: 10px 12px; font-family: monospace; color: #475569;">
-                  {{ s.session_key|truncatechars:14 }}
+                <td style="padding: 10px 12px; white-space: nowrap; color: var(--sa-text-muted); font-size: 0.8rem;">
+                  {{ s.last_activity|date:"M d, H:i" }}
                 </td>
-                <td style="padding: 10px 12px;">
-                  <span style="font-weight: 600; text-transform: capitalize;">{{ s.device_category }}</span>
-                  <span style="color: var(--sa-text-muted); font-size: 0.78rem;">({{ s.browser_family }} / {{ s.os_family }})</span>
-                </td>
-                <td style="padding: 10px 12px;">
-                  <span style="text-transform: capitalize; font-weight: 500;">{{ s.referrer_category }}</span>
-                  {% if s.referrer_domain %}<div style="font-size: 0.78rem; color: var(--sa-text-muted);">{{ s.referrer_domain }}</div>{% endif %}
-                </td>
-                <td style="padding: 10px 12px; font-size: 0.8rem; color: #475569;">
-                  {{ s.entry_page }} &rarr; {{ s.exit_page }}
-                </td>
-                <td style="padding: 10px 12px; text-align: right; font-weight: 600;">
+                <td style="padding: 10px 12px; font-weight: 700; color: var(--sa-dark);">
                   {{ s.total_page_views }}
                 </td>
-                <td style="padding: 10px 12px; text-align: right; color: #059669; font-weight: 600;">
-                  {{ s.total_active_seconds }}s
+                <td style="padding: 10px 12px; color: #2563eb; font-size: 0.82rem;">
+                  {{ s.exit_page|default:s.entry_page }}
                 </td>
-                <td style="padding: 10px 12px; text-align: center;">
-                  {% if s.has_converted %}
-                    <span style="color: #059669; font-weight: 700;"><i class="fas fa-check-circle"></i> Yes</span>
+                <td style="padding: 10px 12px;">
+                  <div style="font-weight: 600; text-transform: capitalize;">{{ s.browser_family|default:"Unknown" }}</div>
+                  <div style="font-size: 0.75rem; color: var(--sa-text-muted);">{{ s.os_family|default:"Unknown OS" }} ({{ s.device_category }})</div>
+                </td>
+                <td style="padding: 10px 12px;">
+                  {% if s.consent_status == 'accepted' %}
+                    <span style="background: #d1fae5; color: #065f46; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">
+                      <i class="fas fa-check"></i> Accepted
+                    </span>
+                  {% elif s.consent_status == 'declined' %}
+                    <span style="background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">
+                      <i class="fas fa-times"></i> Declined
+                    </span>
                   {% else %}
-                    <span style="color: #cbd5e1;">&mdash;</span>
+                    <span style="background: #f1f5f9; color: #64748b; padding: 3px 8px; border-radius: 4px; font-weight: 500; font-size: 0.75rem;">
+                      Pending
+                    </span>
                   {% endif %}
+                </td>
+                <td style="padding: 10px 12px; font-size: 0.8rem; color: var(--sa-text-muted);">
+                  {{ s.referrer_domain|default:"Direct / None" }}
+                </td>
+                <td style="padding: 10px 12px; text-align: right; white-space: nowrap;">
+                  <a href="{% url 'super_admin_visitor_detail' s.id %}" class="btn" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fas fa-eye"></i> Details
+                  </a>
                 </td>
               </tr>
             {% endfor %}
@@ -411,18 +324,19 @@
       {% if sessions_page.has_other_pages %}
         <div style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;">
           {% if sessions_page.has_previous %}
-            <a href="?spage={{ sessions_page.previous_page_number }}&range={{ range_filter }}" style="padding: 6px 12px; border: 1px solid var(--sa-border); border-radius: 6px; text-decoration: none; font-size: 0.82rem; color: var(--sa-text);">&laquo; Previous</a>
+            <a href="?page={{ sessions_page.previous_page_number }}&range={{ range_filter }}&consent={{ consent_filter }}&q={{ search_query }}" style="padding: 6px 12px; border: 1px solid var(--sa-border); border-radius: 6px; text-decoration: none; font-size: 0.82rem; color: var(--sa-text);">&laquo; Previous</a>
           {% endif %}
           <span style="padding: 6px 12px; font-size: 0.82rem; color: var(--sa-text-muted);">Page {{ sessions_page.number }} of {{ sessions_page.paginator.num_pages }}</span>
           {% if sessions_page.has_next %}
-            <a href="?spage={{ sessions_page.next_page_number }}&range={{ range_filter }}" style="padding: 6px 12px; border: 1px solid var(--sa-border); border-radius: 6px; text-decoration: none; font-size: 0.82rem; color: var(--sa-text);">Next &raquo;</a>
+            <a href="?page={{ sessions_page.next_page_number }}&range={{ range_filter }}&consent={{ consent_filter }}&q={{ search_query }}" style="padding: 6px 12px; border: 1px solid var(--sa-border); border-radius: 6px; text-decoration: none; font-size: 0.82rem; color: var(--sa-text);">Next &raquo;</a>
           {% endif %}
         </div>
       {% endif %}
     {% else %}
-      <p style="text-align: center; color: var(--sa-text-muted); padding: 36px 0;">No visitor sessions recorded yet.</p>
+      <p style="text-align: center; color: var(--sa-text-muted); padding: 36px 0;">No visitor sessions found matching criteria.</p>
     {% endif %}
   </div>
+
 
   <!-- Security & Audit Trail Section -->
   <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 22px; box-shadow: var(--sa-shadow-sm);">

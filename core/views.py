@@ -750,10 +750,8 @@ def login_view(request):
 
 
 def _get_client_ip(request):
-    x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded:
-        return x_forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "0.0.0.0")
+    from core.ip_utils import get_client_ip
+    return get_client_ip(request) or request.META.get("REMOTE_ADDR", "0.0.0.0")
 
 
 def get_shift(t):
@@ -8515,6 +8513,7 @@ def api_analytics_track(request):
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
     from .models import AnalyticsSetting, VisitorSession, PageViewEvent
+    from core.ip_utils import get_client_ip, generate_pseudonymous_visitor_id, sanitize_referrer_url
 
     settings_obj = AnalyticsSetting.get_settings()
     consent = data.get("consent", False)
@@ -8544,6 +8543,9 @@ def api_analytics_track(request):
 
     ref_cat, ref_dom = _parse_referrer_info(referrer_raw)
     dev_cat, browser, os_name = _parse_user_agent(ua_raw)
+    client_ip = get_client_ip(request) or ""
+    visitor_id = generate_pseudonymous_visitor_id(client_ip, ua_raw) if (client_ip or ua_raw) else ""
+    clean_ref = sanitize_referrer_url(referrer_raw)
 
     now = timezone.now()
 
@@ -8558,26 +8560,40 @@ def api_analytics_track(request):
             "os_family": os_name,
             "referrer_category": ref_cat,
             "referrer_domain": ref_dom[:200],
+            "referrer_url": clean_ref,
             "entry_page": path,
             "exit_page": path,
             "total_page_views": 1,
             "total_active_seconds": active_sec,
             "consent_given": bool(consent),
+            "consent_status": "accepted" if consent else "pending",
+            "consent_policy_version": "1.0",
+            "consent_timestamp": now if consent else None,
+            "ip_address": client_ip or None,
+            "visitor_id": visitor_id,
         }
     )
 
     if not created:
+        update_fields = ["last_activity", "exit_page", "total_active_seconds"]
         session.last_activity = now
         session.exit_page = path
         session.total_active_seconds += active_sec
         if data.get("is_new_page", False):
             session.total_page_views += 1
+            update_fields.append("total_page_views")
+        if not session.ip_address and client_ip:
+            session.ip_address = client_ip
+            update_fields.append("ip_address")
+        if not session.visitor_id and visitor_id:
+            session.visitor_id = visitor_id
+            update_fields.append("visitor_id")
         if consent and not session.consent_given:
             session.consent_given = True
-        session.save(update_fields=[
-            "last_activity", "exit_page", "total_active_seconds",
-            "total_page_views", "consent_given"
-        ])
+            session.consent_status = "accepted"
+            session.consent_timestamp = now
+            update_fields.extend(["consent_given", "consent_status", "consent_timestamp"])
+        session.save(update_fields=update_fields)
 
     # Record page/section event
     if path:
@@ -8597,6 +8613,7 @@ def api_analytics_track(request):
                 active_seconds=active_sec,
                 view_count=1,
                 timestamp=now,
+                referrer=clean_ref,
             )
 
     resp = JsonResponse({
@@ -8616,12 +8633,84 @@ def api_analytics_track(request):
     return resp
 
 
+@csrf_exempt
+def api_analytics_consent(request):
+    """
+    Public API: Record, update, or withdraw optional visitor analytics consent.
+    Audits the decision separately in VisitorConsentRecord to satisfy privacy compliance.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    from .models import VisitorConsentRecord, VisitorSession
+    from core.ip_utils import get_client_ip
+
+    try:
+        data = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        data = {}
+
+    decision = str(data.get("decision", request.POST.get("decision", "declined"))).strip().lower()
+    if decision not in ("accepted", "declined", "withdrawn", "pending"):
+        decision = "declined"
+
+    policy_version = str(data.get("policy_version", "1.0"))[:20]
+    session_token = str(data.get("session_key", request.COOKIES.get("va_session", ""))).strip()[:64]
+    if not session_token:
+        session_token = uuid.uuid4().hex
+
+    client_ip = get_client_ip(request) or ""
+    ua_raw = request.META.get("HTTP_USER_AGENT", "")[:255]
+
+    # Create immutable consent audit record
+    VisitorConsentRecord.objects.create(
+        session_key=session_token,
+        action=decision,
+        policy_version=policy_version,
+        ip_address=client_ip or "",
+        user_agent=ua_raw,
+    )
+
+    # Update session if one exists
+    session = VisitorSession.objects.filter(session_key=session_token).first()
+    now = timezone.now()
+    if session:
+        session.consent_status = decision
+        session.consent_timestamp = now
+        session.consent_policy_version = policy_version
+        session.consent_given = (decision == "accepted")
+        session.save(update_fields=["consent_status", "consent_timestamp", "consent_policy_version", "consent_given"])
+
+    resp = JsonResponse({
+        "status": "success",
+        "decision": decision,
+        "session_key": session_token,
+    })
+    resp.set_cookie(
+        "va_consent",
+        decision,
+        max_age=365 * 86400,
+        httponly=False,
+        samesite="Lax",
+        secure=not settings.DEBUG,
+    )
+    resp.set_cookie(
+        "va_session",
+        session_token,
+        max_age=30 * 86400,
+        httponly=False,
+        samesite="Lax",
+        secure=not settings.DEBUG,
+    )
+    return resp
+
+
 @platform_superadmin_required
 def super_admin_visitor_analytics(request):
     """
-    Super Admin exclusive: Website Visitor Analytics and Lead Management.
-    Provides Overview, Visitor Sessions, Popular Pages, Leads, Traffic Sources, Device Stats,
-    Privacy/Retention Settings, and Audit Trail.
+    Super Admin exclusive: Website Visitor Analytics, Consent Tracking, and Lead Management.
+    Provides 8 Summary KPI cards, Searchable & Filterable Visitor Records, Device & Referrer Stats,
+    and Privacy/Retention Settings.
     """
     from .models import (
         VisitorSession,
@@ -8652,31 +8741,85 @@ def super_admin_visitor_analytics(request):
         start_date = now - timedelta(days=7)
     elif range_filter == "90d":
         start_date = now - timedelta(days=90)
+    elif range_filter == "all":
+        start_date = None
     else:  # default 30d
         start_date = now - timedelta(days=30)
         range_filter = "30d"
 
-    sessions_qs = VisitorSession.objects.filter(started_at__gte=start_date)
+    base_sessions = VisitorSession.objects.all()
+    if start_date:
+        sessions_qs = base_sessions.filter(started_at__gte=start_date)
+    else:
+        sessions_qs = base_sessions
 
-    # Optional secondary filters
-    device_filter = request.GET.get("device", "")
+    # 8 Required Summary KPI Cards
+    # 1. Total eligible page views
+    if start_date:
+        total_page_views = PageViewEvent.objects.filter(timestamp__gte=start_date).aggregate(s=Sum("view_count"))["s"] or 0
+    else:
+        total_page_views = PageViewEvent.objects.aggregate(s=Sum("view_count"))["s"] or 0
+
+    # 2. Estimated unique visitors (distinct visitor_id where set, otherwise distinct session_key)
+    distinct_vids = sessions_qs.exclude(visitor_id="").values("visitor_id").distinct().count()
+    anonymous_no_vids = sessions_qs.filter(visitor_id="").count()
+    estimated_unique_visitors = distinct_vids + anonymous_no_vids
+
+    # 3. Visitors today
+    visitors_today = base_sessions.filter(started_at__gte=today_start).count()
+
+    # 4. Visitors in the last seven days
+    visitors_7d = base_sessions.filter(started_at__gte=now - timedelta(days=7)).count()
+
+    # 5. Visitors in the last thirty days
+    visitors_30d = base_sessions.filter(started_at__gte=now - timedelta(days=30)).count()
+
+    # 6. Analytics consent accepted
+    consent_accepted_count = sessions_qs.filter(consent_status="accepted").count()
+
+    # 7. Analytics consent declined
+    consent_declined_count = sessions_qs.filter(consent_status="declined").count()
+
+    # 8. Consent pending or unavailable
+    consent_pending_count = sessions_qs.filter(Q(consent_status="pending") | Q(consent_status="")).count()
+
+    # Consent Acceptance Rate (of decided visitors)
+    decided_count = consent_accepted_count + consent_declined_count
+    consent_acceptance_rate = round((consent_accepted_count / decided_count * 100), 1) if decided_count > 0 else 0.0
+
+    total_sessions = sessions_qs.count()
+
+    # Optional secondary filters for the table
+    device_filter = request.GET.get("device", "").strip()
     if device_filter:
         sessions_qs = sessions_qs.filter(device_category=device_filter)
 
-    referrer_filter = request.GET.get("referrer", "")
+    referrer_filter = request.GET.get("referrer", "").strip()
     if referrer_filter:
         sessions_qs = sessions_qs.filter(referrer_category=referrer_filter)
 
-    # Aggregate Overview Metrics
-    total_sessions = sessions_qs.count()
-    visitors_today = VisitorSession.objects.filter(started_at__gte=today_start).count()
-    total_page_views = sessions_qs.aggregate(s=Sum("total_page_views"))["s"] or 0
-    total_active_seconds = sessions_qs.aggregate(s=Sum("total_active_seconds"))["s"] or 0
-    avg_active_sec = int(total_active_seconds / total_sessions) if total_sessions > 0 else 0
-    avg_active_mins = round(avg_active_sec / 60, 1)
+    consent_filter = request.GET.get("consent", "").strip()
+    if consent_filter == "accepted":
+        sessions_qs = sessions_qs.filter(consent_status="accepted")
+    elif consent_filter == "declined":
+        sessions_qs = sessions_qs.filter(consent_status="declined")
+    elif consent_filter == "pending":
+        sessions_qs = sessions_qs.filter(Q(consent_status="pending") | Q(consent_status=""))
+
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        sessions_qs = sessions_qs.filter(
+            Q(ip_address__icontains=search_query)
+            | Q(visitor_id__icontains=search_query)
+            | Q(exit_page__icontains=search_query)
+            | Q(entry_page__icontains=search_query)
+            | Q(browser_family__icontains=search_query)
+            | Q(os_family__icontains=search_query)
+            | Q(referrer_domain__icontains=search_query)
+        )
 
     # Leads & Conversion Rate
-    leads_count = VisitorLead.objects.filter(submitted_at__gte=start_date).count()
+    leads_count = VisitorLead.objects.filter(submitted_at__gte=start_date).count() if start_date else VisitorLead.objects.count()
     converted_sessions = sessions_qs.filter(has_converted=True).count()
     conversion_rate = round((converted_sessions / total_sessions) * 100, 2) if total_sessions > 0 else 0.0
 
@@ -8695,26 +8838,19 @@ def super_admin_visitor_analytics(request):
     )
 
     # Most Popular Pages
+    popular_pages_qs = PageViewEvent.objects.all()
+    if start_date:
+        popular_pages_qs = popular_pages_qs.filter(timestamp__gte=start_date)
     popular_pages = (
-        PageViewEvent.objects.filter(timestamp__gte=start_date)
-        .values("path", "page_title")
+        popular_pages_qs.values("path", "page_title")
         .annotate(views=Sum("view_count"), active_time=Sum("active_seconds"))
         .order_by("-views")[:10]
     )
 
-    # Most Engaged Sections
-    popular_sections = (
-        PageViewEvent.objects.filter(timestamp__gte=start_date)
-        .exclude(section_name="")
-        .values("section_name", "path")
-        .annotate(active_time=Sum("active_seconds"), views=Sum("view_count"))
-        .order_by("-active_time")[:10]
-    )
-
     # Sessions List with Pagination
-    session_list_qs = sessions_qs.select_related().order_by("-last_activity")
-    sessions_paginator = Paginator(session_list_qs, 20)
-    sessions_page_number = request.GET.get("spage", 1)
+    session_list_qs = sessions_qs.order_by("-last_activity")
+    sessions_paginator = Paginator(session_list_qs, 25)
+    sessions_page_number = request.GET.get("page", request.GET.get("spage", 1))
     sessions_page = sessions_paginator.get_page(sessions_page_number)
 
     # Leads List with Filtering & Pagination
@@ -8748,26 +8884,179 @@ def super_admin_visitor_analytics(request):
             "range_filter": range_filter,
             "device_filter": device_filter,
             "referrer_filter": referrer_filter,
+            "consent_filter": consent_filter,
+            "search_query": search_query,
             "lead_status_filter": lead_status_filter,
             "lead_search": lead_search,
-            "total_sessions": total_sessions,
-            "visitors_today": visitors_today,
+            # 8 KPI Metrics
             "total_page_views": total_page_views,
-            "avg_active_mins": avg_active_mins,
-            "avg_active_sec": avg_active_sec,
+            "estimated_unique_visitors": estimated_unique_visitors,
+            "visitors_today": visitors_today,
+            "visitors_7d": visitors_7d,
+            "visitors_30d": visitors_30d,
+            "consent_accepted_count": consent_accepted_count,
+            "consent_declined_count": consent_declined_count,
+            "consent_pending_count": consent_pending_count,
+            "consent_acceptance_rate": consent_acceptance_rate,
+            "total_sessions": total_sessions,
             "leads_count": leads_count,
             "converted_sessions": converted_sessions,
             "conversion_rate": conversion_rate,
             "device_stats": device_stats,
             "referrer_stats": referrer_stats,
             "popular_pages": popular_pages,
-            "popular_sections": popular_sections,
             "sessions_page": sessions_page,
             "leads_page": leads_page,
             "settings": settings_obj,
             "recent_audits": recent_audits,
         },
     )
+
+
+@platform_superadmin_required
+def super_admin_visitor_detail(request, session_id):
+    """
+    Super Admin exclusive: In-depth detail view of a visitor session,
+    displaying full public page view trail and consent audit history.
+    """
+    from .models import VisitorSession, PageViewEvent, VisitorConsentRecord, AnalyticsAuditLog
+
+    session = get_object_or_404(VisitorSession, id=session_id)
+
+    AnalyticsAuditLog.objects.create(
+        user=request.user,
+        action="view_visitor_detail",
+        details=f"Viewed details for Visitor Session #{session.id} (IP: {session.ip_address or 'Unknown'})",
+        ip_address=request.META.get("REMOTE_ADDR", "")[:50],
+    )
+
+    page_views = PageViewEvent.objects.filter(session=session).order_by("-timestamp")
+    consent_records = VisitorConsentRecord.objects.filter(session_key=session.session_key).order_by("-timestamp")
+
+    return render(
+        request,
+        "super_admin/super_admin_visitor_detail.html",
+        {
+            "visitor": session,
+            "page_views": page_views,
+            "consent_records": consent_records,
+        },
+    )
+
+
+def _sanitize_csv_cell(value):
+    """
+    Prevent Spreadsheet Formula Injection (CSV Injection).
+    Prepends a single quote if the value starts with '=', '+', '-', '@', tab, or newline.
+    """
+    if value is None:
+        return ""
+    val_str = str(value)
+    if val_str and val_str[0] in ("=", "+", "-", "@", "\t", "\r", "\n"):
+        return f"'{val_str}"
+    return val_str
+
+
+@platform_superadmin_required
+def super_admin_export_visitors_csv(request):
+    """
+    Super Admin export of filtered visitor records to CSV.
+    Guards against formula injection, preserves tenant isolation, and logs export audit trail.
+    """
+    import csv
+    from .models import VisitorSession, AnalyticsAuditLog
+
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Date filter
+    range_filter = request.GET.get("range", "30d")
+    if range_filter == "today":
+        start_date = today_start
+    elif range_filter == "7d":
+        start_date = now - timedelta(days=7)
+    elif range_filter == "90d":
+        start_date = now - timedelta(days=90)
+    elif range_filter == "all":
+        start_date = None
+    else:
+        start_date = now - timedelta(days=30)
+
+    sessions_qs = VisitorSession.objects.all()
+    if start_date:
+        sessions_qs = sessions_qs.filter(started_at__gte=start_date)
+
+    consent_filter = request.GET.get("consent", "").strip()
+    if consent_filter == "accepted":
+        sessions_qs = sessions_qs.filter(consent_status="accepted")
+    elif consent_filter == "declined":
+        sessions_qs = sessions_qs.filter(consent_status="declined")
+    elif consent_filter == "pending":
+        sessions_qs = sessions_qs.filter(Q(consent_status="pending") | Q(consent_status=""))
+
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        sessions_qs = sessions_qs.filter(
+            Q(ip_address__icontains=search_query)
+            | Q(visitor_id__icontains=search_query)
+            | Q(exit_page__icontains=search_query)
+            | Q(entry_page__icontains=search_query)
+            | Q(browser_family__icontains=search_query)
+            | Q(os_family__icontains=search_query)
+            | Q(referrer_domain__icontains=search_query)
+        )
+
+    sessions = list(sessions_qs.order_by("-last_activity")[:1000])
+
+    AnalyticsAuditLog.objects.create(
+        user=request.user,
+        action="export_visitors",
+        details=f"Exported {len(sessions)} Visitor records to CSV (range: {range_filter}, consent: {consent_filter or 'all'})",
+        ip_address=request.META.get("REMOTE_ADDR", "")[:50],
+    )
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="visitor_analytics_{timezone.now():%Y%m%d_%H%M}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        "ID",
+        "Visitor Identifier",
+        "IP Address",
+        "First Visit",
+        "Last Activity",
+        "Total Page Views",
+        "Active Seconds",
+        "Entry Page",
+        "Exit Page",
+        "Device Category",
+        "Browser",
+        "Operating System",
+        "Consent Status",
+        "Consent Policy Version",
+        "Referrer URL",
+    ])
+
+    for s in sessions:
+        writer.writerow([
+            _sanitize_csv_cell(s.id),
+            _sanitize_csv_cell(s.visitor_id),
+            _sanitize_csv_cell(s.ip_address or "Unknown"),
+            _sanitize_csv_cell(s.started_at.strftime("%Y-%m-%d %H:%M:%S") if s.started_at else ""),
+            _sanitize_csv_cell(s.last_activity.strftime("%Y-%m-%d %H:%M:%S") if s.last_activity else ""),
+            _sanitize_csv_cell(s.total_page_views),
+            _sanitize_csv_cell(s.total_active_seconds),
+            _sanitize_csv_cell(s.entry_page),
+            _sanitize_csv_cell(s.exit_page),
+            _sanitize_csv_cell(s.device_category),
+            _sanitize_csv_cell(s.browser_family),
+            _sanitize_csv_cell(s.os_family),
+            _sanitize_csv_cell(s.consent_status),
+            _sanitize_csv_cell(s.consent_policy_version),
+            _sanitize_csv_cell(s.referrer_url),
+        ])
+
+    return response
 
 
 @platform_superadmin_required

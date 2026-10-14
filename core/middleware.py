@@ -81,7 +81,8 @@ class LoginAttemptMiddleware:
 
     def __call__(self, request):
         if request.path == '/login/' and request.method == 'POST':
-            ip = self._get_ip(request)
+            from core.ip_utils import get_client_ip
+            ip = get_client_ip(request) or request.META.get('REMOTE_ADDR', '0.0.0.0')
             key = f'login_attempts_{ip}'
             attempts = cache.get(key, 0)
 
@@ -93,10 +94,6 @@ class LoginAttemptMiddleware:
                 return redirect('login')
 
         return self.get_response(request)
-
-    def _get_ip(self, request):
-        xff = request.META.get('HTTP_X_FORWARDED_FOR')
-        return xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR')
 
 
 # ───────────────────────────────
@@ -195,4 +192,183 @@ class SEORobotsTagMiddleware:
         if not is_indexable:
             response['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
 
-        return response
+        return response
+
+
+# ───────────────────────────────
+# 7. SECURE PUBLIC VISITOR TRACKING
+# ───────────────────────────────
+class PublicVisitorTrackingMiddleware:
+    """
+    Server-side visitor analytics middleware.
+    Accurately records eligible visits to public marketing pages with real client IP,
+    device category, referrer, and consent status.
+    Excludes:
+      - Authenticated Super Admin requests (strictly server-side verified; never client-driven)
+      - Static/media files, health checks, robots.txt, sitemap.xml, favicon
+      - Private admin, staff, patient dashboards, auth endpoints, APIs
+      - Non-GET requests and non-200 responses
+    """
+    EXCLUDED_PREFIXES = (
+        '/admin/',
+        '/super-admin/',
+        '/staff/',
+        '/client/',
+        '/api/',
+        '/static/',
+        '/media/',
+        '/login/',
+        '/logout/',
+        '/register/',
+        '/profile/',
+        '/change-password/',
+        '/forgot-password/',
+        '/verify-otp/',
+        '/resend-otp/',
+        '/reset-password/',
+        '/notifications/',
+        '/payments/',
+        '/subscription/',
+        '/healthz',
+        '/robots.txt',
+        '/sitemap.xml',
+        '/favicon.ico',
+        '/bulk-import/',
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+
+        # Only track HTTP GET requests with status 200
+        if request.method != "GET" or response.status_code != 200:
+            return response
+
+        path = request.path
+        if any(path.startswith(prefix) for prefix in self.EXCLUDED_PREFIXES):
+            return response
+
+        # Exclude authenticated Super Admin (server-side verification)
+        user = getattr(request, "user", None)
+        if user and user.is_authenticated:
+            if user.is_superuser:
+                return response
+            try:
+                if getattr(user, "profile", None) and user.profile.is_platform_admin:
+                    return response
+            except Exception:
+                pass
+
+        # Avoid duplicate middleware execution within a single request cycle
+        if getattr(request, "_visitor_tracked", False):
+            return response
+        request._visitor_tracked = True
+
+        try:
+            self._track_visit(request, response, path)
+        except Exception as e:
+            # Analytics recording must never crash or block public page delivery
+            import logging
+            logging.getLogger("core.visitor_analytics").error("Error in visitor tracking: %s", e)
+
+        return response
+
+    def _track_visit(self, request, response, path):
+        import uuid
+        from datetime import timedelta
+        from django.utils import timezone
+        from core.ip_utils import get_client_ip, generate_pseudonymous_visitor_id, sanitize_referrer_url
+        from core.models import VisitorSession, PageViewEvent
+
+        now = timezone.now()
+        client_ip = get_client_ip(request)
+
+        # Consent choice from cookie or header
+        consent_choice = request.COOKIES.get("va_consent_choice", "").strip().lower()
+        if consent_choice == "accepted":
+            consent_status = "accepted"
+            consent_given = True
+        elif consent_choice == "declined":
+            consent_status = "declined"
+            consent_given = False
+        else:
+            consent_status = "pending"
+            consent_given = False
+
+        session_key = request.COOKIES.get("va_session", "").strip()
+        is_new_cookie = False
+        if not session_key or len(session_key) > 64:
+            session_key = "vs_" + uuid.uuid4().hex[:28]
+            is_new_cookie = True
+
+        ua_raw = request.META.get("HTTP_USER_AGENT", "")
+        from core.views import _parse_user_agent, _parse_referrer_info
+        dev_cat, browser, os_name = _parse_user_agent(ua_raw)
+
+        raw_referrer = request.META.get("HTTP_REFERER", "")
+        ref_cat, ref_dom = _parse_referrer_info(raw_referrer)
+        clean_ref_url = sanitize_referrer_url(raw_referrer)
+
+        visitor_id = generate_pseudonymous_visitor_id(client_ip, ua_raw, now.strftime("%Y-%m-%d"))
+
+        # Look up existing active session
+        session = VisitorSession.objects.filter(session_key=session_key).first()
+        if session:
+            # Active session continuation
+            session.last_activity = now
+            session.exit_page = path[:200]
+            session.total_page_views += 1
+            if client_ip and not session.ip_address:
+                session.ip_address = client_ip
+            if consent_choice in ("accepted", "declined"):
+                session.consent_status = consent_status
+                session.consent_given = consent_given
+            session.save(update_fields=[
+                "last_activity", "exit_page", "total_page_views",
+                "ip_address", "consent_status", "consent_given"
+            ])
+        else:
+            session = VisitorSession.objects.create(
+                session_key=session_key,
+                visitor_id=visitor_id,
+                ip_address=client_ip,
+                started_at=now,
+                last_activity=now,
+                device_category=dev_cat,
+                browser_family=browser,
+                os_family=os_name,
+                referrer_category=ref_cat,
+                referrer_domain=ref_dom[:200],
+                referrer_url=clean_ref_url,
+                entry_page=path[:200],
+                exit_page=path[:200],
+                total_page_views=1,
+                total_active_seconds=0,
+                consent_status=consent_status,
+                consent_given=consent_given,
+            )
+
+        # Record PageViewEvent
+        PageViewEvent.objects.create(
+            session=session,
+            path=path[:200],
+            referrer=clean_ref_url,
+            view_count=1,
+            active_seconds=0,
+            timestamp=now,
+        )
+
+        # Set session cookie if new
+        if is_new_cookie:
+            from django.conf import settings
+            response.set_cookie(
+                "va_session",
+                session_key,
+                max_age=30 * 86400,
+                httponly=False,
+                samesite="Lax",
+                secure=not settings.DEBUG,
+            )
+

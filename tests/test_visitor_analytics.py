@@ -328,3 +328,221 @@ class VisitorAnalyticsAndLeadManagementTests(TestCase):
 
         self.assertFalse(VisitorSession.objects.filter(id=old_session.id).exists())
         self.assertTrue(VisitorSession.objects.filter(id=fresh_session.id).exists())
+
+    # ── 8. SECURE REAL-IP RESOLUTION & TRUSTED PROXY TESTS ─────────────────────
+
+    def test_ip_resolution_valid_ipv4_and_ipv6(self):
+        """Test IP resolution correctly validates and normalizes IPv4 and IPv6."""
+        from core.ip_utils import get_client_ip
+        from django.test import RequestFactory
+
+        rf = RequestFactory()
+
+        # Direct IPv4
+        req_v4 = rf.get("/")
+        req_v4.META["REMOTE_ADDR"] = "203.0.113.195"
+        self.assertEqual(get_client_ip(req_v4), "203.0.113.195")
+
+        # Direct IPv6
+        req_v6 = rf.get("/")
+        req_v6.META["REMOTE_ADDR"] = "2001:db8::1"
+        self.assertEqual(get_client_ip(req_v6), "2001:db8::1")
+
+    def test_spoofed_x_forwarded_for_ignored_when_peer_untrusted(self):
+        """If request arrives directly from untrusted client, X-Forwarded-For spoofing is ignored."""
+        from core.ip_utils import get_client_ip
+        from django.test import RequestFactory
+
+        rf = RequestFactory()
+        req = rf.get("/")
+        req.META["REMOTE_ADDR"] = "198.51.100.42"  # Public untrusted client
+        req.META["HTTP_X_FORWARDED_FOR"] = "1.2.3.4, 5.6.7.8"  # Spoofed client attempt
+
+        # Since REMOTE_ADDR is not a trusted proxy, it must NOT trust X-Forwarded-For
+        self.assertEqual(get_client_ip(req), "198.51.100.42")
+
+    def test_trusted_proxy_chain_traversal(self):
+        """When behind a trusted proxy (e.g. Render internal proxy), resolves right-to-left."""
+        from core.ip_utils import get_client_ip
+        from django.test import RequestFactory
+
+        rf = RequestFactory()
+        req = rf.get("/")
+        req.META["REMOTE_ADDR"] = "10.0.4.15"  # Render internal RFC1918 proxy
+        req.META["HTTP_X_FORWARDED_FOR"] = "203.0.113.50, 10.0.4.12"
+
+        # The rightmost non-trusted proxy IP is 203.0.113.50
+        self.assertEqual(get_client_ip(req), "203.0.113.50")
+
+    def test_malformed_ip_headers_handled_safely(self):
+        """Malformed, garbage, or non-IP headers are handled safely without crashing."""
+        from core.ip_utils import get_client_ip
+        from django.test import RequestFactory
+
+        rf = RequestFactory()
+        req = rf.get("/")
+        req.META["REMOTE_ADDR"] = "not-an-ip-address"
+        req.META["HTTP_X_FORWARDED_FOR"] = "random-string, 999.999.999.999"
+        self.assertIsNone(get_client_ip(req))
+
+    # ── 9. PUBLIC VISIT TRACKING & SUPER ADMIN EXCLUSION ───────────────────────
+
+    def test_public_visit_tracking_middleware(self):
+        """Public pages visited by anonymous visitors create session and pageview records."""
+        resp = self.client.get("/", HTTP_USER_AGENT="Mozilla/5.0 TestBrowser", REMOTE_ADDR="198.51.100.22")
+        self.assertEqual(resp.status_code, 200)
+
+        session = VisitorSession.objects.filter(ip_address="198.51.100.22").first()
+        self.assertIsNotNone(session)
+        self.assertEqual(session.entry_page, "/")
+        self.assertTrue(PageViewEvent.objects.filter(session=session, path="/").exists())
+
+    def test_static_and_healthz_exclusion(self):
+        """Static assets, media, and health check endpoints are excluded from visitor tracking."""
+        init_sessions = VisitorSession.objects.count()
+
+        self.client.get("/healthz/")
+        self.client.get("/static/css/main.css")
+        self.client.get("/media/test.jpg")
+        self.client.get("/robots.txt")
+
+        self.assertEqual(VisitorSession.objects.count(), init_sessions)
+
+    def test_super_admin_server_side_exclusion(self):
+        """Authenticated Super Admin browsing is strictly excluded from visitor tracking."""
+        init_sessions = VisitorSession.objects.count()
+        init_pageviews = PageViewEvent.objects.count()
+
+        self.client.force_login(self.superadmin)
+        resp_home = self.client.get("/", REMOTE_ADDR="198.51.100.99")
+        self.assertEqual(resp_home.status_code, 200)
+
+        resp_dash = self.client.get(reverse("super_admin_visitor_analytics"), REMOTE_ADDR="198.51.100.99")
+        self.assertEqual(resp_dash.status_code, 200)
+
+        # No new visitor sessions or pageviews recorded
+        self.assertEqual(VisitorSession.objects.count(), init_sessions)
+        self.assertEqual(PageViewEvent.objects.count(), init_pageviews)
+
+    # ── 10. CONSENT API & AUDIT TRAIL ──────────────────────────────────────────
+
+    def test_api_analytics_consent_records_audit_trail(self):
+        """Accepting or declining consent creates immutable VisitorConsentRecord and updates session."""
+        from core.models import VisitorConsentRecord
+
+        session = VisitorSession.objects.create(session_key="vs_consent_test_001", consent_status="pending")
+
+        # 1. Accept consent
+        accept_payload = {"decision": "accepted", "session_key": "vs_consent_test_001", "policy_version": "1.0"}
+        resp = self.client.post(
+            reverse("api_analytics_consent"),
+            data=json.dumps(accept_payload),
+            content_type="application/json",
+            REMOTE_ADDR="198.51.100.77",
+            HTTP_USER_AGENT="Mozilla/5.0 ConsentTester",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["decision"], "accepted")
+
+        session.refresh_from_db()
+        self.assertEqual(session.consent_status, "accepted")
+        self.assertTrue(session.consent_given)
+
+        audit_rec = VisitorConsentRecord.objects.filter(session_key="vs_consent_test_001", action="accepted").first()
+        self.assertIsNotNone(audit_rec)
+        self.assertEqual(audit_rec.ip_address, "198.51.100.77")
+
+        # 2. Withdraw / decline consent
+        decline_payload = {"decision": "declined", "session_key": "vs_consent_test_001"}
+        resp2 = self.client.post(
+            reverse("api_analytics_consent"),
+            data=json.dumps(decline_payload),
+            content_type="application/json",
+        )
+        self.assertEqual(resp2.status_code, 200)
+        session.refresh_from_db()
+        self.assertEqual(session.consent_status, "declined")
+        self.assertFalse(session.consent_given)
+
+        self.assertTrue(VisitorConsentRecord.objects.filter(session_key="vs_consent_test_001", action="declined").exists())
+
+    # ── 11. RBAC & DETAIL VIEW & CSV FORMULA INJECTION PREVENTION ──────────────
+
+    def test_unauthorized_users_rejected_from_visitor_detail_and_export(self):
+        """Clinic admin, staff, patient, and anonymous cannot view visitor details or export CSV."""
+        session = VisitorSession.objects.create(session_key="vs_rbac_test", ip_address="198.51.100.55")
+        detail_url = reverse("super_admin_visitor_detail", args=[session.id])
+        export_url = reverse("super_admin_export_visitors_csv")
+
+        for user in [self.clinic_admin, self.staff_user, self.client_user]:
+            self.client.force_login(user)
+            self.assertEqual(self.client.get(detail_url).status_code, 302)
+            self.assertEqual(self.client.get(export_url).status_code, 302)
+
+        self.client.logout()
+        self.assertEqual(self.client.get(detail_url).status_code, 302)
+        self.assertEqual(self.client.get(export_url).status_code, 302)
+
+    def test_super_admin_visitor_detail_view(self):
+        """Super Admin can access detailed session breakdown."""
+        session = VisitorSession.objects.create(
+            session_key="vs_detail_view_test",
+            ip_address="198.51.100.88",
+            consent_status="accepted",
+        )
+        PageViewEvent.objects.create(session=session, path="/contact/", page_title="Contact Us", view_count=2)
+
+        self.client.force_login(self.superadmin)
+        resp = self.client.get(reverse("super_admin_visitor_detail", args=[session.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "198.51.100.88")
+        self.assertContains(resp, "Contact Us")
+
+    def test_csv_export_prevents_spreadsheet_formula_injection(self):
+        """CSV export sanitizes formulas starting with =, +, -, @ to prevent spreadsheet command execution."""
+        VisitorSession.objects.create(
+            session_key="vs_formula_injection_test",
+            ip_address="=cmd|' /C calc'!A0",
+            exit_page="+HYPERLINK(\"http://malicious.com\")",
+            consent_status="@SUM(A1:A10)",
+        )
+
+        self.client.force_login(self.superadmin)
+        resp = self.client.get(reverse("super_admin_export_visitors_csv"))
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode("utf-8")
+
+        # Formula characters must be escaped with a prepended single quote
+        self.assertIn("'=cmd|", content)
+        self.assertIn("'+HYPERLINK", content)
+        self.assertIn("'@SUM", content)
+
+    # ── 12. CLEANUP MANAGEMENT COMMAND ─────────────────────────────────────────
+
+    def test_cleanup_visitor_analytics_management_command(self):
+        """Management command correctly cleans up expired sessions without deleting clinic data."""
+        from django.core.management import call_command
+        from io import StringIO
+
+        old_session = VisitorSession.objects.create(
+            session_key="vs_old_cleanup_cmd",
+            started_at=timezone.now() - timedelta(days=95),
+        )
+        fresh_session = VisitorSession.objects.create(
+            session_key="vs_fresh_cleanup_cmd",
+            started_at=timezone.now() - timedelta(days=5),
+        )
+
+        # 1. Dry run
+        out_dry = StringIO()
+        call_command("cleanup_visitor_analytics", days=90, dry_run=True, stdout=out_dry)
+        self.assertIn("[DRY-RUN]", out_dry.getvalue())
+        self.assertTrue(VisitorSession.objects.filter(id=old_session.id).exists())
+
+        # 2. Actual run
+        out_actual = StringIO()
+        call_command("cleanup_visitor_analytics", days=90, stdout=out_actual)
+        self.assertIn("Successfully deleted", out_actual.getvalue())
+        self.assertFalse(VisitorSession.objects.filter(id=old_session.id).exists())
+        self.assertTrue(VisitorSession.objects.filter(id=fresh_session.id).exists())
+

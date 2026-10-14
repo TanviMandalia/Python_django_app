@@ -1622,6 +1622,8 @@ class VisitorSession(models.Model):
     ]
 
     session_key = models.CharField(max_length=64, unique=True, db_index=True)
+    visitor_id = models.CharField(max_length=64, blank=True, db_index=True, help_text="Pseudonymous visitor identifier")
+    ip_address = models.CharField(max_length=45, blank=True, db_index=True, help_text="Validated client IP address (IPv4/IPv6)")
     started_at = models.DateTimeField(default=timezone.now, db_index=True)
     last_activity = models.DateTimeField(default=timezone.now, db_index=True)
     device_category = models.CharField(max_length=20, choices=DEVICE_CHOICES, default="unknown", db_index=True)
@@ -1629,12 +1631,21 @@ class VisitorSession(models.Model):
     os_family = models.CharField(max_length=50, blank=True)
     referrer_category = models.CharField(max_length=20, choices=REFERRER_CHOICES, default="direct", db_index=True)
     referrer_domain = models.CharField(max_length=200, blank=True)
+    referrer_url = models.CharField(max_length=500, blank=True, help_text="Sanitized referrer without sensitive query parameters")
     entry_page = models.CharField(max_length=200, default="/", db_index=True)
     exit_page = models.CharField(max_length=200, default="/")
     total_page_views = models.PositiveIntegerField(default=1)
     total_active_seconds = models.PositiveIntegerField(default=0, help_text="Estimated active engaged time (paused when tab hidden)")
     has_converted = models.BooleanField(default=False, db_index=True, help_text="True if visitor voluntarily submitted enquiry")
+    consent_status = models.CharField(
+        max_length=20,
+        choices=[("pending", "Pending"), ("accepted", "Accepted"), ("declined", "Declined")],
+        default="pending",
+        db_index=True,
+    )
     consent_given = models.BooleanField(default=False, help_text="True if visitor accepted analytics tracking")
+    consent_timestamp = models.DateTimeField(null=True, blank=True)
+    consent_policy_version = models.CharField(max_length=20, default="1.0", blank=True)
 
     class Meta:
         ordering = ["-last_activity"]
@@ -1642,10 +1653,14 @@ class VisitorSession(models.Model):
             models.Index(fields=["started_at", "device_category"]),
             models.Index(fields=["started_at", "referrer_category"]),
             models.Index(fields=["started_at", "has_converted"]),
+            models.Index(fields=["started_at", "consent_status"]),
+            models.Index(fields=["ip_address"]),
+            models.Index(fields=["visitor_id"]),
         ]
 
     def __str__(self):
-        return f"VisitorSession {self.session_key[:8]} ({self.device_category}, {self.total_page_views} views)"
+        ip_label = f" [{self.ip_address}]" if self.ip_address else ""
+        return f"VisitorSession {self.session_key[:8]}{ip_label} ({self.device_category}, {self.total_page_views} views)"
 
 
 class PageViewEvent(models.Model):
@@ -1657,6 +1672,7 @@ class PageViewEvent(models.Model):
     path = models.CharField(max_length=200, db_index=True)
     page_title = models.CharField(max_length=200, blank=True)
     section_name = models.CharField(max_length=100, blank=True, help_text="Named section anchor/identifier e.g. #services, #contact")
+    referrer = models.CharField(max_length=500, blank=True, help_text="Sanitized referring page URL")
     active_seconds = models.PositiveIntegerField(default=0, help_text="Active seconds on this specific page/section")
     view_count = models.PositiveIntegerField(default=1)
     timestamp = models.DateTimeField(default=timezone.now, db_index=True)
@@ -1669,6 +1685,39 @@ class PageViewEvent(models.Model):
 
     def __str__(self):
         return f"{self.path} ({self.active_seconds}s) - {self.timestamp:%Y-%m-%d %H:%M}"
+
+
+class VisitorConsentRecord(models.Model):
+    """
+    Auditable consent decision trail (accepted, declined, withdrawn) for privacy compliance.
+    Separate from analytics aggregation.
+    """
+    ACTION_CHOICES = [
+        ("accepted", "Accepted Analytics"),
+        ("declined", "Declined Analytics"),
+        ("withdrawn", "Withdrawn Analytics"),
+    ]
+    session_key = models.CharField(max_length=64, db_index=True)
+    visitor_id = models.CharField(max_length=64, blank=True, db_index=True)
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES, db_index=True)
+    policy_version = models.CharField(max_length=20, default="1.0")
+    ip_address = models.CharField(max_length=45, blank=True)
+    user_agent = models.CharField(max_length=255, blank=True)
+    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
+        indexes = [
+            models.Index(fields=["action", "timestamp"]),
+            models.Index(fields=["visitor_id", "timestamp"]),
+        ]
+
+    @property
+    def decision(self):
+        return self.action
+
+    def __str__(self):
+        return f"Consent {self.action} ({self.session_key[:8]}) at {self.timestamp:%Y-%m-%d %H:%M}"
 
 
 class VisitorLead(models.Model):

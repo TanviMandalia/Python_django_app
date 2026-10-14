@@ -1,0 +1,218 @@
+{% extends "super_admin/base_super_admin.html" %}
+{% load static %}
+
+{% block title %}Visitor Session #{{ visitor.id }} — Super Admin{% endblock %}
+
+{% block content %}
+<div class="sa-container" style="padding: 24px; max-width: 1300px; margin: 0 auto;">
+
+  <!-- Header & Back Button -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <a href="{% url 'super_admin_visitor_analytics' %}" style="color: var(--sa-purple); font-size: 0.9rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+        <i class="fas fa-arrow-left"></i> Back to Visitor Analytics
+      </a>
+      <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--sa-dark); margin: 0;">
+        Visitor Session #{{ visitor.id }}
+      </h1>
+      <p style="color: var(--sa-text-muted); font-size: 0.88rem; margin: 4px 0 0 0;">
+        Detailed navigation history and privacy consent audit records.
+      </p>
+    </div>
+
+    <div>
+      <span style="font-size: 0.85rem; padding: 6px 12px; border-radius: 6px; font-weight: 600;
+        {% if visitor.consent_status == 'accepted' %}background: #d1fae5; color: #065f46;
+        {% elif visitor.consent_status == 'declined' %}background: #fee2e2; color: #991b1b;
+        {% else %}background: #f1f5f9; color: #64748b;{% endif %}">
+        Consent: {{ visitor.get_consent_status_display|default:visitor.consent_status|capfirst }}
+      </span>
+    </div>
+  </div>
+
+  <!-- IP Network Disclaimer -->
+  <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px 16px; margin-bottom: 24px; font-size: 0.82rem; color: #64748b; display: flex; align-items: center; gap: 10px;">
+    <i class="fas fa-info-circle" style="color: #64748b;"></i>
+    <span>
+      <strong>Network Privacy Notice:</strong> The recorded IP address represents an internet routing point (e.g., ISP gateway, mobile carrier, or VPN) and must not be interpreted as an individual's verified identity.
+    </span>
+  </div>
+
+  <!-- Visitor Details Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-bottom: 28px;">
+    <!-- Network & Device Info -->
+    <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 20px; box-shadow: var(--sa-shadow-sm);">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--sa-dark); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-network-wired" style="color: var(--sa-purple);"></i> Network &amp; Device
+      </h3>
+      <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">Client IP:</td>
+          <td style="padding: 8px 0; font-family: monospace; font-weight: 600; color: var(--sa-dark); text-align: right;">{{ visitor.ip_address|default:"Unknown" }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">Visitor ID:</td>
+          <td style="padding: 8px 0; font-family: monospace; font-size: 0.78rem; color: #475569; text-align: right;">{{ visitor.visitor_id|default:"None" }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">Device Category:</td>
+          <td style="padding: 8px 0; font-weight: 600; text-transform: capitalize; text-align: right;">{{ visitor.device_category }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">Browser &amp; OS:</td>
+          <td style="padding: 8px 0; text-align: right;">{{ visitor.browser_family }} / {{ visitor.os_family }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Session & Navigation -->
+    <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 20px; box-shadow: var(--sa-shadow-sm);">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--sa-dark); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-route" style="color: #2563eb;"></i> Session &amp; Navigation
+      </h3>
+      <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">First Visit:</td>
+          <td style="padding: 8px 0; text-align: right;">{{ visitor.started_at|date:"Y-m-d H:i:s" }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">Last Seen:</td>
+          <td style="padding: 8px 0; text-align: right;">{{ visitor.last_activity|date:"Y-m-d H:i:s" }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">Total Views:</td>
+          <td style="padding: 8px 0; font-weight: 700; text-align: right;">{{ visitor.total_page_views }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">Active Time:</td>
+          <td style="padding: 8px 0; font-weight: 600; color: #059669; text-align: right;">{{ visitor.total_active_seconds }}s</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Traffic Origin & Referrer -->
+    <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 20px; box-shadow: var(--sa-shadow-sm);">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--sa-dark); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-compass" style="color: #d97706;"></i> Traffic Origin
+      </h3>
+      <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">Entry Page:</td>
+          <td style="padding: 8px 0; color: #2563eb; text-align: right;">{{ visitor.entry_page }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">Exit Page:</td>
+          <td style="padding: 8px 0; color: #2563eb; text-align: right;">{{ visitor.exit_page }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">Referrer Source:</td>
+          <td style="padding: 8px 0; text-transform: capitalize; font-weight: 600; text-align: right;">{{ visitor.referrer_category }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; color: var(--sa-text-muted);">Referrer Domain:</td>
+          <td style="padding: 8px 0; font-size: 0.8rem; text-align: right;">{{ visitor.referrer_domain|default:"Direct" }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Public Page Views Timeline -->
+  <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 22px; box-shadow: var(--sa-shadow-sm); margin-bottom: 28px;">
+    <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--sa-dark); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+      <i class="fas fa-file-lines" style="color: #2563eb;"></i> Public Page Views History
+    </h3>
+    {% if page_views %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+          <thead>
+            <tr style="background: #f8fafc; border-bottom: 2px solid var(--sa-border); text-align: left; color: var(--sa-dark);">
+              <th style="padding: 10px 12px;">Timestamp</th>
+              <th style="padding: 10px 12px;">Page Title</th>
+              <th style="padding: 10px 12px;">Path</th>
+              <th style="padding: 10px 12px; text-align: right;">Views</th>
+              <th style="padding: 10px 12px; text-align: right;">Active Reading Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pv in page_views %}
+              <tr style="border-bottom: 1px solid var(--sa-border);">
+                <td style="padding: 10px 12px; color: var(--sa-text-muted); white-space: nowrap;">
+                  {{ pv.timestamp|date:"Y-m-d H:i:s" }}
+                </td>
+                <td style="padding: 10px 12px; font-weight: 600; color: var(--sa-dark);">
+                  {{ pv.page_title|default:"Public Page" }}
+                </td>
+                <td style="padding: 10px 12px; color: #2563eb;">
+                  {{ pv.path }}
+                </td>
+                <td style="padding: 10px 12px; text-align: right; font-weight: 600;">
+                  {{ pv.view_count }}
+                </td>
+                <td style="padding: 10px 12px; text-align: right; color: #059669; font-weight: 600;">
+                  {{ pv.active_seconds }}s
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p style="text-align: center; color: var(--sa-text-muted); padding: 24px 0;">No individual page view events recorded for this session.</p>
+    {% endif %}
+  </div>
+
+  <!-- Consent Audit Records -->
+  <div style="background: #fff; border-radius: 12px; border: 1px solid var(--sa-border); padding: 22px; box-shadow: var(--sa-shadow-sm);">
+    <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--sa-dark); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+      <i class="fas fa-certificate" style="color: #059669;"></i> Consent Audit History
+    </h3>
+    {% if consent_records %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+          <thead>
+            <tr style="background: #f8fafc; border-bottom: 2px solid var(--sa-border); text-align: left; color: var(--sa-dark);">
+              <th style="padding: 10px 12px;">Timestamp</th>
+              <th style="padding: 10px 12px;">Decision</th>
+              <th style="padding: 10px 12px;">Policy Version</th>
+              <th style="padding: 10px 12px;">IP Address</th>
+              <th style="padding: 10px 12px;">User Agent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in consent_records %}
+              <tr style="border-bottom: 1px solid var(--sa-border);">
+                <td style="padding: 10px 12px; color: var(--sa-text-muted); white-space: nowrap;">
+                  {{ c.timestamp|date:"Y-m-d H:i:s" }}
+                </td>
+                <td style="padding: 10px 12px;">
+                  {% if c.decision == 'accepted' %}
+                    <span style="background: #d1fae5; color: #065f46; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.78rem;">
+                      Accepted
+                    </span>
+                  {% elif c.decision == 'declined' %}
+                    <span style="background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.78rem;">
+                      Declined
+                    </span>
+                  {% else %}
+                    <span style="background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 0.78rem;">
+                      {{ c.decision|capfirst }}
+                    </span>
+                  {% endif %}
+                </td>
+                <td style="padding: 10px 12px; font-weight: 600;">v{{ c.policy_version }}</td>
+                <td style="padding: 10px 12px; font-family: monospace;">{{ c.ip_address|default:"None" }}</td>
+                <td style="padding: 10px 12px; font-size: 0.78rem; color: var(--sa-text-muted); max-width: 320px; word-break: break-all;">
+                  {{ c.user_agent }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p style="text-align: center; color: var(--sa-text-muted); padding: 24px 0;">No consent audit entries found for this session key.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

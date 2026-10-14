@@ -450,6 +450,16 @@ urlpatterns = [
         name="super_admin_visitor_analytics",
     ),
     path(
+        "super-admin/visitor-analytics/visitors/<int:session_id>/",
+        views.super_admin_visitor_detail,
+        name="super_admin_visitor_detail",
+    ),
+    path(
+        "super-admin/visitor-analytics/visitors/export/",
+        views.super_admin_export_visitors_csv,
+        name="super_admin_export_visitors_csv",
+    ),
+    path(
         "super-admin/visitor-analytics/leads/<int:lead_id>/",
         views.super_admin_visitor_lead_detail,
         name="super_admin_visitor_lead_detail",
@@ -469,11 +479,16 @@ urlpatterns = [
         views.super_admin_analytics_purge,
         name="super_admin_analytics_purge",
     ),
-    # ── Privacy-Conscious Public Analytics Ingestion API ───────
+    # ── Privacy-Conscious Public Analytics Ingestion & Consent API ───────
     path(
         "api/analytics/track/",
         views.api_analytics_track,
         name="api_analytics_track",
+    ),
+    path(
+        "api/analytics/consent/",
+        views.api_analytics_consent,
+        name="api_analytics_consent",
     ),
     # ── Inbound & Delivery Status Email Webhooks ───────────────
     path("api/email/inbound/", views.api_inbound_email_webhook, name="api_inbound_email_webhook"),
