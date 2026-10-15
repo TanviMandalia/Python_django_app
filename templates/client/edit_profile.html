@@ -30,7 +30,7 @@
             {% if profile.profile_photo %}
               <img src="{{ profile.profile_photo.url }}" id="previewImage" alt="Profile" style="width:100%; height:100%; object-fit:cover;" />
             {% else %}
-              <div id="previewImage" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
+              <div id="previewAvatarFallback" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
                 {{ user.first_name|first|default:user.username|first|upper }}
               </div>
             {% endif %}
@@ -116,7 +116,7 @@
 {% block extra_js %}
 <script>
   const photoInput = document.getElementById('profile_photo');
-  const preview = document.getElementById('previewImage');
+  let preview = document.getElementById('previewImage') || document.getElementById('previewAvatarFallback');
 
   if (photoInput && preview) {
     photoInput.addEventListener('change', function () {
@@ -131,6 +131,7 @@
             img.style.cssText = 'width:100%; height:100%; object-fit:cover;';
             img.src = e.target.result;
             preview.replaceWith(img);
+            preview = img;
           } else {
             preview.src = e.target.result;
           }

@@ -198,12 +198,16 @@ class AppointmentBookingReliabilityTests(TestCase):
 
     def test_booking_succeeds_with_successful_email(self):
         """When email succeeds, confirmation message specifies email sent."""
+        target_date = date.today() + timedelta(days=1)
+        while target_date.weekday() == 6:  # Skip Sunday (closed for public booking)
+            target_date += timedelta(days=1)
+
         booking_data = {
             "name": "Test Patient",
             "email": "patient@example.com",
             "phone": "9876543210",
             "service": "sports",
-            "date": (date.today() + timedelta(days=3)).strftime("%Y-%m-%d"),
+            "date": target_date.strftime("%Y-%m-%d"),
             "time": "11:00",
             "notes": "Knee rehabilitation",
         }

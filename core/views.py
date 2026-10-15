@@ -18,6 +18,7 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.cache import cache  # ← ADDED
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q, Sum, Count
 from django.db import models, transaction, IntegrityError
 from django.http import JsonResponse, HttpResponse, Http404, HttpResponseForbidden
@@ -1555,11 +1556,106 @@ def payment_delete(request, payment_id):
 
 @login_required
 def staff_payments(request):
-    """Staff payments endpoint: renders read-only Payment Log / History for staff's clinic."""
+    """Dedicated Staff payments endpoint:
+    Renders assigned consultation fee collections and compensation summary
+    strictly scoped to the authenticated staff member.
+    Enforces server-side tenant and user isolation: staff cannot view other staff's
+    records or clinic-wide totals. Clients receive 403 Forbidden.
+    """
     role, can_manage, hospital = _user_payment_role(request.user)
-    if role == "client":
-        return HttpResponseForbidden("Forbidden: Patients cannot access staff payment logs.")
-    return admin_payments(request)
+    if role == "client" or (not _is_staff(request.user) and not _is_clinic_admin(request.user) and not request.user.is_superuser):
+        return HttpResponseForbidden("Forbidden: Clients cannot access staff payment logs.")
+
+    hospital = hospital or resolve_hospital(request.user)
+    assigned_payments = PaymentRecord.objects.filter(
+        appointment__assigned_staff=request.user
+    ).select_related("appointment", "patient")
+
+    if hospital:
+        assigned_payments = assigned_payments.filter(hospital=hospital)
+
+    # Search query
+    query = request.GET.get("q", "").strip()
+    if query:
+        assigned_payments = assigned_payments.filter(
+            Q(patient__first_name__icontains=query)
+            | Q(patient__last_name__icontains=query)
+            | Q(patient__username__icontains=query)
+            | Q(appointment__name__icontains=query)
+            | Q(transaction_id__icontains=query)
+        )
+
+    # Status filter
+    status_filter = request.GET.get("status", "").strip().lower()
+    if status_filter in ["paid", "pending", "refunded", "failed"]:
+        assigned_payments = assigned_payments.filter(status=status_filter)
+
+    # Date period filter
+    period = request.GET.get("period", "").strip().lower()
+    now = timezone.now()
+    today = now.date()
+    if period == "today":
+        assigned_payments = assigned_payments.filter(
+            Q(created_at__date=today) | Q(appointment__date=today)
+        )
+    elif period == "7d":
+        since_7d = today - timedelta(days=7)
+        assigned_payments = assigned_payments.filter(
+            Q(created_at__gte=now - timedelta(days=7)) | Q(appointment__date__gte=since_7d)
+        )
+    elif period == "30d":
+        since_30d = today - timedelta(days=30)
+        assigned_payments = assigned_payments.filter(
+            Q(created_at__gte=now - timedelta(days=30)) | Q(appointment__date__gte=since_30d)
+        )
+    elif period == "this_month":
+        assigned_payments = assigned_payments.filter(
+            Q(created_at__year=now.year, created_at__month=now.month)
+            | Q(appointment__date__year=now.year, appointment__date__month=now.month)
+        )
+
+    # KPI calculations for assigned consultations and personal salary
+    total_collected = (
+        assigned_payments.filter(status="paid").aggregate(s=Sum("amount"))["s"]
+        or Decimal("0.00")
+    )
+    pending_collections = (
+        assigned_payments.filter(status="pending").aggregate(s=Sum("amount"))["s"]
+        or Decimal("0.00")
+    )
+    total_sessions_count = assigned_payments.count()
+
+    salary_qs = SalaryRecord.objects.filter(staff=request.user)
+    if hospital:
+        salary_qs = salary_qs.filter(hospital=hospital)
+    total_salary_earned = (
+        salary_qs.filter(is_paid=True).aggregate(s=Sum("net_salary"))["s"]
+        or Decimal("0.00")
+    )
+
+    # Pagination
+    ordered_payments = assigned_payments.order_by("-created_at")
+    paginator = Paginator(ordered_payments, 15)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(
+        request,
+        "staff/staff_payments.html",
+        {
+            "page_obj": page_obj,
+            "total_collected": total_collected,
+            "pending_collections": pending_collections,
+            "total_sessions_count": total_sessions_count,
+            "total_salary_earned": total_salary_earned,
+            "query": query,
+            "status_filter": status_filter,
+            "period": period,
+            "hospital": hospital,
+            "is_staff_view": True,
+            "can_manage": False,
+        },
+    )
 
 
 @login_required
@@ -3082,6 +3178,7 @@ def staff_attendance(request):
     if not _is_staff(request.user):
         return redirect("client_dashboard")
 
+    hospital = resolve_hospital(request.user)
     today = timezone.now().date()
     now_dt = timezone.localtime(timezone.now())
     now_time = now_dt.time()
@@ -3112,7 +3209,13 @@ def staff_attendance(request):
                 messages.warning(request, "⚠️ Already clocked in for morning shift.")
                 return redirect("staff_attendance")
 
-            record, _ = Attendance.objects.get_or_create(staff=request.user, date=today)
+            record, _ = Attendance.objects.get_or_create(
+                staff=request.user,
+                date=today,
+                defaults={"hospital": hospital},
+            )
+            if not record.hospital and hospital:
+                record.hospital = hospital
             record.clock_in = now_time
             record.notes = ""
             record.save()
@@ -3197,7 +3300,13 @@ def staff_attendance(request):
                 messages.warning(request, "⚠️ Already clocked in for evening shift.")
                 return redirect("staff_attendance")
 
-            record, _ = Attendance.objects.get_or_create(staff=request.user, date=today)
+            record, _ = Attendance.objects.get_or_create(
+                staff=request.user,
+                date=today,
+                defaults={"hospital": hospital},
+            )
+            if not record.hospital and hospital:
+                record.hospital = hospital
 
             # ── If morning was fully missed → First Half Leave ──
             if not record.clock_in and not record.morning_clock_out:
@@ -3210,6 +3319,7 @@ def staff_attendance(request):
                         from_date=today,
                         to_date=today,
                         defaults={
+                            "hospital": hospital,
                             "leave_type": "casual",
                             "reason": "Auto-marked: First Half Leave (morning shift missed)",
                             "status": "pending",
@@ -4596,8 +4706,15 @@ def progress_tracking(request):
 
 @login_required
 def reports_analytics(request):
+    """Clinic Admin Analytics View:
+    - Calculates real clinical metrics from PostgreSQL database records.
+    - True patient retention rate computed from actual multi-session patient ratios.
+    - Eliminates N+1 queries by annotating staff tasks and leave counts.
+    - Supports dynamic date filtering (all, today, 7d, 30d, this_month, this_year, custom dates).
+    - Enforces strict server-side authorization (rejects non-admin roles with 403 Forbidden).
+    """
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
-        return redirect("client_dashboard")
+        return HttpResponseForbidden("Forbidden: Administrative analytics access is restricted to clinic administrators.")
 
     hospital = resolve_hospital(request.user)
     if hospital and not request.user.is_superuser:
@@ -4618,6 +4735,61 @@ def reports_analytics(request):
         leaves_qs = LeaveApplication.objects.all()
         staff_qs = StaffProfile.objects.all()
         patient_qs = User.objects.filter(is_superuser=False, is_staff=False)
+
+    # ── Date Filtering ──
+    period = request.GET.get("period", "all").strip().lower()
+    date_from_str = request.GET.get("date_from", "").strip()
+    date_to_str = request.GET.get("date_to", "").strip()
+
+    now = timezone.now()
+    today = now.date()
+
+    if period == "today":
+        all_appointments = all_appointments.filter(date=today)
+        tasks_qs = tasks_qs.filter(Q(due_date=today) | Q(created_at__date=today))
+        notes_qs = notes_qs.filter(date=today)
+        leaves_qs = leaves_qs.filter(Q(from_date__lte=today, to_date__gte=today) | Q(applied_on__date=today))
+    elif period == "7d":
+        since_7d = today - timedelta(days=7)
+        all_appointments = all_appointments.filter(date__gte=since_7d)
+        tasks_qs = tasks_qs.filter(Q(due_date__gte=since_7d) | Q(created_at__date__gte=since_7d))
+        notes_qs = notes_qs.filter(date__gte=since_7d)
+        leaves_qs = leaves_qs.filter(Q(to_date__gte=since_7d) | Q(applied_on__date__gte=since_7d))
+    elif period == "30d":
+        since_30d = today - timedelta(days=30)
+        all_appointments = all_appointments.filter(date__gte=since_30d)
+        tasks_qs = tasks_qs.filter(Q(due_date__gte=since_30d) | Q(created_at__date__gte=since_30d))
+        notes_qs = notes_qs.filter(date__gte=since_30d)
+        leaves_qs = leaves_qs.filter(Q(to_date__gte=since_30d) | Q(applied_on__date__gte=since_30d))
+    elif period == "this_month":
+        all_appointments = all_appointments.filter(date__year=today.year, date__month=today.month)
+        tasks_qs = tasks_qs.filter(created_at__year=today.year, created_at__month=today.month)
+        notes_qs = notes_qs.filter(date__year=today.year, date__month=today.month)
+        leaves_qs = leaves_qs.filter(applied_on__year=today.year, applied_on__month=today.month)
+    elif period == "this_year":
+        all_appointments = all_appointments.filter(date__year=today.year)
+        tasks_qs = tasks_qs.filter(created_at__year=today.year)
+        notes_qs = notes_qs.filter(date__year=today.year)
+        leaves_qs = leaves_qs.filter(applied_on__year=today.year)
+    elif date_from_str or date_to_str:
+        if date_from_str:
+            try:
+                df = datetime.strptime(date_from_str, "%Y-%m-%d").date()
+                all_appointments = all_appointments.filter(date__gte=df)
+                tasks_qs = tasks_qs.filter(Q(due_date__gte=df) | Q(created_at__date__gte=df))
+                notes_qs = notes_qs.filter(date__gte=df)
+                leaves_qs = leaves_qs.filter(applied_on__date__gte=df)
+            except ValueError:
+                pass
+        if date_to_str:
+            try:
+                dt = datetime.strptime(date_to_str, "%Y-%m-%d").date()
+                all_appointments = all_appointments.filter(date__lte=dt)
+                tasks_qs = tasks_qs.filter(Q(due_date__lte=dt) | Q(created_at__date__lte=dt))
+                notes_qs = notes_qs.filter(date__lte=dt)
+                leaves_qs = leaves_qs.filter(applied_on__date__lte=dt)
+            except ValueError:
+                pass
 
     total_appointments = all_appointments.count()
     completed_appointments = all_appointments.filter(status="completed").count()
@@ -4656,9 +4828,23 @@ def reports_analytics(request):
             }
         )
 
-    # ── Performance rates ──
+    # ── True Clinical Performance Rates ──
     completion_rate = pct(completed_appointments)
-    retention_rate = min(completion_rate + 15, 100)
+
+    # Real database calculation of patient retention:
+    # Repeat patients (having >1 appointment) / Total patients with appointments
+    patients_with_appts = (
+        patient_qs.annotate(appt_count=Count("appointments", distinct=True))
+        .filter(appt_count__gt=0)
+    )
+    total_active_patients = patients_with_appts.count()
+    retained_patients = patients_with_appts.filter(appt_count__gt=1).count()
+    retention_rate = (
+        round(retained_patients / total_active_patients * 100)
+        if total_active_patients
+        else 0
+    )
+
     total_tasks = tasks_qs.count()
     completed_tasks = tasks_qs.filter(status="completed").count()
     task_completion_rate = (
@@ -4669,6 +4855,12 @@ def reports_analytics(request):
         round(total_notes / completed_appointments * 100)
         if completed_appointments
         else 0
+    )
+
+    # Staff list annotated with task and leave counts to eliminate N+1 queries
+    staff_list = staff_qs.select_related("user").annotate(
+        tasks_count=Count("user__tasks", distinct=True),
+        leaves_count=Count("user__leaves", distinct=True),
     )
 
     return render(
@@ -4695,7 +4887,10 @@ def reports_analytics(request):
             "total_tasks": total_tasks,
             "recent_patients": patient_qs.order_by("-date_joined")[:6],
             "recent_appointments": all_appointments.order_by("-created_at")[:8],
-            "staff_list": staff_qs.select_related("user"),
+            "staff_list": staff_list,
+            "period": period,
+            "date_from": date_from_str,
+            "date_to": date_to_str,
         },
     )
 

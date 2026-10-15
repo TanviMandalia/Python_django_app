@@ -46,8 +46,8 @@
       </a>
 
       <div class="nav-section">Finance &amp; Leaves</div>
-      <a href="{% url 'staff_payments' %}" class="nav-item{% if url_name == 'staff_payments' or url_name == 'admin_payments' %} active{% endif %}" title="Payment History">
-        <i class="fas fa-receipt"></i> <span>Payment History</span>
+      <a href="{% url 'staff_payments' %}" class="nav-item{% if url_name == 'staff_payments' %} active{% endif %}" title="My Payments & Fees">
+        <i class="fas fa-receipt"></i> <span>My Payments</span>
       </a>
       <a href="{% url 'staff_salary' %}" class="nav-item{% if url_name == 'staff_salary' %} active{% endif %}" title="My Salary">
         <i class="fas fa-rupee-sign"></i> <span>My Salary</span>

@@ -266,6 +266,8 @@ class ClinicAdminPaymentTests(BasePaymentTestCase):
 class StaffPaymentTests(BasePaymentTestCase):
     def setUp(self):
         super().setUp()
+        self.appt_a.assigned_staff = self.staff_a
+        self.appt_a.save()
         self.client.force_login(self.staff_a)
 
     def test_staff_views_clinic_payment_history_and_logs(self):

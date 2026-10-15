@@ -1,0 +1,285 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+
+{% block title %}My Payments &amp; Consultation Collections - Staff Portal{% endblock %}
+{% block page_title %}My Payments &amp; Fee Collections{% endblock %}
+{% block page_subtitle %}Review consultation fee payments for your assigned patient sessions and compensation history{% endblock %}
+
+{% block content %}
+<!-- ════ HEADER CARD ════ -->
+<div class="page-header-card">
+  <div class="page-header-title">
+    <div class="page-header-icon" style="background: rgba(13, 110, 253, 0.15); color: #0d6efd;">
+      <i class="fas fa-receipt"></i>
+    </div>
+    <div class="page-header-text">
+      <h2>Assigned Patient Payments &amp; Clinical Collections — Payment History &amp; Logs</h2>
+      <p>Track consultation fee collections from patients assigned to your care and view your payroll disbursement records.</p>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'staff_salary' %}" class="topbar-action-link" style="background: rgba(245, 197, 24, 0.15); color: #b89008; border: 1px solid rgba(245, 197, 24, 0.3);">
+      <i class="fas fa-file-invoice-dollar"></i> View My Salary Slips
+    </a>
+    <a href="{% url 'staff_dashboard' %}" class="topbar-action-link" style="background: #f8fafc; border: 1px solid var(--staff-border); color: var(--staff-dark);">
+      <i class="fas fa-arrow-left"></i> Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- ════ KPI SUMMARY CARDS ════ -->
+<div class="staff-metrics-grid">
+  <!-- Paid Collections for Assigned Sessions -->
+  <div class="staff-stat-card">
+    <div class="stat-icon-wrapper icon-success">
+      <i class="fas fa-check-double"></i>
+    </div>
+    <div class="stat-content">
+      <span class="stat-label">Assigned Fees Collected</span>
+      <h3 class="stat-value">₹{{ total_collected|floatformat:2 }}</h3>
+      <span class="stat-subtext text-success"><i class="fas fa-calendar-check"></i> Paid patient sessions</span>
+    </div>
+  </div>
+
+  <!-- Pending Collections -->
+  <div class="staff-stat-card">
+    <div class="stat-icon-wrapper icon-warning">
+      <i class="fas fa-clock"></i>
+    </div>
+    <div class="stat-content">
+      <span class="stat-label">Pending Session Fees</span>
+      <h3 class="stat-value">₹{{ pending_collections|floatformat:2 }}</h3>
+      <span class="stat-subtext text-warning"><i class="fas fa-hourglass-half"></i> Awaiting settlement</span>
+    </div>
+  </div>
+
+  <!-- Total Sessions -->
+  <div class="staff-stat-card">
+    <div class="stat-icon-wrapper icon-purple">
+      <i class="fas fa-user-md"></i>
+    </div>
+    <div class="stat-content">
+      <span class="stat-label">Assigned Sessions</span>
+      <h3 class="stat-value">{{ total_sessions_count }}</h3>
+      <span class="stat-subtext">Clinical consultations</span>
+    </div>
+  </div>
+
+  <!-- Salary Disbursed -->
+  <div class="staff-stat-card">
+    <div class="stat-icon-wrapper icon-gold">
+      <i class="fas fa-wallet"></i>
+    </div>
+    <div class="stat-content">
+      <span class="stat-label">My Disbursed Earnings</span>
+      <h3 class="stat-value">₹{{ total_salary_earned|floatformat:0 }}</h3>
+      <span class="stat-subtext"><i class="fas fa-shield-alt"></i> Net salary to date</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SEARCH & FILTERS BAR ════ -->
+<div class="staff-card" style="padding: 16px 20px; margin-bottom: 24px;">
+  <form method="GET" action="{% url 'staff_payments' %}" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; flex: 1; min-width: 260px;">
+      <!-- Search Input -->
+      <div style="position: relative; flex: 1; min-width: 200px;">
+        <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--staff-text-sub); font-size: 0.88rem;"></i>
+        <input type="text" name="q" value="{{ query|default:'' }}" class="form-control" placeholder="Search patient name, reference..." style="padding-left: 36px; height: 38px; font-size: 0.88rem; border-radius: 6px; border: 1px solid var(--staff-border); width: 100%;">
+      </div>
+
+      <!-- Status Filter -->
+      <div style="min-width: 140px;">
+        <select name="status" class="form-control" style="height: 38px; font-size: 0.88rem; border-radius: 6px; border: 1px solid var(--staff-border); width: 100%;">
+          <option value="">All Statuses</option>
+          <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+          <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="refunded" {% if status_filter == 'refunded' %}selected{% endif %}>Refunded</option>
+          <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+        </select>
+      </div>
+
+      <!-- Date Period Filter -->
+      <div style="min-width: 140px;">
+        <select name="period" class="form-control" style="height: 38px; font-size: 0.88rem; border-radius: 6px; border: 1px solid var(--staff-border); width: 100%;">
+          <option value="">All Time</option>
+          <option value="today" {% if period == 'today' %}selected{% endif %}>Today</option>
+          <option value="7d" {% if period == '7d' %}selected{% endif %}>Last 7 Days</option>
+          <option value="30d" {% if period == '30d' %}selected{% endif %}>Last 30 Days</option>
+          <option value="this_month" {% if period == 'this_month' %}selected{% endif %}>This Month</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button type="submit" class="topbar-action-link btn-topbar-primary" style="padding: 0 16px; height: 38px; border: none; font-size: 0.88rem; cursor: pointer; border-radius: 6px;">
+        <i class="fas fa-filter"></i> Filter
+      </button>
+      {% if query or status_filter or period %}
+        <a href="{% url 'staff_payments' %}" class="topbar-action-link" style="padding: 0 14px; height: 38px; border: 1px solid var(--staff-border); font-size: 0.88rem; color: var(--staff-text-sub); border-radius: 6px; display: inline-flex; align-items: center;">
+          <i class="fas fa-undo"></i> Reset
+        </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- ════ PAYMENTS TABLE ════ -->
+<div class="staff-card">
+  <div class="staff-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <h3><i class="fas fa-receipt" style="color: #0d6efd;"></i> Assigned Patient Payment Records</h3>
+    <span class="badge-status badge-info">{{ page_obj.paginator.count }} Record{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+
+  {% if page_obj.object_list %}
+  <div class="staff-table-container">
+    <table class="staff-table">
+      <thead>
+        <tr>
+          <th>Ref / ID</th>
+          <th>Patient</th>
+          <th>Service &amp; Session Date</th>
+          <th>Amount</th>
+          <th>Method</th>
+          <th>Status</th>
+          <th>Date Recorded</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pay in page_obj.object_list %}
+        <tr>
+          <td>
+            <strong style="color: var(--staff-dark); font-size: 0.85rem;">#PAY-{{ pay.id }}</strong>
+            {% if pay.transaction_id %}
+              <div style="font-size: 0.72rem; color: var(--staff-text-sub); font-family: monospace;">{{ pay.transaction_id }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-weight: 600; color: var(--staff-dark);">
+              {% if pay.patient %}
+                {{ pay.patient.get_full_name|default:pay.patient.username }}
+              {% elif pay.appointment %}
+                {{ pay.appointment.name }}
+              {% else %}
+                Walk-in Patient
+              {% endif %}
+            </div>
+            {% if pay.appointment and pay.appointment.phone %}
+              <div style="font-size: 0.75rem; color: var(--staff-text-sub);">
+                <i class="fas fa-phone-alt"></i> {{ pay.appointment.phone }}
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-weight: 500;">
+              {% if pay.appointment %}
+                {{ pay.appointment.get_service_display|default:pay.appointment.service|default:"Physiotherapy Session" }}
+              {% else %}
+                General Consultation
+              {% endif %}
+            </div>
+            {% if pay.appointment and pay.appointment.date %}
+              <div style="font-size: 0.75rem; color: var(--staff-text-sub);">
+                <i class="fas fa-calendar-alt"></i> {{ pay.appointment.date|date:"d M Y" }} at {{ pay.appointment.time|default:"Scheduled" }}
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            <strong style="font-size: 0.95rem; color: var(--staff-dark);">₹{{ pay.amount|floatformat:2 }}</strong>
+          </td>
+          <td>
+            <span style="font-size: 0.82rem; text-transform: uppercase; font-weight: 500; color: var(--staff-text-sub);">
+              <i class="fas {% if pay.method == 'cash' %}fa-money-bill-wave{% elif pay.method == 'card' %}fa-credit-card{% elif pay.method == 'upi' %}fa-mobile-alt{% else %}fa-university{% endif %}"></i>
+              {{ pay.get_method_display|default:pay.method }}
+            </span>
+          </td>
+          <td>
+            {% if pay.status == 'paid' %}
+              <span class="badge-status" style="background: rgba(40, 167, 69, 0.15); color: #28a745; font-weight: 600;">
+                <i class="fas fa-check-circle"></i> Paid
+              </span>
+            {% elif pay.status == 'pending' %}
+              <span class="badge-status" style="background: rgba(253, 126, 20, 0.15); color: #fd7e14; font-weight: 600;">
+                <i class="fas fa-clock"></i> Pending
+              </span>
+            {% elif pay.status == 'refunded' %}
+              <span class="badge-status" style="background: rgba(108, 117, 125, 0.15); color: #6c757d; font-weight: 600;">
+                <i class="fas fa-undo"></i> Refunded
+              </span>
+            {% else %}
+              <span class="badge-status" style="background: rgba(220, 53, 69, 0.15); color: #dc3545; font-weight: 600;">
+                <i class="fas fa-times-circle"></i> {{ pay.status|title }}
+              </span>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-size: 0.82rem; color: var(--staff-text-sub);">
+              {{ pay.created_at|date:"d M Y, h:i A" }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div style="display: flex; justify-content: center; align-items: center; gap: 8px; padding: 18px 24px; border-top: 1px solid var(--staff-border); flex-wrap: wrap;">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if period %}&period={{ period }}{% endif %}" class="topbar-action-link" style="padding: 6px 14px; font-size: 0.82rem; border: 1px solid var(--staff-border); color: var(--staff-dark);">
+        ← Previous
+      </a>
+    {% endif %}
+
+    <span style="font-size: 0.85rem; color: var(--staff-text-sub); padding: 0 8px;">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if period %}&period={{ period }}{% endif %}" class="topbar-action-link" style="padding: 6px 14px; font-size: 0.82rem; border: 1px solid var(--staff-border); color: var(--staff-dark);">
+        Next →
+      </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <!-- Empty State -->
+  <div style="text-align: center; padding: 48px 24px;">
+    <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(13, 110, 253, 0.1); color: #0d6efd; display: inline-flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-bottom: 16px;">
+      <i class="fas fa-receipt"></i>
+    </div>
+    <h4 style="font-size: 1.1rem; color: var(--staff-dark); margin-bottom: 8px;">No Assigned Payment Records Found</h4>
+    <p style="font-size: 0.85rem; color: var(--staff-text-sub); max-width: 480px; margin: 0 auto 18px auto;">
+      {% if query or status_filter or period %}
+        No payments match your current filter criteria. Try adjusting the search or clearing your filters.
+      {% else %}
+        When patients complete bookings and payments for clinical consultations assigned to you, the records will appear here.
+      {% endif %}
+    </p>
+    {% if query or status_filter or period %}
+      <a href="{% url 'staff_payments' %}" class="topbar-action-link btn-topbar-primary" style="display: inline-block;">
+        Clear Filters
+      </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- ════ CLINICAL POLICY NOTE ════ -->
+<div class="staff-card" style="margin-top: 24px; background: #f8fafc; border: 1px dashed var(--staff-border); padding: 18px 22px;">
+  <div style="display: flex; gap: 14px; align-items: flex-start;">
+    <div style="color: #0d6efd; font-size: 1.2rem; margin-top: 2px;">
+      <i class="fas fa-info-circle"></i>
+    </div>
+    <div>
+      <h5 style="margin: 0 0 4px 0; font-size: 0.92rem; color: var(--staff-dark);">Clinical Finance &amp; Compensation Policy</h5>
+      <p style="margin: 0; font-size: 0.82rem; color: var(--staff-text-sub); line-height: 1.5;">
+        The payment records listed above represent direct patient consultation fee collections associated with appointments where you are the assigned therapist. Staff remuneration is disbursed through verified monthly salary slips. To inspect your monthly compensation, allowances, incentives, and bank disbursement history, visit the <a href="{% url 'staff_salary' %}" style="color: #0d6efd; font-weight: 600; text-decoration: underline;">My Salary Slips</a> portal.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

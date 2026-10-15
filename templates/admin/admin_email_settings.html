@@ -24,7 +24,50 @@
   </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+<style>
+  .email-settings-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  .form-row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  .form-row-host-port {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  .email-toggles-box {
+    background: #f8fafc;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 991px) {
+    .email-settings-layout {
+      grid-template-columns: 1fr !important;
+    }
+  }
+  @media (max-width: 640px) {
+    .form-row-2col,
+    .form-row-host-port {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>
+
+<div class="email-settings-layout">
   <!-- MAIN CONFIGURATION CARD -->
   <div class="admin-card" style="margin: 0;">
     <div style="margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--admin-border);">
@@ -40,7 +83,7 @@
       {% csrf_token %}
       <input type="hidden" name="action" value="save">
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+      <div class="form-row-2col">
         <div class="form-group">
           <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
             Account Display Label
@@ -64,7 +107,7 @@
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 18px;">
+      <div class="form-row-host-port">
         <div class="form-group">
           <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
             SMTP Host Server <span style="color:#ef4444;">*</span>
@@ -85,7 +128,7 @@
       </div>
 
       <!-- TLS / SSL TOGGLES -->
-      <div style="background: #f8fafc; border: 1px solid var(--admin-border); border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: flex; gap: 24px; align-items: center;">
+      <div class="email-toggles-box">
         <label style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.88rem; font-weight: 600; color: var(--admin-dark); cursor: pointer;">
           <input type="checkbox" name="use_tls" id="useTls" {% if not account or account.use_tls %}checked{% endif %}>
           <span>Enable STARTTLS (Port 587 recommended)</span>
@@ -96,7 +139,7 @@
         </label>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+      <div class="form-row-2col">
         <div class="form-group">
           <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
             SMTP Username / Account Email <span style="color:#ef4444;">*</span>
@@ -129,7 +172,7 @@
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+      <div class="form-row-2col">
         <div class="form-group">
           <label style="font-weight: 600; font-size: 0.88rem; color: var(--admin-dark); display: block; margin-bottom: 6px;">
             Authorized "From" Email Address <span style="color:#ef4444;">*</span>

@@ -24,6 +24,50 @@
   </div>
 </div>
 
+<!-- ════ DATE FILTER BAR ════ -->
+<div class="admin-card" style="padding: 14px 20px; margin-bottom: 24px;">
+  <form method="GET" action="{% url 'reports_analytics' %}" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+      <span style="font-size: 0.85rem; font-weight: 600; color: var(--admin-text-sub); margin-right: 4px;">
+        <i class="fas fa-calendar-alt"></i> Timeframe:
+      </span>
+      <a href="?period=all" class="topbar-action-link" style="padding: 6px 12px; font-size: 0.82rem; border-radius: 6px; text-decoration: none; {% if not period or period == 'all' %}background: var(--admin-primary); color: #000; font-weight: 700; border: 1px solid var(--admin-primary);{% else %}background: #fff; color: var(--admin-text-main); border: 1px solid var(--admin-border);{% endif %}">
+        All Time
+      </a>
+      <a href="?period=today" class="topbar-action-link" style="padding: 6px 12px; font-size: 0.82rem; border-radius: 6px; text-decoration: none; {% if period == 'today' %}background: var(--admin-primary); color: #000; font-weight: 700; border: 1px solid var(--admin-primary);{% else %}background: #fff; color: var(--admin-text-main); border: 1px solid var(--admin-border);{% endif %}">
+        Today
+      </a>
+      <a href="?period=7d" class="topbar-action-link" style="padding: 6px 12px; font-size: 0.82rem; border-radius: 6px; text-decoration: none; {% if period == '7d' %}background: var(--admin-primary); color: #000; font-weight: 700; border: 1px solid var(--admin-primary);{% else %}background: #fff; color: var(--admin-text-main); border: 1px solid var(--admin-border);{% endif %}">
+        Last 7 Days
+      </a>
+      <a href="?period=30d" class="topbar-action-link" style="padding: 6px 12px; font-size: 0.82rem; border-radius: 6px; text-decoration: none; {% if period == '30d' %}background: var(--admin-primary); color: #000; font-weight: 700; border: 1px solid var(--admin-primary);{% else %}background: #fff; color: var(--admin-text-main); border: 1px solid var(--admin-border);{% endif %}">
+        Last 30 Days
+      </a>
+      <a href="?period=this_month" class="topbar-action-link" style="padding: 6px 12px; font-size: 0.82rem; border-radius: 6px; text-decoration: none; {% if period == 'this_month' %}background: var(--admin-primary); color: #000; font-weight: 700; border: 1px solid var(--admin-primary);{% else %}background: #fff; color: var(--admin-text-main); border: 1px solid var(--admin-border);{% endif %}">
+        This Month
+      </a>
+      <a href="?period=this_year" class="topbar-action-link" style="padding: 6px 12px; font-size: 0.82rem; border-radius: 6px; text-decoration: none; {% if period == 'this_year' %}background: var(--admin-primary); color: #000; font-weight: 700; border: 1px solid var(--admin-primary);{% else %}background: #fff; color: var(--admin-text-main); border: 1px solid var(--admin-border);{% endif %}">
+        This Year
+      </a>
+    </div>
+
+    <!-- Custom Date Range -->
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+      <input type="date" name="date_from" value="{{ date_from|default:'' }}" class="form-control" style="height: 34px; font-size: 0.82rem; padding: 4px 8px; width: 135px; border: 1px solid var(--admin-border); border-radius: 6px;" title="Start Date">
+      <span style="font-size: 0.82rem; color: var(--admin-text-sub);">to</span>
+      <input type="date" name="date_to" value="{{ date_to|default:'' }}" class="form-control" style="height: 34px; font-size: 0.82rem; padding: 4px 8px; width: 135px; border: 1px solid var(--admin-border); border-radius: 6px;" title="End Date">
+      <button type="submit" class="topbar-action-link btn-topbar-primary" style="height: 34px; padding: 0 14px; font-size: 0.82rem; border: none; cursor: pointer; border-radius: 6px;">
+        Apply
+      </button>
+      {% if date_from or date_to or period != 'all' and period %}
+        <a href="{% url 'reports_analytics' %}" class="topbar-action-link" style="height: 34px; padding: 0 10px; font-size: 0.82rem; border: 1px solid var(--admin-border); color: var(--admin-text-sub); border-radius: 6px; display: inline-flex; align-items: center;">
+          <i class="fas fa-undo"></i>
+        </a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
 <!-- ════ PRIMARY METRICS ════ -->
 <div class="admin-metrics-grid">
   <div class="admin-stat-card">
@@ -251,8 +295,8 @@
             </div>
           </td>
           <td><span class="badge-status badge-info">{{ s.get_role_display }}</span></td>
-          <td><strong>{{ s.user.tasks.count }}</strong></td>
-          <td>{{ s.user.leaves.count }}</td>
+          <td><strong>{{ s.tasks_count|default:s.user.tasks.count }}</strong></td>
+          <td>{{ s.leaves_count|default:s.user.leaves.count }}</td>
           <td>
             <a href="{% url 'admin_doctor_chat_detail' s.user.id %}" class="btn-action btn-action-view" title="Chat with Doctor">
               <i class="fas fa-comment-dots"></i> Chat

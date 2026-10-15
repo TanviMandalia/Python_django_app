@@ -1466,6 +1466,10 @@ class EmailAccount(models.Model):
             clean_pwd = clean_pwd.replace(" ", "")
         return clean_pwd
 
+    @property
+    def has_password(self):
+        return bool(self.encrypted_password and str(self.encrypted_password).strip())
+
     def get_connection(self, fail_silently=False, timeout=15, force_smtp=False):
         import os
         from django.conf import settings
