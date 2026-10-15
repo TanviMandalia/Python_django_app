@@ -75,7 +75,7 @@
 </div>
 
 <!-- ════ 3. PROGRESS METRICS & SERVICES (2 COLUMNS) ════ -->
-<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:24px; margin-bottom:24px;">
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap:24px; margin-bottom:24px;">
   <!-- Milestones & Adherence -->
   <div class="client-card" style="margin-bottom:0;">
     <div class="client-card-header">
@@ -163,7 +163,7 @@
   </div>
   <div class="client-card-body">
     {% if session_notes %}
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:18px;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap:18px;">
         {% for note in session_notes %}
           <div style="background:#f9fafb; border:1px solid var(--client-border); border-left:4px solid var(--client-primary); border-radius:12px; padding:18px; box-shadow:var(--client-shadow-sm);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">

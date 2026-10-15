@@ -4,8 +4,8 @@
 {% block title %}Feature Locked — {{ feature.name|default:"Feature Unavailable" }}{% endblock %}
 
 {% block content %}
-<div style="min-height: 75vh; display: flex; align-items: center; justify-content: center; padding: 24px;">
-  <div style="background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01); max-width: 580px; width: 100%; text-align: center; padding: 48px 36px; position: relative; overflow: hidden;">
+<div style="min-height: 75vh; display: flex; align-items: center; justify-content: center; padding: clamp(12px, 3vw, 24px); box-sizing: border-box;">
+  <div style="background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01); max-width: 580px; width: 100%; text-align: center; padding: clamp(28px, 6vw, 48px) clamp(16px, 4vw, 36px); position: relative; overflow: hidden; box-sizing: border-box;">
     <!-- Top Accent Bar -->
     <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #8b5cf6, #3b82f6);"></div>
 

@@ -16,26 +16,29 @@
         }
 
         .otp-page {
-            height: 90vh;
+            min-height: 90vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: clamp(12px, 3vw, 24px);
+            box-sizing: border-box;
         }
 
         .otp-card {
-            width: 380px;
+            width: 100%;
+            max-width: 400px;
             background: white;
             border-radius: 15px;
-            padding: 30px;
+            padding: clamp(20px, 5vw, 32px);
             box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
             text-align: center;
             border-top: 4px solid #F5C518;
+            box-sizing: border-box;
         }
 
         .otp-card h2 {
             color: #2C2C2C;
-            font-size: 1.4em;
+            font-size: clamp(1.2rem, 4vw, 1.4rem);
             font-weight: 700;
             margin-bottom: 8px;
         }
@@ -49,21 +52,28 @@
         .otp-inputs {
             display: flex;
             justify-content: space-between;
-            gap: 10px;
+            gap: clamp(4px, 1.8vw, 10px);
             margin-bottom: 20px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .otp-inputs input {
-            width: 48px;
-            height: 52px;
+            flex: 1 1 0;
+            min-width: 0;
+            width: 100%;
+            max-width: 48px;
+            height: clamp(42px, 12vw, 52px);
             text-align: center;
-            font-size: 18px;
-            font-weight: 600;
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: 700;
             border-radius: 10px;
             border: 1px solid #ddd;
             outline: none;
             transition: 0.2s;
             background: #fff;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         .otp-inputs input:focus {

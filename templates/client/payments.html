@@ -108,7 +108,7 @@
 
     {% if my_payments %}
       <div class="client-table-responsive" style="overflow-x:auto;">
-        <table class="client-table" id="clientPaymentsTable" style="width:100%; min-width:680px;">
+        <table class="client-table" id="clientPaymentsTable" style="width:100%;">
           <thead>
             <tr>
               <th>Date &amp; Time</th>
@@ -220,7 +220,7 @@
 
 <!-- ════ 3. OFFICIAL PAYMENT RECEIPT MODAL (READ-ONLY) ════ -->
 <div id="clientReceiptModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:2000; align-items:center; justify-content:center; padding:16px;">
-  <div style="background:#fff; border-radius:16px; width:100%; max-width:520px; box-shadow:0 24px 48px rgba(0,0,0,0.22); overflow:hidden; animation:modalFadeIn 0.25s ease;" id="printableReceiptCard">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:min(94vw, 520px); max-height:calc(100dvh - 32px); overflow-y:auto; box-shadow:0 24px 48px rgba(0,0,0,0.22); animation:modalFadeIn 0.25s ease;" id="printableReceiptCard">
     <div style="padding:16px 22px; border-bottom:1px solid var(--client-border); display:flex; align-items:center; justify-content:space-between; background:#fafafa;">
       <h3 style="margin:0; font-size:1.05rem; color:var(--client-dark); display:flex; align-items:center; gap:8px;">
         <i class="fas fa-receipt" style="color:var(--client-primary-dark);"></i> Official Consultation Receipt

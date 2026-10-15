@@ -34,8 +34,8 @@
             background: white;
             border-radius: 20px;
             overflow: hidden;
-            width: 950px;
-            max-width: 95%;
+            width: 100%;
+            max-width: 950px;
             display: flex;
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
         }
@@ -493,7 +493,6 @@
 
         table {
             width: 100%;
-            min-width: 700px;
             border-collapse: collapse;
         }
 
@@ -637,6 +636,25 @@
                 z-index: 1000;
             }
 
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+            .register-container {
+                border-radius: 14px;
+            }
+            .left-panel {
+                padding: 24px 16px;
+            }
+            .right-panel {
+                padding: 24px 16px;
+            }
+            .btn-register {
+                width: 100%;
+                padding: 12px 20px;
+            }
         }
     </style>
   <link rel="stylesheet" href="{% static 'css/style.css' %}" />

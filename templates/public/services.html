@@ -188,6 +188,7 @@
             font-size: 1rem;
             color: #1e293b;
             width: 100%;
+            min-width: 0;
             background: transparent;
         }
 
@@ -321,8 +322,8 @@
         /* ── TREATMENT CARDS GRID ── */
         .treatments-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 28px;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+            gap: clamp(16px, 3vw, 28px);
             margin-bottom: 60px;
         }
 
@@ -599,6 +600,20 @@
             }
             .booking-cta-section {
                 padding: 36px 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .search-box-wrap {
+                padding: 4px 6px 4px 14px;
+            }
+            .search-submit-btn {
+                padding: 8px 14px;
+                font-size: 0.82rem;
+            }
+            .treatment-card {
+                padding: 20px 16px;
+                border-radius: 14px;
             }
         }
     </style>

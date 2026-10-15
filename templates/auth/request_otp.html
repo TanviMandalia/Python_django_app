@@ -38,8 +38,9 @@ body{
     display:flex;
     justify-content:center;
     align-items:center;
-    padding:20px;
+    padding:clamp(12px, 3vw, 20px);
     color:var(--text);
+    box-sizing:border-box;
 }
 
 /* ===============================
@@ -52,8 +53,9 @@ body{
     background:var(--card);
     border-radius:var(--radius);
     box-shadow:var(--shadow);
-    padding:40px;
+    padding:clamp(22px, 5vw, 40px);
     animation:fade .5s ease;
+    box-sizing:border-box;
 }
 
 @keyframes fade{

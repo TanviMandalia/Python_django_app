@@ -67,7 +67,7 @@
   </div>
 
   {% if notes %}
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px;" id="notesGrid">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px;" id="notesGrid">
     {% for note in notes %}
     <div class="session-note-card" style="background: #ffffff; border: 1px solid var(--admin-border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.03); transition: all 0.2s;">
       

@@ -999,6 +999,21 @@
             }
         }
 
+        /*========== ULTRA SMALL MOBILE (320px - 360px) ==========*/
+        @media(max-width:360px) {
+            .container {
+                width: calc(100% - 20px) !important;
+            }
+            .qual-item,
+            .why-item,
+            .cert-card {
+                padding: 16px 12px !important;
+            }
+            section {
+                padding: 50px 0 !important;
+            }
+        }
+
         /*========== GLOBAL ANIMATIONS ==========*/
         @keyframes fadeUp {
             from {
@@ -1433,7 +1448,7 @@
                 </div>
 
                 <div
-                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; text-align: left;">
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; margin-top: 20px; text-align: left;">
                     <div
                         style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #F5C518; padding: 18px 20px; border-radius: 12px;">
                         <h4 style="font-size: 1.1rem; color: #1e293b; margin-bottom: 4px;"><i

@@ -345,7 +345,7 @@
 
     .related-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
       gap: 20px;
     }
 
@@ -509,7 +509,7 @@
     }
 
     .table-responsive table {
-      min-width: 700px;
+      min-width: 100%;
     }
 
     /* Forms */
@@ -818,6 +818,17 @@
         height: 44px;
       }
 
+      .article-wrapper {
+        padding: 0 10px;
+      }
+
+      .article-top,
+      .article-content,
+      .related-articles,
+      .share-section,
+      .author-box {
+        padding: 16px 12px;
+      }
     }
   </style>
   <link rel="stylesheet" href="{% static 'css/style.css' %}" />

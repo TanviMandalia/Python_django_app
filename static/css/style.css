@@ -983,12 +983,31 @@ body.sidebar-open {
     .sidebar {
         transform: translateX(-100%) !important;
         left: 0 !important;
-        width: 280px !important;
+        width: min(85vw, 300px) !important;
         max-width: 85vw !important;
-        height: 100vh !important;
+        height: 100% !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
         position: fixed !important;
         z-index: 1050 !important;
         box-shadow: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    }
+
+    .sidebar .nav-scroll {
+        flex: 1 1 auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        min-height: 0 !important;
+    }
+
+    .sidebar .sidebar-footer {
+        flex-shrink: 0 !important;
+        margin-top: auto !important;
+        padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
     }
 
     .sidebar.show,
@@ -1841,15 +1860,16 @@ RESPONSIVE
 @media(max-width:768px){
 
     .card-body{
-        padding:18px;
+        padding:var(--card-pad, 16px);
     }
 
     .card-header,
     .card-footer{
-        padding:16px;
+        padding:14px 16px;
     }
 
-    .btn{
+    .btn.btn-block,
+    .btn.w-100{
         width:100%;
     }
 
@@ -1873,14 +1893,14 @@ RESPONSIVE
         border-radius:12px;
     }
 
-    input,
+    input:not([type="checkbox"]):not([type="radio"]),
     select,
     textarea{
-        font-size:.85rem;
+        font-size:16px !important;
     }
 
     .btn{
-        padding:11px 18px;
+        padding:10px 16px;
     }
 
 }
@@ -2189,7 +2209,7 @@ RESPONSIVE
 @media(max-width:1200px){
 
     .stats-grid{
-        grid-template-columns:repeat(2,1fr);
+        grid-template-columns:repeat(auto-fit, minmax(min(100%, 220px), 1fr));
     }
 
 }
@@ -2199,9 +2219,10 @@ RESPONSIVE
     .filter-bar{
         flex-direction:column;
         align-items:stretch;
+        gap:10px;
     }
 
-    .filter-bar .btn{
+    .filter-bar .btn.btn-block{
         width:100%;
     }
 
@@ -2210,19 +2231,18 @@ RESPONSIVE
 @media(max-width:768px){
 
     .stats-grid{
-        grid-template-columns:1fr;
-    }
-
-    .table{
-        min-width:650px;
+        grid-template-columns:repeat(auto-fit, minmax(min(100%, 200px), 1fr));
     }
 
     .modal-content{
-        max-width:100%;
+        max-width:min(94vw, 560px);
+        margin:auto;
     }
 
     .pagination{
         flex-wrap:wrap;
+        gap:6px;
+        justify-content:center;
     }
 
 }
@@ -2230,19 +2250,19 @@ RESPONSIVE
 @media(max-width:576px){
 
     .stat-card{
-        flex-direction:column;
-        text-align:center;
-        gap:15px;
+        padding:12px 10px;
+        gap:10px;
+        border-radius:12px;
     }
 
     .modal-header,
     .modal-body,
     .modal-footer{
-        padding:16px;
+        padding:14px;
     }
 
     .breadcrumb{
-        font-size:.85rem;
+        font-size:.82rem;
     }
 
 }
@@ -2250,14 +2270,14 @@ RESPONSIVE
 @media(max-width:360px){
 
     .filter-bar{
-        padding:12px;
+        padding:10px;
     }
 
     .pagination a,
     .pagination span{
-        width:36px;
-        height:36px;
-        font-size:.85rem;
+        width:34px;
+        height:34px;
+        font-size:.8rem;
     }
 
 }
@@ -2571,4 +2591,167 @@ table tbody tr:hover {
     padding: 18px;
     border: 1px solid var(--border);
     box-shadow: var(--shadow-xs);
+}
+
+/*==================================================
+  UNIVERSAL RESPONSIVE ENGINE (320px - 1280px+)
+==================================================*/
+
+/* 1. Universal Table Responsive Containers */
+.table-responsive,
+.table-responsive-admin,
+.sa-table-responsive,
+.sa-table-wrap,
+.client-table-responsive,
+.staff-table-container,
+.admin-table-wrapper,
+.table-scroll-container,
+.table-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-x: contain !important;
+    display: block !important;
+    margin-bottom: 16px !important;
+    position: relative !important;
+}
+
+/* Ensure tables inside responsive wrappers never blow out parent */
+.table-responsive > table,
+.table-responsive-admin > table,
+.sa-table-responsive > table,
+.sa-table-wrap > table,
+.client-table-responsive > table,
+.staff-table-container > table,
+.admin-table-wrapper > table,
+.table-container > table {
+    margin-bottom: 0 !important;
+    max-width: none !important;
+}
+
+/* 2. Universal Modal & Overlay Dialog Rules */
+.modal,
+.modal-backdrop,
+.sa-modal,
+.client-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 10000 !important;
+    padding: clamp(10px, 3vw, 24px) !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+.modal-content,
+.modal-dialog,
+.modal-box,
+.sa-modal-card,
+.client-modal-card,
+.dialog-content {
+    width: 100% !important;
+    max-width: min(94vw, 560px) !important;
+    max-height: calc(100dvh - 32px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin: auto !important;
+    box-sizing: border-box !important;
+}
+
+/* 3. Universal Text & Long Content Wrapping */
+.text-wrap-safe,
+.table td,
+.admin-table td,
+.sa-table td,
+.client-table td,
+.staff-table td,
+.nav-item span,
+.user-info h4,
+.user-info p,
+.breadcrumb {
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+/* 4. Universal Form Control Safety */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+select,
+textarea {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+@media (max-width: 768px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        font-size: 16px !important; /* Prevents auto-zoom in iOS Safari */
+    }
+}
+
+/* 5. Mobile Layout & Grid Optimizations (< 576px) */
+@media (max-width: 576px) {
+    /* Collapse multi-column inline grids to single column */
+    [style*="grid-template-columns: repeat(auto-fit, minmax(2"],
+    [style*="grid-template-columns: repeat(auto-fit, minmax(3"],
+    [style*="grid-template-columns: repeat(auto-fill, minmax(2"],
+    [style*="grid-template-columns: repeat(auto-fill, minmax(3"],
+    .reviews-grid,
+    .treatments-grid,
+    .health-tips-grid,
+    .clinic-gallery-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Keep button touches ergonomic (min 44px) */
+    .btn,
+    .topbar-action-link,
+    .client-btn,
+    .sa-btn,
+    .page-header-actions a,
+    .page-header-actions button {
+        min-height: 44px !important;
+    }
+}
+
+/* 6. Ultra-Small Screen Optimizations (320px - 360px) */
+@media (max-width: 360px) {
+    :root {
+        --page-pad-x: 10px;
+        --page-pad-y: 12px;
+        --card-pad: 12px 10px;
+    }
+
+    .main,
+    .admin-body,
+    .sa-body,
+    .client-body,
+    .staff-page-content {
+        padding: 12px 8px !important;
+    }
+
+    .card,
+    .admin-card,
+    .sa-card,
+    .client-card,
+    .staff-card {
+        padding: 12px 10px !important;
+    }
+
+    .admin-stats-grid,
+    .sa-stats-grid,
+    .client-stats-grid,
+    .staff-stats-grid,
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
 }

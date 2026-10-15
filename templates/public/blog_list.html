@@ -194,7 +194,7 @@
 
     .blog-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
       gap: 20px;
     }
 
@@ -347,7 +347,6 @@
 
     table {
       width: 100%;
-      min-width: 700px;
       border-collapse: collapse;
     }
 
@@ -521,6 +520,24 @@
         height: 180px;
       }
 
+    }
+
+    @media (max-width: 480px) {
+      .dashboard-body {
+        padding: 10px;
+      }
+
+      .welcome-card {
+        padding: 16px 12px;
+      }
+
+      .blog-content {
+        padding: 14px;
+      }
+
+      .blog-actions {
+        flex-direction: column;
+      }
     }
 
     /* Tablet */
