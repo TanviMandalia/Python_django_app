@@ -101,7 +101,7 @@
       <div style="display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--admin-border);">
         <form method="POST" action="{% url 'toggle_review_approval' r.id %}" style="flex: 1;">
           {% csrf_token %}
-          <button type="submit" class="topbar-action-link" style="width: max-content; max-width: 100%; justify-content: center; background: {% if r.is_approved %}#f8f9fa{% else %}rgba(40, 167, 69, 0.15){% endif %}; color: {% if r.is_approved %}var(--admin-dark){% else %}#28a745{% endif %}; font-size: 0.82rem; padding: 7px 16px; border: 1px solid var(--admin-border); cursor: pointer;">
+          <button type="submit" class="topbar-action-link" style="width: auto; width: fit-content; max-width: 100%; justify-content: center; background: {% if r.is_approved %}#f8f9fa{% else %}rgba(40, 167, 69, 0.15){% endif %}; color: {% if r.is_approved %}var(--admin-dark){% else %}#28a745{% endif %}; font-size: 0.82rem; padding: 7px 16px; border: 1px solid var(--admin-border); cursor: pointer;">
             {% if r.is_approved %}<i class="fas fa-eye-slash"></i> Hide{% else %}<i class="fas fa-check"></i> Approve{% endif %}
           </button>
         </form>

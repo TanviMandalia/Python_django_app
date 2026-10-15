@@ -435,17 +435,34 @@
       cursor: pointer;
       border: 1px solid transparent;
       transition: all 0.2s ease;
-      white-space: nowrap;
-      width: max-content;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: break-word;
+      line-height: 1.35;
+      text-align: center;
+      box-sizing: border-box;
+      width: auto;
+      width: fit-content;
       max-width: 100%;
+      min-height: 40px;
+    }
+
+    .sa-btn i,
+    .sa-btn svg {
+      flex-shrink: 0;
     }
 
     button:not(.sa-toggle-btn):not(.sidebar-close-btn):not(#menuToggle):not(.menu-btn):not(.btn-block):not(.w-100),
     .sa-btn:not(.btn-block):not(.w-100),
     .btn:not(.btn-block):not(.w-100),
-    .btn-action:not(.btn-block):not(.w-100) {
-      width: max-content;
+    .btn-action:not(.btn-action-icon):not(.btn-block):not(.w-100) {
+      width: auto;
+      width: fit-content;
       max-width: 100%;
+      box-sizing: border-box;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: break-word;
     }
 
     .sa-btn-primary {

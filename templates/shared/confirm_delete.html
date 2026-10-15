@@ -195,8 +195,15 @@
             text-decoration: none;
             font-size: 0.9em;
             transition: all 0.3s;
-            width: max-content;
+            width: auto;
+            width: fit-content;
             max-width: 100%;
+            box-sizing: border-box;
+            white-space: normal;
+            word-break: normal;
+            overflow-wrap: break-word;
+            line-height: 1.35;
+            text-align: center;
         }
 
         .btn-cancel-link:hover {
@@ -213,8 +220,15 @@
             font-size: 0.9em;
             cursor: pointer;
             transition: all 0.3s;
-            width: max-content;
+            width: auto;
+            width: fit-content;
             max-width: 100%;
+            box-sizing: border-box;
+            white-space: normal;
+            word-break: normal;
+            overflow-wrap: break-word;
+            line-height: 1.35;
+            text-align: center;
         }
 
         .btn-delete:hover {
@@ -407,9 +421,11 @@
 
         .btn-delete,
         .btn-cancel-link {
-            width: max-content;
+            width: auto;
+            width: fit-content;
             max-width: 100%;
             text-align: center;
+            box-sizing: border-box;
         }
 
         @media(max-width:480px) {

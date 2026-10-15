@@ -60,7 +60,7 @@
         </div>
 
         <input type="file" id="logo" name="logo" style="display: none;" onchange="updateFileName(this)">
-        <label for="logo" class="btn-action" style=" width: max-content; cursor: pointer; background: #2C2C2C; color: #fff; padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px;">
+        <label for="logo" class="btn-action" style="width: auto; width: fit-content; max-width: 100%; cursor: pointer; background: #2C2C2C; color: #fff; padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px;">
           <i class="fas fa-upload"></i> Choose File
         </label>
         <span id="fileNameDisplay" style="font-size: 0.8rem; color: var(--admin-text-sub);">No new file selected</span>
@@ -105,11 +105,11 @@
       <textarea name="address" rows="3" placeholder="Enter complete clinic location and landmark details" style="width: 100%; padding: 10px 14px; border: 1px solid var(--admin-border); border-radius: 8px; font-size: 0.9rem; resize: vertical;">{{ settings.address|default:'' }}</textarea>
     </div>
 
-    <div style="display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 1px solid var(--admin-border);">
-      <a href="{% url 'admin_dashboard' %}" class="btn-action" style="width: max-content; padding: 10px 20px; border-radius: 8px; background: #f8f9fa; border: 1px solid var(--admin-border); color: var(--admin-dark); font-weight: 600; text-decoration: none;">
+    <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 1px solid var(--admin-border);">
+      <a href="{% url 'admin_dashboard' %}" class="btn-action" style="width: auto; width: fit-content; max-width: 100%; padding: 10px 20px; border-radius: 8px; background: #f8f9fa; border: 1px solid var(--admin-border); color: var(--admin-dark); font-weight: 600; text-decoration: none;">
         Cancel
       </a>
-      <button type="submit" class="btn-action" style="width: max-content; padding: 10px 24px; border-radius: 8px; background: var(--admin-primary); color: #000; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+      <button type="submit" class="btn-action" style="width: auto; width: fit-content; max-width: 100%; padding: 10px 24px; border-radius: 8px; background: var(--admin-primary); color: #000; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
         <i class="fas fa-save"></i> Save Settings
       </button>
     </div>

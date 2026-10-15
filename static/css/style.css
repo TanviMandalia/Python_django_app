@@ -1568,15 +1568,37 @@ BUTTONS
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    gap:10px;
-    padding:12px 22px;
+    gap:8px;
+    padding:10px 20px;
     border:none;
     border-radius:12px;
     cursor:pointer;
     font-weight:600;
     transition:.25s;
-    width:max-content;
+    width:auto;
+    width:fit-content;
     max-width:100%;
+    min-height:2.65rem;
+    box-sizing:border-box;
+    white-space:normal;
+    word-break:normal;
+    overflow-wrap:break-word;
+    line-height:1.35;
+    text-align:center;
+    text-decoration:none;
+}
+
+.btn i,
+.btn svg,
+.btn-action i,
+.btn-action svg,
+.client-btn i,
+.client-btn svg,
+.sa-btn i,
+.sa-btn svg,
+.topbar-action-link i,
+.topbar-action-link svg {
+    flex-shrink:0;
 }
 
 button:not(.sidebar-close-btn):not(#menuToggle):not(.menu-btn):not(.menu-toggle):not(.sidebar-toggle):not(.topbar-toggle-btn):not(.chat-send-btn):not(.chat-scroll-btn):not(.btn-action-icon):not(.btn-block):not(.w-100),
@@ -1596,8 +1618,13 @@ input[type="reset"]:not(.btn-block):not(.w-100),
 .submit-btn:not(.btn-block):not(.w-100),
 .btn-login:not(.btn-block):not(.w-100),
 .btn-register:not(.btn-block):not(.w-100) {
-    width:max-content;
+    width:auto;
+    width:fit-content;
     max-width:100%;
+    box-sizing:border-box;
+    white-space:normal;
+    word-break:normal;
+    overflow-wrap:break-word;
 }
 
 .btn:hover{
@@ -1659,6 +1686,44 @@ input[type="reset"]:not(.btn-block):not(.w-100),
 
 .btn-block{
     width:100%;
+}
+
+/* Button Groups & Responsive Action Containers */
+.button-group,
+.btn-group,
+.button-row,
+.btn-row,
+.actions-group,
+.card-actions,
+.form-actions,
+.table-actions,
+.action-buttons {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px 12px;
+}
+
+.button-group > button,
+.button-group > a,
+.button-group > .btn,
+.btn-group > button,
+.btn-group > a,
+.btn-group > .btn,
+.button-row > button,
+.button-row > a,
+.button-row > .btn,
+.btn-row > button,
+.btn-row > a,
+.btn-row > .btn,
+.actions-group > button,
+.actions-group > a,
+.card-actions > button,
+.card-actions > a,
+.form-actions > button,
+.form-actions > a {
+    max-width:100%;
+    min-width:0;
 }
 
 /*==================================================

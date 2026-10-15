@@ -332,8 +332,15 @@
       align-items: center;
       justify-content: center;
       transition: .3s;
-      width: max-content;
+      width: auto;
+      width: fit-content;
       max-width: 100%;
+      box-sizing: border-box;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: break-word;
+      line-height: 1.35;
+      text-align: center;
     }
 
     .btn-delete:hover,
@@ -396,9 +403,11 @@
 
       .btn-delete,
       .btn-cancel {
-        width: max-content;
+        width: auto;
+        width: fit-content;
         max-width: 100%;
         margin: 8px 0;
+        box-sizing: border-box;
       }
 
       .user-info {

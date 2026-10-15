@@ -58,7 +58,7 @@
       {% csrf_token %}
       {% if not today_record.clock_in %}
         <input type="hidden" name="action" value="morning_clock_in">
-        <button type="submit" class="btn-action" style="width: max-content; max-width: 100%; margin: 0 auto; padding: 12px 24px; border-radius: 8px; background: var(--staff-primary); color: #000; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;" {% if not in_morning %}disabled title="Morning clock-in is only available between {{ MORNING_START }} and {{ MORNING_END }}" style="opacity: 0.6; cursor: not-allowed;"{% endif %}>
+        <button type="submit" class="btn-action" style="width: auto; width: fit-content; max-width: 100%; margin: 0 auto; padding: 12px 24px; border-radius: 8px; background: var(--staff-primary); color: #000; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; {% if not in_morning %}opacity: 0.6; cursor: not-allowed;{% endif %}" {% if not in_morning %}disabled title="Morning clock-in is only available between {{ MORNING_START }} and {{ MORNING_END }}"{% endif %}>
           <i class="fas fa-sign-in-alt"></i> Morning Clock In
         </button>
         {% if not in_morning %}
@@ -68,7 +68,7 @@
         {% endif %}
       {% elif not today_record.morning_clock_out %}
         <input type="hidden" name="action" value="morning_clock_out">
-        <button type="submit" class="btn-action" style="width: max-content; max-width: 100%; margin: 0 auto; padding: 12px 24px; border-radius: 8px; background: #2C2C2C; color: #fff; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <button type="submit" class="btn-action" style="width: auto; width: fit-content; max-width: 100%; margin: 0 auto; padding: 12px 24px; border-radius: 8px; background: #2C2C2C; color: #fff; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
           <i class="fas fa-sign-out-alt"></i> Morning Clock Out
         </button>
       {% else %}
@@ -110,7 +110,7 @@
       {% csrf_token %}
       {% if not today_record.evening_clock_in %}
         <input type="hidden" name="action" value="evening_clock_in">
-        <button type="submit" class="btn-action" style="width: max-content; max-width: 100%; margin: 0 auto; padding: 12px 24px; border-radius: 8px; background: var(--staff-primary); color: #000; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;" {% if not in_evening %}disabled title="Evening clock-in is only available between {{ EVENING_START }} and {{ EVENING_END }}" style="opacity: 0.6; cursor: not-allowed;"{% endif %}>
+        <button type="submit" class="btn-action" style="width: auto; width: fit-content; max-width: 100%; margin: 0 auto; padding: 12px 24px; border-radius: 8px; background: var(--staff-primary); color: #000; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; {% if not in_evening %}opacity: 0.6; cursor: not-allowed;{% endif %}" {% if not in_evening %}disabled title="Evening clock-in is only available between {{ EVENING_START }} and {{ EVENING_END }}"{% endif %}>
           <i class="fas fa-sign-in-alt"></i> Evening Clock In
         </button>
         {% if not in_evening %}
@@ -120,7 +120,7 @@
         {% endif %}
       {% elif not today_record.clock_out %}
         <input type="hidden" name="action" value="evening_clock_out">
-        <button type="submit" class="btn-action" style="width: max-content; max-width: 100%; margin: 0 auto; padding: 12px 24px; border-radius: 8px; background: #2C2C2C; color: #fff; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <button type="submit" class="btn-action" style="width: auto; width: fit-content; max-width: 100%; margin: 0 auto; padding: 12px 24px; border-radius: 8px; background: #2C2C2C; color: #fff; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
           <i class="fas fa-sign-out-alt"></i> Evening Clock Out
         </button>
       {% else %}

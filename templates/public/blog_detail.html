@@ -175,7 +175,10 @@
     }
 
     .badge {
-      width: max-content;
+      width: auto;
+      width: fit-content;
+      max-width: 100%;
+      box-sizing: border-box;
       background: #f5c518;
       color: #111;
       padding: 10px 18px;
@@ -742,9 +745,11 @@
       }
 
       .more-btn {
-        width: max-content;
+        width: auto;
+        width: fit-content;
         max-width: 100%;
         text-align: center;
+        box-sizing: border-box;
       }
 
     }

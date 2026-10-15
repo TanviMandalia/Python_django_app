@@ -336,7 +336,8 @@
     }
 
     .btn-submit {
-      width: max-content;
+      width: auto;
+      width: fit-content;
       max-width: 100%;
       padding: 14px 32px;
       background: #f5c518;
@@ -349,7 +350,14 @@
       transition: all 0.3s;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
+      box-sizing: border-box;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: break-word;
+      line-height: 1.35;
+      text-align: center;
     }
 
     .btn-submit:hover {

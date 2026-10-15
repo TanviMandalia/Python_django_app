@@ -202,7 +202,8 @@
                 width: 14px;
             }
             .plan-select-btn {
-                width: max-content;
+                width: auto;
+                width: fit-content;
                 max-width: 100%;
                 margin: 14px auto 0;
                 display: block;
@@ -215,6 +216,12 @@
                 font-weight: 700;
                 cursor: pointer;
                 transition: 0.2s;
+                box-sizing: border-box;
+                white-space: normal;
+                word-break: normal;
+                overflow-wrap: break-word;
+                line-height: 1.35;
+                text-align: center;
             }
             .plan-select-btn:hover,
             .plan-card.selected .plan-select-btn {
@@ -401,7 +408,8 @@
                 color: #fff;
             }
             .submit-btn {
-                width: max-content;
+                width: auto;
+                width: fit-content;
                 max-width: 100%;
                 margin: 8px auto 0;
                 display: block;
@@ -414,6 +422,12 @@
                 font-weight: 800;
                 cursor: pointer;
                 transition: 0.2s;
+                box-sizing: border-box;
+                white-space: normal;
+                word-break: normal;
+                overflow-wrap: break-word;
+                line-height: 1.35;
+                text-align: center;
             }
             .submit-btn:hover {
                 background: #d4a800;
