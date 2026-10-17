@@ -210,4 +210,6 @@ yarn-error.log*
 
 # Explicitly allow ONLY the root README.md and RELEASE_NOTES.md to be tracked
 !/README.md
-!/RELEASE_NOTES.md
+!/RELEASE_NOTES.md
+!/docs/RENDER_STARTUP_SCREEN_SOLUTIONS.md
+

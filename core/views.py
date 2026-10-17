@@ -8581,17 +8581,29 @@ def sitemap_xml(request):
 
 def healthz(request):
     """
-    Lightweight health-check endpoint for load balancers and container orchestrators.
+    Lightweight health-check endpoint for load balancers, container orchestrators,
+    and external static preloaders/gateways.
     Executes a read-only DB query (SELECT 1).
     Returns:
         HTTP 200 with {"status": "ok"} when healthy.
         HTTP 503 with {"status": "unhealthy"} if database connectivity fails.
-        HTTP 405 Method Not Allowed if request method is not GET or HEAD.
+        HTTP 204 for OPTIONS preflight.
+        HTTP 405 Method Not Allowed if request method is not GET, HEAD, or OPTIONS.
     Strictly avoids exposing connection strings, stack traces, queries, or server internals.
+    Includes CORS headers (Access-Control-Allow-Origin: *) to support external static gate probes.
     """
+    if request.method == "OPTIONS":
+        response = HttpResponse(status=204)
+        response["Allow"] = "GET, HEAD, OPTIONS"
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "*"
+        return response
+
     if request.method not in ("GET", "HEAD"):
         response = HttpResponse("Method Not Allowed", status=405)
-        response["Allow"] = "GET, HEAD"
+        response["Allow"] = "GET, HEAD, OPTIONS"
+        response["Access-Control-Allow-Origin"] = "*"
         return response
 
     try:
@@ -8604,12 +8616,15 @@ def healthz(request):
 
         resp = JsonResponse({"status": "ok"}, status=200)
         resp["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp["Access-Control-Allow-Origin"] = "*"
         return resp
     except Exception as exc:
         logger.error("Health check database probe failed: %s", exc)
         resp = JsonResponse({"status": "unhealthy"}, status=503)
         resp["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp["Access-Control-Allow-Origin"] = "*"
         return resp
+
 
 
 # ═════════════════════════════════════════════════════════════════════════════

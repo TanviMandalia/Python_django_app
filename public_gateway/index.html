@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Dr. Dhvani Patalia Physio Rehab - Clinic Management Portal">
+  <meta name="theme-color" content="#12151b">
+  <title>Dr. Dhvani Patalia | Physio Rehab Clinic</title>
+  <style>
+    /* ══════════════════════════════════════════════════════════════════════
+       STANDALONE CLINIC PRELOADER & COLD-START GATEWAY
+       Dr. Dhvani Patalia Physio Rehab & Sports Medicine
+       • Zero external font or image dependencies — 100% self-contained.
+       • Designed for Render Static Sites, Cloudflare Pages, or CDN edge.
+       • Actively probes the backend /healthz and transitions without flicker.
+       ══════════════════════════════════════════════════════════════════════ */
+    :root {
+      --cp-gold: #F5C518;
+      --cp-gold-dark: #dfb00d;
+      --cp-gold-glow: rgba(245, 197, 24, 0.35);
+      --cp-gold-subtle: rgba(245, 197, 24, 0.12);
+      --cp-dark-bg: #12151b;
+      --cp-card-bg: #1c212c;
+      --cp-text-main: #f8fafc;
+      --cp-text-muted: #94a3b8;
+      --cp-border: rgba(245, 197, 24, 0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background-color: var(--cp-dark-bg);
+      background-image: 
+        radial-gradient(circle at 50% 38%, rgba(36, 43, 58, 0.95) 0%, rgba(18, 21, 27, 0.98) 60%, rgba(10, 12, 16, 1) 100%);
+      color: var(--cp-text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #gateway-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      max-width: 480px;
+      width: 90%;
+      margin: 0 auto;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    #gateway-wrap.fade-out {
+      opacity: 0;
+      transform: scale(0.97);
+      pointer-events: none;
+    }
+
+    /* ── Emblem & Orbital Rings ────────────────────────────────────────── */
+    .emblem-wrap {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .orbital-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2.5px solid transparent;
+      border-top-color: var(--cp-gold);
+      border-right-color: rgba(245, 197, 24, 0.45);
+      filter: drop-shadow(0 0 8px var(--cp-gold-glow));
+      animation: spin 1.25s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    }
+
+    .orbital-ring-inner {
+      position: absolute;
+      inset: 7px;
+      border-radius: 50%;
+      border: 1.5px solid transparent;
+      border-bottom-color: rgba(245, 197, 24, 0.7);
+      border-left-color: rgba(245, 197, 24, 0.2);
+      animation: spin-rev 2s linear infinite;
+    }
+
+    .center-badge {
+      position: relative;
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #1f2533 0%, #151922 100%);
+      border: 1.5px solid var(--cp-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+    }
+
+    .rehab-svg {
+      width: 36px;
+      height: 36px;
+      fill: none;
+      stroke: var(--cp-gold);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 1px 4px rgba(245, 197, 24, 0.35));
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+
+    /* ── Clinic Titles ─────────────────────────────────────────────────── */
+    .clinic-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.02em;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .clinic-tagline {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--cp-gold);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 20px;
+      line-height: 1.3;
+    }
+
+    /* ── Live Status Row ───────────────────────────────────────────────── */
+    .status-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      margin-bottom: 16px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--cp-gold);
+      box-shadow: 0 0 10px var(--cp-gold);
+      animation: blink 1.4s ease-in-out infinite;
+    }
+
+    .status-dot.success {
+      background-color: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: none;
+    }
+
+    .status-text {
+      font-size: 0.88rem;
+      color: var(--cp-text-muted);
+      font-weight: 500;
+    }
+
+    /* ── Indeterminate Shimmer Line ────────────────────────────────────── */
+    .progress-track {
+      width: 160px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+      margin: 0 auto;
+    }
+
+    .progress-shimmer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 45%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, transparent 0%, var(--cp-gold) 50%, transparent 100%);
+      animation: shimmer 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    /* ── Wake-up Notice & Fallback Card ────────────────────────────────── */
+    .wakeup-notice {
+      margin-top: 18px;
+      font-size: 0.78rem;
+      color: #64748b;
+      line-height: 1.4;
+      display: none;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    .fallback-card {
+      display: none;
+      margin-top: 24px;
+      padding: 16px 20px;
+      background: rgba(28, 33, 44, 0.95);
+      border: 1px solid rgba(245, 197, 24, 0.25);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      text-align: center;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .fallback-card p {
+      font-size: 0.82rem;
+      color: var(--cp-text-muted);
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--cp-gold);
+      color: #12151b;
+    }
+
+    .btn-primary:hover {
+      background: var(--cp-gold-dark);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    /* ── Keyframes ─────────────────────────────────────────────────────── */
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes spin-rev {
+      0% { transform: rotate(360deg); }
+      100% { transform: rotate(0deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.95; }
+      50% { transform: scale(1.06); opacity: 1; filter: drop-shadow(0 2px 8px var(--cp-gold-glow)); }
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-120%); }
+      100% { transform: translateX(250%); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .orbital-ring, .orbital-ring-inner, .rehab-svg, .status-dot, .progress-shimmer {
+        animation: none !important;
+      }
+      .progress-shimmer {
+        width: 100%;
+        background: var(--cp-gold);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="gateway-wrap" role="status" aria-live="polite">
+    
+    <!-- Animated Medical Physiotherapy Emblem -->
+    <div class="emblem-wrap">
+      <div class="orbital-ring" aria-hidden="true"></div>
+      <div class="orbital-ring-inner" aria-hidden="true"></div>
+      <div class="center-badge">
+        <svg class="rehab-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="4" r="2" />
+          <path d="M12 7v3" />
+          <path d="M9 10h6" />
+          <circle cx="12" cy="13" r="1.5" />
+          <path d="M7 13c1-2 4-2 5-2s4 0 5 2" />
+          <circle cx="12" cy="18" r="1.5" />
+          <path d="M8 18c1-1.5 3-1.5 4-1.5s3 0 4 1.5" />
+          <path d="M12 19.5v2" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Clinic Identity -->
+    <h1 class="clinic-name">Dr. Dhvani Patalia</h1>
+    <div class="clinic-tagline">Physio Rehab &amp; Sports Medicine</div>
+
+    <!-- Real Status -->
+    <div class="status-row">
+      <span class="status-dot" id="gateway-dot" aria-hidden="true"></span>
+      <p class="status-text" id="gateway-status">Connecting to clinic portal&hellip;</p>
+    </div>
+
+    <!-- Shimmer Bar -->
+    <div class="progress-track" aria-hidden="true">
+      <div class="progress-shimmer" id="gateway-shimmer"></div>
+    </div>
+
+    <!-- Screen Reader Update -->
+    <span class="sr-only" id="gateway-sr">Connecting to clinic portal, please wait.</span>
+
+    <!-- Informational Note for Cold Starts -->
+    <p class="wakeup-notice" id="gateway-notice">
+      Waking up clinical database &amp; secure session&hellip;
+    </p>
+
+    <!-- Fallback Retry Card (Active only if backend is taking unusually long) -->
+    <div class="fallback-card" id="gateway-fallback" role="alert">
+      <p id="gateway-fallback-text">
+        The clinic server is taking a moment to start. You can wait, retry, or continue directly.
+      </p>
+      <div class="btn-group">
+        <button type="button" class="btn btn-primary" id="btn-continue" onclick="openAppDirectly()">
+          Open Site Directly
+        </button>
+        <button type="button" class="btn btn-secondary" id="btn-retry" onclick="retryProbe()">
+          Retry Connection
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // 1. Resolve Application & Health Check URLs
+      var urlParams = new URLSearchParams(window.location.search);
+      var appBaseUrl = urlParams.get('app') || window.APP_CONFIG_BACKEND_URL || window.location.origin;
+      // Strip trailing slashes
+      appBaseUrl = appBaseUrl.replace(/\/+$/, '');
+      
+      var nextPath = urlParams.get('next') || '/';
+      if (!nextPath.startsWith('/')) {
+        nextPath = '/' + nextPath;
+      }
+
+      var destinationUrl = appBaseUrl + nextPath;
+      var healthCheckUrl = appBaseUrl + '/healthz';
+
+      var statusEl = document.getElementById('gateway-status');
+      var dotEl = document.getElementById('gateway-dot');
+      var srEl = document.getElementById('gateway-sr');
+      var noticeEl = document.getElementById('gateway-notice');
+      var fallbackEl = document.getElementById('gateway-fallback');
+      var wrapEl = document.getElementById('gateway-wrap');
+
+      var attempts = 0;
+      var isReady = false;
+      var probeInterval = null;
+      var startTime = Date.now();
+
+      function updateStatus(text, srText) {
+        if (statusEl) statusEl.textContent = text;
+        if (srEl) srEl.textContent = srText || text;
+      }
+
+      function onBackendAwake() {
+        if (isReady) return;
+        isReady = true;
+        clearInterval(probeInterval);
+
+        if (dotEl) dotEl.classList.add('success');
+        updateStatus('Connected! Opening your clinic\u2026', 'Connected to clinic portal. Loading page.');
+        
+        setTimeout(function() {
+          if (wrapEl) wrapEl.classList.add('fade-out');
+          setTimeout(function() {
+            window.location.href = destinationUrl;
+          }, 320);
+        }, 250);
+      }
+
+      function probe() {
+        if (isReady) return;
+        attempts++;
+
+        var elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
+
+        if (elapsedSeconds >= 12 && noticeEl && noticeEl.style.display !== 'block') {
+          noticeEl.style.display = 'block';
+          updateStatus('Waking up clinic cloud service\u2026', 'Server waking up, please wait.');
+        }
+
+        if (elapsedSeconds >= 45 && fallbackEl && fallbackEl.style.display !== 'block') {
+          fallbackEl.style.display = 'block';
+        }
+
+        // Lightweight fetch with strict 3.5s timeout per probe
+        var controller = window.AbortController ? new AbortController() : null;
+        var signal = controller ? controller.signal : null;
+        var fetchTimeout = null;
+
+        if (controller) {
+          fetchTimeout = setTimeout(function() {
+            try { controller.abort(); } catch (e) {}
+          }, 3500);
+        }
+
+        fetch(healthCheckUrl, {
+          method: 'GET',
+          cache: 'no-store',
+          mode: 'cors',
+          signal: signal
+        })
+        .then(function(res) {
+          if (fetchTimeout) clearTimeout(fetchTimeout);
+          if (res.status === 200) {
+            return res.json().catch(function() { return { status: 'ok' }; });
+          }
+          throw new Error('Non-200 status: ' + res.status);
+        })
+        .then(function(data) {
+          if (data && data.status === 'ok') {
+            onBackendAwake();
+          }
+        })
+        .catch(function(err) {
+          if (fetchTimeout) clearTimeout(fetchTimeout);
+          // Still waiting for server to spin up; continue polling
+        });
+      }
+
+      window.openAppDirectly = function() {
+        window.location.href = destinationUrl;
+      };
+
+      window.retryProbe = function() {
+        if (fallbackEl) fallbackEl.style.display = 'none';
+        attempts = 0;
+        probe();
+      };
+
+      // Initial probe immediately
+      probe();
+      // Poll every 2.4 seconds
+      probeInterval = setInterval(probe, 2400);
+
+      // Hard safety threshold: after 90s, reveal direct button unconditionally
+      setTimeout(function() {
+        if (!isReady && fallbackEl) {
+          fallbackEl.style.display = 'block';
+        }
+      }, 90000);
+
+    })();
+  </script>
+</body>
+</html>

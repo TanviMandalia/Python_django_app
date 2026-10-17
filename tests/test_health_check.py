@@ -10,19 +10,29 @@ class HealthCheckTests(TestCase):
         self.client = Client()
 
     def test_healthz_success(self):
-        """GET /healthz returns 200 OK and status 'ok' when database is healthy."""
+        """GET /healthz returns 200 OK, CORS headers, and status 'ok' when database is healthy."""
         response = self.client.get("/healthz")
         assert response.status_code == 200
         assert response["Content-Type"] == "application/json"
         assert "no-cache" in response["Cache-Control"]
         assert "no-store" in response["Cache-Control"]
+        assert response.headers.get("Access-Control-Allow-Origin") == "*"
         data = json.loads(response.content.decode("utf-8"))
         assert data == {"status": "ok"}
+
+    def test_healthz_options_preflight(self):
+        """OPTIONS /healthz returns 204 with CORS preflight headers for external static probes."""
+        response = self.client.options("/healthz")
+        assert response.status_code == 204
+        assert response.headers.get("Access-Control-Allow-Origin") == "*"
+        assert "GET" in response.headers.get("Access-Control-Allow-Methods", "")
+        assert "OPTIONS" in response.headers.get("Access-Control-Allow-Methods", "")
 
     def test_healthz_trailing_slash_success(self):
         """GET /healthz/ also resolves cleanly with 200 OK."""
         response = self.client.get("/healthz/")
         assert response.status_code == 200
+        assert response.headers.get("Access-Control-Allow-Origin") == "*"
         data = json.loads(response.content.decode("utf-8"))
         assert data == {"status": "ok"}
 
@@ -30,6 +40,7 @@ class HealthCheckTests(TestCase):
         """HEAD /healthz is allowed for lightweight liveness probes."""
         response = self.client.head("/healthz")
         assert response.status_code == 200
+        assert response.headers.get("Access-Control-Allow-Origin") == "*"
 
     def test_healthz_disallowed_methods(self):
         """Disallowed methods return 405 Method Not Allowed."""
@@ -39,13 +50,14 @@ class HealthCheckTests(TestCase):
             assert response.status_code == 405
 
     def test_healthz_database_failure_returns_503(self):
-        """When database probe fails, returns 503 with safe 'unhealthy' payload."""
+        """When database probe fails, returns 503 with safe 'unhealthy' payload and CORS."""
         with patch("django.db.connection.cursor", side_effect=OperationalError("DB Connection timeout")):
             response = self.client.get("/healthz")
             assert response.status_code == 503
             assert response["Content-Type"] == "application/json"
             assert "no-cache" in response["Cache-Control"]
             assert "no-store" in response["Cache-Control"]
+            assert response.headers.get("Access-Control-Allow-Origin") == "*"
             data = json.loads(response.content.decode("utf-8"))
             assert data == {"status": "unhealthy"}
 
@@ -55,7 +67,9 @@ class HealthCheckTests(TestCase):
         with patch("django.db.connection.cursor", side_effect=Exception(secret_leak_attempt)):
             response = self.client.get("/healthz")
             assert response.status_code == 503
+            assert response.headers.get("Access-Control-Allow-Origin") == "*"
             raw_body = response.content.decode("utf-8")
             assert secret_leak_attempt not in raw_body
             assert "Traceback" not in raw_body
             assert "SELECT" not in raw_body
+

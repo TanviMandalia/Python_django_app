@@ -141,3 +141,54 @@ class CustomLoadingScreenTests(BaseHospitalTestCase):
         response = self.client.get("/healthz")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"status": "ok"})
+        self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), "*")
+
+    def test_standalone_gateway_html_exists_and_valid(self):
+        """Standalone static preloader gateway must exist and contain branded elements."""
+        gateway_path = os.path.join(settings.BASE_DIR, "public_gateway", "index.html")
+        self.assertTrue(os.path.exists(gateway_path), "public_gateway/index.html must exist")
+
+        with open(gateway_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Branding checks
+        self.assertIn("Dr. Dhvani Patalia", content)
+        self.assertIn("Physio Rehab &amp; Sports Medicine", content)
+        # Probe & redirection checks
+        self.assertIn("/healthz", content)
+        self.assertIn("status: 'ok'", content)
+        # Accessibility
+        self.assertIn('role="status"', content)
+        self.assertIn('aria-live="polite"', content)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", content)
+        # No fake percentage indicators
+        self.assertNotIn("90% loaded", content)
+        self.assertNotIn("99% loaded", content)
+        self.assertNotIn("progress-percent", content)
+
+
+    def test_cloudflare_worker_exists_and_valid(self):
+        """Cloudflare Worker script must exist and contain intercept and polling logic."""
+        worker_path = os.path.join(settings.BASE_DIR, "cloudflare_worker", "worker.js")
+        self.assertTrue(os.path.exists(worker_path), "cloudflare_worker/worker.js must exist")
+
+        with open(worker_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("SERVICE WAKING UP", content)
+        self.assertIn("serveBrandedLoader", content)
+        self.assertIn("/healthz", content)
+        self.assertIn("Dr. Dhvani Patalia", content)
+
+    def test_keep_alive_workflow_exists(self):
+        """Render Keep-Alive GitHub Actions workflow must be configured."""
+        workflow_path = os.path.join(settings.BASE_DIR, ".github", "workflows", "render_keep_alive.yml")
+        self.assertTrue(os.path.exists(workflow_path), "render_keep_alive.yml must exist")
+
+        with open(workflow_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("Render Service Keep-Alive", content)
+        self.assertIn("*/10 * * * *", content)
+        self.assertIn("/healthz", content)
+
