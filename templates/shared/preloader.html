@@ -1,0 +1,589 @@
+{% load static %}
+<!-- ══════════════════════════════════════════════════════════════════════════
+     CLINIC PRELOADER COMPONENT (PRODUCTION GRADE)
+     Dr. Dhvani Patalia Physio Rehab - High Performance Branded Loading Screen
+     • Zero external font or script dependencies for critical path rendering.
+     • Critical inline CSS ensures immediate paint upon arrival of first packet.
+     • Supports bfcache (Back/Forward Cache), reduced-motion, and safe timeout.
+     • Screen reader accessible with live announcement region.
+     ══════════════════════════════════════════════════════════════════════════ -->
+
+<style id="clinic-preloader-critical-css">
+  /* ── Critical Inline Preloader Styles ─────────────────────────────────── */
+  :root {
+    --cp-gold: #F5C518;
+    --cp-gold-dark: #dfb00d;
+    --cp-gold-glow: rgba(245, 197, 24, 0.35);
+    --cp-gold-subtle: rgba(245, 197, 24, 0.12);
+    --cp-dark-bg: #12151b;
+    --cp-card-bg: #1c212c;
+    --cp-text-main: #f8fafc;
+    --cp-text-muted: #94a3b8;
+    --cp-border: rgba(245, 197, 24, 0.22);
+  }
+
+  /* Prevent page scrolling and content jump while preloader is active */
+  html.clinic-preloader-locked,
+  body.clinic-preloader-locked {
+    overflow: hidden !important;
+    height: 100% !important;
+  }
+
+  #clinic-preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 2147483647; /* Maximum safe z-index */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--cp-dark-bg);
+    background-image: 
+      radial-gradient(circle at 50% 40%, rgba(36, 43, 58, 0.95) 0%, rgba(18, 21, 27, 0.98) 60%, rgba(10, 12, 16, 1) 100%);
+    color: var(--cp-text-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 0.36s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: opacity, visibility;
+    user-select: none;
+    -webkit-user-select: none;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  /* Smooth dismissal state */
+  #clinic-preloader.clinic-preloader-fadeout {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  #clinic-preloader.clinic-preloader-hidden {
+    display: none !important;
+  }
+
+  .clinic-preloader-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    max-width: 440px;
+    width: 90%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  /* ── Emblem & Rings ───────────────────────────────────────────────────── */
+  .clinic-preloader-emblem-wrap {
+    position: relative;
+    width: 92px;
+    height: 92px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Outer glowing rotating ring */
+  .clinic-preloader-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2.5px solid transparent;
+    border-top-color: var(--cp-gold);
+    border-right-color: rgba(245, 197, 24, 0.4);
+    filter: drop-shadow(0 0 6px var(--cp-gold-glow));
+    animation: cp-spin 1.25s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  }
+
+  /* Counter-rotating subtle inner accent ring */
+  .clinic-preloader-ring-inner {
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    border: 1.5px solid transparent;
+    border-bottom-color: rgba(245, 197, 24, 0.7);
+    border-left-color: rgba(245, 197, 24, 0.2);
+    animation: cp-spin-reverse 2s linear infinite;
+  }
+
+  /* Center Badge housing the physiotherapy mark */
+  .clinic-preloader-badge {
+    position: relative;
+    width: 66px;
+    height: 66px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #1f2533 0%, #151922 100%);
+    border: 1.5px solid var(--cp-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+  }
+
+  .clinic-preloader-icon-svg {
+    width: 34px;
+    height: 34px;
+    fill: none;
+    stroke: var(--cp-gold);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 1px 4px rgba(245, 197, 24, 0.3));
+    animation: cp-pulse 2.2s ease-in-out infinite;
+  }
+
+  /* ── Typography & Status ─────────────────────────────────────────────── */
+  .clinic-preloader-title {
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.02em;
+    margin: 0 0 4px 0;
+    line-height: 1.25;
+  }
+
+  .clinic-preloader-subtitle {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--cp-gold);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin: 0 0 18px 0;
+    line-height: 1.3;
+  }
+
+  .clinic-preloader-status-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .clinic-preloader-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: var(--cp-gold);
+    box-shadow: 0 0 8px var(--cp-gold);
+    animation: cp-blink 1.4s ease-in-out infinite;
+  }
+
+  .clinic-preloader-status-text {
+    font-size: 0.84rem;
+    color: var(--cp-text-muted);
+    font-weight: 500;
+    margin: 0;
+  }
+
+  /* Indeterminate Progress Shimmer Line */
+  .clinic-preloader-progress-track {
+    width: 140px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .clinic-preloader-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 45%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, transparent 0%, var(--cp-gold) 50%, transparent 100%);
+    animation: cp-shimmer 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  /* ── Accessible Live Status Text (Screen Reader Only) ─────────────────── */
+  .clinic-preloader-sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
+
+  /* ── Fallback Retry UI (Displayed only if loading is abnormally delayed) ─ */
+  .clinic-preloader-fallback {
+    display: none;
+    margin-top: 24px;
+    padding: 14px 18px;
+    background: rgba(28, 33, 44, 0.95);
+    border: 1px solid rgba(245, 197, 24, 0.25);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    animation: cp-fadein 0.3s ease forwards;
+  }
+
+  .clinic-preloader-fallback p {
+    font-size: 0.82rem;
+    color: var(--cp-text-muted);
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+  }
+
+  .clinic-preloader-fallback-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .clinic-preloader-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: none;
+  }
+
+  .clinic-preloader-btn-primary {
+    background: var(--cp-gold);
+    color: #12151b;
+  }
+
+  .clinic-preloader-btn-primary:hover {
+    background: var(--cp-gold-dark);
+  }
+
+  .clinic-preloader-btn-secondary {
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .clinic-preloader-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  /* ── Keyframe Animations ─────────────────────────────────────────────── */
+  @keyframes cp-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes cp-spin-reverse {
+    0% { transform: rotate(360deg); }
+    100% { transform: rotate(0deg); }
+  }
+
+  @keyframes cp-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.95; }
+    50% { transform: scale(1.06); opacity: 1; filter: drop-shadow(0 2px 8px var(--cp-gold-glow)); }
+  }
+
+  @keyframes cp-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  @keyframes cp-shimmer {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(250%); }
+  }
+
+  @keyframes cp-fadein {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Accessibility: Prefers Reduced Motion ───────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .clinic-preloader-ring,
+    .clinic-preloader-ring-inner,
+    .clinic-preloader-icon-svg,
+    .clinic-preloader-dot,
+    .clinic-preloader-progress-bar {
+      animation: none !important;
+    }
+    .clinic-preloader-ring {
+      border-color: var(--cp-gold);
+    }
+    .clinic-preloader-progress-bar {
+      width: 100%;
+      background: var(--cp-gold);
+    }
+    #clinic-preloader {
+      transition: opacity 0.15s linear, visibility 0.15s linear !important;
+    }
+  }
+
+  /* ── Responsive Mobile Optimizations ─────────────────────────────────── */
+  @media (max-width: 480px) {
+    .clinic-preloader-emblem-wrap {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 18px;
+    }
+    .clinic-preloader-badge {
+      width: 58px;
+      height: 58px;
+    }
+    .clinic-preloader-icon-svg {
+      width: 28px;
+      height: 28px;
+    }
+    .clinic-preloader-title {
+      font-size: 1.08rem;
+    }
+    .clinic-preloader-subtitle {
+      font-size: 0.76rem;
+      letter-spacing: 0.1em;
+    }
+  }
+</style>
+
+<!-- ════ PRELOADER DOM TREE ════ -->
+<div id="clinic-preloader" role="status" aria-live="polite" aria-busy="true" aria-label="Loading Dr. Dhvani Patalia Physio Rehab">
+  <div class="clinic-preloader-container">
+    
+    <!-- Animated Medical Physiotherapy Emblem -->
+    <div class="clinic-preloader-emblem-wrap">
+      <div class="clinic-preloader-ring" aria-hidden="true"></div>
+      <div class="clinic-preloader-ring-inner" aria-hidden="true"></div>
+      <div class="clinic-preloader-badge">
+        <!-- Crisp Physiotherapy & Spine Anatomy Vector Mark -->
+        <svg class="clinic-preloader-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <!-- Vertebral Column / Rehab Symbol -->
+          <circle cx="12" cy="4" r="2" />
+          <path d="M12 7v3" />
+          <path d="M9 10h6" />
+          <circle cx="12" cy="13" r="1.5" />
+          <path d="M7 13c1-2 4-2 5-2s4 0 5 2" />
+          <circle cx="12" cy="18" r="1.5" />
+          <path d="M8 18c1-1.5 3-1.5 4-1.5s3 0 4 1.5" />
+          <path d="M12 19.5v2" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Clinic Branding -->
+    <h2 class="clinic-preloader-title">Dr. Dhvani Patalia</h2>
+    <div class="clinic-preloader-subtitle">
+      {% if preloader_portal_title %}
+        {{ preloader_portal_title }}
+      {% else %}
+        Physio Rehab &amp; Chiropractic
+      {% endif %}
+    </div>
+
+    <!-- Status Indicator -->
+    <div class="clinic-preloader-status-wrap">
+      <span class="clinic-preloader-dot" aria-hidden="true"></span>
+      <p class="clinic-preloader-status-text" id="clinic-preloader-status-text">
+        {% if preloader_status_message %}
+          {{ preloader_status_message }}
+        {% else %}
+          Preparing your clinic experience&hellip;
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- Indeterminate Shimmer Bar (No fake progress numbers) -->
+    <div class="clinic-preloader-progress-track" aria-hidden="true">
+      <div class="clinic-preloader-progress-bar"></div>
+    </div>
+
+    <!-- Screen Reader Announcement -->
+    <span class="clinic-preloader-sr-only" id="clinic-preloader-sr-msg">
+      Loading clinic portal, please wait.
+    </span>
+
+    <!-- Fallback / Extended Delay Safeguard Card -->
+    <div class="clinic-preloader-fallback" id="clinic-preloader-fallback" role="alert" aria-live="assertive">
+      <p id="clinic-preloader-fallback-msg">Loading is taking longer than expected. You can continue or refresh.</p>
+      <div class="clinic-preloader-fallback-actions">
+        <button type="button" class="clinic-preloader-btn clinic-preloader-btn-primary" id="clinic-preloader-btn-continue" onclick="window.dismissClinicPreloader(true)">
+          Continue to Site
+        </button>
+        <button type="button" class="clinic-preloader-btn clinic-preloader-btn-secondary" id="clinic-preloader-btn-retry" onclick="window.retryClinicPageLoad()">
+          Retry
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ PRELOADER RUNTIME CONTROLLER ════ -->
+<script id="clinic-preloader-controller">
+(function() {
+  'use strict';
+
+  var preloaderEl = document.getElementById('clinic-preloader');
+  if (!preloaderEl) return;
+
+  var docHtml = document.documentElement;
+  var docBody = document.body || docHtml;
+  var hasDismissed = false;
+  var startTimestamp = Date.now();
+  var MIN_DISPLAY_MS = 280; // Gentle minimum threshold to prevent jarring micro-flash
+  var FALLBACK_TIMEOUT_MS = 4500; // Trigger gentle retry UI if network is stalled
+  var MAX_SAFETY_TIMEOUT_MS = 7500; // Hard fallback: never lock user indefinitely
+
+  // 1. Lock scrolling immediately
+  docHtml.classList.add('clinic-preloader-locked');
+  if (docBody) docBody.classList.add('clinic-preloader-locked');
+
+  // 2. Dismissal Implementation
+  function dismiss(immediate) {
+    if (hasDismissed) return;
+    hasDismissed = true;
+
+    // Clear safety timers
+    if (window._clinicPreloaderFallbackTimer) clearTimeout(window._clinicPreloaderFallbackTimer);
+    if (window._clinicPreloaderSafetyTimer) clearTimeout(window._clinicPreloaderSafetyTimer);
+
+    function doDismiss() {
+      // Unlock page scroll immediately
+      docHtml.classList.remove('clinic-preloader-locked');
+      if (document.body) document.body.classList.remove('clinic-preloader-locked');
+
+      if (immediate) {
+        preloaderEl.classList.add('clinic-preloader-hidden');
+        preloaderEl.setAttribute('aria-hidden', 'true');
+        preloaderEl.setAttribute('aria-busy', 'false');
+        if (preloaderEl.parentNode) {
+          preloaderEl.parentNode.removeChild(preloaderEl);
+        }
+      } else {
+        preloaderEl.classList.add('clinic-preloader-fadeout');
+        preloaderEl.setAttribute('aria-hidden', 'true');
+        preloaderEl.setAttribute('aria-busy', 'false');
+
+        // Cleanup DOM after CSS transition finishes
+        var removeTimer = setTimeout(function() {
+          preloaderEl.classList.add('clinic-preloader-hidden');
+          if (preloaderEl.parentNode) {
+            preloaderEl.parentNode.removeChild(preloaderEl);
+          }
+        }, 380);
+
+        preloaderEl.addEventListener('transitionend', function() {
+          clearTimeout(removeTimer);
+          preloaderEl.classList.add('clinic-preloader-hidden');
+          if (preloaderEl.parentNode) {
+            preloaderEl.parentNode.removeChild(preloaderEl);
+          }
+        }, { once: true });
+      }
+
+      // Notify optional listeners
+      if (typeof window.onClinicPreloaderDismissed === 'function') {
+        try { window.onClinicPreloaderDismissed(); } catch (e) {}
+      }
+      try {
+        window.dispatchEvent(new CustomEvent('clinic:preloader:dismissed'));
+      } catch (e) {}
+    }
+
+    var elapsed = Date.now() - startTimestamp;
+    if (!immediate && elapsed < MIN_DISPLAY_MS) {
+      setTimeout(doDismiss, MIN_DISPLAY_MS - elapsed);
+    } else {
+      doDismiss();
+    }
+  }
+
+  // Expose global dismissal & retry functions
+  window.dismissClinicPreloader = dismiss;
+  window.retryClinicPageLoad = function() {
+    try {
+      // Avoid resubmitting POST forms
+      if (window.history && window.history.replaceState) {
+        window.location.reload();
+      } else {
+        window.location.href = window.location.href;
+      }
+    } catch (e) {
+      window.location.reload();
+    }
+  };
+
+  // 3. Real Readiness Detection
+  function onPageReady() {
+    // Ensure styles and fonts are painted before dismissing
+    if (document.fonts && document.fonts.ready) {
+      // Race fonts.ready with a 600ms cap so slow external fonts don't hold the preloader
+      var fontTimeout = new Promise(function(resolve) { setTimeout(resolve, 600); });
+      Promise.race([document.fonts.ready, fontTimeout]).then(function() {
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            dismiss(false);
+          });
+        });
+      }).catch(function() {
+        dismiss(false);
+      });
+    } else {
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          dismiss(false);
+        });
+      });
+    }
+  }
+
+  if (document.readyState === 'complete') {
+    onPageReady();
+  } else {
+    window.addEventListener('load', onPageReady, { once: true });
+    // Also listen to DOMContentLoaded in case window.load is delayed by non-critical assets
+    document.addEventListener('DOMContentLoaded', function() {
+      // If window.load takes more than 1.8s after DOM is ready, dismiss gracefully
+      setTimeout(function() {
+        if (!hasDismissed) dismiss(false);
+      }, 1800);
+    }, { once: true });
+  }
+
+  // 4. Handle bfcache (Browser Back / Forward navigation)
+  window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+      // Page was restored from Back-Forward Cache; immediately dismiss
+      dismiss(true);
+    }
+  });
+
+  // 5. Fallback Timers (prevent stuck state under slow networks or Render sleep)
+  window._clinicPreloaderFallbackTimer = setTimeout(function() {
+    if (hasDismissed) return;
+    var fallbackEl = document.getElementById('clinic-preloader-fallback');
+    var statusTextEl = document.getElementById('clinic-preloader-status-text');
+    if (fallbackEl) fallbackEl.style.display = 'block';
+    if (statusTextEl) statusTextEl.textContent = 'Still preparing your portal\u2026';
+  }, FALLBACK_TIMEOUT_MS);
+
+  window._clinicPreloaderSafetyTimer = setTimeout(function() {
+    if (!hasDismissed) {
+      dismiss(false);
+    }
+  }, MAX_SAFETY_TIMEOUT_MS);
+
+})();
+</script>

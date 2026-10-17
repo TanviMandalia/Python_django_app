@@ -730,6 +730,11 @@
 </head>
 
 <body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with preloader_portal_title="Article Editor" preloader_status_message="Preparing editorial workspace&hellip;" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
+
   <aside class="sidebar">
     <div class="sidebar-logo">
       <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Logo" />
@@ -903,6 +908,7 @@
   </div>
   <div class="sidebar-overlay" onclick="closeSidebar()"></div>
   <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/preloader.js' %}"></script>
 </body>
 
 </html>

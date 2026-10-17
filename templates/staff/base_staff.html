@@ -602,6 +602,11 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with preloader_portal_title="Clinical Staff Workspace" preloader_status_message="Loading therapist workspace&hellip;" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
+
   <div class="staff-wrapper">
     <!-- ════ STAFF SIDEBAR ════ -->
     {% include "staff/_sidebar.html" %}
@@ -665,6 +670,7 @@
 
   <!-- Shared Layout JavaScript -->
   <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/preloader.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

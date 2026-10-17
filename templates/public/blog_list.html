@@ -568,6 +568,11 @@
 </head>
 
 <body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with preloader_portal_title="Blog Management" preloader_status_message="Loading articles&hellip;" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
+
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
@@ -681,6 +686,7 @@
   </div>
   <div class="sidebar-overlay" onclick="closeSidebar()"></div>
   <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/preloader.js' %}"></script>
 </body>
 
 </html>

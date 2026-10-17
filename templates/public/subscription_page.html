@@ -508,6 +508,11 @@
       <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
     <body>
+        <!-- ════ CLINIC PRELOADER ════ -->
+        {% with preloader_portal_title="Clinic Plans & Subscriptions" preloader_status_message="Loading subscription plans&hellip;" %}
+          {% include "shared/preloader.html" %}
+        {% endwith %}
+
         <div class="container">
             <a href="{% url 'admin_dashboard' %}" class="back-btn"
                 ><i class="fas fa-arrow-left"></i> Back to Dashboard</a
@@ -986,5 +991,6 @@
                 });
         </script>
       <script src="{% static 'js/layout.js' %}"></script>
+      <script src="{% static 'js/preloader.js' %}"></script>
 </body>
 </html>

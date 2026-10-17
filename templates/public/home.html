@@ -1387,6 +1387,11 @@
 </head>
 
 <body>
+    <!-- ════ CLINIC PRELOADER ════ -->
+    {% with preloader_portal_title="Physiotherapy & Chiropractic Clinic" preloader_status_message="Preparing your clinic experience&hellip;" %}
+      {% include "shared/preloader.html" %}
+    {% endwith %}
+
     {% include 'shared/navbar.html' %}
 
     <!-- 1. HERO SECTION -->
@@ -2170,6 +2175,7 @@
 
     {% include 'shared/footer.html' %}
     <script src="{% static 'js/layout.js' %}" defer></script>
+    <script src="{% static 'js/preloader.js' %}" defer></script>
 </body>
 
 </html>

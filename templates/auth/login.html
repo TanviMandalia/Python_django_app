@@ -686,6 +686,11 @@
 </head>
 
 <body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with preloader_portal_title="Secure Portal Sign-In" preloader_status_message="Preparing secure sign-in&hellip;" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
+
   <!-- ─── Main Login Container ─────────────────────────────────────────── -->
   <main class="login-container" role="main">
 
@@ -941,6 +946,7 @@
       }
     });
   </script>
+  <script src="{% static 'js/preloader.js' %}" defer></script>
 </body>
 
 </html>

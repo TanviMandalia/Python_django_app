@@ -161,6 +161,10 @@
   <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 <body>
+<!-- ════ CLINIC PRELOADER ════ -->
+{% with preloader_portal_title="Rehabilitation Progress" preloader_status_message="Loading clinical milestones&hellip;" %}
+  {% include "shared/preloader.html" %}
+{% endwith %}
 
 <!-- ══ SIDEBAR ══ -->
 <aside class="sidebar">
@@ -454,5 +458,6 @@
     </div>
 
   <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/preloader.js' %}"></script>
 </body>
 </html>

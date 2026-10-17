@@ -840,6 +840,11 @@
 </head>
 
 <body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with preloader_portal_title="Physiotherapy Article" preloader_status_message="Loading clinical article&hellip;" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
+
   <section class="hero">
     {% comment %} {% if blog.image %}
     <img src="{{ blog.image.url }}" alt="{{ blog.title }}" />
@@ -960,6 +965,7 @@
   </div>
   {% include 'shared/footer.html' %}
   <script src="{% static 'js/layout.js' %}" defer></script>
+  <script src="{% static 'js/preloader.js' %}" defer></script>
 </body>
 
 </html>

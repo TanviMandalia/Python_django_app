@@ -75,6 +75,10 @@
 </head>
 
 <body>
+    <!-- ════ CLINIC PRELOADER ════ -->
+    {% with preloader_portal_title="Physiotherapy Insights & Articles" preloader_status_message="Loading healthcare insights&hellip;" %}
+      {% include "shared/preloader.html" %}
+    {% endwith %}
 
     <style>
         body {
@@ -376,6 +380,7 @@
 
     {% include 'shared/footer.html' %}
   <script src="{% static 'js/layout.js' %}" defer></script>
+  <script src="{% static 'js/preloader.js' %}" defer></script>
 </body>
 
 </html>

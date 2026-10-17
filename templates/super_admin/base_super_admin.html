@@ -501,6 +501,19 @@
     .sa-btn-sm {
       padding: 6px 12px;
       font-size: 0.78rem;
+      min-height: 34px;
+    }
+
+    .sa-btn-hide-mobile {
+      display: inline-flex;
+    }
+
+    /* ── Topbar Actions ── */
+    .sa-topbar-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
     /* ── Form Controls ── */
@@ -566,14 +579,14 @@
     /* ── Empty State ── */
     .sa-empty-state {
       text-align: center;
-      padding: 48px 24px;
+      padding: 42px 20px;
       color: var(--sa-text-muted);
     }
 
     .sa-empty-state i {
-      font-size: 2.8rem;
+      font-size: 2.6rem;
       color: #cbd5e1;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       display: block;
     }
 
@@ -588,7 +601,8 @@
     .sa-empty-state p {
       font-size: 0.88rem;
       max-width: 420px;
-      margin: 0 auto 18px;
+      margin: 0 auto 16px;
+      line-height: 1.45;
     }
 
     @keyframes fadeIn {
@@ -596,16 +610,375 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* ── Platform Welcome & Quick Actions Banner ── */
+    .sa-banner-card {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      color: #ffffff;
+      border: none;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(49, 46, 129, 0.25);
+      border-radius: var(--sa-radius-lg);
+      overflow: hidden;
+    }
+
+    .sa-banner-inner {
+      padding: clamp(16px, 3vw, 28px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .sa-banner-text {
+      max-width: 720px;
+      min-width: 0;
+      flex: 1 1 280px;
+    }
+
+    .sa-banner-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(245, 197, 24, 0.2);
+      color: #F5C518;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+      max-width: 100%;
+      word-break: break-word;
+    }
+
+    .sa-banner-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(1.2rem, 3vw, 1.85rem);
+      font-weight: 800;
+      margin-bottom: 8px;
+      line-height: 1.25;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    .sa-banner-subtitle {
+      color: #c7d2fe;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin: 0;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    .sa-banner-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      min-width: 0;
+    }
+
+    @media (max-width: 600px) {
+      .sa-banner-actions {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .sa-banner-actions .sa-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* ── Alert Center Component ── */
+    .sa-alerts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+      gap: 14px;
+    }
+
+    .sa-alert-item {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+      box-sizing: border-box;
+      border: 1px solid #fed7aa;
+    }
+
+    .sa-alert-item.alert-warning {
+      border-color: #fed7aa;
+    }
+
+    .sa-alert-item.alert-danger {
+      border-color: #fecdd3;
+    }
+
+    .sa-alert-item.alert-neutral {
+      border-color: #e2e8f0;
+    }
+
+    .sa-alert-item-info {
+      min-width: 0;
+      flex: 1 1 auto;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    .sa-alert-item-title {
+      font-weight: 700;
+      font-size: 0.88rem;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      margin-bottom: 2px;
+    }
+
+    .sa-alert-item-meta {
+      font-size: 0.78rem;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+
+    .sa-alert-item-btn {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 480px) {
+      .sa-alert-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+      }
+      .sa-alert-item-btn {
+        width: 100%;
+        justify-content: center;
+        white-space: normal;
+      }
+    }
+
+    /* ── Dashboard Split Grid ── */
+    .sa-dashboard-split-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 991px) {
+      .sa-dashboard-split-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px;
+      }
+    }
+
+    /* ── Registered Clinic Row Component ── */
+    .sa-clinic-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+      min-width: 0;
+    }
+
+    .sa-clinic-row:last-child {
+      border-bottom: none;
+    }
+
+    .sa-clinic-info {
+      min-width: 0;
+      flex: 1 1 180px;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    .sa-clinic-info a {
+      font-weight: 700;
+      color: var(--sa-dark);
+      font-size: 0.94rem;
+      text-decoration: none;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .sa-clinic-meta {
+      color: var(--sa-text-muted);
+      font-size: 0.78rem;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .sa-clinic-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    @media (max-width: 480px) {
+      .sa-clinic-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .sa-clinic-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+
+    /* ── Audit Row Component ── */
+    .sa-audit-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9;
+      min-width: 0;
+    }
+
+    .sa-audit-row:last-child {
+      border-bottom: none;
+    }
+
+    .sa-audit-info {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .sa-audit-info code {
+      font-size: 0.82rem;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      white-space: normal;
+      display: inline-block;
+      max-width: 100%;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--sa-purple-dark);
+      font-weight: 600;
+    }
+
+    .sa-audit-meta {
+      font-size: 0.78rem;
+      color: var(--sa-text-muted);
+      margin-top: 3px;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    .sa-audit-time {
+      font-size: 0.74rem;
+      color: var(--sa-text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 360px) {
+      .sa-audit-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      .sa-audit-time {
+        align-self: flex-start;
+      }
+    }
+
+    /* ── Card Header Actions Component ── */
+    .sa-card-header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 576px) {
+      .sa-card-header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .sa-card-header-actions .sa-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* ── Mobile Sidebar Close Button ── */
+    .sidebar-close-btn {
+      width: 40px !important;
+      height: 40px !important;
+      min-width: 40px !important;
+      min-height: 40px !important;
+      display: none;
+      align-items: center !important;
+      justify-content: center !important;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+
+    .sidebar-close-btn:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #ff8080;
+    }
+
+    @media (max-width: 991px) {
+      .sidebar-close-btn {
+        display: flex !important;
+      }
+    }
+
+    /* ── Responsive Table min-width ── */
+    .sa-table {
+      min-width: 580px;
+    }
+
+    /* ── Media Queries: Breakpoints ── */
+    @media (max-width: 991px) {
+      .sa-body {
+        padding: 16px clamp(12px, 3vw, 20px);
+      }
+      .sa-stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px;
+      }
+    }
+
     @media (max-width: 768px) {
       .sa-body {
-        padding: 16px clamp(12px, 3vw, 18px);
+        padding: 14px clamp(10px, 3vw, 16px);
       }
       .sa-card {
-        margin-bottom: 14px;
+        margin-bottom: 16px;
       }
       .sa-stats-grid {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px;
+      }
+      .sa-card-body {
+        padding: 16px 14px;
       }
     }
 
@@ -616,12 +989,17 @@
         gap: 8px;
       }
       .sa-topbar-left {
-        gap: 10px;
+        gap: 8px;
         min-width: 0;
+        flex: 1 1 auto;
+      }
+      .sa-topbar-titles {
+        min-width: 0;
+        flex: 1 1 auto;
       }
       .sa-topbar-titles h1 {
-        font-size: 1.02rem;
-        max-width: clamp(140px, 45vw, 200px);
+        font-size: 0.96rem;
+        max-width: 100%;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -631,13 +1009,16 @@
       }
       .sa-topbar-right {
         gap: 6px;
+        flex-shrink: 0;
       }
       .sa-user-pill {
-        padding: 6px !important;
+        padding: 0 !important;
         border-radius: 50% !important;
         width: 36px;
         height: 36px;
         justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
       }
       .sa-user-pill span:not(.crown) {
         display: none !important;
@@ -646,9 +1027,11 @@
         display: none !important;
       }
       .sa-topbar-right .sa-btn {
-        padding: 8px 10px !important;
+        padding: 6px 10px !important;
         min-width: 36px !important;
+        width: 36px !important;
         height: 36px !important;
+        min-height: 36px !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -662,17 +1045,17 @@
         gap: 8px;
       }
       .sa-card-body {
-        padding: 12px 10px;
+        padding: 14px 12px;
       }
       .sa-stat-card {
-        padding: 12px 10px;
-        gap: 10px;
+        padding: 14px 14px;
+        gap: 12px;
         border-radius: 12px;
       }
       .sa-stat-icon {
-        width: 38px;
-        height: 38px;
-        font-size: 1.05rem;
+        width: 42px;
+        height: 42px;
+        font-size: 1.15rem;
         border-radius: 10px;
       }
       .sa-table th, .sa-table td {
@@ -681,13 +1064,37 @@
       }
     }
 
-    @media (max-width: 360px) {
+    @media (max-width: 480px) {
+      .sa-btn-hide-mobile {
+        display: none !important;
+      }
       .sa-stats-grid {
         grid-template-columns: 1fr !important;
-        gap: 8px;
+        gap: 10px;
       }
       .sa-topbar-titles h1 {
-        max-width: 130px;
+        font-size: 0.88rem;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .sa-topbar-left {
+        gap: 6px;
+      }
+      .sa-toggle-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+      }
+      .sa-topbar-titles h1 {
+        font-size: 0.82rem;
+      }
+      .sa-card-body {
+        padding: 12px 10px;
+      }
+      .sa-stat-card {
+        padding: 12px 10px;
+        gap: 10px;
       }
     }
   </style>
@@ -696,6 +1103,11 @@
 </head>
 
 <body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with preloader_portal_title="Platform Control Panel" preloader_status_message="Loading system administration&hellip;" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
+
   <!-- ════ SUPER ADMIN SIDEBAR ════ -->
   {% include "super_admin/_sidebar.html" %}
 
@@ -748,6 +1160,7 @@
 
   <!-- Global Responsive Layout Controller -->
   <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/preloader.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -275,6 +275,11 @@
 </head>
 
 <body>
+    <!-- ════ CLINIC PRELOADER ════ -->
+    {% with preloader_portal_title="Staff Attendance" preloader_status_message="Loading attendance record&hellip;" %}
+      {% include "shared/preloader.html" %}
+    {% endwith %}
+
     <!-- === SIDEBAR === -->
     {% include "staff/_sidebar.html" %}
 
@@ -353,6 +358,7 @@
         });
     </script>
   <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/preloader.js' %}"></script>
 </body>
 
 </html>

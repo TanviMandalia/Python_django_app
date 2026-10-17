@@ -675,6 +675,11 @@
 </head>
 
 <body>
+    <!-- ════ CLINIC PRELOADER ════ -->
+    {% with preloader_portal_title="Patient Registration" preloader_status_message="Preparing registration form&hellip;" %}
+      {% include "shared/preloader.html" %}
+    {% endwith %}
+
     <div class="register-container">
 
         <!-- LEFT -->
@@ -771,6 +776,7 @@
 
     </div>
   <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/preloader.js' %}" defer></script>
 </body>
 
 </html>

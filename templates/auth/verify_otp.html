@@ -212,6 +212,10 @@
 </head>
 
 <body>
+    <!-- ════ CLINIC PRELOADER ════ -->
+    {% with preloader_portal_title="Two-Factor Verification" preloader_status_message="Verifying credentials&hellip;" %}
+      {% include "shared/preloader.html" %}
+    {% endwith %}
 
     <div class="otp-page">
 
@@ -324,6 +328,7 @@
     </script>
 
   <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/preloader.js' %}" defer></script>
 </body>
 
 </html>

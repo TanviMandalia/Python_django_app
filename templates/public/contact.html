@@ -741,6 +741,11 @@
 </head>
 
 <body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with preloader_portal_title="Contact & Patient Support" preloader_status_message="Preparing contact portal&hellip;" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
+
   {% include 'shared/navbar.html' %}
 
   <div class="page-hero">
@@ -913,6 +918,7 @@
 
   {% include 'shared/footer.html' %}
   <script src="{% static 'js/layout.js' %}" defer></script>
+  <script src="{% static 'js/preloader.js' %}" defer></script>
 </body>
 
 </html>

@@ -620,6 +620,11 @@
 </head>
 
 <body>
+    <!-- ════ CLINIC PRELOADER ════ -->
+    {% with preloader_portal_title="Clinical Services & Treatments" preloader_status_message="Preparing clinical services&hellip;" %}
+      {% include "shared/preloader.html" %}
+    {% endwith %}
+
     {% include 'shared/navbar.html' %}
 
     <!-- HERO SECTION -->
@@ -790,6 +795,7 @@
 
     {% include 'shared/footer.html' %}
     <script src="{% static 'js/layout.js' %}" defer></script>
+    <script src="{% static 'js/preloader.js' %}" defer></script>
 </body>
 
 </html>

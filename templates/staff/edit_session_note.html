@@ -249,6 +249,11 @@ textarea:focus {
       <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
     <body>
+    <!-- ════ CLINIC PRELOADER ════ -->
+    {% with preloader_portal_title="Session Documentation" preloader_status_message="Loading clinical note&hellip;" %}
+      {% include "shared/preloader.html" %}
+    {% endwith %}
+
     <!-- === SIDEBAR === -->
     {% include "staff/_sidebar.html" %}
 
@@ -354,5 +359,6 @@ textarea:focus {
             </div>
         </div>
       <script src="{% static 'js/layout.js' %}"></script>
+      <script src="{% static 'js/preloader.js' %}"></script>
 </body>
 </html>

@@ -878,6 +878,10 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with preloader_portal_title="Patient & Client Portal" preloader_status_message="Preparing your patient care portal&hellip;" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
 
   <!-- Client Sidebar Navigation -->
   {% include "client/_sidebar.html" %}
@@ -945,6 +949,7 @@
 
   <!-- Layout JavaScript (Collapsible & Mobile Sidebar) -->
   <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/preloader.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

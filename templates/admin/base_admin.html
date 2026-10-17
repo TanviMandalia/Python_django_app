@@ -735,6 +735,11 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with preloader_portal_title="Clinic Administration Portal" preloader_status_message="Loading clinical workspace&hellip;" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
+
   <!-- ════ ADMIN SIDEBAR ════ -->
   {% include "admin/_sidebar.html" %}
 
@@ -802,6 +807,7 @@
 
   <!-- Global Scripts -->
   <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/preloader.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

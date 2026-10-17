@@ -248,6 +248,10 @@ a:focus-visible{
   <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 <body>
+<!-- ════ CLINIC PRELOADER ════ -->
+{% with preloader_portal_title="Password Assistance" preloader_status_message="Loading verification portal&hellip;" %}
+  {% include "shared/preloader.html" %}
+{% endwith %}
 
 <div class="auth-card">
 
@@ -298,5 +302,6 @@ a:focus-visible{
 </div>
 
   <script src="{% static 'js/layout.js' %}"></script>
+  <script src="{% static 'js/preloader.js' %}" defer></script>
 </body>
 </html>

@@ -437,6 +437,11 @@
 </head>
 
 <body>
+    <!-- ════ CLINIC PRELOADER ════ -->
+    {% with preloader_portal_title="Specialized Clinical Care" preloader_status_message="Preparing treatment details&hellip;" %}
+      {% include "shared/preloader.html" %}
+    {% endwith %}
+
     {% include 'shared/navbar.html' %}
 
     <main class="container">
@@ -596,6 +601,7 @@
 
     {% include 'shared/footer.html' %}
     <script src="{% static 'js/layout.js' %}" defer></script>
+    <script src="{% static 'js/preloader.js' %}" defer></script>
 </body>
 
 </html>
