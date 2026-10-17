@@ -1,6 +1,6 @@
 # core/urls.py  (app urls)
 
-from django.urls import path
+from django.urls import path, re_path
 from django.views.generic.base import RedirectView
 from . import views
 from django.conf import settings
@@ -20,11 +20,13 @@ urlpatterns = [
     path("blogs/<slug:slug>/", views.blog_detail, name="blog_detail"),
     path("robots.txt", views.robots_txt, name="robots_txt"),
     path("sitemap.xml", views.sitemap_xml, name="sitemap_xml"),
+    re_path(r"^google(?P<token>[a-zA-Z0-9_-]+)\.html$", views.google_verification_file, name="google_verification_file"),
     path(
         "favicon.ico",
         RedirectView.as_view(url=f"{settings.STATIC_URL}images/favicon.ico", permanent=True),
         name="favicon",
     ),
+
     path("healthz", views.healthz, name="healthz"),
     path("healthz/", views.healthz, name="healthz_slash"),
     # ── Auth ──────────────────────────────────────────────────

@@ -8,6 +8,7 @@
     <title>{{ seo_title }}</title>
     <meta name="description" content="{{ seo_description }}">
     <link rel="canonical" href="{{ canonical_url }}">
+    {% if google_site_verification %}<meta name="google-site-verification" content="{{ google_site_verification }}">{% endif %}
 
     <!-- Open Graph Metadata -->
     <meta property="og:type" content="article">

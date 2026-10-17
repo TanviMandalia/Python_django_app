@@ -186,13 +186,16 @@ class SEORobotsTagMiddleware:
         # Check if path is an eligible public page
         is_indexable = (
             path in self.INDEXABLE_PATHS
+            or (path.startswith('/services/') and not path.startswith('/admin-'))
             or (path.startswith('/blogs/') and not path.startswith('/admin-blog/'))
+            or (path.startswith('/google') and path.endswith('.html'))
         )
 
         if not is_indexable:
             response['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
 
         return response
+
 
 
 # ───────────────────────────────

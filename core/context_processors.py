@@ -66,8 +66,15 @@ def seo_context(request):
         'geo_lng': '70.0577',
     }
 
+    google_site_verification = (
+        getattr(settings, "GOOGLE_SITE_VERIFICATION_TOKEN", "").strip()
+        or os.environ.get("GOOGLE_SITE_VERIFICATION_TOKEN", "").strip()
+    )
+
     return {
         'canonical_base': canonical_base,
         'canonical_url': canonical_url,
         'clinic_nap': clinic_nap,
-    }
+        'google_site_verification': google_site_verification,
+    }
+

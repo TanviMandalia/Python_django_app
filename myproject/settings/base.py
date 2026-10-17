@@ -27,6 +27,10 @@ ALLOWED_HOSTS = [
 # Canonical production base URL for SEO and XML sitemap generation
 CANONICAL_BASE_URL = os.getenv("CANONICAL_BASE_URL", "").strip().rstrip("/")
 
+# Google Search Console ownership verification token/file
+GOOGLE_SITE_VERIFICATION_TOKEN = os.getenv("GOOGLE_SITE_VERIFICATION_TOKEN", "").strip()
+GOOGLE_SITE_VERIFICATION_FILE = os.getenv("GOOGLE_SITE_VERIFICATION_FILE", "").strip()
+
 # =========================
 # APPLICATIONS
 # =========================
@@ -38,7 +42,9 @@ DJANGO_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sitemaps",
 ]
+
 
 THIRD_PARTY_APPS = []
 

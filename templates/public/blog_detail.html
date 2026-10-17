@@ -10,6 +10,7 @@
 
   <meta name="description" content="{{ blog.excerpt|default:blog.content|striptags|truncatechars:160 }}" />
   <link rel="canonical" href="{{ canonical_url }}">
+  {% if google_site_verification %}<meta name="google-site-verification" content="{{ google_site_verification }}">{% endif %}
 
   <!-- Open Graph Metadata -->
   <meta property="og:type" content="article" />

@@ -21,7 +21,12 @@ elif not CSRF_TRUSTED_ORIGINS:
     CSRF_TRUSTED_ORIGINS = [
         f"https://{h}" for h in ALLOWED_HOSTS if not h.startswith("*") and not h.startswith(".")
     ]
-
+# ------------------------------------------------------------------------------
+# Canonical Production Domain for SEO & Sitemap
+# ------------------------------------------------------------------------------
+if not CANONICAL_BASE_URL:
+    primary_host = next((h for h in ALLOWED_HOSTS if not h.startswith("*") and not h.startswith(".")), "physio-rehab-app.onrender.com")
+    CANONICAL_BASE_URL = f"https://{primary_host}"
 # ------------------------------------------------------------------------------
 # Security & SSL / HTTPS Headers
 # ------------------------------------------------------------------------------

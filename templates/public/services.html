@@ -8,6 +8,7 @@
     <title>{{ seo_title|default:"Physiotherapy & Chiropractic Treatments in Jamnagar | Dr. Dhvani Patalia Physio Rehab" }}</title>
     <meta name="description" content="{{ seo_description|default:'Specialized clinical physiotherapy treatments in Jamnagar by Dr. Dhvani Patalia. Back pain, frozen shoulder, knee pain, sciatica, neck pain, posture correction, and rehabilitation.' }}">
     <link rel="canonical" href="{{ canonical_url }}">
+    {% if google_site_verification %}<meta name="google-site-verification" content="{{ google_site_verification }}">{% endif %}
 
     <!-- Open Graph Metadata -->
     <meta property="og:type" content="website">

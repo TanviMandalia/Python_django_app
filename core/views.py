@@ -8473,7 +8473,7 @@ def super_admin_email_account_delete(request, account_id):
 def robots_txt(request):
     """
     Renders dynamic robots.txt.
-    Permits crawling of public marketing routes and assets,
+    Permits crawling of public marketing routes and static assets,
     while explicitly disallowing all private, dashboard, and administrative endpoints.
     Directs search engines to the absolute XML sitemap.
     """
@@ -8493,6 +8493,9 @@ def robots_txt(request):
         "Disallow: /staff-",
         "Disallow: /client-",
         "Disallow: /super-admin/",
+        "Disallow: /dashboard/",
+        "Disallow: /profile/",
+        "Disallow: /edit-profile/",
         "Disallow: /api/",
         "Disallow: /login/",
         "Disallow: /register/",
@@ -8508,6 +8511,8 @@ def robots_txt(request):
         "Disallow: /bulk-import/",
         "Disallow: /submit-review/",
         "Disallow: /support/",
+        "Disallow: /healthz",
+        "Disallow: /notifications/",
         "",
         f"Sitemap: {sitemap_url}",
     ]
@@ -8516,67 +8521,56 @@ def robots_txt(request):
 
 def sitemap_xml(request):
     """
-    Renders valid XML sitemap adhering to Sitemap 0.9 protocol.
+    Renders valid XML sitemap adhering to Sitemap 0.9 protocol using Django's sitemap framework.
     Includes only eligible, canonical public routes and published articles.
     Strictly excludes all private, administrative, and authenticated endpoints.
     """
-    from xml.sax.saxutils import escape as xml_escape
+    from django.contrib.sitemaps.views import sitemap as django_sitemap
+    from core.sitemaps import sitemaps
 
-    configured_base = getattr(settings, 'CANONICAL_BASE_URL', '').strip().rstrip('/') or os.environ.get('CANONICAL_BASE_URL', '').strip().rstrip('/')
-    if not configured_base:
-        scheme = 'https' if request.is_secure() else request.scheme
-        configured_base = f"{scheme}://{request.get_host()}"
+    response = django_sitemap(
+        request,
+        sitemaps=sitemaps,
+        template_name="sitemap.xml",
+        content_type="application/xml; charset=utf-8",
+    )
+    response["Content-Type"] = "application/xml; charset=utf-8"
+    return response
 
-    # Static indexable public routes with appropriate change frequency and priority
-    static_urls = [
-        {"loc": f"{configured_base}/", "changefreq": "weekly", "priority": "1.0"},
-        {"loc": f"{configured_base}/services/", "changefreq": "weekly", "priority": "0.9"},
-        {"loc": f"{configured_base}/about/", "changefreq": "monthly", "priority": "0.8"},
-        {"loc": f"{configured_base}/contact/", "changefreq": "monthly", "priority": "0.8"},
-        {"loc": f"{configured_base}/blogs/", "changefreq": "weekly", "priority": "0.7"},
-    ]
 
-    # Dynamic treatment service pages
-    treatment_urls = []
-    for t in Treatment.objects.filter(is_active=True, slug__isnull=False).exclude(slug="").order_by("order"):
-        item = {
-            "loc": f"{configured_base}/services/{t.slug}/",
-            "changefreq": "monthly",
-            "priority": "0.8",
-        }
-        if t.updated_at:
-            item["lastmod"] = t.updated_at.strftime("%Y-%m-%d")
-        treatment_urls.append(item)
+def google_verification_file(request, token):
+    """
+    Serves Google Search Console verification file if configured.
+    Matches /google<token>.html.
+    Accepts matching token from GOOGLE_SITE_VERIFICATION_TOKEN or GOOGLE_SITE_VERIFICATION_FILE.
+    Returns 200 with 'google-site-verification: google<token>.html' or 404.
+    """
+    configured_token = (
+        getattr(settings, "GOOGLE_SITE_VERIFICATION_TOKEN", "").strip()
+        or os.environ.get("GOOGLE_SITE_VERIFICATION_TOKEN", "").strip()
+    )
+    configured_file = (
+        getattr(settings, "GOOGLE_SITE_VERIFICATION_FILE", "").strip()
+        or os.environ.get("GOOGLE_SITE_VERIFICATION_FILE", "").strip()
+    )
 
-    # Dynamic blog articles
-    blog_urls = []
-    for b in Blog.objects.filter(slug__isnull=False).exclude(slug="").order_by("-created_at"):
-        item = {
-            "loc": f"{configured_base}/blogs/{b.slug}/",
-            "changefreq": "monthly",
-            "priority": "0.6",
-        }
-        if b.created_at:
-            item["lastmod"] = b.created_at.strftime("%Y-%m-%d")
-        blog_urls.append(item)
+    valid_tokens = set()
+    if configured_token:
+        clean_token = configured_token.replace("google", "").replace(".html", "")
+        if clean_token:
+            valid_tokens.add(clean_token)
+    if configured_file:
+        clean_file_token = configured_file.replace("google", "").replace(".html", "")
+        if clean_file_token:
+            valid_tokens.add(clean_file_token)
 
-    all_urls = static_urls + treatment_urls + blog_urls
+    if token in valid_tokens and token:
+        content = f"google-site-verification: google{token}.html\n"
+        return HttpResponse(content, content_type="text/html; charset=utf-8")
 
-    xml_lines = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ]
-    for u in all_urls:
-        xml_lines.append("  <url>")
-        xml_lines.append(f"    <loc>{xml_escape(u['loc'])}</loc>")
-        if "lastmod" in u:
-            xml_lines.append(f"    <lastmod>{u['lastmod']}</lastmod>")
-        xml_lines.append(f"    <changefreq>{u['changefreq']}</changefreq>")
-        xml_lines.append(f"    <priority>{u['priority']}</priority>")
-        xml_lines.append("  </url>")
-    xml_lines.append("</urlset>")
+    from django.http import Http404
+    raise Http404("Google verification file not configured.")
 
-    return HttpResponse("\n".join(xml_lines), content_type="application/xml; charset=utf-8")
 
 
 def healthz(request):
