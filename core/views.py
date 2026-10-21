@@ -805,6 +805,49 @@ def admin_delete_review(request, review_id):
     return redirect("admin_reviews")
 
 
+def csrf_failure_view(request, reason="", template_name="shared/csrf_failure.html"):
+    """
+    Production-grade CSRF failure view:
+    Replaces Django's raw 403 debug screen with a secure, clinic-branded, recoverable page.
+    Handles:
+      - Expired tokens due to inactivity or multi-tab login rotation
+      - Browser back-forward cache (bfcache) token discrepancies
+      - AJAX / fetch requests with structured JSON error & csrf_refresh flag
+      - Clean retry and refresh guidance preserving user peace-of-mind
+    """
+    client_ip = _get_client_ip(request) if "_get_client_ip" in globals() else request.META.get("REMOTE_ADDR", "")
+    logging.getLogger("core.security").warning(
+        "CSRF verification failed: reason='%s', path='%s', method='%s', ip='%s'",
+        reason,
+        request.path,
+        request.method,
+        client_ip,
+    )
+
+    # Check for AJAX/JSON request
+    if (
+        request.headers.get("x-requested-with") == "XMLHttpRequest"
+        or "application/json" in request.headers.get("Accept", "")
+    ):
+        return JsonResponse(
+            {
+                "error": "CSRF verification failed. Please refresh the page.",
+                "reason": reason if settings.DEBUG else "Security token expired.",
+                "csrf_refresh": True,
+            },
+            status=403,
+        )
+
+    context = {
+        "reason": reason,
+        "debug": settings.DEBUG,
+        "page_title": "Security Verification Notice",
+        "requested_path": request.path,
+        "clinic_phone": getattr(settings, "CLINIC_PHONE", "+91 94095 10501"),
+    }
+    return render(request, template_name, context, status=403)
+
+
 # ─── AUTH ────────────────────────────────────────────────────
 
 

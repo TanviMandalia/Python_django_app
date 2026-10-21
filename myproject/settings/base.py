@@ -165,13 +165,29 @@ SESSION_COOKIE_SAMESITE = "Lax"
 
 CSRF_COOKIE_NAME = "csrftoken"
 CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_HTTPONLY = False  # Allows client-side auto-synchronization on form submit
+CSRF_COOKIE_AGE = 86400 * 14  # 14 days, synchronized with session lifetime
+CSRF_FAILURE_VIEW = "core.views.csrf_failure_view"
 
 # =========================
 # CSRF / TRUSTED ORIGINS
 # =========================
 
-_csrf_origins = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000")
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _csrf_origins.split(",") if origin.strip()]
+_default_csrf_origins = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "https://*.onrender.com",
+    "https://physio-rehab-app.onrender.com",
+]
+_env_csrf = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+_combined_origins = _default_csrf_origins + [origin.strip() for origin in _env_csrf.split(",") if origin.strip()]
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_combined_origins))
 
 # =========================
 # MESSAGES

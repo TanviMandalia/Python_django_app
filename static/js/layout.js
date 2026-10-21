@@ -238,6 +238,44 @@
     });
   }
 
+  // ── CSRF PROTECTION & RESYNCHRONIZATION (PRODUCTION GRADE) ───────────────
+  function getCsrfCookie() {
+    if (!document.cookie) return null;
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const c = cookies[i].trim();
+      if (c.indexOf("csrftoken=") === 0) {
+        return decodeURIComponent(c.substring("csrftoken=".length));
+      }
+    }
+    return null;
+  }
+  window.getCsrfToken = getCsrfCookie;
+
+  // Intercept form submissions on document level (capture phase)
+  // Ensures that if the CSRF token was rotated by login in another tab or session timeout,
+  // the submitted form dynamically adopts the current valid cookie token.
+  document.addEventListener("submit", function (e) {
+    const form = e.target;
+    if (form && form.tagName === "FORM" && form.method && form.method.toUpperCase() === "POST") {
+      const csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
+      const cookieToken = getCsrfCookie();
+      if (csrfInput && cookieToken && csrfInput.value !== cookieToken) {
+        csrfInput.value = cookieToken;
+      }
+    }
+  }, true);
+
+  // Synchronize token when page is restored from bfcache (Back/Forward navigation)
+  window.addEventListener("pageshow", function () {
+    const cookieToken = getCsrfCookie();
+    if (cookieToken) {
+      document.querySelectorAll('input[name="csrfmiddlewaretoken"]').forEach(function (input) {
+        input.value = cookieToken;
+      });
+    }
+  });
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initLayout);
   } else {

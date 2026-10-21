@@ -1118,8 +1118,27 @@
       var submitText = document.getElementById("btnSubmitText");
       var submitIcon = document.getElementById("btnSubmitIcon");
 
+      function syncBookingCsrf() {
+        if (!document.cookie) return;
+        var cookies = document.cookie.split(";");
+        for (var i = 0; i < cookies.length; i++) {
+          var c = cookies[i].trim();
+          if (c.indexOf("csrftoken=") === 0) {
+            var token = decodeURIComponent(c.substring("csrftoken=".length));
+            var csrfInput = form ? form.querySelector('input[name="csrfmiddlewaretoken"]') : null;
+            if (csrfInput && token && csrfInput.value !== token) {
+              csrfInput.value = token;
+            }
+            break;
+          }
+        }
+      }
+      syncBookingCsrf();
+      window.addEventListener("pageshow", syncBookingCsrf);
+
       if (form && submitBtn) {
         form.addEventListener("submit", function () {
+          syncBookingCsrf();
           // Delay disable slightly so form submit payload sends cleanly
           setTimeout(function () {
             submitBtn.disabled = true;

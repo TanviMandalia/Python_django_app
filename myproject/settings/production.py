@@ -17,10 +17,14 @@ ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(",") if h.strip()]
 csrf_origins_raw = os.getenv("CSRF_TRUSTED_ORIGINS")
 if csrf_origins_raw:
     CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_origins_raw.split(",") if o.strip()]
-elif not CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS = [
+else:
+    extra_origins = [
         f"https://{h}" for h in ALLOWED_HOSTS if not h.startswith("*") and not h.startswith(".")
+    ] + [
+        "https://*.onrender.com",
+        "https://physio-rehab-app.onrender.com",
     ]
+    CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS + extra_origins))
 # ------------------------------------------------------------------------------
 # Canonical Production Domain for SEO & Sitemap
 # ------------------------------------------------------------------------------

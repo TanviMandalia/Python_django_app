@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Verification Notice — Dr. Dhvani Patalia Physio Rehab</title>
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(16px, 4vw, 32px);
+      line-height: 1.6;
+    }
+
+    .csrf-card {
+      background: #ffffff;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 0 1px 1px rgba(15, 23, 42, 0.02);
+      max-width: 580px;
+      width: 100%;
+      text-align: center;
+      padding: clamp(32px, 6vw, 48px) clamp(20px, 5vw, 36px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .csrf-accent-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #0d9488, #F5C518, #0284c7);
+    }
+
+    .csrf-icon-wrapper {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #f0fdfa;
+      border: 2px solid #ccfbf1;
+      color: #0d9488;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      margin-bottom: 22px;
+      box-shadow: 0 8px 16px -4px rgba(13, 148, 136, 0.15);
+    }
+
+    .csrf-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(1.4rem, 3.5vw, 1.85rem);
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 12px;
+      letter-spacing: -0.3px;
+    }
+
+    .csrf-subtitle {
+      color: #64748b;
+      font-size: 0.98rem;
+      line-height: 1.6;
+      margin-bottom: 26px;
+    }
+
+    .csrf-info-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #0d9488;
+      border-radius: 10px;
+      padding: 16px 20px;
+      text-align: left;
+      font-size: 0.88rem;
+      color: #334155;
+      margin-bottom: 28px;
+      line-height: 1.55;
+    }
+
+    .csrf-info-box i {
+      color: #0d9488;
+      margin-right: 8px;
+    }
+
+    .csrf-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    @media (min-width: 480px) {
+      .csrf-actions {
+        flex-direction: row;
+        justify-content: center;
+      }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 24px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.92rem;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: #0d9488;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+    }
+
+    .btn-primary:hover {
+      background: #0f766e;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(13, 148, 136, 0.35);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .debug-details {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px dashed #cbd5e1;
+      text-align: left;
+    }
+
+    .debug-details summary {
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #94a3b8;
+      outline: none;
+      user-select: none;
+    }
+
+    .debug-details pre {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      margin-top: 10px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .brand-foot {
+      margin-top: 24px;
+      font-size: 0.82rem;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    .brand-foot a {
+      color: #0d9488;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="csrf-card">
+    <div class="csrf-accent-bar"></div>
+
+    <div class="csrf-icon-wrapper">
+      <i class="fas fa-shield-alt" aria-hidden="true"></i>
+    </div>
+
+    <h1 class="csrf-title">Security Verification Notice</h1>
+
+    <p class="csrf-subtitle">
+      For your security, form submission tokens expire after a period of inactivity or when your account status changes in another browser window.
+    </p>
+
+    <div class="csrf-info-box">
+      <i class="fas fa-info-circle" aria-hidden="true"></i>
+      <strong>What should I do?</strong>
+      Your entered information is safe. Click <strong>Refresh & Try Again</strong> below to automatically refresh your security token and proceed with your request.
+    </div>
+
+    <div class="csrf-actions">
+      <button type="button" class="btn btn-primary" onclick="retrySubmission();">
+        <i class="fas fa-redo-alt" aria-hidden="true"></i> Refresh & Try Again
+      </button>
+
+      <a href="javascript:history.back();" class="btn btn-secondary">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i> Go Back
+      </a>
+
+      <a href="/" class="btn btn-secondary">
+        <i class="fas fa-home" aria-hidden="true"></i> Home
+      </a>
+    </div>
+
+    {% if debug and reason %}
+      <details class="debug-details">
+        <summary><i class="fas fa-bug" aria-hidden="true"></i> Technical Diagnostic Details (Debug Mode Active)</summary>
+        <pre>Reason: {{ reason }}&#10;Path: {{ requested_path }}&#10;Method: {{ request.method }}</pre>
+      </details>
+    {% endif %}
+  </div>
+
+  <div class="brand-foot">
+    Dr. Dhvani Patalia Physio Rehab &bull; Need immediate help? Call <a href="tel:{{ clinic_phone }}">{{ clinic_phone }}</a>
+  </div>
+
+  <script>
+    function retrySubmission() {
+      // If previous page is in history, go back and force reload
+      if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
+        window.location.href = document.referrer;
+      } else {
+        window.location.reload();
+      }
+    }
+  </script>
+</body>
+
+</html>
