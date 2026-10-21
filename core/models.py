@@ -502,6 +502,102 @@ class Appointment(models.Model):
         ordering = ["-created_at"]
 
 
+class PublicAppointmentRequest(models.Model):
+    """
+    Dedicated unauthenticated appointment request model for public website visitors.
+    Strictly isolated from internal clinic dashboard slots and user accounts.
+    Submissions enter in 'pending' status awaiting review and confirmation by clinic staff.
+    """
+    STATUS_CHOICES = [
+        ("pending", "Pending Confirmation"),
+        ("confirmed", "Confirmed"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    CONTACT_METHOD_CHOICES = [
+        ("phone", "Phone Call"),
+        ("email", "Email"),
+        ("whatsapp", "WhatsApp"),
+    ]
+
+    NOTIFICATION_STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("sent", "Sent"),
+        ("failed", "Failed"),
+    ]
+
+    reference_id = models.CharField(
+        max_length=32,
+        unique=True,
+        db_index=True,
+        help_text="Unique public request tracking reference (e.g., PAR-20261021-A1B2)",
+    )
+    hospital = models.ForeignKey(
+        "Hospital",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="public_appointment_requests",
+    )
+    patient_name = models.CharField(max_length=120)
+    email = models.EmailField(max_length=254)
+    phone = models.CharField(max_length=30)
+    preferred_date = models.DateField()
+    preferred_time = models.CharField(max_length=30)
+    service_or_reason = models.TextField(max_length=500, blank=True, null=True)
+    preferred_contact_method = models.CharField(
+        max_length=20,
+        choices=CONTACT_METHOD_CHOICES,
+        default="phone",
+        blank=True,
+    )
+    consent_given = models.BooleanField(
+        default=True,
+        help_text="Visitor agreed to be contacted and acknowledged the privacy notice",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="pending",
+    )
+    email_notification_status = models.CharField(
+        max_length=20,
+        choices=NOTIFICATION_STATUS_CHOICES,
+        default="pending",
+    )
+    notification_error = models.TextField(blank=True, default="")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, blank=True, default="")
+    admin_notes = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Public Appointment Request"
+        verbose_name_plural = "Public Appointment Requests"
+
+    def save(self, *args, **kwargs):
+        if not self.reference_id:
+            import string
+            import random
+            today_str = timezone.now().strftime("%Y%m%d")
+            for _ in range(10):
+                suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
+                candidate = f"PAR-{today_str}-{suffix}"
+                if not PublicAppointmentRequest.objects.filter(reference_id=candidate).exists():
+                    self.reference_id = candidate
+                    break
+            if not self.reference_id:
+                import uuid
+                self.reference_id = f"PAR-{today_str}-{uuid.uuid4().hex[:6].upper()}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.reference_id} - {self.patient_name} ({self.preferred_date} {self.preferred_time})"
+
+
+
 class StaffProfile(models.Model):
     ROLE_CHOICES = [
         ("physiotherapist", "Physiotherapist"),

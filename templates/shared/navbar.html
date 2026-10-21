@@ -16,13 +16,14 @@
                 <li><a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}" {% if request.path == '/' %}aria-current="page"{% endif %}>Home</a></li>
                 <li><a href="{% url 'about' %}" class="{% if request.path == '/about/' %}active{% endif %}" {% if request.path == '/about/' %}aria-current="page"{% endif %}>About</a></li>
                 <li><a href="{% url 'services' %}" class="{% if request.path == '/services/' %}active{% endif %}" {% if request.path == '/services/' %}aria-current="page"{% endif %}>Services</a></li>
+                <li><a href="{% url 'public_book_appointment' %}" class="{% if '/book-appointment/' in request.path %}active{% endif %}" {% if '/book-appointment/' in request.path %}aria-current="page"{% endif %}>Book Appointment</a></li>
                 <li><a href="{% url 'blog_list' %}" class="{% if '/blogs/' in request.path %}active{% endif %}" {% if '/blogs/' in request.path %}aria-current="page"{% endif %}>Blog</a></li>
                 <li><a href="{% url 'contact' %}" class="{% if request.path == '/contact/' %}active{% endif %}" {% if request.path == '/contact/' %}aria-current="page"{% endif %}>Contact</a></li>
             </ul>
 
             <!-- DESKTOP AUTH BUTTONS -->
             <div class="nav-auth" id="desktopNavAuth">
-                <a href="{% url 'book_appointment' %}" class="btn-book-nav"><i class="fas fa-calendar-check" aria-hidden="true"></i> Book Now</a>
+                <a href="{% url 'public_book_appointment' %}" class="btn-book-nav"><i class="fas fa-calendar-check" aria-hidden="true"></i> Book Now</a>
                 <a href="{% url 'login' %}" class="btn-login"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Login</a>
             </div>
 
@@ -64,6 +65,10 @@
                 <span class="drawer-icon-box"><i class="fas fa-hands-helping" aria-hidden="true"></i></span>
                 <span>Clinical Services</span>
             </a>
+            <a href="{% url 'public_book_appointment' %}" class="drawer-link {% if '/book-appointment/' in request.path %}active{% endif %}">
+                <span class="drawer-icon-box"><i class="fas fa-calendar-plus" aria-hidden="true"></i></span>
+                <span>Book Appointment</span>
+            </a>
             <a href="{% url 'blog_list' %}" class="drawer-link {% if '/blogs/' in request.path %}active{% endif %}">
                 <span class="drawer-icon-box"><i class="fas fa-newspaper" aria-hidden="true"></i></span>
                 <span>Health Blog</span>
@@ -75,7 +80,7 @@
         </nav>
 
         <div class="mobile-drawer-actions">
-            <a href="{% url 'book_appointment' %}" class="drawer-btn-book">
+            <a href="{% url 'public_book_appointment' %}" class="drawer-btn-book">
                 <i class="fas fa-calendar-check" aria-hidden="true"></i> Book Consultation
             </a>
             <a href="{% url 'login' %}" class="drawer-btn-login">

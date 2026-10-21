@@ -779,6 +779,160 @@ Login to the clinic admin panel to confirm or assign this session.
     )
 
 
+def send_public_appointment_request_notification(request_obj):
+    """
+    Send an immediate email notification for a new public appointment request
+    to the clinic doctor's authoritative address: physio.rehab.guj@gmail.com.
+    Also triggers a patient acknowledgment email.
+    Safely captures delivery outcome without raising unhandled exceptions.
+    """
+    hospital = getattr(request_obj, "hospital", None)
+    clinic_title = hospital.name if hospital else CLINIC_NAME
+    clinic_phone = hospital.phone if (hospital and hospital.phone) else CLINIC_PHONE
+    doctor_email = getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com")
+
+    ref = request_obj.reference_id
+    patient_name = request_obj.patient_name
+    email = request_obj.email
+    phone = request_obj.phone
+    date_formatted = format_date(request_obj.preferred_date)
+    time_slot = request_obj.preferred_time
+    reason = request_obj.service_or_reason or "None provided"
+    contact_method = request_obj.get_preferred_contact_method_display()
+    created_str = (
+        request_obj.created_at.strftime("%d %B %Y, %I:%M %p")
+        if request_obj.created_at
+        else timezone.now().strftime("%d %B %Y, %I:%M %p")
+    )
+
+    # 1. DOCTOR / CLINIC NOTIFICATION EMAIL
+    doctor_subject = f"New Public Appointment Request - Ref: {ref}"
+    doctor_body = f"""New Public Appointment Request Received
+
+Booking Reference : {ref}
+Patient Name      : {patient_name}
+Email Address     : {email}
+Phone Number      : {phone}
+Preferred Contact : {contact_method}
+Requested Date    : {date_formatted}
+Requested Time    : {time_slot}
+Reason/Treatment  : {reason}
+Submission Time   : {created_str}
+Status            : Awaiting Clinic Confirmation
+
+Action Required:
+Please log in to the Clinic Administration portal to review availability,
+confirm the slot, or contact the patient via {contact_method}.
+
+Clinic: {clinic_title}
+"""
+
+    doctor_html_content = f"""<p style="font-size:16px; color:#0f172a; margin-top:0;"><strong>New Public Appointment Request</strong></p>
+<p>A visitor has requested a physiotherapy consultation via the website. This request is <strong>Awaiting Confirmation</strong>.</p>
+<div class="box" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:18px; margin:16px 0;">
+  <table style="width:100%; border-collapse:collapse; font-size:14px;">
+    <tr><td style="padding:6px 0; color:#64748b; width:150px;">Reference ID:</td><td style="font-weight:700; color:#0284c7;">{escape(ref)}</td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Patient Name:</td><td style="font-weight:600;">{escape(patient_name)}</td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Email Address:</td><td><a href="mailto:{escape(email)}" style="color:#0284c7; text-decoration:none;">{escape(email)}</a></td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Phone Number:</td><td><a href="tel:{escape(phone)}" style="color:#0284c7; text-decoration:none; font-weight:600;">{escape(phone)}</a></td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Contact Preference:</td><td><span class="badge" style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:4px; font-weight:600; font-size:12px;">{escape(contact_method)}</span></td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Requested Date:</td><td style="font-weight:600;">{escape(date_formatted)}</td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Requested Time:</td><td style="font-weight:600;">{escape(time_slot)}</td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Reason / Symptoms:</td><td>{escape(reason)}</td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Submitted At:</td><td style="color:#64748b; font-size:13px;">{escape(created_str)}</td></tr>
+  </table>
+</div>
+<p style="font-size:14px; color:#475569;">Please log in to your clinic admin portal to confirm this consultation or contact the patient directly.</p>"""
+
+    doctor_html = render_html_wrapper(
+        doctor_subject,
+        doctor_html_content,
+        preheader=f"New appointment request from {patient_name} for {date_formatted}",
+        context="clinic",
+        hospital=hospital,
+        organization_name=clinic_title,
+    )
+
+    doctor_sent = False
+    try:
+        doctor_sent = bool(send_clinic_email(
+            subject=doctor_subject,
+            message_text=doctor_body,
+            recipient_list=doctor_email,
+            hospital=hospital,
+            email_type="public_appointment_request_doctor",
+            html_message=doctor_html,
+        ))
+    except Exception as exc:
+        logger.error(f"Doctor appointment request notification email failed: {exc.__class__.__name__} - {exc}")
+        doctor_sent = False
+
+    # 2. PATIENT CONFIRMATION / ACKNOWLEDGMENT EMAIL
+    try:
+        patient_subject = f"Appointment Request Received – {clinic_title} [Ref: {ref}]"
+        patient_body = f"""Dear {patient_name},
+
+Thank you for your appointment request with {clinic_title}.
+
+Your request has been received and is currently awaiting confirmation from our clinical team.
+
+Request Summary:
+  Booking Reference : {ref}
+  Requested Date    : {date_formatted}
+  Preferred Time    : {time_slot}
+  Contact Method    : {contact_method}
+  Status            : Awaiting Clinic Confirmation
+
+Please note: Submitting an appointment request does not guarantee the selected slot.
+Our team will review availability and contact you shortly at {phone} or {email} to confirm your appointment.
+
+If you have urgent questions, please call us directly at {clinic_phone}.
+
+Warm regards,
+{clinic_title}
+"""
+        patient_html_content = f"""<p>Dear <strong>{escape(patient_name)}</strong>,</p>
+<p>Thank you for requesting an appointment with <strong>{escape(clinic_title)}</strong>.</p>
+<p>Your request has been received and is currently <strong>awaiting confirmation</strong> from our clinical team.</p>
+<div class="box" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:18px; margin:16px 0;">
+  <table style="width:100%; border-collapse:collapse; font-size:14px;">
+    <tr><td style="padding:6px 0; color:#64748b; width:150px;">Booking Reference:</td><td style="font-weight:700; color:#0284c7;">{escape(ref)}</td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Requested Date:</td><td style="font-weight:600;">{escape(date_formatted)}</td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Preferred Time:</td><td style="font-weight:600;">{escape(time_slot)}</td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Preferred Contact:</td><td>{escape(contact_method)}</td></tr>
+    <tr><td style="padding:6px 0; color:#64748b;">Current Status:</td><td><span class="badge" style="background:#fef3c7; color:#92400e; padding:3px 8px; border-radius:4px; font-weight:600; font-size:12px;">Awaiting Confirmation</span></td></tr>
+  </table>
+</div>
+<p style="font-size:13.5px; color:#64748b; line-height:1.5;">
+  <em>Important Note:</em> Submitting a request does not guarantee the selected appointment slot.
+  Our clinical administration team will review our schedule and contact you shortly to confirm your session.
+</p>
+<p style="font-size:14px; margin-top:20px;">For urgent inquiries or directions, call us at <strong>{escape(clinic_phone)}</strong>.</p>"""
+
+        patient_html = render_html_wrapper(
+            patient_subject,
+            patient_html_content,
+            preheader=f"Your appointment request {ref} has been received",
+            context="clinic",
+            hospital=hospital,
+            organization_name=clinic_title,
+        )
+
+        send_clinic_email(
+            subject=patient_subject,
+            message_text=patient_body,
+            recipient_list=email,
+            hospital=hospital,
+            email_type="public_appointment_request_ack",
+            html_message=patient_html,
+        )
+    except Exception as exc:
+        logger.debug(f"Patient appointment acknowledgment email failed: {exc}")
+
+    return doctor_sent
+
+
+
 # ── OTP & AUTHENTICATION EMAILS ───────────────────────────────
 
 def send_otp_email(email, otp, purpose="Password Reset", user=None, hospital=None):

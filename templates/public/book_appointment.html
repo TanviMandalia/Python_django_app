@@ -1,0 +1,1151 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ page_title }} | Dr. Dhvani Patalia Physio Rehab Jamnagar</title>
+  <meta name="description" content="Request your physiotherapy appointment with Dr. Dhvani Patalia in Jamnagar. Choose your preferred date, morning or evening time slot. Professional care and personalized recovery." />
+  <link rel="canonical" href="{{ canonical_url|default:request.build_absolute_uri }}">
+  {% if google_site_verification %}<meta name="google-site-verification" content="{{ google_site_verification }}">{% endif %}
+
+  <!-- Open Graph Metadata -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dr. Dhvani Patalia Physio Rehab">
+  <meta property="og:url" content="{{ canonical_url|default:request.build_absolute_uri }}">
+  <meta property="og:title" content="{{ page_title }} | Dr. Dhvani Patalia Physio Rehab">
+  <meta property="og:description" content="Request your physiotherapy appointment online. Morning and evening shifts available at our Bedi Rd Jamnagar clinic.">
+  <meta property="og:image" content="{{ canonical_base }}{% static 'images/clinic_image_outdoor.webp' %}">
+  <meta property="og:locale" content="en_IN">
+
+  <!-- Twitter Card Metadata -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ page_title }} | Dr. Dhvani Patalia Physio Rehab">
+  <meta name="twitter:description" content="Request your physiotherapy consultation in Jamnagar. Professional physical rehabilitation and chiropractic care.">
+  <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/clinic_image_outdoor.webp' %}">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+
+  <!-- Preconnect CDNs -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" /></noscript>
+
+  <!-- Schema.org JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "{{ canonical_base }}/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Book Appointment",
+            "item": "{{ canonical_url|default:request.build_absolute_uri }}"
+          }
+        ]
+      },
+      {
+        "@type": "MedicalWebPage",
+        "@id": "{{ canonical_url|default:request.build_absolute_uri }}#webpage",
+        "url": "{{ canonical_url|default:request.build_absolute_uri }}",
+        "name": "Book Your Physiotherapy Appointment",
+        "description": "Request a physiotherapy consultation with Dr. Dhvani Patalia Physio Rehab in Jamnagar.",
+        "potentialAction": {
+          "@type": "ReserveAction",
+          "target": "{{ canonical_url|default:request.build_absolute_uri }}",
+          "result": {
+            "@type": "Reservation",
+            "name": "Physiotherapy Consultation Request"
+          }
+        }
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Page Hero */
+    .page-hero {
+      background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+      color: #ffffff;
+      padding: clamp(40px, 7vw, 65px) 20px clamp(35px, 6vw, 55px);
+      text-align: center;
+      position: relative;
+      border-bottom: 2px solid rgba(245, 197, 24, 0.25);
+    }
+
+    .page-hero-inner {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .page-hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(245, 197, 24, 0.12);
+      color: #F5C518;
+      border: 1px solid rgba(245, 197, 24, 0.35);
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .page-hero h1 {
+      font-size: clamp(2rem, 4.5vw, 2.75rem);
+      font-weight: 800;
+      margin: 0 0 12px 0;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      line-height: 1.25;
+    }
+
+    .page-hero h1 span {
+      color: #F5C518;
+    }
+
+    .page-hero p.subtitle {
+      font-size: clamp(1rem, 2.2vw, 1.15rem);
+      color: #cbd5e1;
+      max-width: 680px;
+      margin: 0 auto 20px auto;
+      line-height: 1.6;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .breadcrumb a {
+      color: #F5C518;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    .breadcrumb span.divider {
+      color: #64748b;
+    }
+
+    /* Main Section */
+    .booking-section {
+      padding: clamp(35px, 6vw, 65px) 20px;
+    }
+
+    .booking-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .booking-grid {
+      display: grid;
+      grid-template-columns: 1.65fr 1fr;
+      gap: clamp(24px, 4vw, 40px);
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .booking-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Booking Card */
+    .booking-card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+      padding: clamp(24px, 4vw, 36px);
+      position: relative;
+    }
+
+    .card-heading {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-heading i {
+      color: #F5C518;
+    }
+
+    .card-intro {
+      color: #64748b;
+      font-size: 0.95rem;
+      margin-top: 0;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    /* Messages / Alerts */
+    .alert-box {
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin-bottom: 22px;
+      font-size: 0.93rem;
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .alert-box.success {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .alert-box.warning {
+      background: #fffbeb;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    .alert-box.danger {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .alert-box.info {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+
+    .alert-box i {
+      font-size: 1.1rem;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Form Fields */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 600px) {
+      .form-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .form-label span.required {
+      color: #dc2626;
+      margin-left: 2px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 14px 12px 42px;
+      font-size: 0.95rem;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      background-color: #ffffff;
+      color: #1e293b;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: #F5C518;
+      box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.2);
+    }
+
+    .form-control:focus + .input-icon,
+    .input-wrapper:focus-within .input-icon {
+      color: #ca8a04;
+    }
+
+    .form-control.is-invalid {
+      border-color: #dc2626;
+      background-color: #fffafb;
+    }
+
+    .form-control.is-invalid:focus {
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+    }
+
+    textarea.form-control {
+      padding-top: 12px;
+      padding-left: 42px;
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .textarea-icon {
+      top: 14px;
+      align-self: flex-start;
+    }
+
+    .field-error {
+      color: #dc2626;
+      font-size: 0.82rem;
+      margin-top: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .field-hint {
+      color: #64748b;
+      font-size: 0.8rem;
+      margin-top: 4px;
+    }
+
+    /* Radio Group for Contact Method */
+    .contact-method-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .contact-method-card {
+      flex: 1;
+      min-width: 120px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      background: #ffffff;
+      transition: all 0.2s;
+    }
+
+    .contact-method-card:hover {
+      border-color: #F5C518;
+      background: #fefce8;
+    }
+
+    .contact-method-card input[type="radio"] {
+      margin: 0;
+      accent-color: #ca8a04;
+      cursor: pointer;
+    }
+
+    .contact-method-card label {
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #334155;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Consent Checkbox */
+    .consent-card {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin: 20px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .consent-card input[type="checkbox"] {
+      margin-top: 3px;
+      width: 18px;
+      height: 18px;
+      accent-color: #ca8a04;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .consent-text {
+      font-size: 0.86rem;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .consent-text a {
+      color: #0284c7;
+      text-decoration: underline;
+    }
+
+    /* Submit Button */
+    .btn-submit-booking {
+      width: 100%;
+      background: #F5C518;
+      color: #1a1a1a;
+      font-size: 1.05rem;
+      font-weight: 800;
+      padding: 15px 24px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 14px rgba(245, 197, 24, 0.35);
+    }
+
+    .btn-submit-booking:hover:not(:disabled) {
+      background: #e6b800;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 197, 24, 0.45);
+    }
+
+    .btn-submit-booking:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Confirmation / Success Card */
+    .success-card {
+      text-align: center;
+      padding: clamp(28px, 5vw, 42px) clamp(20px, 4vw, 32px);
+    }
+
+    .success-icon-wrap {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #ecfdf5;
+      color: #059669;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 20px;
+      border: 3px solid #a7f3d0;
+    }
+
+    .success-title {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 10px 0;
+    }
+
+    .success-ref-badge {
+      display: inline-block;
+      background: #f1f5f9;
+      border: 1px dashed #94a3b8;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 20px;
+    }
+
+    .success-ref-badge strong {
+      color: #0284c7;
+      font-size: 1.05rem;
+      letter-spacing: 0.5px;
+    }
+
+    .success-details-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      margin: 20px auto 26px auto;
+      max-width: 540px;
+    }
+
+    .success-details-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #edf2f7;
+      font-size: 0.92rem;
+    }
+
+    .success-details-row:last-child {
+      border-bottom: none;
+    }
+
+    .success-details-label {
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .success-details-val {
+      color: #0f172a;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .status-badge-pending {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #fef3c7;
+      color: #92400e;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .success-notice {
+      background: #eff6ff;
+      border-left: 4px solid #0284c7;
+      padding: 14px 18px;
+      border-radius: 0 8px 8px 0;
+      text-align: left;
+      font-size: 0.9rem;
+      color: #1e3a8a;
+      max-width: 540px;
+      margin: 0 auto 28px auto;
+      line-height: 1.55;
+    }
+
+    .success-actions {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action-primary {
+      background: #F5C518;
+      color: #1a1a1a;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action-primary:hover {
+      background: #e6b800;
+    }
+
+    .btn-action-outline {
+      background: transparent;
+      color: #334155;
+      border: 1.5px solid #cbd5e1;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+
+    .btn-action-outline:hover {
+      border-color: #94a3b8;
+      background: #f8fafc;
+    }
+
+    /* Sidebar Styles */
+    .sidebar-widget {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .widget-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-top: 0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .widget-title i {
+      color: #F5C518;
+    }
+
+    .hours-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .hours-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 9px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.88rem;
+    }
+
+    .hours-item:last-child {
+      border-bottom: none;
+    }
+
+    .hours-day {
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .hours-time {
+      color: #64748b;
+      font-weight: 500;
+      text-align: right;
+    }
+
+    .contact-item-sb {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+    }
+
+    .contact-icon-sb {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: rgba(245, 197, 24, 0.15);
+      color: #ca8a04;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.9rem;
+    }
+
+    .contact-item-sb a {
+      color: #0f172a;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .contact-item-sb a:hover {
+      color: #ca8a04;
+    }
+
+    .trust-perk {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+      font-size: 0.88rem;
+      color: #475569;
+    }
+
+    .trust-perk i {
+      color: #10b981;
+      margin-top: 3px;
+      flex-shrink: 0;
+    }
+  </style>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+
+<body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with preloader_portal_title="Appointment Booking Portal" preloader_status_message="Preparing appointment scheduling portal&hellip;" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
+
+  <!-- ════ PUBLIC NAVBAR ════ -->
+  {% include 'shared/navbar.html' %}
+
+  <!-- ════ PAGE HERO ════ -->
+  <header class="page-hero" role="region" aria-label="Page Title">
+    <div class="page-hero-inner">
+      <div class="page-hero-badge">
+        <i class="fas fa-stethoscope" aria-hidden="true"></i> Direct Clinic Booking
+      </div>
+      <h1>{{ page_title|default:"Book Your Physiotherapy Appointment" }}</h1>
+      <p class="subtitle">{{ page_subtitle|default:"Take the first step towards better movement and recovery. Request an appointment with our physiotherapy team." }}</p>
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{% url 'home' %}">Home</a>
+        <span class="divider">/</span>
+        <span style="color:#ffffff;">Book Appointment</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ════ MAIN BOOKING SECTION ════ -->
+  <main class="booking-section">
+    <div class="booking-container">
+
+      <!-- Django Messages Display -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-box {{ message.tags }}" role="alert">
+            {% if message.tags == 'success' %}
+              <i class="fas fa-check-circle" aria-hidden="true"></i>
+            {% elif message.tags == 'warning' %}
+              <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            {% elif message.tags == 'danger' or message.tags == 'error' %}
+              <i class="fas fa-times-circle" aria-hidden="true"></i>
+            {% else %}
+              <i class="fas fa-info-circle" aria-hidden="true"></i>
+            {% endif %}
+            <div>{{ message }}</div>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="booking-grid">
+
+        <!-- LEFT COLUMN: BOOKING FORM OR CONFIRMATION -->
+        <div>
+          {% if booking_success and booking_obj %}
+            <!-- SUCCESS STATE CARD -->
+            <div class="booking-card success-card" role="status" aria-live="polite">
+              <div class="success-icon-wrap">
+                <i class="fas fa-check" aria-hidden="true"></i>
+              </div>
+              <h2 class="success-title">Appointment Request Received!</h2>
+              
+              <div class="success-ref-badge">
+                Reference ID: <strong>{{ booking_obj.reference_id }}</strong>
+              </div>
+
+              <div class="success-details-box">
+                <div class="success-details-row">
+                  <span class="success-details-label">Patient Name:</span>
+                  <span class="success-details-val">{{ booking_obj.patient_name }}</span>
+                </div>
+                <div class="success-details-row">
+                  <span class="success-details-label">Requested Date:</span>
+                  <span class="success-details-val">{{ booking_obj.preferred_date|date:"l, d F Y" }}</span>
+                </div>
+                <div class="success-details-row">
+                  <span class="success-details-label">Preferred Time Slot:</span>
+                  <span class="success-details-val">{{ booking_obj.preferred_time }}</span>
+                </div>
+                <div class="success-details-row">
+                  <span class="success-details-label">Contact Method:</span>
+                  <span class="success-details-val">{{ booking_obj.get_preferred_contact_method_display }} ({{ booking_obj.phone }})</span>
+                </div>
+                {% if booking_obj.service_or_reason %}
+                <div class="success-details-row">
+                  <span class="success-details-label">Reason / Notes:</span>
+                  <span class="success-details-val">{{ booking_obj.service_or_reason }}</span>
+                </div>
+                {% endif %}
+                <div class="success-details-row">
+                  <span class="success-details-label">Current Status:</span>
+                  <span class="status-badge-pending">
+                    <i class="fas fa-clock" aria-hidden="true"></i> Awaiting Confirmation
+                  </span>
+                </div>
+              </div>
+
+              <div class="success-notice">
+                <strong><i class="fas fa-info-circle"></i> What happens next?</strong><br>
+                Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic.
+                We will contact you using the details provided to finalize your session.
+                <em>Please note: Submitting an online request does not guarantee the selected appointment slot.</em>
+              </div>
+
+              <div class="success-actions">
+                <a href="{% url 'public_book_appointment' %}" class="btn-action-primary">
+                  <i class="fas fa-calendar-plus" aria-hidden="true"></i> Request Another Appointment
+                </a>
+                <a href="{% url 'home' %}" class="btn-action-outline">
+                  Return to Home
+                </a>
+              </div>
+            </div>
+
+          {% else %}
+
+            <!-- BOOKING FORM CARD -->
+            <div class="booking-card">
+              <h2 class="card-heading">
+                <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                Request Your Session
+              </h2>
+              <p class="card-intro">
+                Please provide your contact information and preferred timing. No login or password is required.
+                Our clinic team will review and contact you to confirm your consultation.
+              </p>
+
+              <form method="POST" action="{% url 'public_book_appointment' %}" id="publicBookingForm" novalidate>
+                {% csrf_token %}
+
+                <!-- Honeypot anti-spam field (hidden from real users) -->
+                <div style="display:none !important;" aria-hidden="true">
+                  <label for="id_website">Leave this field blank</label>
+                  <input type="text" name="website" id="id_website" value="" autocomplete="off" tabindex="-1">
+                </div>
+
+                <!-- 1. Patient Name -->
+                <div class="form-group">
+                  <label for="id_patient_name" class="form-label">
+                    Patient Full Name <span class="required" aria-hidden="true">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-user input-icon" aria-hidden="true"></i>
+                    {{ form.patient_name }}
+                  </div>
+                  {% if form.patient_name.errors %}
+                    <div class="field-error" role="alert">
+                      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                      {{ form.patient_name.errors.0 }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <!-- 2. Contact Details (Email & Phone) -->
+                <div class="form-row">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label for="id_email" class="form-label">
+                      Email Address <span class="required" aria-hidden="true">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <i class="fas fa-envelope input-icon" aria-hidden="true"></i>
+                      {{ form.email }}
+                    </div>
+                    {% if form.email.errors %}
+                      <div class="field-error" role="alert">
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        {{ form.email.errors.0 }}
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label for="id_phone" class="form-label">
+                      Phone Number <span class="required" aria-hidden="true">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <i class="fas fa-phone input-icon" aria-hidden="true"></i>
+                      {{ form.phone }}
+                    </div>
+                    {% if form.phone.errors %}
+                      <div class="field-error" role="alert">
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        {{ form.phone.errors.0 }}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- 3. Preferred Date & Time Slot -->
+                <div class="form-row">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label for="id_preferred_date" class="form-label">
+                      Preferred Date <span class="required" aria-hidden="true">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <i class="fas fa-calendar-day input-icon" aria-hidden="true"></i>
+                      {{ form.preferred_date }}
+                    </div>
+                    <div class="field-hint">Clinic open Monday through Saturday</div>
+                    {% if form.preferred_date.errors %}
+                      <div class="field-error" role="alert">
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        {{ form.preferred_date.errors.0 }}
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label for="id_preferred_time" class="form-label">
+                      Preferred Time Slot <span class="required" aria-hidden="true">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <i class="fas fa-clock input-icon" aria-hidden="true"></i>
+                      {{ form.preferred_time }}
+                    </div>
+                    <div class="field-hint">Morning (10 AM–1 PM) | Evening (4 PM–8 PM)</div>
+                    {% if form.preferred_time.errors %}
+                      <div class="field-error" role="alert">
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        {{ form.preferred_time.errors.0 }}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- 4. Preferred Contact Method -->
+                <div class="form-group" style="margin-top:16px;">
+                  <span class="form-label">Preferred Contact Method</span>
+                  <div class="contact-method-group">
+                    <div class="contact-method-card">
+                      <input type="radio" name="preferred_contact_method" id="contact_phone" value="phone" {% if form.preferred_contact_method.value == 'phone' or not form.preferred_contact_method.value %}checked{% endif %}>
+                      <label for="contact_phone"><i class="fas fa-phone-alt"></i> Phone Call</label>
+                    </div>
+                    <div class="contact-method-card">
+                      <input type="radio" name="preferred_contact_method" id="contact_whatsapp" value="whatsapp" {% if form.preferred_contact_method.value == 'whatsapp' %}checked{% endif %}>
+                      <label for="contact_whatsapp"><i class="fab fa-whatsapp" style="color:#25d366;"></i> WhatsApp</label>
+                    </div>
+                    <div class="contact-method-card">
+                      <input type="radio" name="preferred_contact_method" id="contact_email" value="email" {% if form.preferred_contact_method.value == 'email' %}checked{% endif %}>
+                      <label for="contact_email"><i class="fas fa-envelope"></i> Email</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 5. Reason for Appointment / Treatment Required -->
+                <div class="form-group">
+                  <label for="id_service_or_reason" class="form-label">
+                    Reason for Appointment / Treatment Required (Optional)
+                  </label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-comment-medical input-icon textarea-icon" aria-hidden="true"></i>
+                    {{ form.service_or_reason }}
+                  </div>
+                  <div class="field-hint">Max 500 characters. You do not need to submit detailed medical histories.</div>
+                  {% if form.service_or_reason.errors %}
+                    <div class="field-error" role="alert">
+                      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                      {{ form.service_or_reason.errors.0 }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <!-- 6. Consent Checkbox & Privacy Notice -->
+                <div class="consent-card">
+                  {{ form.consent }}
+                  <div class="consent-text">
+                    <label for="id_consent" style="cursor:pointer; display:inline;">
+                      <strong>I agree to be contacted</strong> by Dr. Dhvani Patalia Physio Rehab regarding this appointment request and confirm that I have reviewed the clinic
+                      <a href="#privacyNoticeModal" id="privacyNoticeLink">privacy notice</a>.
+                    </label>
+                  </div>
+                </div>
+                {% if form.consent.errors %}
+                  <div class="field-error" style="margin-top:-10px; margin-bottom:16px;" role="alert">
+                    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                    {{ form.consent.errors.0 }}
+                  </div>
+                {% endif %}
+
+                <!-- 7. Submit Button -->
+                <button type="submit" class="btn-submit-booking" id="btnSubmitBooking">
+                  <i class="fas fa-paper-plane" aria-hidden="true" id="btnSubmitIcon"></i>
+                  <span id="btnSubmitText">Request Appointment</span>
+                </button>
+
+                <p style="text-align:center; font-size:0.8rem; color:#64748b; margin-top:14px; margin-bottom:0;">
+                  🔒 <em>Your personal details are securely handled and never shared with third parties.</em>
+                </p>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- RIGHT COLUMN: CLINIC INFO & OPERATIONAL HOURS -->
+        <aside aria-label="Clinic Hours and Contact Information">
+          <!-- Hours Widget -->
+          <div class="sidebar-widget">
+            <h3 class="widget-title">
+              <i class="fas fa-clock" aria-hidden="true"></i> Clinic Working Hours
+            </h3>
+            <ul class="hours-list">
+              <li class="hours-item">
+                <span class="hours-day">Monday – Saturday</span>
+                <span class="hours-time">10:00 AM – 01:00 PM<br>04:00 PM – 08:00 PM</span>
+              </li>
+              <li class="hours-item">
+                <span class="hours-day">Sunday</span>
+                <span class="hours-time">By Appointment Only<br><small style="color:#ca8a04;">Call 94095 10501</small></span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Quick Contact Widget -->
+          <div class="sidebar-widget">
+            <h3 class="widget-title">
+              <i class="fas fa-phone-alt" aria-hidden="true"></i> Need Help Booking?
+            </h3>
+            <p style="font-size:0.88rem; color:#64748b; margin-top:0; margin-bottom:16px;">
+              If you have urgent questions, need emergency pain relief, or prefer booking by phone:
+            </p>
+            <div class="contact-item-sb">
+              <div class="contact-icon-sb"><i class="fas fa-phone"></i></div>
+              <div>
+                <small style="color:#64748b; display:block;">Call Direct</small>
+                <a href="tel:9409510501">+91 94095 10501</a>
+              </div>
+            </div>
+            <div class="contact-item-sb">
+              <div class="contact-icon-sb"><i class="fab fa-whatsapp" style="color:#25d366;"></i></div>
+              <div>
+                <small style="color:#64748b; display:block;">WhatsApp Message</small>
+                <a href="https://wa.me/919409510501" target="_blank" rel="noopener noreferrer">+91 94095 10501</a>
+              </div>
+            </div>
+            <div class="contact-item-sb">
+              <div class="contact-icon-sb"><i class="fas fa-map-marker-alt"></i></div>
+              <div>
+                <small style="color:#64748b; display:block;">Clinic Address</small>
+                <span>Ground Floor, Narayan Cottage, Bedi Rd, opp. New Super Medical, Jamnagar, Gujarat 361006</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Why Choose Us Widget -->
+          <div class="sidebar-widget">
+            <h3 class="widget-title">
+              <i class="fas fa-shield-alt" aria-hidden="true"></i> Patient Care Standards
+            </h3>
+            <div class="trust-perk">
+              <i class="fas fa-check-circle"></i>
+              <span><strong>Certified Chiropractor</strong> &amp; senior physiotherapist led evaluations.</span>
+            </div>
+            <div class="trust-perk">
+              <i class="fas fa-check-circle"></i>
+              <span><strong>Individual treatment plans</strong> tailored to back pain, sports injuries, and posture.</span>
+            </div>
+            <div class="trust-perk">
+              <i class="fas fa-check-circle"></i>
+              <span><strong>Zero spam guarantee:</strong> Your details are only used for your clinical appointment.</span>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ════ PUBLIC FOOTER ════ -->
+  {% include 'shared/footer.html' %}
+
+  <!-- ════ SCRIPTS ════ -->
+  <script src="{% static 'js/layout.js' %}" defer></script>
+  <script src="{% static 'js/preloader.js' %}" defer></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Set min date on date picker to today (in local timezone)
+      var dateInput = document.getElementById("id_preferred_date");
+      if (dateInput) {
+        var now = new Date();
+        var yyyy = now.getFullYear();
+        var mm = String(now.getMonth() + 1).padStart(2, '0');
+        var dd = String(now.getDate()).padStart(2, '0');
+        dateInput.min = yyyy + '-' + mm + '-' + dd;
+      }
+
+      // Handle form submission UX: disable button to prevent double-submits
+      var form = document.getElementById("publicBookingForm");
+      var submitBtn = document.getElementById("btnSubmitBooking");
+      var submitText = document.getElementById("btnSubmitText");
+      var submitIcon = document.getElementById("btnSubmitIcon");
+
+      if (form && submitBtn) {
+        form.addEventListener("submit", function () {
+          // Delay disable slightly so form submit payload sends cleanly
+          setTimeout(function () {
+            submitBtn.disabled = true;
+            if (submitText) submitText.innerText = "Submitting Request...";
+            if (submitIcon) {
+              submitIcon.className = "fas fa-spinner fa-spin";
+            }
+          }, 50);
+        });
+      }
+
+      // Privacy notice modal trigger (links to existing privacy notice trigger in footer)
+      var privacyLink = document.getElementById("privacyNoticeLink");
+      if (privacyLink) {
+        privacyLink.addEventListener("click", function (e) {
+          e.preventDefault();
+          var footerPrivacyLink = document.getElementById("openPrivacyModalLink");
+          if (footerPrivacyLink) {
+            footerPrivacyLink.click();
+          } else {
+            alert("Privacy Notice: Dr. Dhvani Patalia Physio Rehab collects your name, email, and phone number solely to schedule and communicate about your requested physiotherapy appointment. We do not sell your personal data or store unnecessary sensitive records.");
+          }
+        });
+      }
+    });
+  </script>
+</body>
+
+</html>

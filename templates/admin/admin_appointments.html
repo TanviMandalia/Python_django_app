@@ -71,7 +71,121 @@
       <div class="stat-lbl">Completed</div>
     </div>
   </div>
+
+  <div class="admin-stat-card">
+    <div class="stat-icon-wrap" style="background: rgba(2, 132, 199, 0.15); color: #0284c7;">
+      <i class="fas fa-globe"></i>
+    </div>
+    <div class="stat-info">
+      <div class="stat-val">{{ public_pending_count|default:0 }}</div>
+      <div class="stat-lbl">Public Requests (Pending)</div>
+    </div>
+  </div>
 </div>
+
+<!-- ════ ONLINE PUBLIC REQUESTS CARD ════ -->
+{% if public_requests %}
+<div class="admin-card" style="margin-bottom: 24px; border-left: 4px solid #0284c7;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+    <div>
+      <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-globe" style="color: #0284c7;"></i> Online Public Appointment Requests
+      </h3>
+      <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #64748b;">
+        Inquiries submitted by visitors via the public website. Review availability and contact patients to confirm slots.
+      </p>
+    </div>
+    <span class="badge-status" style="background: #e0f2fe; color: #0369a1; font-weight: 700;">
+      {{ public_requests_count }} Total Requests ({{ public_pending_count }} Pending)
+    </span>
+  </div>
+
+  <div class="table-responsive-admin">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Reference ID</th>
+          <th>Patient Details</th>
+          <th>Requested Date &amp; Time</th>
+          <th>Contact Pref</th>
+          <th>Reason / Notes</th>
+          <th>Status</th>
+          <th>Email Alert</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in public_requests %}
+        <tr>
+          <td>
+            <strong style="font-family: monospace; font-size: 0.88rem; color: #0284c7;">{{ req.reference_id }}</strong>
+            <div style="font-size: 0.72rem; color: #64748b;">{{ req.created_at|date:"d M Y, H:i" }}</div>
+          </td>
+          <td>
+            <strong style="color: #0f172a; font-size: 0.9rem;">{{ req.patient_name }}</strong>
+            <div style="font-size: 0.75rem; color: #64748b;">
+              <i class="fas fa-envelope"></i> {{ req.email }}
+            </div>
+            <div style="font-size: 0.75rem; color: #28a745;">
+              <i class="fas fa-phone"></i> {{ req.phone }}
+            </div>
+          </td>
+          <td>
+            <strong style="color: #0f172a; font-size: 0.88rem;">{{ req.preferred_date|date:"D, d M Y" }}</strong>
+            <div style="font-size: 0.75rem; color: #64748b;"><i class="far fa-clock"></i> {{ req.preferred_time }}</div>
+          </td>
+          <td>
+            <span style="font-size: 0.8rem; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; font-weight: 600;">
+              {{ req.get_preferred_contact_method_display }}
+            </span>
+          </td>
+          <td>
+            <span style="font-size: 0.8rem; color: #334155;">{{ req.service_or_reason|default:"—"|truncatechars:45 }}</span>
+          </td>
+          <td>
+            {% if req.status == 'confirmed' %}
+              <span class="badge-status badge-info"><i class="fas fa-check"></i> Confirmed</span>
+            {% elif req.status == 'cancelled' %}
+              <span class="badge-status badge-danger"><i class="fas fa-times"></i> Cancelled</span>
+            {% else %}
+              <span class="badge-status badge-pending"><i class="fas fa-clock"></i> Awaiting Confirmation</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if req.email_notification_status == 'sent' %}
+              <span style="color: #059669; font-size: 0.78rem; font-weight: 600;"><i class="fas fa-check-circle"></i> Sent</span>
+            {% elif req.email_notification_status == 'failed' %}
+              <span style="color: #dc2626; font-size: 0.78rem; font-weight: 600;" title="{{ req.notification_error }}"><i class="fas fa-exclamation-triangle"></i> Failed</span>
+            {% else %}
+              <span style="color: #d97706; font-size: 0.78rem;"><i class="fas fa-hourglass-start"></i> Pending</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 4px; align-items: center;">
+              {% if req.status != 'confirmed' %}
+              <a href="{% url 'update_public_appointment_request' req.id 'confirmed' %}" class="btn-action-icon" style="background: rgba(23, 162, 184, 0.15); color: #17a2b8;" title="Confirm Request">
+                <i class="fas fa-check"></i>
+              </a>
+              {% endif %}
+              {% if req.status != 'cancelled' %}
+              <a href="{% url 'update_public_appointment_request' req.id 'cancelled' %}" class="btn-action-icon" style="background: rgba(220, 53, 69, 0.12); color: #dc3545;" title="Cancel Request">
+                <i class="fas fa-ban"></i>
+              </a>
+              {% endif %}
+              {% if req.status != 'pending' %}
+              <a href="{% url 'update_public_appointment_request' req.id 'pending' %}" class="btn-action-icon" style="background: rgba(245, 197, 24, 0.15); color: #856404;" title="Revert to Pending">
+                <i class="fas fa-undo"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
 <!-- ════ APPOINTMENTS TABLE CARD ════ -->
 <div class="admin-card">

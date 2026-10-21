@@ -432,6 +432,144 @@ Warm regards,
 
 
 # =========================
+# PUBLIC BOOK APPOINTMENT
+# =========================
+def public_book_appointment(request):
+    """
+    Dedicated Public Appointment Booking Page.
+    Accessible to all visitors without requiring authentication or account creation.
+    Validates form data, saves the request as PublicAppointmentRequest in 'pending' status,
+    and dispatches an email notification to the clinic doctor at physio.rehab.guj@gmail.com.
+    """
+    from .forms import PublicAppointmentRequestForm
+    from .models import PublicAppointmentRequest, Hospital
+    from .email_utils import send_public_appointment_request_notification
+    from .ip_utils import get_client_ip
+    from django.core.cache import cache
+
+    hospital = Hospital.objects.filter(is_active=True).first()
+
+    # Success confirmation display via PRG pattern
+    last_ref = request.session.pop("public_booking_ref", None)
+    if last_ref:
+        booking_obj = PublicAppointmentRequest.objects.filter(reference_id=last_ref).first()
+        if booking_obj:
+            return render(
+                request,
+                "public/book_appointment.html",
+                {
+                    "booking_success": True,
+                    "booking_obj": booking_obj,
+                    "page_title": "Book Your Physiotherapy Appointment",
+                    "page_subtitle": "Take the first step towards better movement and recovery. Request an appointment with our physiotherapy team.",
+                    "clinic_phone": getattr(settings, "CLINIC_PHONE", "+91 94095 10501"),
+                    "clinic_email": getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com"),
+                },
+            )
+
+    if request.method == "POST":
+        # Rate limit check: max 10 requests per hour per IP
+        client_ip = get_client_ip(request) or "unknown"
+        cache_key = f"rate_limit_pub_appt_{client_ip}"
+        sub_count = cache.get(cache_key, 0)
+        if sub_count >= 10:
+            messages.error(
+                request,
+                "Too many appointment requests submitted from your network. Please wait a while or contact our clinic directly at +91 94095 10501."
+            )
+            return render(
+                request,
+                "public/book_appointment.html",
+                {
+                    "form": PublicAppointmentRequestForm(request.POST),
+                    "page_title": "Book Your Physiotherapy Appointment",
+                    "page_subtitle": "Take the first step towards better movement and recovery. Request an appointment with our physiotherapy team.",
+                    "clinic_phone": getattr(settings, "CLINIC_PHONE", "+91 94095 10501"),
+                    "clinic_email": getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com"),
+                },
+            )
+
+        form = PublicAppointmentRequestForm(request.POST)
+        if form.is_valid():
+            cleaned = form.cleaned_data
+            email = cleaned["email"]
+            phone = cleaned["phone"]
+            pref_date = cleaned["preferred_date"]
+            pref_time = cleaned["preferred_time"]
+
+            # Deduplication: check if identical request was created in the last 3 minutes
+            recent_threshold = timezone.now() - timezone.timedelta(minutes=3)
+            existing_req = PublicAppointmentRequest.objects.filter(
+                email=email,
+                phone=phone,
+                preferred_date=pref_date,
+                preferred_time=pref_time,
+                created_at__gte=recent_threshold,
+            ).first()
+
+            if existing_req:
+                req_obj = existing_req
+                messages.info(
+                    request,
+                    "Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic. We will contact you using the details provided."
+                )
+            else:
+                req_obj = form.save(commit=False)
+                req_obj.hospital = hospital
+                req_obj.ip_address = client_ip if client_ip != "unknown" else None
+                req_obj.user_agent = request.META.get("HTTP_USER_AGENT", "")[:255]
+                req_obj.status = "pending"
+                req_obj.email_notification_status = "pending"
+                req_obj.save()
+
+                cache.set(cache_key, sub_count + 1, timeout=3600)
+
+                email_sent = False
+                try:
+                    email_sent = send_public_appointment_request_notification(req_obj)
+                    req_obj.email_notification_status = "sent" if email_sent else "failed"
+                    if not email_sent:
+                        req_obj.notification_error = "Clinic notification email provider returned failure."
+                    req_obj.save(update_fields=["email_notification_status", "notification_error"])
+                except Exception as exc:
+                    logger.error(f"Error in send_public_appointment_request_notification: {exc.__class__.__name__} - {exc}")
+                    req_obj.email_notification_status = "failed"
+                    req_obj.notification_error = f"{exc.__class__.__name__}: {str(exc)[:200]}"
+                    req_obj.save(update_fields=["email_notification_status", "notification_error"])
+
+                if email_sent:
+                    messages.success(
+                        request,
+                        "Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic. We will contact you using the details provided."
+                    )
+                else:
+                    messages.warning(
+                        request,
+                        "Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic. We will contact you using the details provided."
+                    )
+
+            request.session["public_booking_ref"] = req_obj.reference_id
+            return redirect("public_book_appointment")
+        else:
+            messages.error(request, "Please review and correct the highlighted fields below.")
+    else:
+        form = PublicAppointmentRequestForm()
+
+    return render(
+        request,
+        "public/book_appointment.html",
+        {
+            "form": form,
+            "page_title": "Book Your Physiotherapy Appointment",
+            "page_subtitle": "Take the first step towards better movement and recovery. Request an appointment with our physiotherapy team.",
+            "clinic_phone": getattr(settings, "CLINIC_PHONE", "+91 94095 10501"),
+            "clinic_email": getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com"),
+        },
+    )
+
+
+
+# =========================
 # PUBLIC BLOG LIST
 # =========================
 def blog_list(request):
@@ -2124,24 +2262,58 @@ def my_appointments(request):
 def admin_appointments(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
+    from .models import PublicAppointmentRequest
     hospital = resolve_hospital(request.user)
     if hospital:
         all_appointments = Appointment.objects.filter(hospital=hospital).order_by("-created_at")
+        public_requests = PublicAppointmentRequest.objects.filter(hospital=hospital).order_by("-created_at")
     elif request.user.is_superuser:
         all_appointments = Appointment.objects.all().order_by("-created_at")
+        public_requests = PublicAppointmentRequest.objects.all().order_by("-created_at")
     else:
         all_appointments = Appointment.objects.none()
+        public_requests = PublicAppointmentRequest.objects.none()
     return render(
         request,
         "admin/admin_appointments.html",
         {
             "all_appointments": all_appointments,
+            "appointments": all_appointments,
+            "total": all_appointments.count(),
             "pending_count": all_appointments.filter(status="pending").count(),
             "confirmed_count": all_appointments.filter(status="confirmed").count(),
             "completed_count": all_appointments.filter(status="completed").count(),
             "cancelled_count": all_appointments.filter(status="cancelled").count(),
+            "public_requests": public_requests,
+            "public_requests_count": public_requests.count(),
+            "public_pending_count": public_requests.filter(status="pending").count(),
         },
     )
+
+
+@login_required
+def update_public_appointment_request(request, request_id, status):
+    """
+    Allow authorized clinic admin/staff to review and update public appointment request status.
+    """
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+    from .models import PublicAppointmentRequest
+    req_obj = get_object_or_404(PublicAppointmentRequest, id=request_id)
+    hospital = resolve_hospital(request.user)
+    if not request.user.is_superuser and hospital and req_obj.hospital_id and req_obj.hospital_id != hospital.id:
+        messages.error(request, "Unauthorized: You cannot modify requests for another clinic.")
+        return redirect("admin_appointments")
+    valid_statuses = ["pending", "confirmed", "cancelled"]
+    if status not in valid_statuses:
+        messages.error(request, "Invalid status.")
+        return redirect("admin_appointments")
+
+    req_obj.status = status
+    req_obj.save(update_fields=["status", "updated_at"])
+    messages.success(request, f"Public request {req_obj.reference_id} marked as {status.title()}.")
+    return redirect("admin_appointments")
+
 
 
 @login_required

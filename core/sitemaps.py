@@ -46,7 +46,7 @@ class StaticViewSitemap(CanonicalSitemapMixin, Sitemap):
     Strictly excludes login, registration, auth, dashboards, and private views.
     """
     def items(self):
-        return ["home", "services", "about", "contact", "blog_list"]
+        return ["home", "services", "about", "contact", "public_book_appointment", "blog_list"]
 
     def location(self, item):
         return reverse(item)
@@ -57,6 +57,7 @@ class StaticViewSitemap(CanonicalSitemapMixin, Sitemap):
             "services": 0.9,
             "about": 0.8,
             "contact": 0.8,
+            "public_book_appointment": 0.9,
             "blog_list": 0.7,
         }
         return priorities.get(item, 0.7)
@@ -67,6 +68,7 @@ class StaticViewSitemap(CanonicalSitemapMixin, Sitemap):
             "services": "weekly",
             "about": "monthly",
             "contact": "monthly",
+            "public_book_appointment": "weekly",
             "blog_list": "weekly",
         }
         return freqs.get(item, "monthly")
