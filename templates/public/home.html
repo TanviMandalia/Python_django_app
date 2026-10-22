@@ -37,6 +37,7 @@
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <link rel="stylesheet" href="{% static 'css/animations.css' %}">
 
     <!-- Schema.org JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -857,22 +858,29 @@
     {% include 'shared/navbar.html' %}
 
     <!-- ════ 1. HERO SECTION ════ -->
-    <header class="hero">
+    <header class="hero" id="heroSection">
         <div class="hero-bg"></div>
+        <!-- Three.js Kinetic Biomechanical 3D Canvas -->
+        <div class="three-hero-container" id="threeHeroContainer" aria-hidden="true">
+            <canvas class="three-hero-canvas" id="threeHeroCanvas"></canvas>
+            <div class="three-hero-overlay"></div>
+            <div class="three-hero-fallback" id="threeHeroFallback" aria-hidden="true"></div>
+        </div>
         <div class="hero-content">
-            <div class="hero-badge">
+            <div class="hero-badge kinetic-badge">
                 <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Clinic Logo" width="26" height="26" style="border-radius: 50%; object-fit: cover;" loading="eager">
                 <span>Dr. Dhvani Patalia Physio Rehab</span>
+                <span class="kinetic-badge-dot" aria-hidden="true"></span>
             </div>
             <h1>Specialized Physiotherapy &amp; <span>Chiropractic Care</span></h1>
             <p>
                 Evidence-based physical rehabilitation, certified chiropractic alignment, and root-cause recovery in Jamnagar. Dedicated to restoring your functional mobility and long-term wellness.
             </p>
             <div class="hero-btns">
-                <a href="{% url 'public_book_appointment' %}" class="btn-gold" id="heroBookAppointmentBtn">
+                <a href="{% url 'public_book_appointment' %}" class="btn-gold btn-interactive" id="heroBookAppointmentBtn">
                     <i class="fas fa-calendar-check"></i> Book an Appointment
                 </a>
-                <a href="{% url 'services' %}" class="btn-outline-light" id="heroExploreServicesBtn">
+                <a href="{% url 'services' %}" class="btn-outline-light btn-interactive" id="heroExploreServicesBtn">
                     <i class="fas fa-stethoscope"></i> Explore Our Services
                 </a>
             </div>
@@ -1171,6 +1179,11 @@
 
     <script src="{% static 'js/layout.js' %}" defer></script>
     <script src="{% static 'js/preloader.js' %}" defer></script>
+    <!-- GSAP & Three.js Animation Pipeline -->
+    <script src="{% static 'js/vendor/three.min.js' %}" defer></script>
+    <script src="{% static 'js/vendor/gsap.min.js' %}" defer></script>
+    <script src="{% static 'js/vendor/ScrollTrigger.min.js' %}" defer></script>
+    <script src="{% static 'js/animations.js' %}" defer></script>
 </body>
 
 </html>

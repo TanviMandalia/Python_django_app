@@ -34,6 +34,7 @@
     <!-- Preconnect CDNs & Fonts -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/animations.css' %}">
 
     <!-- Schema.org JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -603,6 +604,9 @@
     {% include 'shared/footer.html' %}
     <script src="{% static 'js/layout.js' %}" defer></script>
     <script src="{% static 'js/preloader.js' %}" defer></script>
+    <script src="{% static 'js/vendor/gsap.min.js' %}" defer></script>
+    <script src="{% static 'js/vendor/ScrollTrigger.min.js' %}" defer></script>
+    <script src="{% static 'js/animations.js' %}" defer></script>
 </body>
 
 </html>

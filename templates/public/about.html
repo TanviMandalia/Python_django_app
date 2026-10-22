@@ -1385,8 +1385,8 @@
             align-items: center;
             gap: 12px;
         }
-    </style>
     <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/animations.css' %}" />
 </head>
 
 <body>
@@ -1729,6 +1729,10 @@
 
     <script src="{% static 'js/layout.js' %}" defer></script>
     <script src="{% static 'js/preloader.js' %}" defer></script>
+    <!-- GSAP Animation Pipeline -->
+    <script src="{% static 'js/vendor/gsap.min.js' %}" defer></script>
+    <script src="{% static 'js/vendor/ScrollTrigger.min.js' %}" defer></script>
+    <script src="{% static 'js/animations.js' %}" defer></script>
 </body>
 
 </html>

@@ -618,6 +618,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{% static 'css/animations.css' %}" />
 </head>
 
 <body>
@@ -784,10 +785,10 @@
             <h2>Need Personalized Clinical Guidance?</h2>
             <p>Consult with Dr. Dhvani Patalia for an in-depth musculoskeletal assessment and a tailored treatment plan designed for your lifestyle.</p>
             <div class="cta-action-btns">
-                <a href="{% url 'book_appointment' %}" class="btn-gold-pill">
+                <a href="{% url 'public_book_appointment' %}" class="btn-gold-pill btn-interactive">
                     <i class="fas fa-calendar-alt"></i> Schedule Your Consultation
                 </a>
-                <a href="tel:9409510501" class="btn-call-outline">
+                <a href="tel:9409510501" class="btn-call-outline btn-interactive">
                     <i class="fas fa-phone-alt"></i> Call +91 94095 10501
                 </a>
             </div>
@@ -797,6 +798,10 @@
     {% include 'shared/footer.html' %}
     <script src="{% static 'js/layout.js' %}" defer></script>
     <script src="{% static 'js/preloader.js' %}" defer></script>
+    <!-- GSAP Animation Pipeline -->
+    <script src="{% static 'js/vendor/gsap.min.js' %}" defer></script>
+    <script src="{% static 'js/vendor/ScrollTrigger.min.js' %}" defer></script>
+    <script src="{% static 'js/animations.js' %}" defer></script>
 </body>
 
 </html>
