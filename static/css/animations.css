@@ -59,16 +59,16 @@ html.gsap-ready .gsap-stagger-card.is-revealed {
   left: 0;
   width: 100% !important;
   height: 100% !important;
-  opacity: 0.85;
-  transition: opacity 1s ease;
+  opacity: 0.96;
+  transition: opacity 0.8s ease;
   pointer-events: auto; /* allows subtle interactive hover */
 }
 
-/* Gradient overlay ensures text above Three.js canvas remains ultra-sharp */
+/* Subtle gradient overlay ensures text above Three.js canvas remains ultra-sharp without obscuring the 3D visual */
 .three-hero-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 40%, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.85) 75%, rgba(10, 15, 26, 0.96) 100%);
+  background: radial-gradient(circle at 50% 40%, rgba(15, 23, 42, 0.12) 0%, rgba(15, 23, 42, 0.42) 70%, rgba(10, 15, 26, 0.78) 100%);
   pointer-events: none;
   z-index: 1;
 }

@@ -172,6 +172,7 @@
           y: 0,
           duration: 0.8,
           ease: "power2.out",
+          immediateRender: false,
           scrollTrigger: {
             trigger: header,
             start: "top 88%",
@@ -210,6 +211,7 @@
             duration: 0.7,
             stagger: 0.1,
             ease: "power2.out",
+            immediateRender: false,
             scrollTrigger: {
               trigger: parent || items[0],
               start: "top 86%",
@@ -236,6 +238,7 @@
           y: 0,
           duration: 0.85,
           ease: "power3.out",
+          immediateRender: false,
           scrollTrigger: {
             trigger: cta,
             start: "top 88%",
@@ -256,6 +259,7 @@
           y: 0,
           duration: 0.75,
           ease: "power2.out",
+          immediateRender: false,
           scrollTrigger: {
             trigger: reviewSummary,
             start: "top 88%",
@@ -319,7 +323,7 @@
     var height = container.clientHeight || (window.innerHeight * 0.85);
 
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x0f172a, 0.04);
+    scene.fog = new THREE.FogExp2(0x0f172a, 0.018);
 
     camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 100);
     camera.position.z = 18;
@@ -341,7 +345,7 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
     // Particle Cloud forming wave of kinetic mobility
-    var particleCount = 420;
+    var particleCount = 720;
     var geometry = new THREE.BufferGeometry();
     var positions = new Float32Array(particleCount * 3);
     var colors = new Float32Array(particleCount * 3);
@@ -400,13 +404,13 @@
     var pointTexture = new THREE.CanvasTexture(canvasTex);
 
     var particleMaterial = new THREE.PointsMaterial({
-      size: 0.45,
+      size: 1.2,
       map: pointTexture,
       transparent: true,
       vertexColors: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      opacity: 0.75,
+      opacity: 0.88,
     });
 
     particles = new THREE.Points(geometry, particleMaterial);
@@ -416,7 +420,7 @@
     var lineMaterial = new THREE.LineBasicMaterial({
       color: 0xF5C518,
       transparent: true,
-      opacity: 0.14,
+      opacity: 0.35,
       blending: THREE.AdditiveBlending,
     });
 
@@ -539,7 +543,7 @@
 
     renderLoop();
 
-    // Cleanup method exposed for page transitions
+    // Cleanup and control methods exposed
     return {
       destroy: function () {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
@@ -552,6 +556,7 @@
         if (pointTexture) pointTexture.dispose();
         if (renderer) renderer.dispose();
       },
+      resize: onWindowResize,
     };
   }
 
@@ -561,8 +566,6 @@
     document.documentElement.classList.add("gsap-ready");
 
     initNavbarAnimation();
-    initPageEntrance();
-    initScrollReveals();
     initInteractiveEffects();
 
     // Check if hero 3D canvas is present (Homepage)
@@ -572,6 +575,59 @@
         "threeHeroContainer"
       );
     }
+
+    // Coordinate with clinic preloader so hero and entrance animations don't run hidden
+    var preloader = document.getElementById("clinic-preloader");
+    var isPreloaderActive =
+      preloader &&
+      !preloader.classList.contains("clinic-preloader-hidden") &&
+      document.documentElement.classList.contains("clinic-preloader-locked");
+
+    var animationsStarted = false;
+    function startPageAnimations() {
+      if (animationsStarted) return;
+      animationsStarted = true;
+
+      // Small tick so browser unlocks layout and computes coordinates
+      requestAnimationFrame(function () {
+        initPageEntrance();
+        initScrollReveals();
+
+        if (window.ScrollTrigger) {
+          window.ScrollTrigger.refresh();
+        }
+
+        if (
+          window.PhysioAnimations.threeHero &&
+          typeof window.PhysioAnimations.threeHero.resize === "function"
+        ) {
+          window.PhysioAnimations.threeHero.resize();
+        }
+      });
+    }
+
+    if (isPreloaderActive) {
+      window.addEventListener("clinic:preloader:dismissed", startPageAnimations, {
+        once: true,
+      });
+      // Fallback timer if event already fired or dismissed without dispatch
+      setTimeout(startPageAnimations, 750);
+    } else {
+      startPageAnimations();
+    }
+
+    // Refresh ScrollTrigger calculations after full window and all images load
+    window.addEventListener("load", function () {
+      if (window.ScrollTrigger) {
+        window.ScrollTrigger.refresh();
+      }
+      if (
+        window.PhysioAnimations.threeHero &&
+        typeof window.PhysioAnimations.threeHero.resize === "function"
+      ) {
+        window.PhysioAnimations.threeHero.resize();
+      }
+    });
 
     enableFailSafeReveal();
   }
