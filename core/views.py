@@ -11,8 +11,9 @@ import logging
 from datetime import datetime, time as dtime, timedelta  # ← time as dtime ADDED
 
 from .models import Blog
-from .forms import BlogForm
+from .forms import BlogForm, PublicAppointmentRequestForm
 from .email_utils import send_clinic_email
+from .ip_utils import get_client_ip
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -74,6 +75,9 @@ from .models import (
     ClinicFeatureOverride,
     SubscriptionHistory,
     MediaAsset,
+    PublicAppointmentRequest,
+    VisitorLead,
+    VisitorSession,
 )
 from .entitlements import (
     evaluate_entitlement,
@@ -99,6 +103,9 @@ from .email_utils import (
     send_salary_paid_email,
     send_task_assigned_email,
     send_staff_welcome_email,
+    send_public_appointment_request_notification,
+    validate_recipient_email,
+    sanitize_header_value,
 )
 from .notifications import (
     notify_appointment_booked,
@@ -330,17 +337,6 @@ def unified_appointment_contact(request):
     Supports dual form processing, rate-limiting, honeypot spam protection, PRG pattern,
     and automatic tab activation (?tab=appointment or ?tab=contact).
     """
-    from .forms import PublicAppointmentRequestForm
-    from .models import PublicAppointmentRequest, VisitorLead, VisitorSession, Hospital
-    from .email_utils import (
-        send_public_appointment_request_notification,
-        send_clinic_email,
-        validate_recipient_email,
-        sanitize_header_value,
-    )
-    from .ip_utils import get_client_ip
-    from django.core.cache import cache
-
     hospital = Hospital.objects.filter(is_active=True).first()
 
     # Determine caller endpoint name for self-redirects
