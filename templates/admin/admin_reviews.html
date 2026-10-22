@@ -59,36 +59,79 @@
 
 <!-- ════ REVIEWS GRID ════ -->
 <div class="admin-card">
-  <div class="admin-card-header">
-    <h3><i class="fas fa-star text-primary"></i> Patient Feedback Moderation</h3>
-    <span class="badge-status badge-info">{{ reviews|length }} Reviews</span>
+  <div class="admin-card-header" style="flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;">
+    <div>
+      <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--admin-dark); display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-star text-primary"></i> Patient Feedback Moderation
+      </h3>
+      <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--admin-text-sub);">
+        Reviews submitted online require approval and publication consent before appearing publicly.
+      </p>
+    </div>
+    
+    <!-- Filter Tabs -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <a href="?status=all" class="badge-status {% if status_filter == 'all' or not status_filter %}badge-info{% else %}badge-secondary{% endif %}" style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem;">
+        All ({{ total }})
+      </a>
+      <a href="?status=pending" class="badge-status {% if status_filter == 'pending' %}badge-pending{% else %}badge-secondary{% endif %}" style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem;">
+        <i class="fas fa-clock"></i> Pending ({{ pending }})
+      </a>
+      <a href="?status=approved" class="badge-status {% if status_filter == 'approved' %}badge-success{% else %}badge-secondary{% endif %}" style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem;">
+        <i class="fas fa-check"></i> Approved &amp; Live ({{ approved }})
+      </a>
+    </div>
   </div>
 
   {% if reviews %}
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px;">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px; margin-top: 16px;">
     {% for r in reviews %}
     <div style="background: #fff; border: 1px solid var(--admin-border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
       <div>
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
           <div>
             <strong style="font-size: 1rem; color: var(--admin-dark); display: block;">
               {{ r.reviewer_name|default:"Verified Patient" }}
             </strong>
-            <small style="color: var(--admin-text-sub);"><i class="far fa-calendar-alt"></i> {{ r.created_at|date:"d M Y" }}</small>
+            <small style="color: var(--admin-text-sub);"><i class="far fa-calendar-alt"></i> {{ r.created_at|date:"d M Y, H:i" }}</small>
           </div>
 
           {% if r.is_approved %}
-            <span class="badge-status badge-success"><i class="fas fa-check"></i> Approved</span>
+            <span class="badge-status badge-success"><i class="fas fa-check"></i> Live</span>
           {% else %}
             <span class="badge-status badge-pending"><i class="fas fa-clock"></i> Pending</span>
           {% endif %}
         </div>
 
-        <!-- Rating Stars -->
-        <div style="color: #f5c518; font-size: 0.95rem; margin-bottom: 10px;">
+        <!-- Rating Stars (Dynamic based on r.rating) -->
+        <div style="color: #f5c518; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; gap: 3px;">
           {% for i in "12345"|make_list %}
-            <i class="fas fa-star"></i>
+            {% if forloop.counter <= r.rating %}
+              <i class="fas fa-star"></i>
+            {% else %}
+              <i class="far fa-star" style="color: #cbd5e1;"></i>
+            {% endif %}
           {% endfor %}
+          <span style="font-weight: 700; color: var(--admin-dark); font-size: 0.85rem; margin-left: 6px;">{{ r.rating }}/5</span>
+        </div>
+
+        <!-- Badges (Source & Public Consent) -->
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+          {% if r.source %}
+            <span class="badge-status badge-info" style="font-size: 0.72rem; padding: 2px 8px;">{{ r.source }}</span>
+          {% endif %}
+          {% if r.consent_to_publish %}
+            <span class="badge-status badge-success" style="font-size: 0.72rem; padding: 2px 8px;" title="User provided consent for public website display">
+              <i class="fas fa-check-circle"></i> Public Consent
+            </span>
+          {% else %}
+            <span class="badge-status badge-pending" style="font-size: 0.72rem; padding: 2px 8px;" title="No public display consent provided">
+              <i class="fas fa-lock"></i> Private Feedback
+            </span>
+          {% endif %}
+          {% if r.treatment %}
+            <span class="badge-status badge-secondary" style="font-size: 0.72rem; padding: 2px 8px;">{{ r.treatment.name }}</span>
+          {% endif %}
         </div>
 
         <!-- Comment -->
@@ -101,14 +144,14 @@
       <div style="display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--admin-border);">
         <form method="POST" action="{% url 'toggle_review_approval' r.id %}" style="flex: 1;">
           {% csrf_token %}
-          <button type="submit" class="topbar-action-link" style="width: auto; width: fit-content; max-width: 100%; justify-content: center; background: {% if r.is_approved %}#f8f9fa{% else %}rgba(40, 167, 69, 0.15){% endif %}; color: {% if r.is_approved %}var(--admin-dark){% else %}#28a745{% endif %}; font-size: 0.82rem; padding: 7px 16px; border: 1px solid var(--admin-border); cursor: pointer;">
-            {% if r.is_approved %}<i class="fas fa-eye-slash"></i> Hide{% else %}<i class="fas fa-check"></i> Approve{% endif %}
+          <button type="submit" class="topbar-action-link" style="width: 100%; justify-content: center; background: {% if r.is_approved %}#f8f9fa{% else %}rgba(40, 167, 69, 0.15){% endif %}; color: {% if r.is_approved %}var(--admin-dark){% else %}#28a745{% endif %}; font-size: 0.82rem; padding: 7px 16px; border: 1px solid var(--admin-border); cursor: pointer; border-radius: 8px; font-weight: 600;">
+            {% if r.is_approved %}<i class="fas fa-eye-slash"></i> Hide from Website{% else %}<i class="fas fa-check"></i> Approve &amp; Publish{% endif %}
           </button>
         </form>
 
-        <form method="POST" action="{% url 'admin_delete_review' r.id %}" onsubmit="return confirm('Delete this review?');">
+        <form method="POST" action="{% url 'admin_delete_review' r.id %}" onsubmit="return confirm('Delete this review permanently?');">
           {% csrf_token %}
-          <button type="submit" class="topbar-action-link" style="background: rgba(220, 53, 69, 0.12); color: #dc3545; font-size: 0.82rem; padding: 7px 12px; border: none; cursor: pointer;">
+          <button type="submit" class="topbar-action-link" style="background: rgba(220, 53, 69, 0.12); color: #dc3545; font-size: 0.82rem; padding: 7px 12px; border: none; cursor: pointer; border-radius: 8px;" title="Delete Review">
             <i class="fas fa-trash"></i>
           </button>
         </form>
@@ -117,11 +160,21 @@
     {% endfor %}
   </div>
   {% else %}
-  <div class="admin-empty-state">
-    <div class="empty-icon"><i class="fas fa-star-half-alt"></i></div>
-    <h4>No Reviews Submitted Yet</h4>
-    <p>Patient feedback and testimonials will be listed here for publication moderation.</p>
-    <a href="{% url 'admin_add_review' %}" class="topbar-action-link btn-topbar-primary">Add First Testimonial</a>
+  <div class="admin-empty-state" style="padding: 40px 20px; text-align: center;">
+    <div class="empty-icon" style="font-size: 2.2rem; color: #94a3b8; margin-bottom: 12px;"><i class="fas fa-star-half-alt"></i></div>
+    <h4 style="font-size: 1.1rem; color: var(--admin-dark); margin-bottom: 6px;">
+      {% if status_filter == 'pending' %}No Pending Reviews Awaiting Moderation
+      {% elif status_filter == 'approved' %}No Approved Reviews Currently Published
+      {% else %}No Reviews Submitted Yet{% endif %}
+    </h4>
+    <p style="font-size: 0.85rem; color: var(--admin-text-sub); margin-bottom: 16px;">
+      Patient feedback and testimonials submitted online or via Google will appear here.
+    </p>
+    {% if status_filter != 'all' %}
+      <a href="?status=all" class="topbar-action-link" style="background: #f1f5f9; color: var(--admin-dark); border: 1px solid var(--admin-border); font-size: 0.85rem; padding: 8px 16px; border-radius: 8px;">View All Reviews</a>
+    {% else %}
+      <a href="{% url 'admin_add_review' %}" class="topbar-action-link btn-topbar-primary">Add Testimonial</a>
+    {% endif %}
   </div>
   {% endif %}
 </div>

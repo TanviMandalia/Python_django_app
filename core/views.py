@@ -878,14 +878,33 @@ def admin_reviews(request):
         return redirect("client_dashboard")
     hospital = resolve_hospital(request.user)
     if not request.user.is_superuser and hospital:
-        reviews = Review.objects.filter(hospital=hospital)
+        base_reviews = Review.objects.filter(hospital=hospital).order_by("-created_at")
     else:
-        reviews = Review.objects.all()
-    pending_count = reviews.filter(is_approved=False).count()
+        base_reviews = Review.objects.all().order_by("-created_at")
+
+    total_count = base_reviews.count()
+    approved_count = base_reviews.filter(is_approved=True).count()
+    pending_count = base_reviews.filter(is_approved=False).count()
+
+    status_filter = request.GET.get("status", "all").strip().lower()
+    if status_filter == "pending":
+        reviews = base_reviews.filter(is_approved=False)
+    elif status_filter == "approved":
+        reviews = base_reviews.filter(is_approved=True)
+    else:
+        reviews = base_reviews
+
     return render(
         request,
         "admin/admin_reviews.html",
-        {"reviews": reviews, "pending_count": pending_count},
+        {
+            "reviews": reviews,
+            "total": total_count,
+            "approved": approved_count,
+            "pending": pending_count,
+            "pending_count": pending_count,
+            "status_filter": status_filter,
+        },
     )
 
 
@@ -903,7 +922,12 @@ def admin_add_review(request):
             message=request.POST.get("message", ""),
             is_approved=True,
             added_by_admin=True,
+            consent_to_publish=True,
         )
+        # Invalidate cache so new review appears immediately on public website
+        from django.core.cache import cache
+        cache.delete("google_places_reviews_cache_v2")
+        cache.delete("public_reviews_aggregated_v2")
         messages.success(request, "Review added successfully.")
         return redirect("admin_reviews")
     return render(request, "admin/admin_add_review.html")
@@ -919,7 +943,15 @@ def toggle_review_approval(request, review_id):
         messages.error(request, "Unauthorized: Review belongs to another clinic.")
         return redirect("admin_reviews")
     review.is_approved = not review.is_approved
-    review.save()
+    review.save(update_fields=["is_approved"])
+
+    # Invalidate reviews cache so public pages reflect moderation status immediately
+    from django.core.cache import cache
+    cache.delete("google_places_reviews_cache_v2")
+    cache.delete("public_reviews_aggregated_v2")
+
+    status_label = "approved for public display" if review.is_approved else "hidden from public display"
+    messages.success(request, f"Review #{review.id} by {review.reviewer_name or 'Patient'} is now {status_label}.")
     return redirect("admin_reviews")
 
 
@@ -932,7 +964,14 @@ def admin_delete_review(request, review_id):
     if not request.user.is_superuser and hospital and review.hospital_id and review.hospital_id != hospital.id:
         messages.error(request, "Unauthorized: Review belongs to another clinic.")
         return redirect("admin_reviews")
+    review_name = review.reviewer_name or "Patient"
     review.delete()
+
+    from django.core.cache import cache
+    cache.delete("google_places_reviews_cache_v2")
+    cache.delete("public_reviews_aggregated_v2")
+
+    messages.success(request, f"Review by {review_name} has been removed.")
     return redirect("admin_reviews")
 
 
@@ -2447,6 +2486,13 @@ def admin_appointments(request):
     else:
         all_appointments = Appointment.objects.none()
         public_requests = PublicAppointmentRequest.objects.none()
+
+    pending_count = all_appointments.filter(status="pending").count()
+    confirmed_count = all_appointments.filter(status="confirmed").count()
+    completed_count = all_appointments.filter(status="completed").count()
+    cancelled_count = all_appointments.filter(status="cancelled").count()
+    public_pending = public_requests.filter(status="pending").count()
+
     return render(
         request,
         "admin/admin_appointments.html",
@@ -2454,13 +2500,17 @@ def admin_appointments(request):
             "all_appointments": all_appointments,
             "appointments": all_appointments,
             "total": all_appointments.count(),
-            "pending_count": all_appointments.filter(status="pending").count(),
-            "confirmed_count": all_appointments.filter(status="confirmed").count(),
-            "completed_count": all_appointments.filter(status="completed").count(),
-            "cancelled_count": all_appointments.filter(status="cancelled").count(),
+            "pending": pending_count,
+            "pending_count": pending_count,
+            "confirmed": confirmed_count,
+            "confirmed_count": confirmed_count,
+            "completed": completed_count,
+            "completed_count": completed_count,
+            "cancelled": cancelled_count,
+            "cancelled_count": cancelled_count,
             "public_requests": public_requests,
             "public_requests_count": public_requests.count(),
-            "public_pending_count": public_requests.filter(status="pending").count(),
+            "public_pending_count": public_pending,
         },
     )
 
@@ -2469,6 +2519,8 @@ def admin_appointments(request):
 def update_public_appointment_request(request, request_id, status):
     """
     Allow authorized clinic admin/staff to review and update public appointment request status.
+    When marked as 'confirmed', automatically synchronizes or creates an official clinical
+    Appointment record in PostgreSQL, so the appointment appears in the doctor schedule and exports.
     """
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
@@ -2485,6 +2537,48 @@ def update_public_appointment_request(request, request_id, status):
 
     req_obj.status = status
     req_obj.save(update_fields=["status", "updated_at"])
+
+    # If confirmed, ensure an official clinical Appointment record is created or synced
+    if status == "confirmed":
+        existing_appt = Appointment.objects.filter(
+            hospital=req_obj.hospital,
+            date=req_obj.preferred_date,
+            email=req_obj.email,
+        ).first()
+
+        if not existing_appt:
+            service_val = "Physiotherapy"
+            for s_val, s_lbl in Appointment.SERVICE_CHOICES:
+                if req_obj.service_or_reason and s_lbl.lower() in req_obj.service_or_reason.lower():
+                    service_val = s_val
+                    break
+
+            time_val = "10:00 AM"
+            for t_val, _ in Appointment.TIME_CHOICES:
+                if req_obj.preferred_time and t_val.lower() == req_obj.preferred_time.strip().lower():
+                    time_val = t_val
+                    break
+
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            patient_user = User.objects.filter(email__iexact=req_obj.email).first()
+
+            Appointment.objects.create(
+                hospital=req_obj.hospital,
+                patient=patient_user,
+                name=req_obj.patient_name,
+                email=req_obj.email,
+                phone=req_obj.phone,
+                service=service_val,
+                date=req_obj.preferred_date,
+                time=time_val,
+                notes=f"[Online Booking: {req_obj.reference_id}] {req_obj.service_or_reason or ''}".strip(),
+                status="confirmed",
+            )
+        elif existing_appt.status != "confirmed":
+            existing_appt.status = "confirmed"
+            existing_appt.save(update_fields=["status"])
+
     messages.success(request, f"Public request {req_obj.reference_id} marked as {status.title()}.")
     return redirect("admin_appointments")
 
