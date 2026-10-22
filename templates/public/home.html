@@ -1857,7 +1857,10 @@
                         {% endif %}
                     </div>
                     <div class="summary-actions-row">
-                        <a href="{{ reviews_data.google_write_review_url }}" target="_blank" rel="noopener noreferrer" class="btn-google-action btn-write-rev" id="btnWriteReviewGoogle">
+                        <a href="{% url 'public_review' %}" class="btn-google-action btn-write-rev" id="btnReviewUsHome" title="Write a review for Dr. Dhvani Patalia Physio Rehab">
+                            <i class="fas fa-star" style="color: #F5C518;"></i> Review Us
+                        </a>
+                        <a href="{% if reviews_data.google_write_review_url %}{% url 'review_google_redirect' %}{% else %}{% url 'public_review' %}{% endif %}" {% if reviews_data.google_write_review_url %}target="_blank" rel="noopener noreferrer"{% endif %} class="btn-google-action btn-view-map" id="btnWriteReviewGoogle" title="Write a Review on Google">
                             <i class="fab fa-google"></i> Write a Review on Google
                         </a>
                         <a href="{{ reviews_data.google_maps_url }}" target="_blank" rel="noopener noreferrer" class="btn-google-action btn-view-map" id="btnViewGoogleMaps">
@@ -1993,8 +1996,8 @@
                         <p style="color: #94a3b8; font-size: 0.95rem; max-width: 540px; margin: 0 auto 20px;">
                             We collect authentic reviews directly from Google Business Profile and verified clinical consultations.
                         </p>
-                        <a href="{{ reviews_data.google_write_review_url }}" target="_blank" rel="noopener noreferrer" class="btn-google-action btn-write-rev">
-                            <i class="fab fa-google"></i> Be the first to share your experience on Google
+                        <a href="{% url 'public_review' %}" class="btn-google-action btn-write-rev" title="Share your review for Dr. Dhvani Patalia Physio Rehab">
+                            <i class="fas fa-star" style="color: #F5C518;"></i> Share Your Review With Us
                         </a>
                     </div>
                 {% endif %}

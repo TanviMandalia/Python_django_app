@@ -1,0 +1,1014 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ page_title|default:"Patient Reviews & Feedback | Dr. Dhvani Patalia Physio Rehab" }}</title>
+  <meta name="description" content="Share your physiotherapy and rehabilitation experience with Dr. Dhvani Patalia in Jamnagar. Write a verified patient review or Google review to support our clinic." />
+  <link rel="canonical" href="{{ canonical_url|default:request.build_absolute_uri }}">
+
+  <!-- Open Graph Metadata -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dr. Dhvani Patalia Physio Rehab">
+  <meta property="og:url" content="{{ canonical_url|default:request.build_absolute_uri }}">
+  <meta property="og:title" content="{{ page_title }}">
+  <meta property="og:description" content="How was your experience with Physio Rehab? Share your feedback and help others discover quality chiropractic and physical therapy in Jamnagar.">
+  <meta property="og:image" content="{{ canonical_base }}{% static 'images/clinic_image_outdoor.webp' %}">
+  <meta property="og:locale" content="en_IN">
+
+  <!-- Twitter Card Metadata -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ page_title }}">
+  <meta name="twitter:description" content="Share your experience with Dr. Dhvani Patalia Physio Rehab Jamnagar.">
+  <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/clinic_image_outdoor.webp' %}">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+
+  <!-- FontAwesome -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" /></noscript>
+
+  <!-- Schema.org JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "{{ canonical_base }}/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Patient Reviews",
+            "item": "{{ canonical_url|default:request.build_absolute_uri }}"
+          }
+        ]
+      },
+      {
+        "@type": "MedicalOrganization",
+        "name": "Dr. Dhvani Patalia Physio Rehab",
+        "url": "{{ canonical_base }}/",
+        "logo": "{{ canonical_base }}{% static 'images/Dhvani_Patalia.jpeg' %}",
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "{{ reviews_summary.average_rating|default:'5.0' }}",
+          "reviewCount": "{{ reviews_summary.total_reviews_count|default:'20' }}",
+          "bestRating": "5",
+          "worstRating": "1"
+        }
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: #0b1120;
+      color: #e2e8f0;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Page Hero */
+    .page-hero {
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 100%);
+      color: #ffffff;
+      padding: clamp(45px, 8vw, 75px) 20px clamp(40px, 6vw, 60px);
+      text-align: center;
+      position: relative;
+      border-bottom: 2px solid rgba(245, 197, 24, 0.3);
+    }
+
+    .page-hero-inner {
+      max-width: 880px;
+      margin: 0 auto;
+    }
+
+    .clinic-logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(245, 197, 24, 0.4);
+      padding: 8px 20px;
+      border-radius: 40px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .clinic-logo-badge img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid #F5C518;
+    }
+
+    .clinic-logo-badge span {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: 0.3px;
+    }
+
+    .page-hero h1 {
+      font-size: clamp(1.85rem, 4.5vw, 2.85rem);
+      font-weight: 800;
+      margin: 0 0 16px;
+      line-height: 1.25;
+      color: #ffffff;
+    }
+
+    .page-hero h1 span {
+      color: #F5C518;
+      display: inline-block;
+    }
+
+    .page-hero .subtitle {
+      font-size: clamp(1rem, 2.2vw, 1.2rem);
+      color: #94a3b8;
+      max-width: 720px;
+      margin: 0 auto 24px;
+      line-height: 1.65;
+    }
+
+    .breadcrumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .breadcrumb a {
+      color: #38bdf8;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .breadcrumb a:hover,
+    .breadcrumb a:focus-visible {
+      color: #F5C518;
+      outline: none;
+    }
+
+    .breadcrumb .divider {
+      color: #64748b;
+    }
+
+    /* Main Container Layout */
+    .review-layout-wrap {
+      max-width: 1100px;
+      margin: -30px auto 70px;
+      padding: 0 20px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .review-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    @media (min-width: 900px) {
+      .review-grid {
+        grid-template-columns: 1.15fr 0.85fr;
+      }
+    }
+
+    /* Cards */
+    .review-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: clamp(24px, 4vw, 36px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      position: relative;
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .card-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(245, 197, 24, 0.15);
+      color: #F5C518;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      border: 1px solid rgba(245, 197, 24, 0.3);
+    }
+
+    .card-header-row h2,
+    .card-header-row h3 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0;
+      color: #ffffff;
+    }
+
+    .card-header-row p {
+      margin: 4px 0 0;
+      font-size: 0.88rem;
+      color: #94a3b8;
+    }
+
+    /* Google Review Action Card */
+    .google-cta-box {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .google-cta-box::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #4285F4 0%, #EA4335 33%, #FBBC05 66%, #34A853 100%);
+    }
+
+    .google-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+
+    .google-badge i {
+      color: #F5C518;
+    }
+
+    .google-cta-box h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 10px;
+    }
+
+    .google-cta-box p {
+      font-size: 0.92rem;
+      color: #94a3b8;
+      margin: 0 0 20px;
+      line-height: 1.55;
+    }
+
+    .btn-google-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #ffffff;
+      color: #1f2937;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 13px 26px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+      border: 1px solid #e5e7eb;
+      cursor: pointer;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .btn-google-primary:hover,
+    .btn-google-primary:focus-visible {
+      background: #f8fafc;
+      color: #111827;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      outline: 2px solid #38bdf8;
+      outline-offset: 2px;
+    }
+
+    .btn-google-primary i {
+      font-size: 1.2rem;
+      color: #ea4335;
+    }
+
+    /* Rating Stats Highlight */
+    .rating-stats-panel {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      text-align: center;
+    }
+
+    .stat-item .stat-num {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: #F5C518;
+      display: block;
+      line-height: 1.2;
+    }
+
+    .stat-item .stat-stars {
+      color: #F5C518;
+      font-size: 1rem;
+      margin: 4px 0;
+    }
+
+    .stat-item .stat-lbl {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .stat-divider {
+      width: 1px;
+      height: 48px;
+      background: #334155;
+    }
+
+    /* Form Fields */
+    .form-group {
+      margin-bottom: 22px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 8px;
+    }
+
+    .form-label .optional-hint {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      font-weight: normal;
+      margin-left: 6px;
+    }
+
+    .review-form-input,
+    .review-form-select,
+    .review-form-textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1.5px solid #334155;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      color: #f8fafc;
+      font-family: inherit;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .review-form-input:focus,
+    .review-form-select:focus,
+    .review-form-textarea:focus {
+      outline: none;
+      border-color: #F5C518;
+      box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.2);
+    }
+
+    .review-form-input::placeholder,
+    .review-form-textarea::placeholder {
+      color: #64748b;
+    }
+
+    /* Star Rating Interactive Selector */
+    .star-rating-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      background: #0f172a;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1.5px solid #334155;
+    }
+
+    .star-btn {
+      background: transparent;
+      border: none;
+      font-size: 1.85rem;
+      color: #64748b;
+      cursor: pointer;
+      padding: 2px 4px;
+      transition: transform 0.15s, color 0.15s;
+    }
+
+    .star-btn:hover,
+    .star-btn.active {
+      color: #F5C518;
+      transform: scale(1.15);
+    }
+
+    .star-btn:focus-visible {
+      outline: 2px solid #F5C518;
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    .rating-caption {
+      margin-left: 14px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    /* Consent Checkbox */
+    .consent-group {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .consent-group input[type="checkbox"] {
+      margin-top: 4px;
+      width: 18px;
+      height: 18px;
+      accent-color: #F5C518;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .consent-label {
+      font-size: 0.86rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+      cursor: pointer;
+    }
+
+    /* Privacy Alert Notice */
+    .privacy-notice-box {
+      background: rgba(30, 58, 138, 0.25);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.84rem;
+      color: #93c5fd;
+      line-height: 1.5;
+    }
+
+    .privacy-notice-box i {
+      font-size: 1.1rem;
+      margin-top: 2px;
+      color: #60a5fa;
+      flex-shrink: 0;
+    }
+
+    /* Buttons */
+    .btn-submit-review {
+      background: #F5C518;
+      color: #0f172a;
+      border: none;
+      font-size: 1.05rem;
+      font-weight: 800;
+      padding: 14px 28px;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 15px rgba(245, 197, 24, 0.35);
+    }
+
+    .btn-submit-review:hover,
+    .btn-submit-review:focus-visible {
+      background: #eab308;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(245, 197, 24, 0.45);
+      outline: 2px solid #ffffff;
+      outline-offset: 2px;
+    }
+
+    /* Secondary Navigation Bar */
+    .secondary-nav-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 36px;
+      padding-top: 24px;
+      border-top: 1px solid #334155;
+    }
+
+    .btn-back-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid #475569;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back-home:hover,
+    .btn-back-home:focus-visible {
+      background: #334155;
+      color: #ffffff;
+      border-color: #64748b;
+      outline: none;
+    }
+
+    .btn-book-consult {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-book-consult:hover,
+    .btn-book-consult:focus-visible {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+      outline: none;
+    }
+
+    /* Testimonials Feed */
+    .testimonials-wrap {
+      margin-top: 28px;
+    }
+
+    .testimonial-card-small {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 16px;
+      transition: transform 0.2s ease;
+    }
+
+    .testimonial-card-small:hover {
+      transform: translateY(-2px);
+      border-color: rgba(245, 197, 24, 0.4);
+    }
+
+    .t-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .t-name {
+      font-weight: 700;
+      color: #ffffff;
+      font-size: 0.92rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .t-verified-badge {
+      font-size: 0.72rem;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .t-stars {
+      color: #F5C518;
+      font-size: 0.85rem;
+    }
+
+    .t-message {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+      margin: 0 0 8px;
+    }
+
+    .t-footer {
+      font-size: 0.75rem;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Flash Messages */
+    .alert-box {
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .alert-success {
+      background: rgba(6, 78, 59, 0.7);
+      border: 1px solid #059669;
+      color: #a7f3d0;
+    }
+
+    .alert-error {
+      background: rgba(127, 29, 29, 0.7);
+      border: 1px solid #dc2626;
+      color: #fecaca;
+    }
+
+    .alert-info {
+      background: rgba(30, 58, 138, 0.7);
+      border: 1px solid #2563eb;
+      color: #bfdbfe;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with loader_text="Preparing Clinic Review Portal" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
+
+  <!-- ════ PUBLIC NAVBAR ════ -->
+  {% include 'shared/navbar.html' %}
+
+  <!-- ════ PAGE HERO ════ -->
+  <header class="page-hero" role="region" aria-label="Review Page Header">
+    <div class="page-hero-inner">
+      <div class="clinic-logo-badge">
+        <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Clinic Logo" width="36" height="36" loading="eager" />
+        <span>{{ clinic_name|default:"Dr. Dhvani Patalia Physio Rehab" }}</span>
+      </div>
+      <h1>How was your experience with <span>Physio Rehab?</span></h1>
+      <p class="subtitle">
+        Thank you for trusting Dr. Dhvani Patalia Physio Rehab with your physical recovery and health.
+        Your honest review helps our team continually improve and guides fellow patients in Jamnagar taking their first step toward living pain-free.
+      </p>
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{% url 'home' %}">Home</a>
+        <span class="divider">/</span>
+        <span style="color:#ffffff;">Reviews &amp; Feedback</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ════ MAIN REVIEWS CONTENT ════ -->
+  <main class="review-layout-wrap" id="reviewMainContent">
+
+    <!-- Flash Messages (Submission Success / Info / Rate-limit) -->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert-box {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-error{% else %}alert-info{% endif %}" role="alert">
+          <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}" style="font-size: 1.25rem; margin-top: 2px;"></i>
+          <div>{{ message }}</div>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="review-grid">
+
+      <!-- LEFT COLUMN: IN-APP DIRECT CLINIC REVIEW FORM -->
+      <section class="review-card" aria-label="Write a Clinic Review">
+        <div class="card-header-row">
+          <div class="card-icon-box" aria-hidden="true">
+            <i class="fas fa-feather-pointed"></i>
+          </div>
+          <div>
+            <h2>Share Your Clinical Experience</h2>
+            <p>Tell us how Dr. Dhvani Patalia and our physiotherapy team assisted your recovery.</p>
+          </div>
+        </div>
+
+        <form method="POST" action="{% url 'public_review' %}" id="publicReviewForm" novalidate>
+          {% csrf_token %}
+
+          <!-- Anti-spam Honeypot -->
+          <div style="display:none !important;" aria-hidden="true">
+            {{ form.website }}
+          </div>
+
+          <!-- 1. Star Rating Selection -->
+          <div class="form-group">
+            <label class="form-label" id="ratingLabel">
+              Overall Rating <span style="color:#ef4444;">*</span>
+            </label>
+            {{ form.rating }}
+            <div class="star-rating-selector" role="radiogroup" aria-labelledby="ratingLabel" id="starRatingGroup">
+              {% for val in "12345" %}
+                <button
+                  type="button"
+                  class="star-btn {% if val == '5' %}active{% endif %}"
+                  data-value="{{ val }}"
+                  role="radio"
+                  aria-checked="{% if val == '5' %}true{% else %}false{% endif %}"
+                  aria-label="{{ val }} Star{% if val != '1' %}s{% endif %}"
+                  tabindex="0"
+                >★</button>
+              {% endfor %}
+              <span class="rating-caption" id="ratingCaption">5 Stars — Excellent Recovery</span>
+            </div>
+            {% if form.rating.errors %}
+              <div style="color: #f87171; font-size: 0.85rem; margin-top: 6px;">{{ form.rating.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <!-- 2. Reviewer Name (Optional for Patient Privacy) -->
+          <div class="form-group">
+            <label class="form-label" for="id_reviewer_name">
+              Your Name <span class="optional-hint">(Optional — Leave blank to submit anonymously)</span>
+            </label>
+            {{ form.reviewer_name }}
+            {% if form.reviewer_name.errors %}
+              <div style="color: #f87171; font-size: 0.85rem; margin-top: 6px;">{{ form.reviewer_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <!-- 3. Treatment / Condition (Optional) -->
+          <div class="form-group">
+            <label class="form-label" for="id_treatment">
+              Therapy / Treatment Received <span class="optional-hint">(Optional)</span>
+            </label>
+            {{ form.treatment }}
+            {% if form.treatment.errors %}
+              <div style="color: #f87171; font-size: 0.85rem; margin-top: 6px;">{{ form.treatment.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <!-- 4. Review Feedback Textarea -->
+          <div class="form-group">
+            <label class="form-label" for="id_message">
+              Your Feedback &amp; Journey <span style="color:#ef4444;">*</span>
+            </label>
+            {{ form.message }}
+            {% if form.message.errors %}
+              <div style="color: #f87171; font-size: 0.85rem; margin-top: 6px;">{{ form.message.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <!-- 5. Privacy Notice -->
+          <div class="privacy-notice-box" role="note">
+            <i class="fas fa-shield-halved" aria-hidden="true"></i>
+            <div>
+              <strong>Patient Privacy Guarantee:</strong> Dr. Dhvani Patalia Physio Rehab safeguards your medical confidentiality.
+              Please do not include sensitive diagnostic records, laboratory values, or private medical documents in public comments.
+              All reviews undergo clinic moderation prior to website publication.
+            </div>
+          </div>
+
+          <!-- 6. Consent to Publish Checkbox -->
+          <div class="consent-group">
+            {{ form.consent_to_publish }}
+            <label for="id_consent_to_publish" class="consent-label">
+              {{ form.consent_to_publish.label }}
+            </label>
+          </div>
+
+          <!-- 7. Submit Button -->
+          <button type="submit" class="btn-submit-review" id="btnSubmitReview">
+            <i class="fas fa-paper-plane" aria-hidden="true"></i> Submit Review for Clinic Moderation
+          </button>
+        </form>
+
+        <!-- Secondary Navigation Actions -->
+        <div class="secondary-nav-row">
+          <a href="{% url 'home' %}" class="btn-back-home" title="Return to clinic homepage">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i> Return to Homepage
+          </a>
+          <a href="{% url 'public_book_appointment' %}" class="btn-book-consult" title="Request an in-person physiotherapy appointment">
+            <i class="fas fa-calendar-check" aria-hidden="true"></i> Book an Appointment
+          </a>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: GOOGLE REVIEWS & CLINIC TRUST SIGNALS -->
+      <aside class="review-sidebar" aria-label="Review Options & Community Feedback">
+
+        <!-- Google Review Writing Card -->
+        <div class="google-cta-box">
+          <div class="google-badge">
+            <i class="fab fa-google" aria-hidden="true"></i>
+            <span>Google Business Profile</span>
+          </div>
+          <h3>Prefer to Review on Google?</h3>
+          <p>
+            Help fellow Jamnagar residents discover verified chiropractic and rehabilitation care by sharing your review directly on our Google Business Profile.
+          </p>
+
+          {% if has_google_review_url %}
+            <a
+              href="{% url 'review_google_redirect' %}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-google-primary"
+              id="btnWriteGoogleReview"
+              title="Open verified review dialog on Google"
+            >
+              <i class="fab fa-google" aria-hidden="true"></i> Write a Google Review
+            </a>
+          {% else %}
+            <div style="background: rgba(15, 23, 42, 0.7); border: 1px dashed #475569; border-radius: 10px; padding: 14px; font-size: 0.88rem; color: #94a3b8;">
+              <i class="fas fa-clock" style="color: #F5C518; margin-right: 6px;"></i>
+              <strong>Direct Google Review link is syncing:</strong>
+              <div style="margin-top: 6px; line-height: 1.45;">
+                Our official Google Business Profile review link is currently being connected in settings.
+                Please use the feedback form on this page to share your experience directly with Dr. Dhvani Patalia!
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Rating Highlights Panel -->
+        <div class="rating-stats-panel" aria-label="Clinic Rating Summary">
+          <div class="stat-item">
+            <span class="stat-num">{{ reviews_summary.average_rating|default:"5.0"|floatformat:1 }}</span>
+            <div class="stat-stars" aria-hidden="true">★★★★★</div>
+            <span class="stat-lbl">Average Rating</span>
+          </div>
+          <div class="stat-divider" aria-hidden="true"></div>
+          <div class="stat-item">
+            <span class="stat-num">
+              {% if reviews_summary.total_reviews_count %}
+                {{ reviews_summary.total_reviews_count }}+
+              {% else %}
+                100%
+              {% endif %}
+            </span>
+            <div class="stat-stars" aria-hidden="true"><i class="fas fa-user-check"></i></div>
+            <span class="stat-lbl">Verified Patients</span>
+          </div>
+        </div>
+
+        <!-- Approved Community Testimonials -->
+        {% if approved_testimonials %}
+          <div class="testimonials-wrap">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #ffffff; margin: 0 0 14px; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-comments" style="color:#F5C518;"></i> Recent Verified Patient Reviews
+            </h3>
+
+            {% for item in approved_testimonials %}
+              <div class="testimonial-card-small">
+                <div class="t-header">
+                  <span class="t-name">
+                    <i class="fas fa-circle-user" style="color:#94a3b8;"></i>
+                    {{ item.reviewer_name|default:"Verified Patient" }}
+                    <span class="t-verified-badge"><i class="fas fa-check"></i> Verified</span>
+                  </span>
+                  <span class="t-stars" aria-label="{{ item.rating }} Stars">
+                    {% for i in "12345" %}{% if forloop.counter <= item.rating %}★{% else %}☆{% endif %}{% endfor %}
+                  </span>
+                </div>
+                <p class="t-message">"{{ item.message|truncatechars:180 }}"</p>
+                <div class="t-footer">
+                  <span>{{ item.treatment.name|default:"Physiotherapy & Chiropractic Care" }}</span>
+                  <span>{{ item.created_at|date:"M Y" }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- ════ PUBLIC FOOTER ════ -->
+  {% include 'shared/footer.html' %}
+
+  <!-- ════ CLIENT-SIDE STAR RATING SCRIPT ════ -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const starBtns = document.querySelectorAll("#starRatingGroup .star-btn");
+      const ratingInput = document.getElementById("id_rating_input");
+      const caption = document.getElementById("ratingCaption");
+
+      const captions = {
+        1: "1 Star — Needs Improvement",
+        2: "2 Stars — Fair",
+        3: "3 Stars — Good Care",
+        4: "4 Stars — Very Good Experience",
+        5: "5 Stars — Excellent Recovery"
+      };
+
+      function setRating(val) {
+        val = parseInt(val, 10) || 5;
+        if (ratingInput) {
+          ratingInput.value = val;
+        }
+        starBtns.forEach(btn => {
+          const btnVal = parseInt(btn.getAttribute("data-value"), 10);
+          if (btnVal <= val) {
+            btn.classList.add("active");
+            btn.style.color = "#F5C518";
+          } else {
+            btn.classList.remove("active");
+            btn.style.color = "#64748b";
+          }
+          btn.setAttribute("aria-checked", btnVal === val ? "true" : "false");
+        });
+        if (caption && captions[val]) {
+          caption.textContent = captions[val];
+        }
+      }
+
+      starBtns.forEach(btn => {
+        btn.addEventListener("click", function () {
+          const val = this.getAttribute("data-value");
+          setRating(val);
+        });
+
+        // Accessible Keyboard Controls
+        btn.addEventListener("keydown", function (e) {
+          let currentVal = parseInt(ratingInput ? ratingInput.value : 5, 10);
+          if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+            e.preventDefault();
+            if (currentVal < 5) setRating(currentVal + 1);
+          } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+            e.preventDefault();
+            if (currentVal > 1) setRating(currentVal - 1);
+          }
+        });
+      });
+
+      // Initial state
+      const initialVal = ratingInput && ratingInput.value ? parseInt(ratingInput.value, 10) : 5;
+      setRating(initialVal);
+    });
+  </script>
+</body>
+
+</html>

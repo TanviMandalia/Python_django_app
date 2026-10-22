@@ -342,5 +342,7 @@ LOGGING = {
 # --- Google Business Profile & Places API Settings ---
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
 GOOGLE_PLACE_ID = os.getenv("GOOGLE_PLACE_ID", "").strip()
+GOOGLE_REVIEW_URL = os.getenv("GOOGLE_REVIEW_URL", "").strip()
 GOOGLE_REVIEWS_CACHE_TTL = int(os.getenv("GOOGLE_REVIEWS_CACHE_TTL", 86400))
+
 

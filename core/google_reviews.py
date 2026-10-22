@@ -10,6 +10,7 @@ Adheres strictly to Google Places API terms of service:
 
 import os
 import logging
+import urllib.parse
 import requests
 from django.conf import settings
 from django.core.cache import cache
@@ -23,6 +24,41 @@ DEFAULT_CLINIC_NAME = "Dr. Dhvani Patalia Physio Rehab"
 DEFAULT_MAPS_URL = "https://maps.google.com/?q=Dr.+Dhvani+Patalia+Physio+Rehab+Bedi+Gate+Jamnagar"
 CACHE_KEY_GOOGLE_DATA = "google_places_reviews_cache_v2"
 CACHE_KEY_AGGREGATED = "public_reviews_aggregated_v2"
+
+# Allowed official domains for Google review actions (prevents open redirects)
+ALLOWED_GOOGLE_REVIEW_DOMAINS = {
+    "search.google.com",
+    "g.page",
+    "maps.google.com",
+    "www.google.com",
+    "google.com",
+    "business.google.com",
+}
+
+
+def is_safe_google_review_url(url):
+    """
+    Validate that an external review destination is a legitimate, HTTPS Google review URL,
+    preventing open redirect vulnerabilities, malicious protocol schemes, or domain spoofing.
+    """
+    if not url or not isinstance(url, str):
+        return False
+    url = url.strip()
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme.lower() != "https":
+            return False
+        hostname = (parsed.hostname or "").lower()
+        if not hostname:
+            return False
+        # Direct domain match or legitimate google subdomain
+        if hostname in ALLOWED_GOOGLE_REVIEW_DOMAINS:
+            return True
+        if hostname.endswith(".google.com"):
+            return True
+        return False
+    except Exception:
+        return False
 
 
 def get_google_config():
@@ -42,10 +78,29 @@ def get_google_config():
 
 
 def get_google_write_review_url(place_id=None):
-    """Return the official Google review creation URL."""
-    if place_id:
-        return f"https://search.google.com/local/writereview?placeid={place_id}"
-    return DEFAULT_MAPS_URL
+    """
+    Return the verified Google review creation URL.
+    Prioritizes GOOGLE_REVIEW_URL if configured and validated, then place_id,
+    and returns an empty string if unconfigured (never returns generic search/maps URLs).
+    """
+    # 1. Check explicit GOOGLE_REVIEW_URL from Django settings or environment
+    explicit_url = (
+        getattr(settings, "GOOGLE_REVIEW_URL", "").strip()
+        or os.getenv("GOOGLE_REVIEW_URL", "").strip()
+    )
+    if explicit_url and is_safe_google_review_url(explicit_url):
+        return explicit_url
+
+    # 2. Check place_id parameter or settings
+    cfg_place_id = (
+        place_id
+        or getattr(settings, "GOOGLE_PLACE_ID", "").strip()
+        or os.getenv("GOOGLE_PLACE_ID", "").strip()
+    )
+    if cfg_place_id:
+        return f"https://search.google.com/local/writereview?placeid={cfg_place_id}"
+
+    return ""
 
 
 def fetch_google_place_details(force_refresh=False):
@@ -198,9 +253,9 @@ def get_public_reviews_summary():
     google_res = fetch_google_place_details()
     google_data = google_res.get("data")
 
-    # Fetch approved internal database reviews
+    # Fetch approved internal database reviews that have explicit public publication consent
     db_reviews_qs = (
-        Review.objects.filter(is_approved=True)
+        Review.objects.filter(is_approved=True, consent_to_publish=True)
         .select_related("treatment", "treatment__category")
         .order_by("-created_at")
     )

@@ -116,6 +116,9 @@ class CustomLoadingScreenTests(BaseHospitalTestCase):
         self.assertIn("clinic-preloader-fadeout", content)
         # Indeterminate shimmer animation
         self.assertIn("cp-shimmer", content)
+        # Noscript graceful degradation
+        self.assertIn("<noscript>", content)
+        self.assertIn("#clinic-preloader { display: none !important; }", content)
 
     def test_service_worker_security_and_bypasses(self):
         """Service Worker must strictly bypass all private portals and authentication endpoints."""

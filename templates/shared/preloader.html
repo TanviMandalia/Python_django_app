@@ -358,6 +358,14 @@
   }
 </style>
 
+<noscript>
+  <style>
+    /* Graceful degradation when JavaScript is disabled: bypass preloader completely */
+    #clinic-preloader { display: none !important; }
+    html.clinic-preloader-locked, body.clinic-preloader-locked { overflow: auto !important; height: auto !important; }
+  </style>
+</noscript>
+
 <!-- ════ PRELOADER DOM TREE ════ -->
 <div id="clinic-preloader" role="status" aria-live="polite" aria-busy="true" aria-label="Loading Dr. Dhvani Patalia Physio Rehab">
   <div class="clinic-preloader-container">

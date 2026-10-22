@@ -1142,6 +1142,10 @@ class Review(models.Model):
     relative_time = models.CharField(max_length=100, blank=True)
     is_verified = models.BooleanField(default=True)
     added_by_admin = models.BooleanField(default=False)
+    consent_to_publish = models.BooleanField(
+        default=True,
+        help_text="Patient consented to display review publicly on the website",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

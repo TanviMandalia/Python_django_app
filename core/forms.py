@@ -3,7 +3,7 @@ from django.core.validators import validate_email as django_validate_email
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 import re
-from .models import Blog, PublicAppointmentRequest
+from .models import Blog, PublicAppointmentRequest, Review, Treatment
 from .appointment_slots import get_clinic_now, normalize_slot_time, format_slot_for_display
 
 class BlogForm(forms.ModelForm):
@@ -228,4 +228,117 @@ class PublicAppointmentRequestForm(forms.ModelForm):
                             f"The {format_slot_for_display(norm)} time slot has already passed for today. Please select an upcoming slot.",
                         )
         return cleaned_data
+
+
+class PublicReviewForm(forms.ModelForm):
+    """
+    Public-facing review submission form for Dr. Dhvani Patalia Physio Rehab.
+    Requires no user authentication. Includes CSRF resilience, anti-spam honeypot,
+    strict input sanitization, separate consent to publish, and pending moderation flag.
+    """
+    # Anti-spam honeypot
+    website = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={"tabindex": "-1", "autocomplete": "off", "style": "display:none !important;"}),
+    )
+
+    reviewer_name = forms.CharField(
+        required=False,
+        max_length=100,
+        label="Your Name",
+        widget=forms.TextInput(attrs={
+            "class": "review-form-input",
+            "placeholder": "e.g. Anjali Mehta (leave blank to post as Verified Patient)",
+            "autocomplete": "name",
+            "id": "id_reviewer_name",
+        }),
+    )
+
+    rating = forms.IntegerField(
+        min_value=1,
+        max_value=5,
+        initial=5,
+        label="Your Rating (1 to 5 Stars)",
+        widget=forms.HiddenInput(attrs={"id": "id_rating_input"}),
+    )
+
+    treatment = forms.ModelChoiceField(
+        queryset=Treatment.objects.filter(is_active=True).order_by("name"),
+        required=False,
+        empty_label="-- Select Therapy / Treatment (Optional) --",
+        label="Treatment Received",
+        widget=forms.Select(attrs={
+            "class": "review-form-select",
+            "id": "id_treatment",
+        }),
+    )
+
+    message = forms.CharField(
+        min_length=10,
+        max_length=2000,
+        label="Your Review & Experience",
+        widget=forms.Textarea(attrs={
+            "class": "review-form-textarea",
+            "rows": 4,
+            "placeholder": "Tell us about your recovery journey with Dr. Dhvani Patalia, the care received, or suggestions for our clinic...",
+            "id": "id_message",
+            "required": True,
+        }),
+        error_messages={
+            "required": "Please provide a brief description of your experience.",
+            "min_length": "Please provide at least 10 characters describing your experience.",
+            "max_length": "Review text cannot exceed 2000 characters.",
+        },
+    )
+
+    consent_to_publish = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="I consent to displaying this review publicly on the clinic website (no sensitive medical records will ever be shared).",
+        widget=forms.CheckboxInput(attrs={
+            "class": "review-checkbox-input",
+            "id": "id_consent_to_publish",
+        }),
+    )
+
+    class Meta:
+        model = Review
+        fields = ["reviewer_name", "rating", "treatment", "message", "consent_to_publish"]
+
+    def clean_website(self):
+        val = self.cleaned_data.get("website", "").strip()
+        if val:
+            raise ValidationError("Spam submission detected.")
+        return val
+
+    def clean_reviewer_name(self):
+        name = self.cleaned_data.get("reviewer_name", "").strip()
+        if not name:
+            return "Verified Patient"
+        # Sanitize against script injection and tags
+        name = re.sub(r"<[^>]*>", "", name).strip()
+        if not name:
+            return "Verified Patient"
+        if len(name) > 100:
+            name = name[:100]
+        return name
+
+    def clean_message(self):
+        msg = self.cleaned_data.get("message", "").strip()
+        # Strip dangerous HTML tags
+        clean_msg = re.sub(r"<[^>]*>", "", msg).strip()
+        if len(clean_msg) < 10:
+            raise ValidationError("Please provide at least 10 characters describing your experience.")
+        return clean_msg
+
+    def clean_rating(self):
+        r = self.cleaned_data.get("rating", 5)
+        try:
+            r = int(r)
+        except (ValueError, TypeError):
+            r = 5
+        if r < 1 or r > 5:
+            raise ValidationError("Rating must be between 1 and 5 stars.")
+        return r
+
 
