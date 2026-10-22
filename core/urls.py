@@ -268,6 +268,11 @@ urlpatterns = [
     path("admin-reviews/", views.admin_reviews, name="admin_reviews"),
     path("admin-reviews/add/", views.admin_add_review, name="admin_add_review"),
     path(
+        "admin-reviews/sync-google/",
+        views.admin_sync_google_reviews,
+        name="admin_sync_google_reviews",
+    ),
+    path(
         "admin-reviews/toggle/<int:review_id>/",
         views.toggle_review_approval,
         name="toggle_review_approval",

@@ -17,12 +17,36 @@
       <p>Approve patient reviews to showcase on the public website home page.</p>
     </div>
   </div>
-  <div class="page-header-actions">
+  <div class="page-header-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    <form method="POST" action="{% url 'admin_sync_google_reviews' %}" style="display: inline-block; margin: 0;">
+      {% csrf_token %}
+      <button type="submit" class="topbar-action-link" style="background: rgba(66, 133, 244, 0.12); color: #1a73e8; border: 1px solid rgba(66, 133, 244, 0.3); font-size: 0.85rem; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+        <i class="fab fa-google"></i> Sync Google Reviews
+      </button>
+    </form>
     <a href="{% url 'admin_add_review' %}" class="topbar-action-link btn-topbar-primary">
       <i class="fas fa-plus-circle"></i> Add Testimonial
     </a>
   </div>
 </div>
+
+<!-- ════ GOOGLE INTEGRATION STATUS BANNER ════ -->
+{% if google_config.is_configured %}
+<div style="background: rgba(40, 167, 69, 0.08); border: 1px solid rgba(40, 167, 69, 0.25); border-radius: 12px; padding: 12px 18px; margin-bottom: 24px; font-size: 0.86rem; color: #1e7e34; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+  <span>
+    <i class="fab fa-google" style="color: #4285f4; margin-right: 6px; font-size: 1rem;"></i>
+    <strong>Google Places API Connected:</strong> Place ID <code>{{ google_config.place_id }}</code>. Automatic synchronization and official Google rating integration are active.
+  </span>
+  <span style="font-size: 0.78rem; color: #64748b; font-weight: 600;">Server Cache TTL: {{ google_config.cache_ttl }}s</span>
+</div>
+{% else %}
+<div style="background: rgba(245, 197, 24, 0.12); border: 1px solid rgba(245, 197, 24, 0.35); border-radius: 12px; padding: 12px 18px; margin-bottom: 24px; font-size: 0.86rem; color: #856404; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+  <span>
+    <i class="fab fa-google" style="margin-right: 6px; font-size: 1rem;"></i>
+    <strong>Google Integration Status:</strong> Direct verified Google Review creation link is active for patients. (To enable automated periodic review imports via API, configure <code>GOOGLE_MAPS_API_KEY</code> and <code>GOOGLE_PLACE_ID</code> in environment).
+  </span>
+</div>
+{% endif %}
 
 <!-- ════ REVIEWS METRICS ════ -->
 <div class="admin-stats-grid">
@@ -52,7 +76,27 @@
     </div>
     <div class="stat-info">
       <div class="stat-val">{{ pending }}</div>
-      <div class="stat-lbl">Pending Review</div>
+      <div class="stat-lbl">Pending Moderation</div>
+    </div>
+  </div>
+
+  <div class="admin-stat-card">
+    <div class="stat-icon-wrap" style="background: rgba(2, 132, 199, 0.15); color: #0284c7;">
+      <i class="fas fa-globe"></i>
+    </div>
+    <div class="stat-info">
+      <div class="stat-val">{{ website_count }}</div>
+      <div class="stat-lbl">Website Submissions</div>
+    </div>
+  </div>
+
+  <div class="admin-stat-card">
+    <div class="stat-icon-wrap" style="background: rgba(66, 133, 244, 0.15); color: #1a73e8;">
+      <i class="fab fa-google"></i>
+    </div>
+    <div class="stat-info">
+      <div class="stat-val">{{ google_count }}</div>
+      <div class="stat-lbl">Google Reviews</div>
     </div>
   </div>
 </div>
@@ -69,16 +113,27 @@
       </p>
     </div>
     
-    <!-- Filter Tabs -->
-    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-      <a href="?status=all" class="badge-status {% if status_filter == 'all' or not status_filter %}badge-info{% else %}badge-secondary{% endif %}" style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem;">
+    <!-- Filter Tabs (Status & Source) -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+      <!-- Status Tabs -->
+      <a href="?status=all{% if source_filter != 'all' %}&source={{ source_filter }}{% endif %}" class="badge-status {% if status_filter == 'all' or not status_filter %}badge-info{% else %}badge-secondary{% endif %}" style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem;">
         All ({{ total }})
       </a>
-      <a href="?status=pending" class="badge-status {% if status_filter == 'pending' %}badge-pending{% else %}badge-secondary{% endif %}" style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem;">
+      <a href="?status=pending{% if source_filter != 'all' %}&source={{ source_filter }}{% endif %}" class="badge-status {% if status_filter == 'pending' %}badge-pending{% else %}badge-secondary{% endif %}" style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem;">
         <i class="fas fa-clock"></i> Pending ({{ pending }})
       </a>
-      <a href="?status=approved" class="badge-status {% if status_filter == 'approved' %}badge-success{% else %}badge-secondary{% endif %}" style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem;">
-        <i class="fas fa-check"></i> Approved &amp; Live ({{ approved }})
+      <a href="?status=approved{% if source_filter != 'all' %}&source={{ source_filter }}{% endif %}" class="badge-status {% if status_filter == 'approved' %}badge-success{% else %}badge-secondary{% endif %}" style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem;">
+        <i class="fas fa-check"></i> Approved ({{ approved }})
+      </a>
+
+      <span style="color: var(--admin-border); margin: 0 4px;">|</span>
+
+      <!-- Source Tabs -->
+      <a href="?source=website{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="badge-status {% if source_filter == 'website' %}badge-info{% else %}badge-secondary{% endif %}" style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem;">
+        <i class="fas fa-globe"></i> Website ({{ website_count }})
+      </a>
+      <a href="?source=google{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="badge-status {% if source_filter == 'google' %}badge-info{% else %}badge-secondary{% endif %}" style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem;">
+        <i class="fab fa-google"></i> Google ({{ google_count }})
       </a>
     </div>
   </div>

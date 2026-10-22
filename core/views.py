@@ -876,6 +876,7 @@ def submit_review(request):
 def admin_reviews(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
+    from .google_reviews import get_google_config
     hospital = resolve_hospital(request.user)
     if not request.user.is_superuser and hospital:
         base_reviews = Review.objects.filter(hospital=hospital).order_by("-created_at")
@@ -885,14 +886,24 @@ def admin_reviews(request):
     total_count = base_reviews.count()
     approved_count = base_reviews.filter(is_approved=True).count()
     pending_count = base_reviews.filter(is_approved=False).count()
+    google_count = base_reviews.filter(source="Google Review").count()
+    website_count = base_reviews.exclude(source="Google Review").count()
 
     status_filter = request.GET.get("status", "all").strip().lower()
+    source_filter = request.GET.get("source", "all").strip().lower()
+
+    reviews = base_reviews
     if status_filter == "pending":
-        reviews = base_reviews.filter(is_approved=False)
+        reviews = reviews.filter(is_approved=False)
     elif status_filter == "approved":
-        reviews = base_reviews.filter(is_approved=True)
-    else:
-        reviews = base_reviews
+        reviews = reviews.filter(is_approved=True)
+
+    if source_filter == "google":
+        reviews = reviews.filter(source="Google Review")
+    elif source_filter == "website":
+        reviews = reviews.exclude(source="Google Review")
+
+    google_config = get_google_config()
 
     return render(
         request,
@@ -903,9 +914,41 @@ def admin_reviews(request):
             "approved": approved_count,
             "pending": pending_count,
             "pending_count": pending_count,
+            "google_count": google_count,
+            "website_count": website_count,
             "status_filter": status_filter,
+            "source_filter": source_filter,
+            "google_config": google_config,
         },
     )
+
+
+@login_required
+def admin_sync_google_reviews(request):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+    if request.method == "POST":
+        from .google_reviews import sync_google_reviews_to_db, get_google_config
+        config = get_google_config()
+        if not config["is_configured"]:
+            messages.warning(
+                request,
+                "Google Places API key or Place ID is not configured in the environment. Automatic review sync requires GOOGLE_MAPS_API_KEY and GOOGLE_PLACE_ID.",
+            )
+            return redirect("admin_reviews")
+        result = sync_google_reviews_to_db(force_refresh=True)
+        if result.get("synced"):
+            count = result.get("created_count", 0)
+            rating = result.get("rating", 5.0)
+            total = result.get("user_ratings_total", 0)
+            messages.success(
+                request,
+                f"Successfully synchronized Google Reviews! Rating: {rating}★ ({total} total reviews). Imported {count} new reviews.",
+            )
+        else:
+            err = result.get("error", "Unable to sync Google reviews.")
+            messages.warning(request, f"Google sync notice: {err}")
+    return redirect("admin_reviews")
 
 
 @login_required

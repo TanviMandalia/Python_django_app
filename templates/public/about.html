@@ -1267,13 +1267,123 @@
             will-change: transform;
         }
 
-        * {
-            max-width: 100%;
+        /*========== CLINIC FACILITIES & GALLERY ==========*/
+        .clinic-facility-section {
+            background: #f8fafc;
+            padding: 70px 0;
         }
 
-        img {
-            max-width: 100%;
-            height: auto;
+        .clinic-gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+            gap: 22px;
+            margin-bottom: 35px;
+        }
+
+        .clinic-photo-card {
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            height: 260px;
+            position: relative;
+        }
+
+        .clinic-photo-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .clinic-photo-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .team-structure-box {
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 14px;
+            padding: 24px;
+            text-align: center;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        .team-structure-box h4 {
+            color: #1e293b;
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .team-structure-box p {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        /*========== PATIENT RESULTS GALLERY ==========*/
+        .patient-results-section {
+            padding: 70px 0;
+            background: #ffffff;
+        }
+
+        .results-gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+            gap: 18px;
+        }
+
+        .result-image-box {
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-image-box img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .result-image-caption {
+            padding: 10px 12px;
+            background: #ffffff;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .result-image-caption span {
+            font-weight: 700;
+            font-size: 0.82rem;
+            color: #1e293b;
+        }
+
+        .result-image-caption small {
+            color: #10b981;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .privacy-notice-box {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 14px 20px;
+            margin-top: 25px;
+            font-size: 0.85rem;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
     </style>
     <link rel="stylesheet" href="{% static 'css/style.css' %}" />
@@ -1507,12 +1617,111 @@
         </div>
     </section>
 
+    <!-- ── CLINIC FACILITIES & ENVIRONMENT ───────────────── -->
+    <section class="clinic-facility-section" id="facilities">
+        <div class="container">
+            <div class="section-title">
+                <h2>Our Clinic <span>Environment &amp; Facilities</span></h2>
+                <p>Clean, modern, and fully equipped for comprehensive physical rehabilitation in Jamnagar</p>
+                <div class="divider"></div>
+            </div>
+
+            <div class="clinic-gallery-grid">
+                <div class="clinic-photo-card">
+                    <img src="{% static 'images/clinic_image_outdoor.webp' %}" alt="Clinic Exterior - Dr. Dhvani Patalia Physio Rehab" loading="lazy">
+                </div>
+                <div class="clinic-photo-card">
+                    <img src="{% static 'images/clinic_image.webp' %}" alt="Clinic Interior Treatment Facility" loading="lazy">
+                </div>
+                <div class="clinic-photo-card">
+                    <img src="{% static 'images/Dhvani_Patalia.jpeg' %}" alt="Dr. Dhvani Patalia Consultation Area" loading="lazy">
+                </div>
+            </div>
+
+            <!-- Assistant Physiotherapists & Clinical Support Team -->
+            <div class="team-structure-box">
+                <h4><i class="fas fa-user-friends" style="color:#F5C518; margin-right: 6px;"></i> Dedicated Clinical Team</h4>
+                <p>
+                    Dr. Dhvani Patalia is supported by qualified assistant physiotherapists and compassionate clinical staff dedicated to guiding your daily exercise protocols, therapy sessions, and rehabilitation progress.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── REAL PATIENT REHABILITATION RESULTS ──────────────── -->
+    <section class="patient-results-section" id="results">
+        <div class="container">
+            <div class="section-title">
+                <h2>Documented <span>Patient Milestones</span></h2>
+                <p>Real recovery milestones under professional clinical care</p>
+                <div class="divider"></div>
+            </div>
+
+            <div class="results-gallery-grid">
+                <div class="result-image-box">
+                    <img src="{% static 'images/paitent-1.webp' %}" alt="Arm Movement Rehabilitation" width="816" height="1020" loading="lazy" decoding="async">
+                    <div class="result-image-caption">
+                        <span>Arm Mobility Restoration</span>
+                        <small>Clinical Progress</small>
+                    </div>
+                </div>
+
+                <div class="result-image-box">
+                    <img src="{% static 'images/paitent-2.webp' %}" alt="Shoulder Mobility Improvement" width="970" height="1020" loading="lazy" decoding="async">
+                    <div class="result-image-caption">
+                        <span>Shoulder Range of Motion</span>
+                        <small>Active Rehab</small>
+                    </div>
+                </div>
+
+                <div class="result-image-box">
+                    <img src="{% static 'images/paitent-3.webp' %}" alt="Facial Motor Function Rehabilitation" width="816" height="1020" loading="lazy" decoding="async">
+                    <div class="result-image-caption">
+                        <span>Facial Muscle Rehab</span>
+                        <small>Targeted Therapy</small>
+                    </div>
+                </div>
+
+                <div class="result-image-box">
+                    <img src="{% static 'images/paitent-4.webp' %}" alt="Spine and Back Flexibility Recovery" width="864" height="1020" loading="lazy" decoding="async">
+                    <div class="result-image-caption">
+                        <span>Spine Flexibility</span>
+                        <small>Postural Alignment</small>
+                    </div>
+                </div>
+
+                <div class="result-image-box">
+                    <img src="{% static 'images/paitent-5.webp' %}" alt="Posture Correction Therapy" width="1020" height="1020" loading="lazy" decoding="async">
+                    <div class="result-image-caption">
+                        <span>Postural Correction</span>
+                        <small>Functional Balance</small>
+                    </div>
+                </div>
+
+                <div class="result-image-box">
+                    <img src="{% static 'images/paitent-6.jpg' %}" alt="Lower Limb Functional Alignment" width="141" height="141" loading="lazy" decoding="async">
+                    <div class="result-image-caption">
+                        <span>Lower Limb Stability</span>
+                        <small>Strength Program</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="privacy-notice-box">
+                <i class="fas fa-shield-alt text-success" style="font-size: 1.25rem; color: #10b981; flex-shrink: 0;"></i>
+                <div>
+                    <strong>Patient Privacy &amp; Consent Assurance:</strong> All patient results and photographs are displayed with explicit authorized consent. In compliance with healthcare confidentiality standards, personal identifiers and private medical charts remain strictly confidential.
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- ── CTA BANNER ─────────────────────────── -->
     <div class="cta-section">
         <div class="container">
             <h2>Ready to Start Your Recovery?</h2>
             <p>Book your consultation with Dr. Dhvani Patalia and take the first step towards a pain-free life.</p>
-            <a href="{% url 'book_appointment' %}" class="btn-dark">📅 Book an Appointment</a>
+            <a href="{% url 'public_book_appointment' %}" class="btn-dark">📅 Book an Appointment</a>
         </div>
     </div>
 

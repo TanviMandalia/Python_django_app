@@ -185,6 +185,66 @@ class ReviewsEndToEndIntegrationTests(BaseHospitalTestCase):
         self.assertEqual(len(res_pending.context["reviews"]), 1)
         self.assertEqual(res_pending.context["reviews"][0].reviewer_name, "Rev2")
 
+    def test_admin_review_source_filtering_and_counts(self):
+        """Admin can filter reviews by source (website vs google) and see accurate counts."""
+        Review.objects.create(hospital=self.hospital, reviewer_name="WebUser", rating=5, message="Web Msg", source="Website Review", is_approved=True)
+        Review.objects.create(hospital=self.hospital, reviewer_name="GoogleUser", rating=5, message="Google Msg", source="Google Review", external_review_id="g_12345", is_approved=True)
+
+        self.client.force_login(self.admin_user)
+        res = self.client.get(self.admin_reviews_url)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.context["website_count"], 1)
+        self.assertEqual(res.context["google_count"], 1)
+
+        # Filter by website source
+        res_web = self.client.get(f"{self.admin_reviews_url}?source=website")
+        self.assertEqual(len(res_web.context["reviews"]), 1)
+        self.assertEqual(res_web.context["reviews"][0].reviewer_name, "WebUser")
+
+        # Filter by google source
+        res_goog = self.client.get(f"{self.admin_reviews_url}?source=google")
+        self.assertEqual(len(res_goog.context["reviews"]), 1)
+        self.assertEqual(res_goog.context["reviews"][0].reviewer_name, "GoogleUser")
+
+    def test_admin_sync_google_reviews_unconfigured_safe_handling(self):
+        """When Google Places API is unconfigured, sync endpoint warns gracefully without crashing."""
+        self.client.force_login(self.admin_user)
+        with patch("core.google_reviews.get_google_config", return_value={"is_configured": False}):
+            res = self.client.post(reverse("admin_sync_google_reviews"), follow=True)
+            self.assertEqual(res.status_code, 200)
+            self.assertContains(res, "Google Places API key or Place ID is not configured")
+
+    def test_admin_sync_google_reviews_success(self):
+        """When Google Places API is configured, sync endpoint imports reviews and reports metrics."""
+        self.client.force_login(self.admin_user)
+        mock_result = {
+            "synced": True,
+            "created_count": 2,
+            "rating": 5.0,
+            "user_ratings_total": 20,
+            "status": "SUCCESS",
+        }
+        with patch("core.google_reviews.get_google_config", return_value={"is_configured": True}), \
+             patch("core.google_reviews.sync_google_reviews_to_db", return_value=mock_result):
+            res = self.client.post(reverse("admin_sync_google_reviews"), follow=True)
+            self.assertEqual(res.status_code, 200)
+            self.assertContains(res, "Successfully synchronized Google Reviews")
+            self.assertContains(res, "Imported 2 new reviews")
+
+    def test_google_review_redirect_security(self):
+        """Review Google redirect validates safe domains and rejects open redirects."""
+        redirect_url = reverse("review_google_redirect")
+
+        # Malicious open redirect target is rejected
+        res_bad = self.client.get(f"{redirect_url}?target=https://malicious-phishing-site.com", follow=True)
+        self.assertEqual(res_bad.status_code, 200)
+        self.assertContains(res_bad, "Invalid external destination")
+
+        # Valid Google review destination is accepted
+        res_good = self.client.get(f"{redirect_url}?target=https://search.google.com/local/writereview?placeid=ChIJ123")
+        self.assertEqual(res_good.status_code, 302)
+        self.assertEqual(res_good.url, "https://search.google.com/local/writereview?placeid=ChIJ123")
+
 
 class AppointmentsEndToEndIntegrationTests(BaseHospitalTestCase):
     def setUp(self):
