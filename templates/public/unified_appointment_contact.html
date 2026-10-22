@@ -1,0 +1,1489 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ page_title }} | Dr. Dhvani Patalia Physio Rehab Jamnagar</title>
+  <meta name="description" content="Request a physiotherapy consultation or contact Dr. Dhvani Patalia Physio Rehab in Jamnagar. Choose preferred dates, morning or evening shifts, or send our clinical team a message." />
+  <link rel="canonical" href="{{ canonical_url|default:request.build_absolute_uri }}">
+  {% if google_site_verification %}<meta name="google-site-verification" content="{{ google_site_verification }}">{% endif %}
+
+  <!-- Open Graph Metadata -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dr. Dhvani Patalia Physio Rehab">
+  <meta property="og:url" content="{{ canonical_url|default:request.build_absolute_uri }}">
+  <meta property="og:title" content="{{ page_title }} | Dr. Dhvani Patalia Physio Rehab">
+  <meta property="og:description" content="Request an in-person physical therapy session or reach out to our clinic team directly in Jamnagar, Gujarat.">
+  <meta property="og:image" content="{{ canonical_base }}{% static 'images/clinic_image_outdoor.webp' %}">
+  <meta property="og:locale" content="en_IN">
+
+  <!-- Twitter Card Metadata -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ page_title }} | Dr. Dhvani Patalia Physio Rehab">
+  <meta name="twitter:description" content="Book an appointment or contact Dr. Dhvani Patalia Physio Rehab in Jamnagar. Professional physical rehabilitation and chiropractic care.">
+  <meta name="twitter:image" content="{{ canonical_base }}{% static 'images/clinic_image_outdoor.webp' %}">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+
+  <!-- Preconnect CDNs & Fonts -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" /></noscript>
+  <link rel="stylesheet" href="{% static 'css/animations.css' %}">
+
+  <!-- Schema.org JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "{{ canonical_base }}/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Appointment & Contact",
+            "item": "{{ canonical_url|default:request.build_absolute_uri }}"
+          }
+        ]
+      },
+      {
+        "@type": "MedicalClinic",
+        "@id": "{{ canonical_url|default:request.build_absolute_uri }}#clinic",
+        "name": "Dr. Dhvani Patalia Physio Rehab",
+        "url": "{{ canonical_base }}/",
+        "telephone": "+91 94095 10501",
+        "email": "physio.rehab.guj@gmail.com",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Ground Floor, Narayan Cottage, Bedi Rd, opp. New Super Medical, Panchasar, Pancheshwar Tower",
+          "addressLocality": "Jamnagar",
+          "addressRegion": "Gujarat",
+          "postalCode": "361006",
+          "addressCountry": "IN"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 22.4707,
+          "longitude": 70.0577
+        },
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            "opens": "10:00",
+            "closes": "13:00"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            "opens": "16:00",
+            "closes": "20:00"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Sunday"],
+            "opens": "10:00",
+            "closes": "13:00"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Page Hero */
+    .page-hero {
+      background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+      color: #ffffff;
+      padding: clamp(45px, 7vw, 70px) 20px clamp(40px, 6vw, 60px);
+      text-align: center;
+      position: relative;
+      border-bottom: 2px solid rgba(245, 197, 24, 0.25);
+    }
+
+    .page-hero-inner {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .page-hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(245, 197, 24, 0.12);
+      color: #F5C518;
+      border: 1px solid rgba(245, 197, 24, 0.35);
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .page-hero h1 {
+      font-size: clamp(2rem, 4.5vw, 2.75rem);
+      font-weight: 800;
+      margin: 0 0 12px 0;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      line-height: 1.25;
+    }
+
+    .page-hero h1 span {
+      color: #F5C518;
+    }
+
+    .page-hero p.subtitle {
+      font-size: clamp(1rem, 2.2vw, 1.15rem);
+      color: #cbd5e1;
+      max-width: 720px;
+      margin: 0 auto 20px auto;
+      line-height: 1.6;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .breadcrumb a {
+      color: #F5C518;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    /* Main Container */
+    .main-wrap {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: clamp(35px, 5vw, 55px) 20px 80px;
+    }
+
+    /* Segmented Tab Pill Selector */
+    .unified-switch-container {
+      max-width: 650px;
+      margin: 0 auto 35px auto;
+      background: #ffffff;
+      padding: 6px;
+      border-radius: 50px;
+      box-shadow: 0 6px 22px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e2e8f0;
+      display: flex;
+      gap: 6px;
+    }
+
+    .form-switch-btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 20px;
+      border-radius: 40px;
+      font-size: 0.96rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      outline: none;
+    }
+
+    .form-switch-btn:hover:not(.active) {
+      color: #0f172a;
+      background: #f1f5f9;
+    }
+
+    .form-switch-btn:focus-visible {
+      box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.4);
+    }
+
+    .form-switch-btn.active {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+    }
+
+    .form-switch-btn.active i {
+      color: #F5C518;
+    }
+
+    /* Layout Grid */
+    .booking-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    @media (min-width: 992px) {
+      .booking-grid {
+        grid-template-columns: 1.6fr 1fr;
+        gap: 40px;
+      }
+    }
+
+    /* Card Panels */
+    .booking-card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: clamp(24px, 4vw, 40px);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e2e8f0;
+      position: relative;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active-panel {
+      display: block;
+      animation: fadeInTab 0.35s ease-out;
+    }
+
+    @keyframes fadeInTab {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* No-JS fallback: stack both panels cleanly */
+    noscript .tab-panel {
+      display: block !important;
+      margin-bottom: 35px;
+    }
+    noscript .unified-switch-container {
+      display: none !important;
+    }
+
+    .card-heading {
+      font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: -0.3px;
+    }
+
+    .card-heading i {
+      color: #F5C518;
+      font-size: 1.25rem;
+    }
+
+    .card-intro {
+      color: #64748b;
+      font-size: 0.95rem;
+      margin: 0 0 28px 0;
+      line-height: 1.6;
+    }
+
+    /* Alerts */
+    .alert-box {
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 0.92rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      line-height: 1.5;
+    }
+
+    .alert-success {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      color: #166534;
+    }
+
+    .alert-error {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+    }
+
+    .alert-info {
+      background: #f0f9ff;
+      border: 1px solid #7dd3fc;
+      color: #075985;
+    }
+
+    .alert-warning {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+
+    /* Form Controls */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 640px) {
+      .form-row {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 7px;
+    }
+
+    .required {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 15px;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .input-icon.textarea-icon {
+      top: 15px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 16px 12px 42px;
+      font-size: 0.95rem;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #1e293b;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: #F5C518;
+      box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.22);
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 100px;
+      line-height: 1.5;
+    }
+
+    .field-hint {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-top: 5px;
+    }
+
+    .field-error {
+      color: #dc2626;
+      font-size: 0.82rem;
+      margin-top: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 500;
+    }
+
+    /* Radio Group for Contact Method */
+    .contact-method-group {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    @media (min-width: 480px) {
+      .contact-method-group {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .contact-method-card {
+      position: relative;
+    }
+
+    .contact-method-card input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .contact-method-card label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 12px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .contact-method-card input[type="radio"]:checked + label {
+      border-color: #F5C518;
+      background: #fffdf5;
+      color: #0f172a;
+      box-shadow: 0 2px 8px rgba(245, 197, 24, 0.2);
+    }
+
+    /* Consent Card */
+    .consent-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 24px;
+      margin-top: 8px;
+    }
+
+    .consent-card input[type="checkbox"] {
+      margin-top: 3px;
+      width: 17px;
+      height: 17px;
+      accent-color: #F5C518;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .consent-text {
+      font-size: 0.84rem;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .consent-text a {
+      color: #0284c7;
+      text-decoration: underline;
+    }
+
+    /* Submit Buttons */
+    .btn-submit-booking,
+    .btn-submit-contact {
+      width: 100%;
+      padding: 15px 24px;
+      background: linear-gradient(135deg, #F5C518 0%, #dfb00d 100%);
+      color: #111827;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 16px rgba(245, 197, 24, 0.35);
+      transition: all 0.25s ease;
+      outline: none;
+    }
+
+    .btn-submit-booking:hover,
+    .btn-submit-contact:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(245, 197, 24, 0.45);
+      background: linear-gradient(135deg, #fcd34d 0%, #eab308 100%);
+    }
+
+    .btn-submit-booking:active,
+    .btn-submit-contact:active {
+      transform: translateY(0);
+    }
+
+    .btn-submit-booking:disabled,
+    .btn-submit-contact:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Form Switch Prompt */
+    .form-switch-prompt {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid #f1f5f9;
+      text-align: center;
+      font-size: 0.88rem;
+      color: #64748b;
+    }
+
+    .form-switch-prompt button {
+      background: none;
+      border: none;
+      color: #0284c7;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    .form-switch-prompt button:hover {
+      color: #0369a1;
+    }
+
+    /* Success Card */
+    .success-card {
+      text-align: center;
+      padding: clamp(30px, 5vw, 50px) clamp(20px, 4vw, 36px);
+      border: 2px solid rgba(16, 185, 129, 0.3);
+      background: #ffffff;
+    }
+
+    .success-icon-wrap {
+      width: 72px;
+      height: 72px;
+      background: #ecfdf5;
+      color: #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 20px auto;
+      box-shadow: 0 0 0 10px rgba(16, 185, 129, 0.1);
+    }
+
+    .success-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 10px 0;
+    }
+
+    .success-ref-badge {
+      display: inline-block;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 0.95rem;
+      margin-bottom: 24px;
+    }
+
+    .success-details-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      margin-bottom: 24px;
+    }
+
+    .success-details-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed #e2e8f0;
+      font-size: 0.9rem;
+    }
+
+    .success-details-row:last-child {
+      border-bottom: none;
+    }
+
+    .success-details-label {
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .success-details-val {
+      color: #0f172a;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .status-badge-pending {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #fffbeb;
+      color: #b45309;
+      border: 1px solid #fde68a;
+      padding: 3px 10px;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .success-notice {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 14px 18px;
+      color: #1e40af;
+      font-size: 0.85rem;
+      text-align: left;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    .success-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    @media (min-width: 480px) {
+      .success-actions {
+        flex-direction: row;
+        justify-content: center;
+      }
+    }
+
+    .btn-action-primary {
+      padding: 12px 24px;
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 10px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      transition: all 0.2s;
+    }
+
+    .btn-action-primary:hover {
+      background: #1e293b;
+      color: #F5C518;
+    }
+
+    .btn-action-outline {
+      padding: 12px 24px;
+      background: transparent;
+      color: #334155;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.92rem;
+      transition: all 0.2s;
+    }
+
+    .btn-action-outline:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    /* Sidebar Widgets */
+    .sidebar-widget {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 26px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e2e8f0;
+      margin-bottom: 24px;
+    }
+
+    .widget-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 18px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 12px;
+    }
+
+    .widget-title i {
+      color: #F5C518;
+    }
+
+    .hours-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .hours-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px dashed #f1f5f9;
+      font-size: 0.88rem;
+    }
+
+    .hours-item:last-child {
+      border-bottom: none;
+    }
+
+    .hours-day {
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .hours-time {
+      color: #64748b;
+      text-align: right;
+      line-height: 1.4;
+    }
+
+    .contact-item-sb {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+
+    .contact-item-sb:last-child {
+      margin-bottom: 0;
+    }
+
+    .contact-icon-sb {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #F5C518;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .contact-text-sb {
+      line-height: 1.45;
+    }
+
+    .contact-text-sb strong {
+      display: block;
+      color: #0f172a;
+      font-size: 0.86rem;
+    }
+
+    .contact-text-sb a {
+      color: #0284c7;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .contact-text-sb a:hover {
+      text-decoration: underline;
+    }
+
+    /* Privacy Modal Style */
+    .privacy-notice-box {
+      font-size: 0.82rem;
+      color: #64748b;
+      line-height: 1.5;
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ════ CLINIC PRELOADER ════ -->
+  {% with preloader_portal_title="Physiotherapy & Chiropractic Clinic" preloader_status_message="Preparing appointment &amp; contact portal&hellip;" %}
+    {% include "shared/preloader.html" %}
+  {% endwith %}
+
+  {% include 'shared/navbar.html' %}
+
+  <!-- ════ PAGE HERO ════ -->
+  <header class="page-hero">
+    <div class="page-hero-inner">
+      <div class="page-hero-badge kinetic-badge">
+        <i class="fas fa-calendar-check" aria-hidden="true"></i>
+        <span>Dr. Dhvani Patalia Physio Rehab &bull; Jamnagar</span>
+      </div>
+      <h1>Book Your Physiotherapy Appointment <span>or Contact Us</span></h1>
+      <p class="subtitle">
+        {{ page_subtitle }}
+      </p>
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{% url 'home' %}">Home</a>
+        <span aria-hidden="true">&rsaquo;</span>
+        <span style="color:#ffffff;">Appointment &amp; Contact</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ════ MAIN CONTENT WRAPPER ════ -->
+  <main class="main-wrap" id="mainContent">
+
+    <!-- Global Messages Container -->
+    {% if messages %}
+      <div class="messages-container" style="max-width: 900px; margin: 0 auto 28px auto;" role="status">
+        {% for message in messages %}
+          <div class="alert-box {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% elif message.tags == 'info' %}alert-info{% else %}alert-warning{% endif %}">
+            <i class="fas {% if message.tags == 'error' %}fa-exclamation-triangle{% elif message.tags == 'success' %}fa-check-circle{% elif message.tags == 'info' %}fa-info-circle{% else %}fa-bell{% endif %}" aria-hidden="true"></i>
+            <div>{{ message }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Segmented Tab Switcher -->
+    <div class="unified-switch-container" role="tablist" aria-label="Select Form Type">
+      <button type="button" class="form-switch-btn {% if active_tab != 'contact' %}active{% endif %}" id="tabBtnAppointment" role="tab" aria-selected="{% if active_tab != 'contact' %}true{% else %}false{% endif %}" aria-controls="panelAppointment" onclick="switchFormTab('appointment')">
+        <i class="fas fa-calendar-plus" aria-hidden="true"></i>
+        <span>1. Book Appointment</span>
+      </button>
+      <button type="button" class="form-switch-btn {% if active_tab == 'contact' %}active{% endif %}" id="tabBtnContact" role="tab" aria-selected="{% if active_tab == 'contact' %}true{% else %}false{% endif %}" aria-controls="panelContact" onclick="switchFormTab('contact')">
+        <i class="fas fa-envelope-open-text" aria-hidden="true"></i>
+        <span>2. Send Message / Contact</span>
+      </button>
+    </div>
+
+    <!-- 2-Column Responsive Grid -->
+    <div class="booking-grid">
+
+      <!-- ════ LEFT COLUMN: FORMS (BOOKING OR CONTACT) ════ -->
+      <div>
+
+        <!-- ── TAB PANEL 1: BOOKING AN APPOINTMENT ── -->
+        <div id="panelAppointment" class="tab-panel {% if active_tab != 'contact' %}active-panel{% endif %}" role="tabpanel" aria-labelledby="tabBtnAppointment">
+          
+          {% if booking_success and booking_obj %}
+            <!-- SUCCESS CONFIRMATION CARD -->
+            <div class="booking-card success-card" role="status" aria-live="polite">
+              <div class="success-icon-wrap">
+                <i class="fas fa-check" aria-hidden="true"></i>
+              </div>
+              <h2 class="success-title">Appointment Request Received!</h2>
+              
+              <div class="success-ref-badge">
+                Reference ID: <strong>{{ booking_obj.reference_id }}</strong>
+              </div>
+
+              <div class="success-details-box">
+                <div class="success-details-row">
+                  <span class="success-details-label">Patient Name:</span>
+                  <span class="success-details-val">{{ booking_obj.patient_name }}</span>
+                </div>
+                <div class="success-details-row">
+                  <span class="success-details-label">Requested Date:</span>
+                  <span class="success-details-val">{{ booking_obj.preferred_date|date:"l, d F Y" }}</span>
+                </div>
+                <div class="success-details-row">
+                  <span class="success-details-label">Preferred Time Slot:</span>
+                  <span class="success-details-val">{{ booking_obj.preferred_time }}</span>
+                </div>
+                <div class="success-details-row">
+                  <span class="success-details-label">Contact Method:</span>
+                  <span class="success-details-val">{{ booking_obj.get_preferred_contact_method_display }} ({{ booking_obj.phone }})</span>
+                </div>
+                {% if booking_obj.service_or_reason %}
+                <div class="success-details-row">
+                  <span class="success-details-label">Reason / Notes:</span>
+                  <span class="success-details-val">{{ booking_obj.service_or_reason }}</span>
+                </div>
+                {% endif %}
+                <div class="success-details-row">
+                  <span class="success-details-label">Current Status:</span>
+                  <span class="status-badge-pending">
+                    <i class="fas fa-clock" aria-hidden="true"></i> Awaiting Confirmation
+                  </span>
+                </div>
+              </div>
+
+              <div class="success-notice">
+                <strong><i class="fas fa-info-circle"></i> What happens next?</strong><br>
+                Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic.
+                We will contact you using the details provided to finalize your session.
+                <em>Please note: Submitting an online request does not guarantee the selected appointment slot.</em>
+              </div>
+
+              <div class="success-actions">
+                <a href="{% url 'public_book_appointment' %}" class="btn-action-primary">
+                  <i class="fas fa-calendar-plus" aria-hidden="true"></i> Request Another Appointment
+                </a>
+                <a href="{% url 'home' %}" class="btn-action-outline">
+                  Return to Home
+                </a>
+              </div>
+            </div>
+
+          {% else %}
+
+            <!-- ACTIVE BOOKING FORM CARD -->
+            <div class="booking-card hover-lift" id="book-appointment">
+              <h2 class="card-heading">
+                <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                Request Your Session
+              </h2>
+              <p class="card-intro">
+                Please provide your contact information and preferred timing. No login or password is required.
+                Our clinic team will review and contact you to confirm your consultation.
+              </p>
+
+              <form method="POST" action="{% url 'public_book_appointment' %}" id="publicBookingForm" novalidate onsubmit="return handleBookingSubmit(event)">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="appointment" />
+
+                <!-- Honeypot anti-spam field (hidden from real users) -->
+                <div style="display:none !important;" aria-hidden="true">
+                  <label for="id_website">Leave this field blank</label>
+                  <input type="text" name="website" id="id_website" value="" autocomplete="off" tabindex="-1">
+                </div>
+
+                <!-- 1. Patient Name -->
+                <div class="form-group">
+                  <label for="id_patient_name" class="form-label">
+                    Patient Full Name <span class="required" aria-hidden="true">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-user input-icon" aria-hidden="true"></i>
+                    {{ form.patient_name }}
+                  </div>
+                  {% if form.patient_name.errors %}
+                    <div class="field-error" role="alert">
+                      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                      {{ form.patient_name.errors.0 }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <!-- 2. Contact Details (Email & Phone) -->
+                <div class="form-row">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label for="id_email" class="form-label">
+                      Email Address <span class="required" aria-hidden="true">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <i class="fas fa-envelope input-icon" aria-hidden="true"></i>
+                      {{ form.email }}
+                    </div>
+                    {% if form.email.errors %}
+                      <div class="field-error" role="alert">
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        {{ form.email.errors.0 }}
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label for="id_phone" class="form-label">
+                      Phone Number <span class="required" aria-hidden="true">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <i class="fas fa-phone input-icon" aria-hidden="true"></i>
+                      {{ form.phone }}
+                    </div>
+                    {% if form.phone.errors %}
+                      <div class="field-error" role="alert">
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        {{ form.phone.errors.0 }}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- 3. Preferred Date & Time Slot -->
+                <div class="form-row">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label for="id_preferred_date" class="form-label">
+                      Preferred Date <span class="required" aria-hidden="true">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <i class="fas fa-calendar-day input-icon" aria-hidden="true"></i>
+                      {{ form.preferred_date }}
+                    </div>
+                    <div class="field-hint">Clinic open Monday through Saturday</div>
+                    {% if form.preferred_date.errors %}
+                      <div class="field-error" role="alert">
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        {{ form.preferred_date.errors.0 }}
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label for="id_preferred_time" class="form-label">
+                      Preferred Time Slot <span class="required" aria-hidden="true">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <i class="fas fa-clock input-icon" aria-hidden="true"></i>
+                      {{ form.preferred_time }}
+                    </div>
+                    <div class="field-hint">Morning (10 AM–1 PM) | Evening (4 PM–8 PM)</div>
+                    {% if form.preferred_time.errors %}
+                      <div class="field-error" role="alert">
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                        {{ form.preferred_time.errors.0 }}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- 4. Preferred Contact Method -->
+                <div class="form-group" style="margin-top:16px;">
+                  <span class="form-label">Preferred Contact Method</span>
+                  <div class="contact-method-group">
+                    <div class="contact-method-card">
+                      <input type="radio" name="preferred_contact_method" id="contact_phone" value="phone" {% if form.preferred_contact_method.value == 'phone' or not form.preferred_contact_method.value %}checked{% endif %}>
+                      <label for="contact_phone"><i class="fas fa-phone-alt"></i> Phone Call</label>
+                    </div>
+                    <div class="contact-method-card">
+                      <input type="radio" name="preferred_contact_method" id="contact_whatsapp" value="whatsapp" {% if form.preferred_contact_method.value == 'whatsapp' %}checked{% endif %}>
+                      <label for="contact_whatsapp"><i class="fab fa-whatsapp" style="color:#25d366;"></i> WhatsApp</label>
+                    </div>
+                    <div class="contact-method-card">
+                      <input type="radio" name="preferred_contact_method" id="contact_email" value="email" {% if form.preferred_contact_method.value == 'email' %}checked{% endif %}>
+                      <label for="contact_email"><i class="fas fa-envelope"></i> Email</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 5. Reason for Appointment / Treatment Required -->
+                <div class="form-group">
+                  <label for="id_service_or_reason" class="form-label">
+                    Reason for Appointment / Treatment Required (Optional)
+                  </label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-comment-medical input-icon textarea-icon" aria-hidden="true"></i>
+                    {{ form.service_or_reason }}
+                  </div>
+                  <div class="field-hint">Max 500 characters. You do not need to submit detailed medical histories.</div>
+                  {% if form.service_or_reason.errors %}
+                    <div class="field-error" role="alert">
+                      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                      {{ form.service_or_reason.errors.0 }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <!-- 6. Consent Checkbox & Privacy Notice -->
+                <div class="consent-card">
+                  {{ form.consent }}
+                  <div class="consent-text">
+                    <label for="id_consent" style="cursor:pointer; display:inline;">
+                      <strong>I agree to be contacted</strong> by Dr. Dhvani Patalia Physio Rehab regarding this appointment request and confirm that I have reviewed the clinic privacy notice.
+                    </label>
+                  </div>
+                </div>
+                {% if form.consent.errors %}
+                  <div class="field-error" style="margin-top:-10px; margin-bottom:16px;" role="alert">
+                    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                    {{ form.consent.errors.0 }}
+                  </div>
+                {% endif %}
+
+                <!-- 7. Submit Button -->
+                <button type="submit" class="btn-submit-booking btn-interactive" id="btnSubmitBooking">
+                  <i class="fas fa-paper-plane" aria-hidden="true" id="btnSubmitIcon"></i>
+                  <span id="btnSubmitText">Request Appointment</span>
+                </button>
+
+                <p style="text-align:center; font-size:0.8rem; color:#64748b; margin-top:14px; margin-bottom:0;">
+                  🔒 <em>Your personal details are securely handled and never shared with third parties.</em>
+                </p>
+
+                <!-- Alternate Switch Option -->
+                <div class="form-switch-prompt">
+                  Have a general inquiry or feedback instead?
+                  <button type="button" onclick="switchFormTab('contact')">Switch to General Contact Form &rarr;</button>
+                </div>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- ── TAB PANEL 2: CONTACT US / GENERAL ENQUIRY ── -->
+        <div id="panelContact" class="tab-panel {% if active_tab == 'contact' %}active-panel{% endif %}" role="tabpanel" aria-labelledby="tabBtnContact">
+          <div class="booking-card hover-lift" id="contact-us">
+            <h2 class="card-heading">
+              <i class="fas fa-envelope-open-text" aria-hidden="true"></i>
+              Send Us a Message
+            </h2>
+            <p class="card-intro">
+              Have questions regarding our chiropractic adjustments, rehabilitation therapies, or clinic location? Leave us a message below.
+            </p>
+
+            <form method="POST" action="{% url 'contact' %}" id="publicContactForm" novalidate onsubmit="return handleContactSubmit(event)">
+              {% csrf_token %}
+              <input type="hidden" name="form_type" value="contact" />
+
+              <!-- Honeypot anti-spam field -->
+              <div style="display:none !important;" aria-hidden="true">
+                <label for="id_contact_website">Leave this field blank</label>
+                <input type="text" name="website" id="id_contact_website" value="" autocomplete="off" tabindex="-1">
+              </div>
+
+              <!-- First & Last Name -->
+              <div class="form-row">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="id_first_name" class="form-label">
+                    First Name <span class="required" aria-hidden="true">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-user input-icon" aria-hidden="true"></i>
+                    <input type="text" class="form-control" name="first_name" id="id_first_name" placeholder="e.g., Rajesh" value="{{ contact_data.first_name|default:'' }}" required />
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="id_last_name" class="form-label">Last Name</label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-user input-icon" aria-hidden="true"></i>
+                    <input type="text" class="form-control" name="last_name" id="id_last_name" placeholder="e.g., Patel" value="{{ contact_data.last_name|default:'' }}" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Email & Phone -->
+              <div class="form-row">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="id_contact_email" class="form-label">
+                    Email Address <span class="required" aria-hidden="true">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-envelope input-icon" aria-hidden="true"></i>
+                    <input type="email" class="form-control" name="email" id="id_contact_email" placeholder="e.g., rajesh@example.com" value="{{ contact_data.email|default:'' }}" required />
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="id_contact_phone" class="form-label">Phone Number</label>
+                  <div class="input-wrapper">
+                    <i class="fas fa-phone input-icon" aria-hidden="true"></i>
+                    <input type="tel" class="form-control" name="phone" id="id_contact_phone" placeholder="e.g., +91 94095 10501" value="{{ contact_data.phone|default:'' }}" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Subject / Enquiry Type -->
+              <div class="form-group">
+                <label for="id_contact_subject" class="form-label">Subject / Inquiry Type</label>
+                <div class="input-wrapper">
+                  <i class="fas fa-tag input-icon" aria-hidden="true"></i>
+                  <select name="subject" id="id_contact_subject" class="form-control">
+                    <option value="General Enquiry" {% if contact_data.subject == 'General Enquiry' %}selected{% endif %}>General Enquiry</option>
+                    <option value="Book Appointment" {% if contact_data.subject == 'Book Appointment' %}selected{% endif %}>Book Appointment</option>
+                    <option value="Service Information" {% if contact_data.subject == 'Service Information' %}selected{% endif %}>Service Information</option>
+                    <option value="Home Visit Request" {% if contact_data.subject == 'Home Visit Request' %}selected{% endif %}>Home Visit Request</option>
+                    <option value="SaaS Partnership" {% if contact_data.subject == 'SaaS Partnership' %}selected{% endif %}>SaaS / Clinic Partnership</option>
+                    <option value="Other" {% if contact_data.subject == 'Other' %}selected{% endif %}>Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Message -->
+              <div class="form-group">
+                <label for="id_contact_message" class="form-label">
+                  Your Message <span class="required" aria-hidden="true">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <i class="fas fa-comment-dots input-icon textarea-icon" aria-hidden="true"></i>
+                  <textarea class="form-control" name="message" id="id_contact_message" rows="4" placeholder="How can we assist you?" required>{{ contact_data.message|default:'' }}</textarea>
+                </div>
+              </div>
+
+              <!-- Visitor Session Hidden Field -->
+              <input type="hidden" name="va_session" id="id_contact_va_session" value="" />
+
+              <!-- Marketing Consent (Optional) -->
+              <div class="form-group" style="margin-top: 10px;">
+                <label style="display: flex; align-items: flex-start; gap: 10px; font-weight: normal; font-size: 13.5px; color: #475569; cursor: pointer;">
+                  <input type="checkbox" name="marketing_consent" value="1" style="width: auto; min-height: auto; margin-top: 3px;" />
+                  <span>(Optional) I consent to receiving clinic updates and health news via email. We never sell your contact info.</span>
+                </label>
+              </div>
+
+              <div class="privacy-notice-box">
+                🔒 <em>Privacy Notice:</em> Your contact details are stored securely and used solely to reply to your inquiry. We do not collect medical history through this contact form.
+              </div>
+
+              <!-- Submit Button -->
+              <button type="submit" class="btn-submit-contact btn-interactive" id="btnSubmitContact" style="margin-top:20px;">
+                <i class="fas fa-paper-plane" aria-hidden="true" id="btnContactSubmitIcon"></i>
+                <span id="btnContactSubmitText">Send Message</span>
+              </button>
+
+              <!-- Alternate Switch Option -->
+              <div class="form-switch-prompt">
+                Looking to request an in-person appointment slot directly?
+                <button type="button" onclick="switchFormTab('appointment')">Switch to Appointment Request Form &rarr;</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ════ RIGHT COLUMN: CLINIC INFO, HOURS & CONTACT ════ -->
+      <aside aria-label="Clinic Hours and Contact Information">
+        
+        <!-- Widget 1: Working Hours -->
+        <div class="sidebar-widget hover-lift">
+          <h3 class="widget-title">
+            <i class="fas fa-clock" aria-hidden="true"></i> Clinic Working Hours
+          </h3>
+          <ul class="hours-list">
+            <li class="hours-item">
+              <span class="hours-day">Monday – Saturday</span>
+              <span class="hours-time">10:00 AM – 01:00 PM<br>04:00 PM – 08:00 PM</span>
+            </li>
+            <li class="hours-item">
+              <span class="hours-day">Sunday</span>
+              <span class="hours-time" style="color:#b45309; font-weight:600;">
+                By Appointment Only<br><small>Call +91 94095 10501</small>
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Widget 2: Direct Contact Channels -->
+        <div class="sidebar-widget hover-lift">
+          <h3 class="widget-title">
+            <i class="fas fa-phone-alt" aria-hidden="true"></i> Direct Clinic Channels
+          </h3>
+          
+          <div class="contact-item-sb">
+            <div class="contact-icon-sb">
+              <i class="fas fa-phone-alt" aria-hidden="true"></i>
+            </div>
+            <div class="contact-text-sb">
+              <strong>Phone Call</strong>
+              <a href="tel:9409510501">+91 94095 10501</a>
+            </div>
+          </div>
+
+          <div class="contact-item-sb">
+            <div class="contact-icon-sb">
+              <i class="fab fa-whatsapp" aria-hidden="true" style="color:#10b981;"></i>
+            </div>
+            <div class="contact-text-sb">
+              <strong>WhatsApp Support</strong>
+              <a href="https://wa.me/919409510501" target="_blank" rel="noopener noreferrer">Chat: +91 94095 10501</a>
+            </div>
+          </div>
+
+          <div class="contact-item-sb">
+            <div class="contact-icon-sb">
+              <i class="fas fa-envelope" aria-hidden="true" style="color:#0284c7;"></i>
+            </div>
+            <div class="contact-text-sb">
+              <strong>Email Address</strong>
+              <a href="mailto:physio.rehab.guj@gmail.com">physio.rehab.guj@gmail.com</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widget 3: Location & Address -->
+        <div class="sidebar-widget hover-lift">
+          <h3 class="widget-title">
+            <i class="fas fa-map-marker-alt" aria-hidden="true"></i> Clinic Location
+          </h3>
+          <p style="font-size:0.88rem; color:#475569; margin:0 0 14px 0; line-height:1.6;">
+            <strong>Dr. Dhvani Patalia Physio Rehab</strong><br>
+            Ground Floor, Narayan Cottage, Bedi Rd,<br>
+            opposite New Super Medical, Panchasar, Pancheshwar Tower,<br>
+            Jamnagar, Gujarat 361006, India
+          </p>
+          <a href="https://maps.google.com/?q=Dr.+Dhvani+Patalia+Physio+Rehab+Jamnagar" target="_blank" rel="noopener noreferrer" class="btn-action-outline" style="width:100%; font-size:0.86rem; padding:10px 16px;">
+            <i class="fas fa-directions" aria-hidden="true" style="color:#0284c7; margin-right:6px;"></i> Get Directions on Google Maps
+          </a>
+        </div>
+
+        <!-- Widget 4: Patient Reviews -->
+        <div class="sidebar-widget hover-lift" style="border-left: 4px solid #F5C518;">
+          <h3 class="widget-title" style="margin-bottom:12px;">
+            <i class="fas fa-star" aria-hidden="true" style="color:#d97706;"></i> Patient Reviews
+          </h3>
+          <p style="font-size:0.88rem; color:#475569; margin:0 0 14px 0; line-height:1.5;">
+            Had a consultation, chiropractic adjustment, or recovery therapy at our clinic?
+          </p>
+          <a href="{% url 'public_review' %}" class="btn-action-outline" style="width:100%; font-size:0.86rem; padding:10px 16px;">
+            <i class="fas fa-pen-alt" aria-hidden="true" style="color:#F5C518; margin-right:6px;"></i> Review Dr. Dhvani Patalia &rarr;
+          </a>
+        </div>
+
+      </aside>
+
+    </div>
+  </main>
+
+  {% include 'shared/footer.html' %}
+
+  <!-- Core Scripts -->
+  <script src="{% static 'js/layout.js' %}" defer></script>
+  <script src="{% static 'js/preloader.js' %}" defer></script>
+  <script src="{% static 'js/vendor/gsap.min.js' %}" defer></script>
+  <script src="{% static 'js/vendor/ScrollTrigger.min.js' %}" defer></script>
+  <script src="{% static 'js/animations.js' %}" defer></script>
+
+  <!-- Interactive Tab & Anti-Double-Submit Controller -->
+  <script>
+    function switchFormTab(tab) {
+      var tabBtnAppointment = document.getElementById("tabBtnAppointment");
+      var tabBtnContact = document.getElementById("tabBtnContact");
+      var panelAppointment = document.getElementById("panelAppointment");
+      var panelContact = document.getElementById("panelContact");
+
+      if (tab === "contact") {
+        if (tabBtnAppointment) {
+          tabBtnAppointment.classList.remove("active");
+          tabBtnAppointment.setAttribute("aria-selected", "false");
+        }
+        if (tabBtnContact) {
+          tabBtnContact.classList.add("active");
+          tabBtnContact.setAttribute("aria-selected", "true");
+        }
+        if (panelAppointment) {
+          panelAppointment.classList.remove("active-panel");
+        }
+        if (panelContact) {
+          panelContact.classList.add("active-panel");
+        }
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, null, "#contact-us");
+        }
+      } else {
+        if (tabBtnContact) {
+          tabBtnContact.classList.remove("active");
+          tabBtnContact.setAttribute("aria-selected", "false");
+        }
+        if (tabBtnAppointment) {
+          tabBtnAppointment.classList.add("active");
+          tabBtnAppointment.setAttribute("aria-selected", "true");
+        }
+        if (panelContact) {
+          panelContact.classList.remove("active-panel");
+        }
+        if (panelAppointment) {
+          panelAppointment.classList.add("active-panel");
+        }
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, null, "#book-appointment");
+        }
+      }
+    }
+
+    function handleBookingSubmit(e) {
+      var btn = document.getElementById("btnSubmitBooking");
+      var icon = document.getElementById("btnSubmitIcon");
+      var text = document.getElementById("btnSubmitText");
+      if (btn) {
+        btn.disabled = true;
+        if (icon) icon.className = "fas fa-spinner fa-spin";
+        if (text) text.textContent = "Submitting Request...";
+      }
+      return true;
+    }
+
+    function handleContactSubmit(e) {
+      var btn = document.getElementById("btnSubmitContact");
+      var icon = document.getElementById("btnContactSubmitIcon");
+      var text = document.getElementById("btnContactSubmitText");
+      if (btn) {
+        btn.disabled = true;
+        if (icon) icon.className = "fas fa-spinner fa-spin";
+        if (text) text.textContent = "Sending Message...";
+      }
+      return true;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      // Pick up visitor analytics session cookie for contact form
+      var m = document.cookie.match(/(^| )va_session=([^;]+)/);
+      if (m) {
+        var el = document.getElementById("id_contact_va_session");
+        if (el) el.value = m[2];
+      }
+
+      // Check URL hash for tab switching
+      var hash = window.location.hash.toLowerCase();
+      if (hash === "#contact" || hash === "#contact-us" || hash === "#panelcontact") {
+        switchFormTab("contact");
+      } else if (hash === "#appointment" || hash === "#book-appointment" || hash === "#panelappointment") {
+        switchFormTab("appointment");
+      }
+    });
+  </script>
+</body>
+
+</html>

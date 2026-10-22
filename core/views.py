@@ -23,6 +23,7 @@ from django.db.models import Q, Sum, Count
 from django.db import models, transaction, IntegrityError
 from django.http import JsonResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
@@ -318,38 +319,206 @@ def public_reviews_api(request):
     )
 
 
-def contact(request):
+# ========================================================
+# UNIFIED PUBLIC APPOINTMENT BOOKING & CONTACT US VIEW
+# ========================================================
+def unified_appointment_contact(request):
+    """
+    Unified Public Appointment Booking & Clinic Contact Page.
+    Merges appointment booking (PublicAppointmentRequest) and general clinic inquiries (VisitorLead)
+    into a single cohesive, accessible, mobile-responsive page.
+    Supports dual form processing, rate-limiting, honeypot spam protection, PRG pattern,
+    and automatic tab activation (?tab=appointment or ?tab=contact).
+    """
+    from .forms import PublicAppointmentRequestForm
+    from .models import PublicAppointmentRequest, VisitorLead, VisitorSession, Hospital
+    from .email_utils import (
+        send_public_appointment_request_notification,
+        send_clinic_email,
+        validate_recipient_email,
+        sanitize_header_value,
+    )
+    from .ip_utils import get_client_ip
+    from django.core.cache import cache
+
+    hospital = Hospital.objects.filter(is_active=True).first()
+
+    # Determine caller endpoint name for self-redirects
+    current_view_name = request.resolver_match.view_name if request.resolver_match else "appointment_contact"
+    if current_view_name not in ("appointment_contact", "public_book_appointment", "contact"):
+        current_view_name = "appointment_contact"
+
+    # 1. Success confirmation handling via PRG pattern
+    last_booking_ref = request.session.pop("public_booking_ref", None)
+    booking_success = False
+    booking_obj = None
+    if last_booking_ref:
+        booking_obj = PublicAppointmentRequest.objects.filter(reference_id=last_booking_ref).first()
+        if booking_obj:
+            booking_success = True
+
+    contact_success = request.session.pop("contact_success", False)
+
+    # Active tab preference
+    req_tab = request.GET.get("tab", "").lower()
+    if req_tab in ("contact", "inquiry"):
+        active_tab = "contact"
+    elif req_tab in ("appointment", "booking"):
+        active_tab = "appointment"
+    elif current_view_name == "contact" or (request.path and request.path.rstrip("/").endswith("/contact")):
+        active_tab = "contact"
+    else:
+        active_tab = "appointment"
+
+    base_context = {
+        "page_title": "Book Your Physiotherapy Appointment or Contact Us",
+        "page_subtitle": "Take the first step towards better movement and recovery. Request an appointment with our physiotherapy team.",
+        "clinic_phone": getattr(settings, "CLINIC_PHONE", "+91 94095 10501"),
+        "clinic_email": getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com"),
+        "clinic_address": "Ground Floor, Narayan Cottage, Bedi Rd, opposite New Super Medical, Panchasar, Pancheshwar Tower, Jamnagar, Gujarat 361006, India",
+        "booking_success": booking_success,
+        "booking_obj": booking_obj,
+        "contact_success": contact_success,
+        "active_tab": active_tab,
+        "canonical_url": request.build_absolute_uri(),
+        "canonical_base": getattr(settings, "SITE_URL", "https://physio-rehab-app.onrender.com"),
+    }
+
     if request.method == "POST":
-        first_name = request.POST.get("first_name", "").strip()
-        last_name = request.POST.get("last_name", "").strip()
-        email = request.POST.get("email", "").strip()
-        phone = request.POST.get("phone", "").strip()
-        subject_choice = request.POST.get("subject", "General Enquiry").strip()
-        message = request.POST.get("message", "").strip()
+        form_type = request.POST.get("form_type", "").strip()
 
-        if not first_name or not email or not message:
-            messages.error(request, "Please fill in all required fields (First Name, Email, and Message).")
-            return redirect("contact")
+        # Disambiguate form if form_type was not explicitly passed
+        if not form_type:
+            if "preferred_date" in request.POST or "patient_name" in request.POST:
+                form_type = "appointment"
+            else:
+                form_type = "contact"
 
-        from .email_utils import validate_recipient_email, sanitize_header_value
-        try:
-            clean_email = validate_recipient_email(email)
-        except Exception:
-            messages.error(request, "Please provide a valid email address.")
-            return redirect("contact")
+        # ── A. APPOINTMENT FORM PROCESSING ──
+        if form_type == "appointment":
+            client_ip = get_client_ip(request) or "unknown"
+            cache_key = f"rate_limit_pub_appt_{client_ip}"
+            sub_count = cache.get(cache_key, 0)
+            if sub_count >= 10:
+                messages.error(
+                    request,
+                    "Too many appointment requests submitted from your network. Please wait a while or contact our clinic directly at +91 94095 10501."
+                )
+                base_context["form"] = PublicAppointmentRequestForm(request.POST)
+                base_context["active_tab"] = "appointment"
+                return render(request, "public/unified_appointment_contact.html", base_context)
 
-        full_name = f"{first_name} {last_name}".strip()
-        clean_subject = sanitize_header_value(f"Inquiry: {subject_choice} - {full_name}")
+            form = PublicAppointmentRequestForm(request.POST)
+            if form.is_valid():
+                cleaned = form.cleaned_data
+                email = cleaned["email"]
+                phone = cleaned["phone"]
+                pref_date = cleaned["preferred_date"]
+                pref_time = cleaned["preferred_time"]
 
-        hospital = Hospital.objects.filter(is_active=True).first()
-        raw_admin_email = hospital.email if (hospital and hospital.email) else getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@physiorehab.com")
-        if "<" in raw_admin_email and ">" in raw_admin_email:
-            extracted = raw_admin_email.split("<")[1].split(">")[0].strip()
-            admin_email = extracted if extracted else "noreply@physiorehab.com"
-        else:
-            admin_email = raw_admin_email.strip() if raw_admin_email else "noreply@physiorehab.com"
+                recent_threshold = timezone.now() - timezone.timedelta(minutes=3)
+                existing_req = PublicAppointmentRequest.objects.filter(
+                    email=email,
+                    phone=phone,
+                    preferred_date=pref_date,
+                    preferred_time=pref_time,
+                    created_at__gte=recent_threshold,
+                ).first()
 
-        alert_body = f"""New public website contact inquiry received:
+                if existing_req:
+                    req_obj = existing_req
+                    messages.info(
+                        request,
+                        "Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic. We will contact you using the details provided."
+                    )
+                else:
+                    req_obj = form.save(commit=False)
+                    req_obj.hospital = hospital
+                    req_obj.ip_address = client_ip if client_ip != "unknown" else None
+                    req_obj.user_agent = request.META.get("HTTP_USER_AGENT", "")[:255]
+                    req_obj.status = "pending"
+                    req_obj.email_notification_status = "pending"
+                    req_obj.save()
+
+                    cache.set(cache_key, sub_count + 1, timeout=3600)
+
+                    email_sent = False
+                    try:
+                        email_sent = send_public_appointment_request_notification(req_obj)
+                        req_obj.email_notification_status = "sent" if email_sent else "failed"
+                        if not email_sent:
+                            req_obj.notification_error = "Clinic notification email provider returned failure."
+                        req_obj.save(update_fields=["email_notification_status", "notification_error"])
+                    except Exception as exc:
+                        logger.error(f"Error in send_public_appointment_request_notification: {exc.__class__.__name__} - {exc}")
+                        req_obj.email_notification_status = "failed"
+                        req_obj.notification_error = f"{exc.__class__.__name__}: {str(exc)[:200]}"
+                        req_obj.save(update_fields=["email_notification_status", "notification_error"])
+
+                    messages.success(
+                        request,
+                        "Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic. We will contact you using the details provided."
+                    )
+
+                request.session["public_booking_ref"] = req_obj.reference_id
+                redirect_url = reverse(current_view_name)
+                return redirect(redirect_url)
+            else:
+                messages.error(request, "Please review and correct the highlighted fields below.")
+                base_context["form"] = form
+                base_context["active_tab"] = "appointment"
+                return render(request, "public/unified_appointment_contact.html", base_context)
+
+        # ── B. CONTACT INQUIRY FORM PROCESSING ──
+        elif form_type == "contact":
+            # Honeypot check
+            if request.POST.get("website", "").strip():
+                # Bot detected: redirect cleanly without saving spam
+                return redirect(reverse(current_view_name))
+
+            first_name = request.POST.get("first_name", "").strip()
+            last_name = request.POST.get("last_name", "").strip()
+            email = request.POST.get("email", "").strip()
+            phone = request.POST.get("phone", "").strip()
+            subject_choice = request.POST.get("subject", "General Enquiry").strip()
+            message = request.POST.get("message", "").strip()
+
+            contact_data = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "phone": phone,
+                "subject": subject_choice,
+                "message": message,
+            }
+
+            if not first_name or not email or not message:
+                messages.error(request, "Please fill in all required fields (First Name, Email, and Message).")
+                base_context["form"] = PublicAppointmentRequestForm()
+                base_context["contact_data"] = contact_data
+                base_context["active_tab"] = "contact"
+                return render(request, "public/unified_appointment_contact.html", base_context)
+
+            try:
+                clean_email = validate_recipient_email(email)
+            except Exception:
+                messages.error(request, "Please provide a valid email address.")
+                base_context["form"] = PublicAppointmentRequestForm()
+                base_context["contact_data"] = contact_data
+                base_context["active_tab"] = "contact"
+                return render(request, "public/unified_appointment_contact.html", base_context)
+
+            full_name = f"{first_name} {last_name}".strip()
+            clean_subject = sanitize_header_value(f"Inquiry: {subject_choice} - {full_name}")
+
+            raw_admin_email = hospital.email if (hospital and hospital.email) else getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@physiorehab.com")
+            if "<" in raw_admin_email and ">" in raw_admin_email:
+                extracted = raw_admin_email.split("<")[1].split(">")[0].strip()
+                admin_email = extracted if extracted else "noreply@physiorehab.com"
+            else:
+                admin_email = raw_admin_email.strip() if raw_admin_email else "noreply@physiorehab.com"
+
+            alert_body = f"""New public website contact inquiry received:
 
 From    : {full_name}
 Email   : {clean_email}
@@ -359,7 +528,7 @@ Subject : {subject_choice}
 Message:
 {message}
 """
-        ack_body = f"""Dear {full_name},
+            ack_body = f"""Dear {full_name},
 
 Thank you for contacting {CLINIC_NAME}.
 We have received your message regarding "{subject_choice}" and our team will get in touch with you shortly.
@@ -370,202 +539,87 @@ Summary of your inquiry:
 Warm regards,
 {CLINIC_NAME} Team
 """
-        # Save as VisitorLead securely
-        visitor_session = None
-        session_token = request.COOKIES.get("va_session") or request.POST.get("va_session")
-        if session_token and len(session_token) <= 64:
-            from .models import VisitorSession
-            visitor_session = VisitorSession.objects.filter(session_key=session_token).first()
-            if visitor_session:
-                visitor_session.has_converted = True
-                visitor_session.save(update_fields=["has_converted"])
+            # Session association
+            visitor_session = None
+            session_token = request.COOKIES.get("va_session") or request.POST.get("va_session")
+            if session_token and len(session_token) <= 64:
+                visitor_session = VisitorSession.objects.filter(session_key=session_token).first()
+                if visitor_session:
+                    visitor_session.has_converted = True
+                    visitor_session.save(update_fields=["has_converted"])
 
-        marketing_consent = request.POST.get("marketing_consent", "").lower() in ("true", "1", "on")
+            marketing_consent = request.POST.get("marketing_consent", "").lower() in ("true", "1", "on")
 
-        from .models import VisitorLead
-        lead = VisitorLead.objects.create(
-            session=visitor_session,
-            first_name=first_name[:100],
-            last_name=last_name[:100],
-            email=clean_email,
-            phone=phone[:30],
-            category=subject_choice if subject_choice in dict(VisitorLead.CATEGORY_CHOICES) else "General Enquiry",
-            message=message[:5000],
-            source_page="/contact/",
-            marketing_consent=marketing_consent,
-            status="new",
-        )
-
-        ok_admin = False
-        try:
-            ok_admin = bool(send_clinic_email(
-                clean_subject,
-                alert_body,
-                admin_email,
-                hospital=hospital,
-                email_type="contact_inquiry_admin",
-            ))
-        except Exception as exc:
-            logger.error(f"Contact form admin email failed: {exc.__class__.__name__} - {exc}")
-
-        ok_ack = False
-        try:
-            ok_ack = bool(send_clinic_email(
-                f"We received your inquiry – {CLINIC_NAME}",
-                ack_body,
-                clean_email,
-                hospital=hospital,
-                email_type="contact_inquiry_ack",
-            ))
-        except Exception as exc:
-            logger.error(f"Contact form user acknowledgment email failed: {exc.__class__.__name__} - {exc}")
-
-        if ok_admin or ok_ack:
-            messages.success(request, "✅ Message sent! We will contact you soon.")
-        else:
-            messages.error(
-                request,
-                "⚠️ We could not deliver your message due to a mail server configuration issue. Please contact the clinic directly."
+            lead = VisitorLead.objects.create(
+                session=visitor_session,
+                first_name=first_name[:100],
+                last_name=last_name[:100],
+                email=clean_email,
+                phone=phone[:30],
+                category=subject_choice if subject_choice in dict(VisitorLead.CATEGORY_CHOICES) else "General Enquiry",
+                message=message[:5000],
+                source_page=f"/{current_view_name}/",
+                marketing_consent=marketing_consent,
+                status="new",
             )
-        return redirect("contact")
-    return render(request, "public/contact.html")
+
+            ok_admin = False
+            try:
+                ok_admin = bool(send_clinic_email(
+                    clean_subject,
+                    alert_body,
+                    admin_email,
+                    hospital=hospital,
+                    email_type="contact_inquiry_admin",
+                ))
+            except Exception as exc:
+                logger.error(f"Contact form admin email failed: {exc.__class__.__name__} - {exc}")
+
+            ok_ack = False
+            try:
+                ok_ack = bool(send_clinic_email(
+                    f"We received your inquiry – {CLINIC_NAME}",
+                    ack_body,
+                    clean_email,
+                    hospital=hospital,
+                    email_type="contact_inquiry_ack",
+                ))
+            except Exception as exc:
+                logger.error(f"Contact form user acknowledgment email failed: {exc.__class__.__name__} - {exc}")
+
+            if ok_admin or ok_ack:
+                messages.success(request, "✅ Message sent! We will contact you soon.")
+                request.session["contact_success"] = True
+            else:
+                messages.error(
+                    request,
+                    "⚠️ We could not deliver your message due to a mail server configuration issue. Please contact the clinic directly."
+                )
+
+            redirect_target = reverse(current_view_name)
+            if current_view_name != "contact":
+                redirect_target += "?tab=contact#contact-us"
+            return redirect(redirect_target)
+
+    # GET request default
+    base_context["form"] = PublicAppointmentRequestForm()
+    return render(request, "public/unified_appointment_contact.html", base_context)
 
 
-# =========================
-# PUBLIC BOOK APPOINTMENT
-# =========================
+def contact(request):
+    """
+    Public Contact Us endpoint.
+    Maintains complete backward compatibility by rendering and processing through the unified view.
+    """
+    return unified_appointment_contact(request)
+
+
 def public_book_appointment(request):
     """
-    Dedicated Public Appointment Booking Page.
-    Accessible to all visitors without requiring authentication or account creation.
-    Validates form data, saves the request as PublicAppointmentRequest in 'pending' status,
-    and dispatches an email notification to the clinic doctor at physio.rehab.guj@gmail.com.
+    Public Book Appointment endpoint.
+    Maintains complete backward compatibility by rendering and processing through the unified view.
     """
-    from .forms import PublicAppointmentRequestForm
-    from .models import PublicAppointmentRequest, Hospital
-    from .email_utils import send_public_appointment_request_notification
-    from .ip_utils import get_client_ip
-    from django.core.cache import cache
-
-    hospital = Hospital.objects.filter(is_active=True).first()
-
-    # Success confirmation display via PRG pattern
-    last_ref = request.session.pop("public_booking_ref", None)
-    if last_ref:
-        booking_obj = PublicAppointmentRequest.objects.filter(reference_id=last_ref).first()
-        if booking_obj:
-            return render(
-                request,
-                "public/book_appointment.html",
-                {
-                    "booking_success": True,
-                    "booking_obj": booking_obj,
-                    "page_title": "Book Your Physiotherapy Appointment",
-                    "page_subtitle": "Take the first step towards better movement and recovery. Request an appointment with our physiotherapy team.",
-                    "clinic_phone": getattr(settings, "CLINIC_PHONE", "+91 94095 10501"),
-                    "clinic_email": getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com"),
-                },
-            )
-
-    if request.method == "POST":
-        # Rate limit check: max 10 requests per hour per IP
-        client_ip = get_client_ip(request) or "unknown"
-        cache_key = f"rate_limit_pub_appt_{client_ip}"
-        sub_count = cache.get(cache_key, 0)
-        if sub_count >= 10:
-            messages.error(
-                request,
-                "Too many appointment requests submitted from your network. Please wait a while or contact our clinic directly at +91 94095 10501."
-            )
-            return render(
-                request,
-                "public/book_appointment.html",
-                {
-                    "form": PublicAppointmentRequestForm(request.POST),
-                    "page_title": "Book Your Physiotherapy Appointment",
-                    "page_subtitle": "Take the first step towards better movement and recovery. Request an appointment with our physiotherapy team.",
-                    "clinic_phone": getattr(settings, "CLINIC_PHONE", "+91 94095 10501"),
-                    "clinic_email": getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com"),
-                },
-            )
-
-        form = PublicAppointmentRequestForm(request.POST)
-        if form.is_valid():
-            cleaned = form.cleaned_data
-            email = cleaned["email"]
-            phone = cleaned["phone"]
-            pref_date = cleaned["preferred_date"]
-            pref_time = cleaned["preferred_time"]
-
-            # Deduplication: check if identical request was created in the last 3 minutes
-            recent_threshold = timezone.now() - timezone.timedelta(minutes=3)
-            existing_req = PublicAppointmentRequest.objects.filter(
-                email=email,
-                phone=phone,
-                preferred_date=pref_date,
-                preferred_time=pref_time,
-                created_at__gte=recent_threshold,
-            ).first()
-
-            if existing_req:
-                req_obj = existing_req
-                messages.info(
-                    request,
-                    "Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic. We will contact you using the details provided."
-                )
-            else:
-                req_obj = form.save(commit=False)
-                req_obj.hospital = hospital
-                req_obj.ip_address = client_ip if client_ip != "unknown" else None
-                req_obj.user_agent = request.META.get("HTTP_USER_AGENT", "")[:255]
-                req_obj.status = "pending"
-                req_obj.email_notification_status = "pending"
-                req_obj.save()
-
-                cache.set(cache_key, sub_count + 1, timeout=3600)
-
-                email_sent = False
-                try:
-                    email_sent = send_public_appointment_request_notification(req_obj)
-                    req_obj.email_notification_status = "sent" if email_sent else "failed"
-                    if not email_sent:
-                        req_obj.notification_error = "Clinic notification email provider returned failure."
-                    req_obj.save(update_fields=["email_notification_status", "notification_error"])
-                except Exception as exc:
-                    logger.error(f"Error in send_public_appointment_request_notification: {exc.__class__.__name__} - {exc}")
-                    req_obj.email_notification_status = "failed"
-                    req_obj.notification_error = f"{exc.__class__.__name__}: {str(exc)[:200]}"
-                    req_obj.save(update_fields=["email_notification_status", "notification_error"])
-
-                if email_sent:
-                    messages.success(
-                        request,
-                        "Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic. We will contact you using the details provided."
-                    )
-                else:
-                    messages.warning(
-                        request,
-                        "Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic. We will contact you using the details provided."
-                    )
-
-            request.session["public_booking_ref"] = req_obj.reference_id
-            return redirect("public_book_appointment")
-        else:
-            messages.error(request, "Please review and correct the highlighted fields below.")
-    else:
-        form = PublicAppointmentRequestForm()
-
-    return render(
-        request,
-        "public/book_appointment.html",
-        {
-            "form": form,
-            "page_title": "Book Your Physiotherapy Appointment",
-            "page_subtitle": "Take the first step towards better movement and recovery. Request an appointment with our physiotherapy team.",
-            "clinic_phone": getattr(settings, "CLINIC_PHONE", "+91 94095 10501"),
-            "clinic_email": getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com"),
-        },
-    )
+    return unified_appointment_contact(request)
 
 
 # =========================
