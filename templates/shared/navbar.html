@@ -22,7 +22,7 @@
 
             <!-- DESKTOP AUTH BUTTONS -->
             <div class="nav-auth" id="desktopNavAuth">
-                <a href="{% url 'public_book_appointment' %}" class="btn-book-nav btn-interactive"><i class="fas fa-calendar-check" aria-hidden="true"></i> Book Now</a>
+                <a href="{% url 'public_book_appointment' %}" class="btn-book-nav btn-interactive" id="navBookAppointmentBtn"><i class="fas fa-calendar-check" aria-hidden="true"></i> Book Appointment</a>
                 <a href="{% url 'login' %}" class="btn-login btn-interactive"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Login</a>
             </div>
 
@@ -79,8 +79,8 @@
         </nav>
 
         <div class="mobile-drawer-actions">
-            <a href="{% url 'public_book_appointment' %}" class="drawer-btn-book">
-                <i class="fas fa-calendar-check" aria-hidden="true"></i> Book Consultation
+            <a href="{% url 'public_book_appointment' %}" class="drawer-btn-book" id="mobileDrawerBookAppointmentBtn">
+                <i class="fas fa-calendar-check" aria-hidden="true"></i> Book Appointment
             </a>
             <a href="{% url 'login' %}" class="drawer-btn-login">
                 <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Patient / Staff Login

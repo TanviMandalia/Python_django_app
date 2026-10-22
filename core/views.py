@@ -425,7 +425,7 @@ def unified_appointment_contact(request):
                     req_obj = existing_req
                     messages.info(
                         request,
-                        "Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic. We will contact you using the details provided."
+                        "Thank you for your appointment request. Request received, pending clinic confirmation. Our clinic team will contact you shortly using your provided contact details."
                     )
                 else:
                     req_obj = form.save(commit=False)
@@ -453,7 +453,7 @@ def unified_appointment_contact(request):
 
                     messages.success(
                         request,
-                        "Thank you for your appointment request. Your request has been received and is awaiting confirmation from our clinic. We will contact you using the details provided."
+                        "Thank you for your appointment request. Request received, pending clinic confirmation. Our clinic team will contact you shortly using your provided contact details."
                     )
 
                 request.session["public_booking_ref"] = req_obj.reference_id
@@ -2571,10 +2571,10 @@ def admin_appointments(request):
     from .models import PublicAppointmentRequest
     hospital = resolve_hospital(request.user)
     if hospital:
-        all_appointments = Appointment.objects.filter(hospital=hospital).order_by("-created_at")
+        all_appointments = Appointment.objects.filter(hospital=hospital).select_related("patient", "assigned_staff", "hospital", "clinic_service").order_by("-created_at")
         public_requests = PublicAppointmentRequest.objects.filter(hospital=hospital).order_by("-created_at")
     elif request.user.is_superuser:
-        all_appointments = Appointment.objects.all().order_by("-created_at")
+        all_appointments = Appointment.objects.all().select_related("patient", "assigned_staff", "hospital", "clinic_service").order_by("-created_at")
         public_requests = PublicAppointmentRequest.objects.all().order_by("-created_at")
     else:
         all_appointments = Appointment.objects.none()
@@ -2750,14 +2750,15 @@ def admin_patients(request):
         except Exception:
             profile = None
         patient_profile = getattr(p, "patient_profile", None)
-        appts = Appointment.objects.filter(patient=p).order_by("date")
-        appt_count = appts.count()
-        first_appt = appts.first()
-        last_completed = appts.filter(status="completed").order_by("-date").first()
-        latest_note = SessionNote.objects.filter(patient=p).order_by("-date").first()
-        total_fees = appts.filter(consultation_fee__isnull=False).aggregate(
-            total=Sum("consultation_fee")
-        )["total"]
+        appts = sorted(p.appointments.all(), key=lambda a: (a.date, a.time or ""))
+        appt_count = len(appts)
+        first_appt = appts[0] if appts else None
+        completed_appts = [a for a in appts if a.status == "completed"]
+        last_completed = completed_appts[-1] if completed_appts else None
+        notes = sorted(p.patient_notes.all(), key=lambda n: n.date, reverse=True)
+        latest_note = notes[0] if notes else None
+        fees = [a.consultation_fee for a in appts if a.consultation_fee is not None]
+        total_fees = sum(fees) if fees else None
         phone = None
         if profile and profile.phone_number:
             phone = profile.phone_number
@@ -3341,17 +3342,18 @@ def add_staff(request):
 
         try:
             hospital = resolve_hospital(request.user)
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password=password,
-                first_name=first_name,
-                last_name=last_name,
-                is_staff=True,
-            )
-            StaffProfile.objects.create(
-                user=user, hospital=hospital, role=role, phone=phone, salary=salary
-            )
+            with transaction.atomic():
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    is_staff=True,
+                )
+                StaffProfile.objects.create(
+                    user=user, hospital=hospital, role=role, phone=phone, salary=salary
+                )
             send_staff_welcome_email(user, password)
             messages.success(
                 request,
@@ -4393,30 +4395,31 @@ def add_patient(request):
             except (ValueError, TypeError):
                 pass
 
-        user = User.objects.create(
-            username=username,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-        )
-        user.set_password(f"Patient@{uuid.uuid4().hex[:6]}")
-        user.save()
+        with transaction.atomic():
+            user = User.objects.create(
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+            )
+            user.set_password(f"Patient@{uuid.uuid4().hex[:6]}")
+            user.save()
 
-        profile, _ = Profile.objects.get_or_create(user=user)
-        profile.phone_number = phone_number
-        profile.gender = gender
-        profile.date_of_birth = dob
-        profile.joining_date = joining_date
-        profile.blood_group = blood_group
-        profile.emergency_contact = emergency_contact
-        profile.address = address
-        profile.medical_notes = medical_notes
-        profile.save()
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.phone_number = phone_number
+            profile.gender = gender
+            profile.date_of_birth = dob
+            profile.joining_date = joining_date
+            profile.blood_group = blood_group
+            profile.emergency_contact = emergency_contact
+            profile.address = address
+            profile.medical_notes = medical_notes
+            profile.save()
 
-        patient_profile, _ = PatientProfile.objects.get_or_create(user=user)
-        patient_profile.hospital = hospital
-        patient_profile.joining_date = joining_date
-        patient_profile.save()
+            patient_profile, _ = PatientProfile.objects.get_or_create(user=user)
+            patient_profile.hospital = hospital
+            patient_profile.joining_date = joining_date
+            patient_profile.save()
 
         messages.success(request, f"✅ Patient {user.get_full_name() or user.username} registered successfully!")
         return redirect("admin_patients")

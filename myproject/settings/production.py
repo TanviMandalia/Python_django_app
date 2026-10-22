@@ -108,6 +108,7 @@ if database_url:
             database_url,
             conn_max_age=int(os.getenv("DB_CONN_MAX_AGE", "600")),
             conn_health_checks=True,
+            ssl_require=os.getenv("DB_SSL_REQUIRE", "True").lower() == "true",
         )
     }
 elif db_name:
@@ -124,12 +125,16 @@ elif db_name:
             "PORT": os.getenv("DB_PORT", "5432"),
             "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "600")),
             "CONN_HEALTH_CHECKS": True,
+            "OPTIONS": {
+                "sslmode": os.getenv("DB_SSLMODE", "require"),
+            },
         }
     }
 else:
     raise ImproperlyConfigured(
         "Production database misconfigured: either DATABASE_URL or DB_NAME (with DB_USER, DB_PASSWORD, DB_HOST, DB_PORT) must be set."
     )
+
 
 # ------------------------------------------------------------------------------
 # Production Email Configuration
