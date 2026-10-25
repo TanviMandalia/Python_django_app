@@ -21,6 +21,7 @@ urlpatterns = [
     path("contact/", views.contact, name="contact"),
     path("book-appointment/", views.public_book_appointment, name="public_book_appointment"),
     path("appointment-contact/", views.unified_appointment_contact, name="appointment_contact"),
+    path("api/appointments/track-whatsapp-click/", views.track_whatsapp_click, name="track_whatsapp_click"),
     path("blogs/", views.blog_list, name="blog_list"),
     path("blogs/<slug:slug>/", views.blog_detail, name="blog_detail"),
     path("robots.txt", views.robots_txt, name="robots_txt"),

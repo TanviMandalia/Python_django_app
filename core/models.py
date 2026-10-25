@@ -486,6 +486,16 @@ class Appointment(models.Model):
     def __str__(self):
         return f"{self.name} - {self.service} - {self.date}"
 
+    @property
+    def phone_digits(self):
+        from core.whatsapp import sanitize_phone_to_international
+        return sanitize_phone_to_international(self.phone)
+
+    @property
+    def patient_whatsapp_url(self):
+        from core.whatsapp import build_doctor_to_patient_whatsapp_url
+        return build_doctor_to_patient_whatsapp_url(self)
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -595,6 +605,22 @@ class PublicAppointmentRequest(models.Model):
 
     def __str__(self):
         return f"{self.reference_id} - {self.patient_name} ({self.preferred_date} {self.preferred_time})"
+
+    @property
+    def phone_digits(self):
+        from core.whatsapp import sanitize_phone_to_international
+        return sanitize_phone_to_international(self.phone)
+
+    @property
+    def patient_whatsapp_url(self):
+        from core.whatsapp import build_doctor_to_patient_whatsapp_url
+        return build_doctor_to_patient_whatsapp_url(self)
+
+    @property
+    def doctor_whatsapp_click_url(self):
+        from core.whatsapp import build_whatsapp_click_to_chat_url
+        url, _ = build_whatsapp_click_to_chat_url(self)
+        return url
 
 
 

@@ -348,10 +348,14 @@ def unified_appointment_contact(request):
     last_booking_ref = request.session.pop("public_booking_ref", None)
     booking_success = False
     booking_obj = None
+    whatsapp_url = ""
+    whatsapp_configured = False
     if last_booking_ref:
         booking_obj = PublicAppointmentRequest.objects.filter(reference_id=last_booking_ref).first()
         if booking_obj:
             booking_success = True
+            from core.whatsapp import build_whatsapp_click_to_chat_url
+            whatsapp_url, whatsapp_configured = build_whatsapp_click_to_chat_url(booking_obj)
 
     contact_success = request.session.pop("contact_success", False)
 
@@ -374,6 +378,8 @@ def unified_appointment_contact(request):
         "clinic_address": "Ground Floor, Narayan Cottage, Bedi Rd, opposite New Super Medical, Panchasar, Pancheshwar Tower, Jamnagar, Gujarat 361006, India",
         "booking_success": booking_success,
         "booking_obj": booking_obj,
+        "whatsapp_url": whatsapp_url,
+        "whatsapp_configured": whatsapp_configured,
         "contact_success": contact_success,
         "active_tab": active_tab,
         "canonical_url": request.build_absolute_uri(),
@@ -616,6 +622,28 @@ def public_book_appointment(request):
     Maintains complete backward compatibility by rendering and processing through the unified view.
     """
     return unified_appointment_contact(request)
+
+
+@require_POST
+def track_whatsapp_click(request):
+    """
+    Safely track that a visitor opened the WhatsApp click-to-chat link.
+    Does NOT alter appointment status (remains 'pending') or falsely claim delivered/confirmed.
+    """
+    try:
+        data = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        data = {}
+    ref_id = data.get("reference_id", "").strip() or request.POST.get("reference_id", "").strip()
+    if ref_id:
+        req = PublicAppointmentRequest.objects.filter(reference_id=ref_id).first()
+        if req:
+            timestamp_str = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+            note_entry = f"[System] Visitor opened WhatsApp click-to-chat link at {timestamp_str} UTC.\n"
+            if note_entry not in (req.admin_notes or ""):
+                req.admin_notes = (req.admin_notes or "") + note_entry
+                req.save(update_fields=["admin_notes"])
+    return JsonResponse({"ok": True, "event": "whatsapp_opened"})
 
 
 # =========================

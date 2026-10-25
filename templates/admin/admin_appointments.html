@@ -162,6 +162,11 @@
           </td>
           <td style="text-align: right;">
             <div style="display: inline-flex; gap: 4px; align-items: center;">
+              {% if req.patient_whatsapp_url %}
+              <a href="{{ req.patient_whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="btn-action-icon" style="background: rgba(37, 211, 102, 0.15); color: #25d366;" title="Contact Patient via WhatsApp">
+                <i class="fab fa-whatsapp"></i>
+              </a>
+              {% endif %}
               {% if req.status != 'confirmed' %}
               <a href="{% url 'update_public_appointment_request' req.id 'confirmed' %}" class="btn-action-icon" style="background: rgba(23, 162, 184, 0.15); color: #17a2b8;" title="Confirm Request">
                 <i class="fas fa-check"></i>
@@ -267,6 +272,11 @@
 
           <td style="text-align: right;">
             <div style="display: inline-flex; gap: 4px; align-items: center;">
+              {% if appt.patient_whatsapp_url %}
+              <a href="{{ appt.patient_whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="btn-action-icon" style="background: rgba(37, 211, 102, 0.15); color: #25d366;" title="Contact Patient via WhatsApp">
+                <i class="fab fa-whatsapp"></i>
+              </a>
+              {% endif %}
               {% if appt.status != "confirmed" %}
               <a href="{% url 'update_appointment' appt.id 'confirmed' %}" class="btn-action-icon" style="background: rgba(23, 162, 184, 0.15); color: #17a2b8;" title="Confirm Appointment">
                 <i class="fas fa-check"></i>

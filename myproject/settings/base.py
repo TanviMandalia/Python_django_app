@@ -280,6 +280,7 @@ CLINIC_NAME = "Dr. Dhvani Patalia Physio Rehab"
 CLINIC_PHONE = "+91 94095 10501"
 CLINIC_EMAIL = "physio.rehab.guj@gmail.com"
 CLINIC_WHATSAPP = "94095 10501"
+DOCTOR_WHATSAPP_NUMBER = os.getenv("DOCTOR_WHATSAPP_NUMBER", os.getenv("CLINIC_WHATSAPP_NUMBER", "919409510501")).strip()
 
 # =========================
 # FILE UPLOADS

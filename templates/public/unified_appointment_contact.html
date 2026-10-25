@@ -707,6 +707,95 @@
         flex-direction: row;
         justify-content: center;
       }
+    /* WhatsApp Fast-Track Action */
+    .whatsapp-prompt-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+      border: 2px solid #22c55e;
+      border-radius: 14px;
+      padding: clamp(16px, 3vw, 24px);
+      margin: 20px 0 24px 0;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.12);
+    }
+
+    .whatsapp-prompt-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-align: left;
+      margin-bottom: 16px;
+    }
+
+    .whatsapp-icon-circle {
+      width: 48px;
+      height: 48px;
+      min-width: 48px;
+      background: #25d366;
+      color: #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      box-shadow: 0 4px 10px rgba(37, 211, 102, 0.35);
+    }
+
+    .whatsapp-prompt-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #065f46;
+      margin: 0 0 4px 0;
+    }
+
+    .whatsapp-prompt-subtitle {
+      font-size: 0.85rem;
+      color: #047857;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .btn-whatsapp-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      background: #25d366;
+      color: #ffffff !important;
+      font-size: 1.05rem;
+      font-weight: 700;
+      padding: 14px 24px;
+      border-radius: 10px;
+      text-decoration: none !important;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);
+      cursor: pointer;
+    }
+
+    .btn-whatsapp-action:hover,
+    .btn-whatsapp-action:focus {
+      background: #1eb956;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(37, 211, 102, 0.5);
+    }
+
+    .whatsapp-disclaimer {
+      font-size: 0.78rem;
+      color: #065f46;
+      margin: 12px 0 0 0;
+      line-height: 1.4;
+      opacity: 0.9;
+    }
+
+    .whatsapp-admin-config-alert {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      margin: 16px 0 20px 0;
+      text-align: left;
     }
 
     .btn-action-primary {
@@ -969,6 +1058,36 @@
                   </span>
                 </div>
               </div>
+
+              <!-- ── DIRECT DOCTOR/ADMIN WHATSAPP SUBMISSION ── -->
+              {% if whatsapp_configured and whatsapp_url %}
+              <div class="whatsapp-prompt-card" id="whatsappPromptBox">
+                <div class="whatsapp-prompt-header">
+                  <div class="whatsapp-icon-circle">
+                    <i class="fab fa-whatsapp" aria-hidden="true"></i>
+                  </div>
+                  <div>
+                    <h3 class="whatsapp-prompt-title">Fast-Track Your Request on WhatsApp</h3>
+                    <p class="whatsapp-prompt-subtitle">
+                      Send your appointment details directly to our doctor on WhatsApp for quicker clinic review.
+                    </p>
+                  </div>
+                </div>
+
+                <a href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-action" id="btnSendWhatsApp" onclick="trackWhatsAppClick('{{ booking_obj.reference_id }}')">
+                  <i class="fab fa-whatsapp" aria-hidden="true"></i> Send Request via WhatsApp
+                </a>
+
+                <p class="whatsapp-disclaimer">
+                  <i class="fas fa-info-circle" aria-hidden="true"></i> Opens WhatsApp with your prefilled appointment summary. If WhatsApp does not open on your device, rest assured your request is already safely saved in our clinic database and our staff will reach out to you directly.
+                </p>
+              </div>
+              {% elif not whatsapp_configured and user.is_staff %}
+              <div class="whatsapp-admin-config-alert" role="alert">
+                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                <strong>Administrator Notice:</strong> Doctor WhatsApp number is not configured in environment variables (<code>DOCTOR_WHATSAPP_NUMBER</code>). The public WhatsApp send action is currently disabled.
+              </div>
+              {% endif %}
 
               <div class="success-notice">
                 <strong><i class="fas fa-info-circle"></i> What happens next?</strong><br>
@@ -1464,7 +1583,22 @@
         if (icon) icon.className = "fas fa-spinner fa-spin";
         if (text) text.textContent = "Sending Message...";
       }
-      return true;
+    function trackWhatsAppClick(refId) {
+      if (!refId) return;
+      try {
+        var csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        var token = csrfInput ? csrfInput.value : "";
+        fetch("/api/appointments/track-whatsapp-click/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": token
+          },
+          body: JSON.stringify({ reference_id: refId })
+        }).catch(function() {});
+      } catch (err) {
+        // Safe silent fail
+      }
     }
 
     document.addEventListener("DOMContentLoaded", function () {
