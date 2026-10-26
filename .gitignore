@@ -26,6 +26,7 @@ ENV/
 .env
 .env.*
 !.env.example
+.secret_key
 Role Username Password.*
 ~$Role Username Password.*
 *Username*Password*

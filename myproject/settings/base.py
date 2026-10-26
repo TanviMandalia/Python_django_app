@@ -14,9 +14,24 @@ load_dotenv(BASE_DIR / ".env")
 # SECURITY (CRITICAL)
 # =========================
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+# Priority:
+# 1. DJANGO_SECRET_KEY environment variable
+# 2. SECRET_KEY environment variable (standard Django variable name)
+# 3. Persistent .secret_key file (auto-generated on boot if missing)
+# 4. Ephemeral cryptographic token fallback
+SECRET_KEY = (os.getenv("DJANGO_SECRET_KEY") or os.getenv("SECRET_KEY", "")).strip()
 if not SECRET_KEY:
-    raise RuntimeError("DJANGO_SECRET_KEY is missing in environment variables")
+    _secret_file = BASE_DIR / ".secret_key"
+    try:
+        if _secret_file.exists():
+            SECRET_KEY = _secret_file.read_text(encoding="utf-8").strip()
+        if not SECRET_KEY:
+            import secrets
+            SECRET_KEY = secrets.token_urlsafe(50)
+            _secret_file.write_text(SECRET_KEY, encoding="utf-8")
+    except Exception:
+        import secrets
+        SECRET_KEY = secrets.token_urlsafe(50)
 
 ALLOWED_HOSTS = [
     host.strip()
