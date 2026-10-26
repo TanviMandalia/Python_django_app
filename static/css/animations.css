@@ -1,20 +1,38 @@
 /* ==========================================================================
-   PHYSIO REHAB - PREMIUM GSAP & THREE.JS ANIMATION SYSTEM
-   Healthcare-Grade Motion Design & Performance System
+   PHYSIO REHAB - MASTER 3D INTERACTIVE MOTION & DEPTH SYSTEM
+   Healthcare-Grade Genuine 3D Visual Experience Across All Devices
    ========================================================================== */
 
 :root {
+  /* Brand palette */
   --anim-gold: #F5C518;
-  --anim-gold-glow: rgba(245, 197, 24, 0.4);
+  --anim-gold-dark: #dfb00d;
+  --anim-gold-glow: rgba(245, 197, 24, 0.28);
   --anim-teal: #10b981;
+  --anim-teal-glow: rgba(16, 185, 129, 0.25);
   --anim-blue: #0284c7;
   --anim-dark: #0f172a;
-  --anim-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --anim-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --anim-darker: #0b1120;
+
+  /* Genuine 3D Spatial & Lighting tokens */
+  --depth-3d-perspective: 1200px;
+  --depth-shadow-sm: 0 2px 6px -1px rgba(15, 23, 42, 0.06), 0 1px 3px -1px rgba(15, 23, 42, 0.04);
+  --depth-shadow-md: 0 10px 25px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+  --depth-shadow-hover: 0 20px 35px -6px rgba(15, 23, 42, 0.14), 0 10px 14px -4px rgba(15, 23, 42, 0.06);
+  --depth-shadow-dark: 0 16px 34px -4px rgba(0, 0, 0, 0.5), 0 6px 12px rgba(0, 0, 0, 0.3);
+  --depth-shadow-dark-hover: 0 24px 44px -6px rgba(0, 0, 0, 0.65), 0 8px 16px rgba(0, 0, 0, 0.35);
+
+  /* Specular rim illumination */
+  --surface-specular-light: inset 0 1.5px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+  --surface-specular-dark: inset 0 1.5px 0 rgba(255, 255, 255, 0.14), inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+
+  /* Smooth physical springs */
+  --ease-3d-spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ── FAIL-SAFE VISIBILITY DEFAULTS ── */
-/* Elements are 100% visible by default so content is never hidden if JS is disabled or fails */
+/* ── 1. FAIL-SAFE VISIBILITY DEFAULTS ── */
+/* All elements remain 100% visible and interactive by default.
+   Content is NEVER trapped invisible if JS is disabled, blocked, or loading slowly. */
 .gsap-reveal,
 .gsap-fade-up,
 .gsap-stagger-card,
@@ -27,12 +45,12 @@
   will-change: transform, opacity;
 }
 
-/* When JavaScript initializes successfully and GSAP is ready, js-ready class is applied to html */
-html.gsap-ready .gsap-reveal,
-html.gsap-ready .gsap-fade-up,
-html.gsap-ready .gsap-stagger-card {
+/* Progressive enhancement: when GSAP and DOM are verified ready */
+html.gsap-ready .gsap-reveal:not(.is-revealed),
+html.gsap-ready .gsap-fade-up:not(.is-revealed),
+html.gsap-ready .gsap-stagger-card:not(.is-revealed) {
   opacity: 0;
-  transform: translateY(28px);
+  transform: translateY(20px);
 }
 
 html.gsap-ready .gsap-reveal.is-revealed,
@@ -40,17 +58,148 @@ html.gsap-ready .gsap-fade-up.is-revealed,
 html.gsap-ready .gsap-stagger-card.is-revealed {
   opacity: 1;
   transform: translateY(0);
+  transition: opacity 0.55s var(--ease-3d-spring), transform 0.55s var(--ease-3d-spring);
 }
 
-/* ── 3D HERO CANVAS STYLING ── */
+/* ── 2. MASTER 3D PERSPECTIVE CONTAINERS & SPATIAL CARD DEPTH ── */
+.perspective-container,
+.booking-grid,
+.services-preview-grid,
+.treatments-grid,
+.intro-content-grid,
+.reviews-preview-grid,
+.values-grid,
+.why-grid {
+  perspective: var(--depth-3d-perspective);
+}
+
+/* Genuine 3D Spatial Cards */
+.card-3d,
+.intro-card,
+.service-preview-card,
+.treatment-card,
+.why-item,
+.value-card,
+.team-card,
+.cp-card,
+.result-image-box,
+.stat-card,
+.summary-card {
+  position: relative;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: var(--depth-shadow-md), var(--surface-specular-light);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  transform-style: preserve-3d;
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.35s var(--ease-3d-spring), box-shadow 0.35s var(--ease-3d-spring), border-color 0.35s var(--ease-3d-spring);
+  will-change: transform, box-shadow;
+  overflow: hidden;
+}
+
+/* Dynamic Specular Light Glint: follows pointer/touch coordinate */
+.card-3d::after,
+.intro-card::after,
+.service-preview-card::after,
+.treatment-card::after,
+.why-item::after,
+.value-card::after,
+.team-card::after,
+.cp-card::after,
+.review-card-dark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle 240px at var(--pointer-x, 50%) var(--pointer-y, 30%), rgba(255, 255, 255, 0.22) 0%, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 2;
+}
+
+.card-3d:hover::after,
+.intro-card:hover::after,
+.service-preview-card:hover::after,
+.treatment-card:hover::after,
+.why-item:hover::after,
+.value-card:hover::after,
+.team-card:hover::after,
+.cp-card:hover::after,
+.review-card-dark:hover::after {
+  opacity: 1;
+}
+
+/* Interior Spatial Layering: Icons and Badges pop forward in the Z-axis */
+.intro-icon,
+.sp-icon,
+.tc-icon,
+.value-icon,
+.why-icon {
+  transform: translateZ(14px);
+  transform-style: preserve-3d;
+  transition: transform 0.35s var(--ease-3d-spring);
+}
+
+.hover-lift:hover .intro-icon,
+.hover-lift-3d:hover .sp-icon,
+.hover-lift-3d:hover .tc-icon {
+  transform: translateZ(20px) scale(1.04);
+}
+
+/* 3D Hover Elevation for Light Cards */
+.hover-lift:hover,
+.hover-lift-3d:hover,
+.card-3d:hover,
+.intro-card:hover,
+.service-preview-card:hover,
+.treatment-card:hover,
+.why-item:hover,
+.value-card:hover,
+.team-card:hover,
+.cp-card:hover {
+  transform: translate3d(0, -6px, 10px);
+  box-shadow: var(--depth-shadow-hover), var(--surface-specular-light);
+  border-color: rgba(245, 197, 24, 0.35);
+}
+
+/* Dark 3D Cards (Reviews, Hero Badges, Dark Panels) */
+.review-card-dark,
+.hover-lift-dark {
+  position: relative;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+  box-shadow: var(--depth-shadow-dark), var(--surface-specular-dark);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transform-style: preserve-3d;
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.35s var(--ease-3d-spring), box-shadow 0.35s var(--ease-3d-spring), border-color 0.35s var(--ease-3d-spring);
+  will-change: transform, box-shadow;
+  overflow: hidden;
+}
+
+.review-card-dark:hover,
+.hover-lift-dark:hover {
+  transform: translate3d(0, -6px, 10px);
+  box-shadow: var(--depth-shadow-dark-hover), var(--surface-specular-dark);
+  border-color: rgba(245, 197, 24, 0.45);
+}
+
+/* ── 3. THREE.JS 3D HERO CANVAS STYLING ── */
 .three-hero-container {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none;
+  pointer-events: auto; /* allows interactive touch and mouse drag on canvas */
   z-index: 1;
   overflow: hidden;
+  contain: strict;
+  cursor: grab;
+}
+
+.three-hero-container:active {
+  cursor: grabbing;
 }
 
 .three-hero-canvas {
@@ -59,81 +208,76 @@ html.gsap-ready .gsap-stagger-card.is-revealed {
   left: 0;
   width: 100% !important;
   height: 100% !important;
-  opacity: 0.96;
+  opacity: 0.95;
   transition: opacity 0.8s ease;
-  pointer-events: auto; /* allows subtle interactive hover */
 }
 
-/* Subtle gradient overlay ensures text above Three.js canvas remains ultra-sharp without obscuring the 3D visual */
+/* Realistic radial depth overlay ensuring typography is sharp while 3D lighting glints naturally */
 .three-hero-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 40%, rgba(15, 23, 42, 0.12) 0%, rgba(15, 23, 42, 0.42) 70%, rgba(10, 15, 26, 0.78) 100%);
+  background: radial-gradient(circle at 55% 45%, rgba(15, 23, 42, 0.12) 0%, rgba(15, 23, 42, 0.45) 65%, rgba(10, 15, 26, 0.86) 100%);
   pointer-events: none;
   z-index: 1;
 }
 
+/* Static Fallback with 3D Radial Illumination */
 .three-hero-fallback {
   position: absolute;
   inset: 0;
   display: none;
-  background-size: cover;
-  background-position: center;
+  background: radial-gradient(circle at 65% 40%, rgba(245, 197, 24, 0.16) 0%, rgba(16, 185, 129, 0.1) 40%, transparent 75%);
   z-index: 1;
-}
-
-/* ── CARD ELEVATION & HOVER INTERACTIONS ── */
-.hover-lift {
-  transition: transform 0.35s var(--anim-ease-out), box-shadow 0.35s var(--anim-ease-out), border-color 0.35s var(--anim-ease-out) !important;
-}
-
-.hover-lift:hover {
-  transform: translateY(-6px) scale(1.01) !important;
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.12) !important;
-}
-
-.hover-lift-dark:hover {
-  transform: translateY(-6px) scale(1.01) !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
-  border-color: rgba(245, 197, 24, 0.4) !important;
-}
-
-/* ── INTERACTIVE BUTTON MICRO-ANIMATIONS ── */
-.btn-interactive {
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.25s var(--anim-ease-out), box-shadow 0.25s var(--anim-ease-out), background-color 0.25s ease;
-}
-
-.btn-interactive::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 120%;
-  height: 120%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
-  transform: translate(-50%, -50%) scale(0);
-  opacity: 0;
   pointer-events: none;
-  transition: transform 0.5s ease, opacity 0.5s ease;
 }
 
-.btn-interactive:active::after {
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 1;
-  transition: 0s;
+/* ── 4. RESPONSIVE TOUCH & MOBILE AMBIENT 3D DEPTH ── */
+/* On mobile/tablet screens where mouse hover is absent, cards feature subtle
+   staggered ambient floating perspective so visitors clearly perceive genuine 3D depth */
+@media (hover: none) and (pointer: coarse) {
+  .intro-card:nth-child(1),
+  .service-preview-card:nth-child(1),
+  .treatment-card:nth-child(1) {
+    animation: mobile-card-float 6.5s ease-in-out infinite alternate;
+  }
+  .intro-card:nth-child(2),
+  .service-preview-card:nth-child(2),
+  .treatment-card:nth-child(2) {
+    animation: mobile-card-float 6.5s ease-in-out infinite alternate 1.8s;
+  }
+  .intro-card:nth-child(3),
+  .service-preview-card:nth-child(3),
+  .treatment-card:nth-child(3) {
+    animation: mobile-card-float 6.5s ease-in-out infinite alternate 3.6s;
+  }
 }
 
-.btn-interactive:hover {
-  transform: translateY(-2px);
+@keyframes mobile-card-float {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, -4px, 6px);
+  }
 }
 
-.btn-interactive:active {
-  transform: translateY(0) scale(0.98);
+/* ── 5. FLOATING 3D DECORATIVE REHAB ACCENTS ── */
+.float-subtle,
+.float-3d-decor {
+  animation: float-gentle-3d 6s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
-/* ── PULSING CLINIC BADGE ── */
+@keyframes float-gentle-3d {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, -8px, 8px);
+  }
+}
+
+/* Medical Pulse Indicator */
 .kinetic-badge {
   display: inline-flex;
   align-items: center;
@@ -146,51 +290,99 @@ html.gsap-ready .gsap-stagger-card.is-revealed {
   height: 8px;
   border-radius: 50%;
   background: var(--anim-gold);
-  box-shadow: 0 0 10px var(--anim-gold);
-  animation: badge-pulse 2s infinite ease-in-out;
+  box-shadow: 0 0 8px var(--anim-gold);
+  animation: badge-pulse-subtle 2.4s infinite ease-in-out;
 }
 
-@keyframes badge-pulse {
+@keyframes badge-pulse-subtle {
   0%, 100% {
     transform: scale(1);
-    opacity: 0.9;
+    opacity: 0.85;
     box-shadow: 0 0 6px var(--anim-gold);
   }
   50% {
-    transform: scale(1.3);
+    transform: scale(1.25);
     opacity: 1;
     box-shadow: 0 0 14px var(--anim-gold-glow);
   }
 }
 
-/* ── SUBTLE PARALLAX FLOATING EFFECT ── */
-.float-subtle {
-  animation: gentle-float 6s ease-in-out infinite alternate;
+/* ── 6. BUTTON 3D TACTILE FEEDBACK ── */
+.btn-interactive,
+.btn-gold,
+.btn-outline-gold,
+.btn-submit-booking,
+.btn-submit-contact,
+.btn-action-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.22s var(--ease-3d-spring), box-shadow 0.22s var(--ease-3d-spring), background-color 0.2s ease, border-color 0.2s ease;
+  will-change: transform, box-shadow;
+  user-select: none;
 }
 
-@keyframes gentle-float {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(-8px);
-  }
+.btn-interactive:hover,
+.btn-gold:hover,
+.btn-outline-gold:hover,
+.btn-submit-booking:hover,
+.btn-submit-contact:hover,
+.btn-action-primary:hover {
+  transform: translate3d(0, -2.5px, 6px);
 }
 
-/* ── ACCESSIBILITY: REDUCED MOTION SAFEGUARD ── */
+.btn-interactive:active,
+.btn-gold:active,
+.btn-outline-gold:active,
+.btn-submit-booking:active,
+.btn-submit-contact:active,
+.btn-action-primary:active {
+  transform: translate3d(0, 0, 0) scale(0.98);
+  transition-duration: 0.08s;
+}
+
+/* ── 7. CLINICAL STABILITY SAFEGUARDS ── */
+/* Medical forms, inputs, tables, and patient records are explicitly protected
+   from 3D tilting, rotating, or unexpected layout shifts */
+form,
+.booking-card form,
+.booking-card input,
+.booking-card select,
+.booking-card textarea,
+.table,
+.clinical-table,
+.patient-records-container {
+  transform: none !important;
+  perspective: none !important;
+}
+
+.form-control:focus {
+  transform: none !important;
+  border-color: var(--anim-gold) !important;
+  box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.24) !important;
+}
+
+/* ── 8. ACCESSIBILITY: PREFERS-REDUCED-MOTION ── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
 
   .three-hero-container,
   .three-hero-canvas {
     display: none !important;
+  }
+
+  .three-hero-fallback {
+    display: block !important;
   }
 
   html.gsap-ready .gsap-reveal,
@@ -201,12 +393,16 @@ html.gsap-ready .gsap-stagger-card.is-revealed {
   }
 
   .hover-lift:hover,
+  .hover-lift-3d:hover,
   .hover-lift-dark:hover,
-  .btn-interactive:hover {
+  .card-3d:hover,
+  .btn-interactive:hover,
+  .btn-gold:hover {
     transform: none !important;
   }
 
   .float-subtle,
+  .float-3d-decor,
   .kinetic-badge-dot {
     animation: none !important;
   }
