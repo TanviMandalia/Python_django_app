@@ -179,9 +179,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # ----------------------------------------------------------
-# Python Version Managers
-# ----------------------------------------------------------
-.python-version
+# .python-version (Uncommented for Render deployment runtime specification)
+!.python-version
 
 # ----------------------------------------------------------
 # Django Translation Files (Generated)

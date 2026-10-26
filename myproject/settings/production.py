@@ -8,11 +8,20 @@ DEBUG = False
 # Hosts & CSRF Origins
 # ------------------------------------------------------------------------------
 allowed_hosts_raw = os.getenv("ALLOWED_HOSTS")
-if not allowed_hosts_raw:
-    raise ImproperlyConfigured(
-        "ALLOWED_HOSTS environment variable is required in production (e.g. 'domain.com,www.domain.com')."
-    )
-ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(",") if h.strip()]
+render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
+
+if allowed_hosts_raw:
+    ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(",") if h.strip()]
+elif render_hostname:
+    ALLOWED_HOSTS = [render_hostname, f".{render_hostname}", "localhost", "127.0.0.1", "physio-rehab-app.onrender.com"]
+else:
+    # Default fallback for Render deployment & local verification
+    ALLOWED_HOSTS = [
+        "physio-rehab-app.onrender.com",
+        ".onrender.com",
+        "localhost",
+        "127.0.0.1",
+    ]
 
 csrf_origins_raw = os.getenv("CSRF_TRUSTED_ORIGINS")
 if csrf_origins_raw:
