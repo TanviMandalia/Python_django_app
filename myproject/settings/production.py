@@ -9,16 +9,20 @@ DEBUG = False
 # ------------------------------------------------------------------------------
 allowed_hosts_raw = os.getenv("ALLOWED_HOSTS")
 render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
+vercel_url = os.getenv("VERCEL_URL", "").strip()
 
 if allowed_hosts_raw:
     ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(",") if h.strip()]
 elif render_hostname:
     ALLOWED_HOSTS = [render_hostname, f".{render_hostname}", "localhost", "127.0.0.1", "physio-rehab-app.onrender.com"]
+elif vercel_url:
+    ALLOWED_HOSTS = [vercel_url, f".{vercel_url}", ".vercel.app", "localhost", "127.0.0.1"]
 else:
-    # Default fallback for Render deployment & local verification
+    # Default fallback for Render, Vercel deployment & local verification
     ALLOWED_HOSTS = [
         "physio-rehab-app.onrender.com",
         ".onrender.com",
+        ".vercel.app",
         "localhost",
         "127.0.0.1",
     ]
@@ -32,14 +36,20 @@ else:
     ] + [
         "https://*.onrender.com",
         "https://physio-rehab-app.onrender.com",
+        "https://*.vercel.app",
     ]
+    if vercel_url:
+        extra_origins.append(f"https://{vercel_url}")
     CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS + extra_origins))
 # ------------------------------------------------------------------------------
 # Canonical Production Domain for SEO & Sitemap
 # ------------------------------------------------------------------------------
 if not CANONICAL_BASE_URL:
-    primary_host = next((h for h in ALLOWED_HOSTS if not h.startswith("*") and not h.startswith(".")), "physio-rehab-app.onrender.com")
-    CANONICAL_BASE_URL = f"https://{primary_host}"
+    if vercel_url:
+        CANONICAL_BASE_URL = f"https://{vercel_url}"
+    else:
+        primary_host = next((h for h in ALLOWED_HOSTS if not h.startswith("*") and not h.startswith(".")), "physio-rehab-app.onrender.com")
+        CANONICAL_BASE_URL = f"https://{primary_host}"
 # ------------------------------------------------------------------------------
 # Security & SSL / HTTPS Headers
 # ------------------------------------------------------------------------------

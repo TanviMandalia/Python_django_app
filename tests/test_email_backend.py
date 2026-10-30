@@ -166,12 +166,16 @@ class AppointmentBookingReliabilityTests(TestCase):
         When email provider fails or times out, the appointment MUST still be persisted
         in the database, and the user must be notified that the booking is saved.
         """
+        target_date = date.today() + timedelta(days=2)
+        while target_date.weekday() == 6:  # Skip Sunday (closed for public booking)
+            target_date += timedelta(days=1)
+
         booking_data = {
             "name": "Test Patient",
             "email": "patient@example.com",
             "phone": "9876543210",
             "service": "orthopedic",
-            "date": (date.today() + timedelta(days=2)).strftime("%Y-%m-%d"),
+            "date": target_date.strftime("%Y-%m-%d"),
             "time": "10:00",
             "notes": "Recovering from ankle sprain",
         }
