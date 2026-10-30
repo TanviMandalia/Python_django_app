@@ -14,14 +14,16 @@ DB_ENGINE = os.getenv("DB_ENGINE", "")
 USE_SQLITE = (
     DB_ENGINE == "django.db.backends.sqlite3"
     or os.getenv("CI") is not None
+    or os.getenv("VERCEL") is not None
     or os.getenv("USE_SQLITE", "").lower() in ("true", "1", "yes")
 )
 
 if USE_SQLITE:
+    sqlite_path = (Path("/tmp") / "db.sqlite3") if os.getenv("VERCEL") else (BASE_DIR / "db.sqlite3")
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": sqlite_path,
         }
     }
 else:

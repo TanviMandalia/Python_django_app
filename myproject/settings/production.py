@@ -41,6 +41,13 @@ else:
     if vercel_url:
         extra_origins.append(f"https://{vercel_url}")
     CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS + extra_origins))
+
+# Always ensure .vercel.app is included if running on Vercel
+if os.getenv("VERCEL") or vercel_url:
+    if ".vercel.app" not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(".vercel.app")
+    if "https://*.vercel.app" not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append("https://*.vercel.app")
 # ------------------------------------------------------------------------------
 # Canonical Production Domain for SEO & Sitemap
 # ------------------------------------------------------------------------------
@@ -98,7 +105,7 @@ if r2_bucket:
             },
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
     }
 else:
@@ -107,7 +114,7 @@ else:
             "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
     }
 
@@ -122,15 +129,17 @@ database_url = os.getenv("DATABASE_URL")
 db_name = os.getenv("DB_NAME")
 
 if database_url:
+    # Serverless (Vercel) cannot maintain pooled TCP connections across lambda freeze cycles
+    conn_max_age = 0 if os.getenv("VERCEL") else int(os.getenv("DB_CONN_MAX_AGE", "600"))
     DATABASES = {
         "default": dj_database_url.parse(
             database_url,
-            conn_max_age=int(os.getenv("DB_CONN_MAX_AGE", "600")),
+            conn_max_age=conn_max_age,
             conn_health_checks=True,
             ssl_require=os.getenv("DB_SSL_REQUIRE", "True").lower() == "true",
         )
     }
-elif db_name:
+elif db_name and not os.getenv("VERCEL"):
     db_password = os.getenv("DB_PASSWORD")
     if db_password is None:
         raise ImproperlyConfigured("DB_PASSWORD is required when configuring production PostgreSQL via DB_* variables.")
@@ -150,18 +159,24 @@ elif db_name:
         }
     }
 else:
-    # Graceful fallback when DATABASE_URL is not yet linked in Render dashboard environment variables.
-    # Allows the container to boot, pass healthchecks, and serve requests without crashing.
+    # On Vercel, the application directory is read-only (/var/task).
+    # Use the system temp directory for writable SQLite database when DATABASE_URL is not yet configured.
+    if os.getenv("VERCEL"):
+        import tempfile
+        sqlite_db_path = Path(tempfile.gettempdir()) / "db.sqlite3"
+    else:
+        sqlite_db_path = BASE_DIR / "db.sqlite3"
+
     import logging
     logging.getLogger("django.production").warning(
         "DATABASE_URL was not set in environment variables. "
-        "Falling back to local SQLite database (db.sqlite3). "
-        "To connect your PostgreSQL database: Add DATABASE_URL to your Render Environment Variables."
+        f"Falling back to local SQLite database ({sqlite_db_path}). "
+        "To connect your PostgreSQL database: Add DATABASE_URL to your Vercel/Render Environment Variables."
     )
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": sqlite_db_path,
         }
     }
 
