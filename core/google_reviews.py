@@ -330,9 +330,13 @@ def get_public_reviews_summary():
         breakdown_pct[star] = round((breakdown[star] / denom) * 100)
 
     # Treatment categories available for filtering internal reviews
-    treatment_categories = list(
-        TreatmentCategory.objects.filter(is_active=True).values("id", "name", "slug")
-    )
+    try:
+        treatment_categories = list(
+            TreatmentCategory.objects.filter(is_active=True).values("id", "name", "slug")
+        )
+    except Exception as exc:
+        logger.warning("Treatment categories query failed: %s", exc)
+        treatment_categories = []
 
     return {
         "clinic_name": google_data.get("name") if google_data else DEFAULT_CLINIC_NAME,

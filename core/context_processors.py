@@ -9,20 +9,24 @@ def unread_notifications(request):
     if not user or not user.is_authenticated:
         return {}
 
-    unread_notifs = Notification.objects.filter(
-        recipient=user, is_read=False
-    )
-    recent_notifs = Notification.objects.filter(
-        recipient=user
-    )[:6]
-
-    # Unread chat messages count
-    unread_messages = Message.objects.filter(
-        receiver=user, is_read=False
-    ).count()
+    try:
+        unread_notifs = Notification.objects.filter(
+            recipient=user, is_read=False
+        )
+        recent_notifs = list(Notification.objects.filter(
+            recipient=user
+        )[:6])
+        unread_messages = Message.objects.filter(
+            receiver=user, is_read=False
+        ).count()
+        unread_count = unread_notifs.count()
+    except Exception:
+        recent_notifs = []
+        unread_count = 0
+        unread_messages = 0
 
     return {
-        'unread_notif_count': unread_notifs.count(),
+        'unread_notif_count': unread_count,
         'recent_notifications': recent_notifs,
         'unread_messages_count': unread_messages,
     }

@@ -203,33 +203,39 @@ def services(request):
     Public Treatments page with category chips filter, search bar, and treatment cards.
     Supports ?category=<slug> and ?q=<query>.
     """
-    categories = TreatmentCategory.objects.filter(is_active=True).annotate(
-        active_treatments_count=Count("treatments", filter=Q(treatments__is_active=True))
-    ).order_by("order", "name")
-
-    total_treatments_count = Treatment.objects.filter(is_active=True).count()
-
     active_category_slug = request.GET.get("category", "").strip().lower()
     search_query = request.GET.get("q", "").strip()
-
-    treatments_qs = Treatment.objects.filter(is_active=True).select_related("category")
-
     active_category = None
-    if active_category_slug and active_category_slug != "all":
-        active_category = categories.filter(slug=active_category_slug).first()
-        if active_category:
-            treatments_qs = treatments_qs.filter(category=active_category)
 
-    if search_query:
-        treatments_qs = treatments_qs.filter(
-            Q(name__icontains=search_query)
-            | Q(short_description__icontains=search_query)
-            | Q(full_description__icontains=search_query)
-            | Q(symptoms__icontains=search_query)
-            | Q(techniques__icontains=search_query)
+    try:
+        categories = list(
+            TreatmentCategory.objects.filter(is_active=True).annotate(
+                active_treatments_count=Count("treatments", filter=Q(treatments__is_active=True))
+            ).order_by("order", "name")
         )
+        total_treatments_count = Treatment.objects.filter(is_active=True).count()
+        treatments_qs = Treatment.objects.filter(is_active=True).select_related("category")
 
-    treatments = list(treatments_qs.order_by("order", "name"))
+        if active_category_slug and active_category_slug != "all":
+            active_category = next((c for c in categories if c.slug == active_category_slug), None)
+            if active_category:
+                treatments_qs = treatments_qs.filter(category=active_category)
+
+        if search_query:
+            treatments_qs = treatments_qs.filter(
+                Q(name__icontains=search_query)
+                | Q(short_description__icontains=search_query)
+                | Q(full_description__icontains=search_query)
+                | Q(symptoms__icontains=search_query)
+                | Q(techniques__icontains=search_query)
+            )
+
+        treatments = list(treatments_qs.order_by("order", "name"))
+    except Exception as exc:
+        logging.getLogger("django.production").warning("Services query failed: %s", exc)
+        categories = []
+        treatments = []
+        total_treatments_count = 0
 
     context = {
         "categories": categories,
@@ -343,7 +349,11 @@ def unified_appointment_contact(request):
     Supports dual form processing, rate-limiting, honeypot spam protection, PRG pattern,
     and automatic tab activation (?tab=appointment or ?tab=contact).
     """
-    hospital = Hospital.objects.filter(is_active=True).first()
+    try:
+        hospital = Hospital.objects.filter(is_active=True).first()
+    except Exception as exc:
+        logging.getLogger("django.production").warning("Hospital query failed: %s", exc)
+        hospital = None
 
     # Determine caller endpoint name for self-redirects
     current_view_name = request.resolver_match.view_name if request.resolver_match else "appointment_contact"

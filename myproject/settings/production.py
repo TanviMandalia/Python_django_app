@@ -69,6 +69,11 @@ SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "True").lower() == "t
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# Serverless (Vercel) lambdas are ephemeral and should not require DB session table lookups for static/public visitors
+if os.getenv("VERCEL"):
+    SESSION_ENGINE = os.getenv("SESSION_ENGINE", "django.contrib.sessions.backends.signed_cookies")
+
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() == "true"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
