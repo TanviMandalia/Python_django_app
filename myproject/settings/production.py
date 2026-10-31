@@ -2,7 +2,7 @@ from .base import *
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 
-DEBUG = False
+DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1")
 
 # ------------------------------------------------------------------------------
 # Hosts & CSRF Origins
@@ -131,14 +131,18 @@ db_name = os.getenv("DB_NAME")
 if database_url:
     # Serverless (Vercel) cannot maintain pooled TCP connections across lambda freeze cycles
     conn_max_age = 0 if os.getenv("VERCEL") else int(os.getenv("DB_CONN_MAX_AGE", "600"))
-    DATABASES = {
-        "default": dj_database_url.parse(
-            database_url,
-            conn_max_age=conn_max_age,
-            conn_health_checks=True,
-            ssl_require=os.getenv("DB_SSL_REQUIRE", "True").lower() == "true",
-        )
-    }
+    db_config = dj_database_url.parse(
+        database_url,
+        conn_max_age=conn_max_age,
+        conn_health_checks=True,
+        ssl_require=os.getenv("DB_SSL_REQUIRE", "True").lower() == "true",
+    )
+    # Ensure PgBouncer / Neon / Supabase connection pooler compatibility
+    db_config["DISABLE_SERVER_SIDE_CURSORS"] = True
+    db_config.setdefault("OPTIONS", {})
+    # Fail fast on unreachable host to prevent hitting Vercel's 10s lambda timeout
+    db_config["OPTIONS"].setdefault("connect_timeout", int(os.getenv("DB_CONNECT_TIMEOUT", "5")))
+    DATABASES = {"default": db_config}
 elif db_name and not os.getenv("VERCEL"):
     db_password = os.getenv("DB_PASSWORD")
     if db_password is None:
@@ -163,9 +167,9 @@ else:
     # Use the system temp directory for writable SQLite database when DATABASE_URL is not yet configured.
     if os.getenv("VERCEL"):
         import tempfile
-        sqlite_db_path = Path(tempfile.gettempdir()) / "db.sqlite3"
+        sqlite_db_path = str(Path(tempfile.gettempdir()) / "db.sqlite3")
     else:
-        sqlite_db_path = BASE_DIR / "db.sqlite3"
+        sqlite_db_path = str(BASE_DIR / "db.sqlite3")
 
     import logging
     logging.getLogger("django.production").warning(

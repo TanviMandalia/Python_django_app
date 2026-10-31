@@ -175,7 +175,13 @@ def home(request):
     reviews_data["active_treatment_filter"] = treatment_filter
 
     # Featured treatments for homepage highlights
-    featured_treatments = Treatment.objects.filter(is_active=True).select_related("category").order_by("order")[:6]
+    try:
+        featured_treatments = list(
+            Treatment.objects.filter(is_active=True).select_related("category").order_by("order")[:6]
+        )
+    except Exception as exc:
+        logging.getLogger("django.production").warning("Featured treatments query failed: %s", exc)
+        featured_treatments = []
 
     return render(
         request,

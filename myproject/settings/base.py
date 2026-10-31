@@ -118,7 +118,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "myproject.wsgi.application"
-ASGI_APPLICATION = "myproject.asgi.application"
+# ASGI_APPLICATION is commented so zero-config builders (Vercel) default to standard WSGI
+# ASGI_APPLICATION = "myproject.asgi.application"
+
 
 # =========================
 # PASSWORD VALIDATION

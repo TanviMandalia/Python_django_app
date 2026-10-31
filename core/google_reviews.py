@@ -254,12 +254,16 @@ def get_public_reviews_summary():
     google_data = google_res.get("data")
 
     # Fetch approved internal database reviews that have explicit public publication consent
-    db_reviews_qs = (
-        Review.objects.filter(is_approved=True, consent_to_publish=True)
-        .select_related("treatment", "treatment__category")
-        .order_by("-created_at")
-    )
-    db_reviews_list = list(db_reviews_qs)
+    try:
+        db_reviews_qs = (
+            Review.objects.filter(is_approved=True, consent_to_publish=True)
+            .select_related("treatment", "treatment__category")
+            .order_by("-created_at")
+        )
+        db_reviews_list = list(db_reviews_qs)
+    except Exception as exc:
+        logger.warning("Database reviews query failed: %s", exc)
+        db_reviews_list = []
 
     reviews_list = []
     # If Google Places API provided live reviews, add them
