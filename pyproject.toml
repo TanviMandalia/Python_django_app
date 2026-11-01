@@ -34,5 +34,11 @@ dependencies = [
     "django-storages==1.14.6",
 ]
 
+[tool.setuptools.packages.find]
+include = ["myproject*", "core*"]
+
+[tool.uv]
+package = false
+
 [tool.vercel]
 entrypoint = "myproject.wsgi:application"
