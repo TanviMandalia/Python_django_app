@@ -3,7 +3,14 @@ from django.core.validators import validate_email as django_validate_email
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 import re
-from .models import Blog, PublicAppointmentRequest, Review, Treatment
+from .models import (
+    Blog,
+    PublicAppointmentRequest,
+    Review,
+    Treatment,
+    ClinicNotificationRecipient,
+    PlatformSettings,
+)
 from .appointment_slots import get_clinic_now, normalize_slot_time, format_slot_for_display
 
 class BlogForm(forms.ModelForm):
@@ -340,5 +347,73 @@ class PublicReviewForm(forms.ModelForm):
         if r < 1 or r > 5:
             raise ValidationError("Rating must be between 1 and 5 stars.")
         return r
+
+
+class ClinicNotificationRecipientForm(forms.ModelForm):
+    class Meta:
+        model = ClinicNotificationRecipient
+        fields = [
+            "name",
+            "email",
+            "recipient_type",
+            "notify_on_appointment",
+            "notify_on_contact_inquiry",
+            "is_active",
+        ]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Dr. Dhvani Patalia or Front Desk"}),
+            "email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "recipient@example.com"}),
+            "recipient_type": forms.Select(attrs={"class": "form-select"}),
+            "notify_on_appointment": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "notify_on_contact_inquiry": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").strip().lower()
+        if not email:
+            raise ValidationError("Email address is required.")
+        django_validate_email(email)
+        return email
+
+
+class PlatformSettingsForm(forms.ModelForm):
+    class Meta:
+        model = PlatformSettings
+        fields = [
+            "platform_name",
+            "super_admin_username",
+            "super_admin_email",
+            "system_alert_email",
+            "support_email",
+            "enable_registration",
+            "maintenance_mode",
+            "maintenance_message",
+        ]
+        widgets = {
+            "platform_name": forms.TextInput(attrs={"class": "sa-form-input", "placeholder": "Platform Brand Name"}),
+            "super_admin_username": forms.TextInput(attrs={"class": "sa-form-input", "placeholder": "techcraft1215"}),
+            "super_admin_email": forms.EmailInput(attrs={"class": "sa-form-input", "placeholder": "owner@platform.com"}),
+            "system_alert_email": forms.EmailInput(attrs={"class": "sa-form-input", "placeholder": "alerts@platform.com"}),
+            "support_email": forms.EmailInput(attrs={"class": "sa-form-input", "placeholder": "support@platform.com"}),
+            "enable_registration": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "maintenance_mode": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "maintenance_message": forms.Textarea(attrs={"class": "sa-form-textarea", "rows": 3}),
+        }
+
+    def clean_super_admin_email(self):
+        email = self.cleaned_data.get("super_admin_email", "").strip().lower()
+        if not email:
+            raise ValidationError("Platform Super Admin email is required.")
+        django_validate_email(email)
+        return email
+
+    def clean_system_alert_email(self):
+        email = self.cleaned_data.get("system_alert_email", "").strip().lower()
+        if not email:
+            raise ValidationError("System alert email is required.")
+        django_validate_email(email)
+        return email
+
 
 

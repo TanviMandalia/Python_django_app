@@ -44,6 +44,21 @@ urlpatterns = [
     path("edit-profile/", views.edit_profile, name="edit_profile"),
     # ── Settings ──────────────────────────────────────────────
     path("admin-settings/", views.admin_settings, name="admin_settings"),
+    path(
+        "admin-settings/recipients/add/",
+        views.admin_add_notification_recipient,
+        name="admin_add_notification_recipient",
+    ),
+    path(
+        "admin-settings/recipients/<int:recipient_id>/delete/",
+        views.admin_delete_notification_recipient,
+        name="admin_delete_notification_recipient",
+    ),
+    path(
+        "admin-settings/recipients/<int:recipient_id>/toggle/",
+        views.admin_toggle_notification_recipient,
+        name="admin_toggle_notification_recipient",
+    ),
     path("admin-email-settings/", views.admin_email_settings, name="admin_email_settings"),
     # ── Password System ───────────────────────────────────────
     path("change-password/", views.change_password_request, name="change_password"),
@@ -457,6 +472,11 @@ urlpatterns = [
         "super-admin/email-accounts/<int:account_id>/delete/",
         views.super_admin_email_account_delete,
         name="super_admin_email_account_delete",
+    ),
+    path(
+        "super-admin/platform-settings/",
+        views.super_admin_platform_settings,
+        name="super_admin_platform_settings",
     ),
     # ── Bulk Import (Excel) ────────────────────────────────────
     path("bulk-import/", views.bulk_import, name="bulk_import"),

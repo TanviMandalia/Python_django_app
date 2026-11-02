@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import Blog, PublicAppointmentRequest
+from .models import (
+    Blog,
+    PublicAppointmentRequest,
+    Hospital,
+    ClinicSettings,
+    ClinicNotificationRecipient,
+    PlatformSettings,
+)
 
 @admin.register(Blog)
 class BlogAdmin(admin.ModelAdmin):
@@ -55,5 +62,59 @@ class PublicAppointmentRequestAdmin(admin.ModelAdmin):
             request,
             f"Notification retry results: {success_count} sent successfully, {fail_count} failed."
         )
+
+
+@admin.register(Hospital)
+class HospitalAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "city", "phone", "email", "status", "is_active", "created_at")
+    list_filter = ("status", "is_active")
+    search_fields = ("name", "email", "phone", "city")
+
+
+@admin.register(ClinicSettings)
+class ClinicSettingsAdmin(admin.ModelAdmin):
+    list_display = (
+        "clinic_name",
+        "hospital",
+        "phone",
+        "email",
+        "primary_doctor_email",
+        "appointment_notification_enabled",
+        "lead_notification_enabled",
+    )
+    search_fields = ("clinic_name", "email", "phone", "primary_doctor_email")
+
+
+@admin.register(ClinicNotificationRecipient)
+class ClinicNotificationRecipientAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "email",
+        "hospital",
+        "recipient_type",
+        "is_active",
+        "notify_on_appointment",
+        "notify_on_contact_inquiry",
+    )
+    list_filter = (
+        "recipient_type",
+        "is_active",
+        "notify_on_appointment",
+        "notify_on_contact_inquiry",
+        "hospital",
+    )
+    search_fields = ("name", "email", "hospital__name")
+
+
+@admin.register(PlatformSettings)
+class PlatformSettingsAdmin(admin.ModelAdmin):
+    list_display = (
+        "platform_name",
+        "super_admin_email",
+        "system_alert_email",
+        "support_email",
+        "maintenance_mode",
+        "updated_at",
+    )
 
     

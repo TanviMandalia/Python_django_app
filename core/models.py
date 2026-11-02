@@ -54,6 +54,35 @@ class Hospital(models.Model):
     def __str__(self):
         return self.name
 
+    def get_appointment_recipient_emails(self):
+        """
+        Return active notification recipient emails for this hospital/clinic.
+        Falls back to settings, then clinic email, then settings.CLINIC_NOTIFICATION_EMAIL.
+        """
+        try:
+            if hasattr(self, "settings") and self.settings:
+                return self.settings.get_appointment_recipient_emails()
+        except Exception:
+            pass
+        active_recipients = self.notification_recipients.filter(
+            is_active=True, notify_on_appointment=True
+        ).values_list("email", flat=True)
+        emails = [e.strip().lower() for e in active_recipients if e and e.strip()]
+        if not emails and self.email:
+            emails.append(self.email.strip().lower())
+        from django.conf import settings
+        if not emails:
+            fallback = getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com")
+            if fallback:
+                emails.append(fallback.strip().lower())
+        seen = set()
+        deduped = []
+        for em in emails:
+            if em not in seen:
+                seen.add(em)
+                deduped.append(em)
+        return deduped
+
     class Meta:
         ordering = ["-created_at"]
 
@@ -974,10 +1003,89 @@ class ClinicSettings(models.Model):
     enable_payments = models.BooleanField(default=False)
     enable_otp_reset = models.BooleanField(default=True)
 
+    appointment_notification_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable/disable email alerts for new appointment booking requests",
+    )
+    lead_notification_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable/disable email alerts for contact form inquiries",
+    )
+    primary_doctor_email = models.EmailField(
+        blank=True,
+        default="",
+        help_text="Primary doctor/admin notification email for appointments",
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.clinic_name
+
+    def get_appointment_recipient_emails(self):
+        """
+        Returns a deduplicated list of active email addresses to notify for new appointments.
+        Prioritizes ClinicNotificationRecipient records; falls back to primary_doctor_email,
+        then clinic email, then settings.CLINIC_NOTIFICATION_EMAIL.
+        NEVER returns the Super Admin email.
+        """
+        from django.conf import settings
+        emails = []
+        if self.hospital:
+            active_recipients = self.hospital.notification_recipients.filter(
+                is_active=True, notify_on_appointment=True
+            ).values_list("email", flat=True)
+            emails = [e.strip().lower() for e in active_recipients if e and e.strip()]
+
+        if not emails:
+            if self.primary_doctor_email and self.primary_doctor_email.strip():
+                emails.append(self.primary_doctor_email.strip().lower())
+            elif self.email and self.email.strip():
+                emails.append(self.email.strip().lower())
+            elif self.hospital and self.hospital.email and self.hospital.email.strip():
+                emails.append(self.hospital.email.strip().lower())
+            else:
+                fallback = getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com")
+                if fallback:
+                    emails.append(fallback.strip().lower())
+
+        seen = set()
+        deduped = []
+        for em in emails:
+            if em not in seen:
+                seen.add(em)
+                deduped.append(em)
+        return deduped
+
+    def get_contact_lead_recipient_emails(self):
+        """
+        Returns a deduplicated list of active email addresses to notify for contact leads.
+        """
+        from django.conf import settings
+        emails = []
+        if self.hospital:
+            active_recipients = self.hospital.notification_recipients.filter(
+                is_active=True, notify_on_contact_inquiry=True
+            ).values_list("email", flat=True)
+            emails = [e.strip().lower() for e in active_recipients if e and e.strip()]
+
+        if not emails:
+            if self.email and self.email.strip():
+                emails.append(self.email.strip().lower())
+            elif self.hospital and self.hospital.email and self.hospital.email.strip():
+                emails.append(self.hospital.email.strip().lower())
+            else:
+                fallback = getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com")
+                if fallback:
+                    emails.append(fallback.strip().lower())
+
+        seen = set()
+        deduped = []
+        for em in emails:
+            if em not in seen:
+                seen.add(em)
+                deduped.append(em)
+        return deduped
 
 
 class ClinicAdmin(models.Model):
@@ -991,6 +1099,120 @@ class ClinicAdmin(models.Model):
 
     def __str__(self):
         return f"{self.user.username} → {self.hospital.name}"
+
+
+class ClinicNotificationRecipient(models.Model):
+    """
+    Multiple notification recipients for a specific clinic.
+    Used for routing appointment booking requests, leads, and operational alerts.
+    """
+    RECIPIENT_TYPE_CHOICES = [
+        ("doctor", "Doctor / Lead Specialist"),
+        ("admin", "Clinic Administrator"),
+        ("coordinator", "Appointment Coordinator / Receptionist"),
+        ("billing", "Billing / Finance Staff"),
+        ("general", "General Notification"),
+    ]
+
+    hospital = models.ForeignKey(
+        "Hospital",
+        on_delete=models.CASCADE,
+        related_name="notification_recipients",
+        help_text="The clinic/hospital this notification recipient belongs to",
+    )
+    name = models.CharField(max_length=120, help_text="Recipient contact name or role title")
+    email = models.EmailField(help_text="Authoritative notification email address")
+    recipient_type = models.CharField(
+        max_length=20,
+        choices=RECIPIENT_TYPE_CHOICES,
+        default="doctor",
+    )
+    notify_on_appointment = models.BooleanField(
+        default=True,
+        help_text="Receive alerts when new public appointment booking requests are submitted",
+    )
+    notify_on_contact_inquiry = models.BooleanField(
+        default=True,
+        help_text="Receive alerts when new contact leads / inquiries are submitted",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Active recipients receive notifications; inactive recipients are muted",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["hospital", "email"],
+                name="uniq_clinic_notification_recipient",
+            )
+        ]
+        ordering = ["-is_active", "recipient_type", "name"]
+        verbose_name = "Clinic Notification Recipient"
+        verbose_name_plural = "Clinic Notification Recipients"
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Muted"
+        return f"{self.name} <{self.email}> ({self.get_recipient_type_display()}) [{status}] – {self.hospital.name}"
+
+
+class PlatformSettings(models.Model):
+    """
+    Platform-wide global settings singleton for SaaS owner / Super Admin.
+    Strictly isolated from clinic tenants and protected against non-superuser access.
+    """
+    platform_name = models.CharField(max_length=150, default="TechCraft SaaS Platform")
+    super_admin_username = models.CharField(
+        max_length=150,
+        default="techcraft1215",
+        help_text="Platform owner account username",
+    )
+    super_admin_email = models.EmailField(
+        default="techcraft1215@gmail.com",
+        help_text="Platform owner private notification and alert email (never shared with clinic users)",
+    )
+    system_alert_email = models.EmailField(
+        default="techcraft1215@gmail.com",
+        help_text="Recipient for system-level errors, subscription anomalies, and security events",
+    )
+    support_email = models.EmailField(
+        default="techcraft1215@gmail.com",
+        help_text="Public-facing platform support contact email",
+    )
+    enable_registration = models.BooleanField(default=True, help_text="Allow new clinic onboarding / signup")
+    maintenance_mode = models.BooleanField(default=False, help_text="Put non-admin portal in maintenance mode")
+    maintenance_message = models.TextField(
+        blank=True,
+        default="Platform undergoing scheduled maintenance. Please check back shortly.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Platform Settings"
+        verbose_name_plural = "Platform Settings"
+
+    def __str__(self):
+        return f"{self.platform_name} Settings (Owner: {self.super_admin_email})"
+
+    @classmethod
+    def get_settings(cls):
+        """Thread-safe singleton getter with environment fallback."""
+        from django.conf import settings
+        default_admin_email = getattr(settings, "PLATFORM_SUPERADMIN_EMAIL", "techcraft1215@gmail.com")
+        default_support_email = getattr(settings, "PLATFORM_SUPPORT_EMAIL", "techcraft1215@gmail.com")
+        obj, _ = cls.objects.get_or_create(
+            id=1,
+            defaults={
+                "platform_name": "TechCraft SaaS Platform",
+                "super_admin_username": "techcraft1215",
+                "super_admin_email": default_admin_email,
+                "system_alert_email": default_admin_email,
+                "support_email": default_support_email,
+            },
+        )
+        return obj
 
 
 class Blog(models.Model):

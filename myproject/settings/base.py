@@ -250,8 +250,9 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 # PLATFORM EMAIL IDENTITY (TechCraft)
 # =========================
 
-PLATFORM_BRAND_NAME = "TechCraft"
-PLATFORM_TAGLINE = "Healthcare SaaS Platform"
+PLATFORM_BRAND_NAME = os.getenv("PLATFORM_BRAND_NAME", "TechCraft")
+PLATFORM_TAGLINE = os.getenv("PLATFORM_TAGLINE", "Healthcare SaaS Platform")
+PLATFORM_SUPERADMIN_EMAIL = os.getenv("PLATFORM_SUPERADMIN_EMAIL", "techcraft1215@gmail.com")
 PLATFORM_DEFAULT_FROM_EMAIL = os.getenv("PLATFORM_DEFAULT_FROM_EMAIL", "techcraft1215@gmail.com")
 PLATFORM_SUPPORT_EMAIL = os.getenv("PLATFORM_SUPPORT_EMAIL", "techcraft1215@gmail.com")
 PLATFORM_SMTP_HOST = os.getenv("PLATFORM_SMTP_HOST", "smtp.gmail.com")
@@ -293,10 +294,11 @@ CELERY_TASK_TIME_LIMIT = 360
 # =========================
 
 CLINIC_UPI_ID = os.getenv("CLINIC_UPI_ID", "")
-CLINIC_NAME = "Dr. Dhvani Patalia Physio Rehab"
-CLINIC_PHONE = "+91 94095 10501"
-CLINIC_EMAIL = "physio.rehab.guj@gmail.com"
-CLINIC_WHATSAPP = "94095 10501"
+CLINIC_NAME = os.getenv("CLINIC_NAME", "Dr. Dhvani Patalia Physio Rehab")
+CLINIC_PHONE = os.getenv("CLINIC_PHONE", "+91 94095 10501")
+CLINIC_EMAIL = os.getenv("CLINIC_EMAIL", "physio.rehab.guj@gmail.com")
+CLINIC_NOTIFICATION_EMAIL = os.getenv("CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com")
+CLINIC_WHATSAPP = os.getenv("CLINIC_WHATSAPP", "94095 10501")
 DOCTOR_WHATSAPP_NUMBER = os.getenv("DOCTOR_WHATSAPP_NUMBER", os.getenv("CLINIC_WHATSAPP_NUMBER", "919409510501")).strip()
 
 # =========================

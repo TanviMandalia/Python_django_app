@@ -52,7 +52,7 @@ def seo_context(request):
     canonical_url = f"{canonical_base}{request.path}"
 
     clinic_nap = {
-        'name': 'Dr. Dhvani Patalia Physio Rehab',
+        'name': getattr(settings, 'CLINIC_NAME', 'Dr. Dhvani Patalia Physio Rehab'),
         'doctor_name': 'Dr. Dhvani Patalia',
         'degrees': 'B.P.T, Certified Chiropractor, Fellowship in Neuromusculoskeletal Techniques',
         'job_title': 'Certified Chiropractor & Physiotherapist',
@@ -62,9 +62,9 @@ def seo_context(request):
         'region': 'Gujarat',
         'postal_code': '361006',
         'country': 'IN',
-        'phone': '+91 94095 10501',
+        'phone': getattr(settings, 'CLINIC_PHONE', '+91 94095 10501'),
         'phone_raw': '9409510501',
-        'email': 'physio.rehab.guj@gmail.com',
+        'email': getattr(settings, 'CLINIC_EMAIL', 'physio.rehab.guj@gmail.com'),
         'whatsapp_url': 'https://wa.me/919409510501',
         'geo_lat': '22.4707',
         'geo_lng': '70.0577',

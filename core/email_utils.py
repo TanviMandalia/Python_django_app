@@ -743,7 +743,29 @@ Details:
 
 def send_admin_new_appointment_alert(appointment):
     hospital = getattr(appointment, "hospital", None)
-    admin_email = hospital.email if (hospital and hospital.email) else CLINIC_EMAIL
+    clinic_settings = getattr(hospital, "settings", None) if hospital else None
+    if clinic_settings and not clinic_settings.appointment_notification_enabled:
+        logger.info(f"Appointment alerts disabled for clinic {hospital.name if hospital else 'None'}")
+        return True
+
+    recipient_emails = []
+    if hospital:
+        recipient_emails = hospital.get_appointment_recipient_emails()
+    elif clinic_settings:
+        recipient_emails = clinic_settings.get_appointment_recipient_emails()
+    else:
+        admin_email = getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com")
+        if admin_email:
+            recipient_emails = [admin_email]
+
+    # Explicitly guard against sending clinic appointment notifications to the platform super admin
+    super_admin_email = getattr(settings, "PLATFORM_SUPERADMIN_EMAIL", "techcraft1215@gmail.com").strip().lower()
+    recipient_emails = [e for e in recipient_emails if e.lower() != super_admin_email]
+
+    if not recipient_emails:
+        logger.info(f"No active notification recipients configured for appointment {appointment.id}")
+        return True
+
     subject = f"New Appointment: {appointment.name} – {appointment.date}"
     body_text = f"""New appointment booked.
 
@@ -775,21 +797,40 @@ Login to the clinic admin panel to confirm or assign this session.
         organization_name=clinic_title,
     )
     return send_clinic_email(
-        subject, body_text, admin_email, hospital=hospital, email_type="admin_appointment_alert", html_message=html
+        subject, body_text, recipient_emails, hospital=hospital, email_type="admin_appointment_alert", html_message=html
     )
 
 
 def send_public_appointment_request_notification(request_obj):
     """
     Send an immediate email notification for a new public appointment request
-    to the clinic doctor's authoritative address: physio.rehab.guj@gmail.com.
+    to all configured active clinic notification recipients.
     Also triggers a patient acknowledgment email.
     Safely captures delivery outcome without raising unhandled exceptions.
     """
     hospital = getattr(request_obj, "hospital", None)
     clinic_title = hospital.name if hospital else CLINIC_NAME
     clinic_phone = hospital.phone if (hospital and hospital.phone) else CLINIC_PHONE
-    doctor_email = getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com")
+
+    clinic_settings = getattr(hospital, "settings", None) if hospital else None
+    notifications_enabled = True
+    if clinic_settings and not clinic_settings.appointment_notification_enabled:
+        notifications_enabled = False
+
+    recipient_emails = []
+    if notifications_enabled:
+        if hospital:
+            recipient_emails = hospital.get_appointment_recipient_emails()
+        elif clinic_settings:
+            recipient_emails = clinic_settings.get_appointment_recipient_emails()
+        else:
+            default_recipient = getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com")
+            if default_recipient:
+                recipient_emails = [default_recipient]
+
+        # Explicitly guard against sending clinic appointment notifications to the platform super admin
+        super_admin_email = getattr(settings, "PLATFORM_SUPERADMIN_EMAIL", "techcraft1215@gmail.com").strip().lower()
+        recipient_emails = [e for e in recipient_emails if e.lower() != super_admin_email]
 
     ref = request_obj.reference_id
     patient_name = request_obj.patient_name
@@ -806,8 +847,10 @@ def send_public_appointment_request_notification(request_obj):
     )
 
     # 1. DOCTOR / CLINIC NOTIFICATION EMAIL
-    doctor_subject = f"New Public Appointment Request - Ref: {ref}"
-    doctor_body = f"""New Public Appointment Request Received
+    doctor_sent = False
+    if notifications_enabled and recipient_emails:
+        doctor_subject = f"New Public Appointment Request - Ref: {ref}"
+        doctor_body = f"""New Public Appointment Request Received
 
 Booking Reference : {ref}
 Patient Name      : {patient_name}
@@ -827,7 +870,7 @@ confirm the slot, or contact the patient via {contact_method}.
 Clinic: {clinic_title}
 """
 
-    doctor_html_content = f"""<p style="font-size:16px; color:#0f172a; margin-top:0;"><strong>New Public Appointment Request</strong></p>
+        doctor_html_content = f"""<p style="font-size:16px; color:#0f172a; margin-top:0;"><strong>New Public Appointment Request</strong></p>
 <p>A visitor has requested a physiotherapy consultation via the website. This request is <strong>Awaiting Confirmation</strong>.</p>
 <div class="box" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:18px; margin:16px 0;">
   <table style="width:100%; border-collapse:collapse; font-size:14px;">
@@ -844,27 +887,32 @@ Clinic: {clinic_title}
 </div>
 <p style="font-size:14px; color:#475569;">Please log in to your clinic admin portal to confirm this consultation or contact the patient directly.</p>"""
 
-    doctor_html = render_html_wrapper(
-        doctor_subject,
-        doctor_html_content,
-        preheader=f"New appointment request from {patient_name} for {date_formatted}",
-        context="clinic",
-        hospital=hospital,
-        organization_name=clinic_title,
-    )
-
-    doctor_sent = False
-    try:
-        doctor_sent = bool(send_clinic_email(
-            subject=doctor_subject,
-            message_text=doctor_body,
-            recipient_list=doctor_email,
+        doctor_html = render_html_wrapper(
+            doctor_subject,
+            doctor_html_content,
+            preheader=f"New appointment request from {patient_name} for {date_formatted}",
+            context="clinic",
             hospital=hospital,
-            email_type="public_appointment_request_doctor",
-            html_message=doctor_html,
-        ))
-    except Exception as exc:
-        logger.error(f"Doctor appointment request notification email failed: {exc.__class__.__name__} - {exc}")
+            organization_name=clinic_title,
+        )
+
+        try:
+            doctor_sent = bool(send_clinic_email(
+                subject=doctor_subject,
+                message_text=doctor_body,
+                recipient_list=recipient_emails,
+                hospital=hospital,
+                email_type="public_appointment_request_doctor",
+                html_message=doctor_html,
+            ))
+        except Exception as exc:
+            logger.error(f"Doctor appointment request notification email failed: {exc.__class__.__name__} - {exc}")
+            doctor_sent = False
+    elif not notifications_enabled:
+        logger.info(f"Clinic appointment notification skipped (disabled in clinic settings) for Ref: {ref}")
+        doctor_sent = True
+    else:
+        logger.warning(f"No valid notification recipients found for clinic {clinic_title} on Ref: {ref}")
         doctor_sent = False
 
     # 2. PATIENT CONFIRMATION / ACKNOWLEDGMENT EMAIL

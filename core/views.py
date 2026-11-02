@@ -11,7 +11,12 @@ import logging
 from datetime import datetime, time as dtime, timedelta  # ← time as dtime ADDED
 
 from .models import Blog
-from .forms import BlogForm, PublicAppointmentRequestForm
+from .forms import (
+    BlogForm,
+    PublicAppointmentRequestForm,
+    ClinicNotificationRecipientForm,
+    PlatformSettingsForm,
+)
 from .email_utils import send_clinic_email
 from .ip_utils import get_client_ip
 from django.contrib import messages
@@ -78,6 +83,8 @@ from .models import (
     PublicAppointmentRequest,
     VisitorLead,
     VisitorSession,
+    ClinicNotificationRecipient,
+    PlatformSettings,
 )
 from .entitlements import (
     evaluate_entitlement,
@@ -350,7 +357,12 @@ def unified_appointment_contact(request):
     and automatic tab activation (?tab=appointment or ?tab=contact).
     """
     try:
-        hospital = Hospital.objects.filter(is_active=True).first()
+        clinic_slug = request.GET.get("clinic") or request.POST.get("clinic")
+        hospital = None
+        if clinic_slug:
+            hospital = Hospital.objects.filter(slug=clinic_slug, is_active=True).first()
+        if not hospital:
+            hospital = Hospital.objects.filter(is_active=True).order_by("id").first()
     except Exception as exc:
         logging.getLogger("django.production").warning("Hospital query failed: %s", exc)
         hospital = None
@@ -389,9 +401,9 @@ def unified_appointment_contact(request):
     base_context = {
         "page_title": "Book Your Physiotherapy Appointment or Contact Us",
         "page_subtitle": "Take the first step towards better movement and recovery. Request an appointment with our physiotherapy team.",
-        "clinic_phone": getattr(settings, "CLINIC_PHONE", "+91 94095 10501"),
-        "clinic_email": getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com"),
-        "clinic_address": "Ground Floor, Narayan Cottage, Bedi Rd, opposite New Super Medical, Panchasar, Pancheshwar Tower, Jamnagar, Gujarat 361006, India",
+        "clinic_phone": (hospital.phone if hospital and hospital.phone else None) or getattr(settings, "CLINIC_PHONE", "+91 94095 10501"),
+        "clinic_email": (hospital.email if hospital and hospital.email else None) or getattr(settings, "CLINIC_EMAIL", "physio.rehab.guj@gmail.com"),
+        "clinic_address": (hospital.address if hospital and hospital.address else None) or "Ground Floor, Narayan Cottage, Bedi Rd, opposite New Super Medical, Panchasar, Pancheshwar Tower, Jamnagar, Gujarat 361006, India",
         "booking_success": booking_success,
         "booking_obj": booking_obj,
         "whatsapp_url": whatsapp_url,
@@ -5122,7 +5134,7 @@ def admin_settings(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
     from decimal import Decimal
-    hospital = resolve_hospital(request.user) or Hospital.objects.first()
+    hospital = resolve_hospital(request.user) or (Hospital.objects.first() if request.user.is_superuser else None)
     if hospital:
         settings_obj, created = ClinicSettings.objects.get_or_create(
             hospital=hospital,
@@ -5162,6 +5174,24 @@ def admin_settings(request):
             except Exception:
                 pass
 
+        # Primary Doctor / Appointment Notification Email
+        if "primary_doctor_email" in request.POST:
+            doc_email = request.POST.get("primary_doctor_email", "").strip().lower()
+            if doc_email:
+                from django.core.validators import validate_email as django_validate_email
+                try:
+                    django_validate_email(doc_email)
+                    settings_obj.primary_doctor_email = doc_email
+                except ValidationError:
+                    messages.error(request, "Please enter a valid primary doctor email address.")
+                    return redirect("admin_settings")
+            else:
+                settings_obj.primary_doctor_email = ""
+
+        # Notification Preferences
+        settings_obj.appointment_notification_enabled = (request.POST.get("appointment_notification_enabled") == "on")
+        settings_obj.lead_notification_enabled = (request.POST.get("lead_notification_enabled") == "on")
+
         if request.FILES.get("logo"):
             logo_file = request.FILES["logo"]
             from .file_security import validate_image_file
@@ -5170,15 +5200,154 @@ def admin_settings(request):
                 settings_obj.logo = logo_file
             except ValidationError as e:
                 messages.error(request, f"❌ {e.message if hasattr(e, 'message') else str(e)}")
-                return render(request, "admin/admin_settings.html", {"settings": settings_obj})
+                return redirect("admin_settings")
 
         settings_obj.save()
-
-        messages.success(request, "Settings updated successfully.")
-
+        messages.success(request, "Clinic settings updated successfully.")
         return redirect("admin_settings")
 
-    return render(request, "admin/admin_settings.html", {"settings": settings_obj})
+    recipients = hospital.notification_recipients.all() if hospital else ClinicNotificationRecipient.objects.none()
+    recipient_form = ClinicNotificationRecipientForm()
+    effective_recipients = settings_obj.get_appointment_recipient_emails()
+
+    context = {
+        "settings": settings_obj,
+        "hospital": hospital,
+        "recipients": recipients,
+        "recipient_form": recipient_form,
+        "effective_recipients": effective_recipients,
+    }
+    return render(request, "admin/admin_settings.html", context)
+
+
+@login_required
+@require_POST
+def admin_add_notification_recipient(request):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user) or (Hospital.objects.first() if request.user.is_superuser else None)
+    if not hospital:
+        messages.error(request, "No clinic is associated with your account.")
+        return redirect("admin_settings")
+
+    name = request.POST.get("name", "").strip()
+    email = request.POST.get("email", "").strip().lower()
+    recipient_type = request.POST.get("recipient_type", "doctor")
+    notify_on_appointment = (request.POST.get("notify_on_appointment") == "on")
+    notify_on_contact_inquiry = (request.POST.get("notify_on_contact_inquiry") == "on")
+    is_active = (request.POST.get("is_active") == "on") if "is_active" in request.POST else True
+
+    if not name or not email:
+        messages.error(request, "Recipient name and email address are required.")
+        return redirect("admin_settings")
+
+    from django.core.validators import validate_email as django_validate_email
+    try:
+        django_validate_email(email)
+    except ValidationError:
+        messages.error(request, f"'{email}' is not a valid email address.")
+        return redirect("admin_settings")
+
+    # Guard: prevent clinic admin from registering the super admin personal email
+    super_admin_email = getattr(settings, "PLATFORM_SUPERADMIN_EMAIL", "techcraft1215@gmail.com").strip().lower()
+    if email == super_admin_email and not request.user.is_superuser:
+        messages.error(request, "Platform Super Admin email cannot be registered as a clinic notification recipient.")
+        return redirect("admin_settings")
+
+    # Check for duplicate email in this clinic
+    if ClinicNotificationRecipient.objects.filter(hospital=hospital, email=email).exists():
+        messages.warning(request, f"A recipient with email '{email}' already exists for this clinic.")
+        return redirect("admin_settings")
+
+    ClinicNotificationRecipient.objects.create(
+        hospital=hospital,
+        name=name,
+        email=email,
+        recipient_type=recipient_type,
+        notify_on_appointment=notify_on_appointment,
+        notify_on_contact_inquiry=notify_on_contact_inquiry,
+        is_active=is_active,
+    )
+    messages.success(request, f"Notification recipient '{name}' ({email}) added successfully.")
+    return redirect("admin_settings")
+
+
+@login_required
+@require_POST
+def admin_delete_notification_recipient(request, recipient_id):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user) or (Hospital.objects.first() if request.user.is_superuser else None)
+    if not hospital:
+        messages.error(request, "No clinic is associated with your account.")
+        return redirect("admin_settings")
+
+    recipient = get_object_or_404(ClinicNotificationRecipient, id=recipient_id, hospital=hospital)
+    recipient_email = recipient.email
+    recipient.delete()
+    messages.success(request, f"Notification recipient '{recipient_email}' removed successfully.")
+    return redirect("admin_settings")
+
+
+@login_required
+@require_POST
+def admin_toggle_notification_recipient(request, recipient_id):
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user) or (Hospital.objects.first() if request.user.is_superuser else None)
+    if not hospital:
+        messages.error(request, "No clinic is associated with your account.")
+        return redirect("admin_settings")
+
+    recipient = get_object_or_404(ClinicNotificationRecipient, id=recipient_id, hospital=hospital)
+    recipient.is_active = not recipient.is_active
+    recipient.save(update_fields=["is_active", "updated_at"])
+    state_str = "activated" if recipient.is_active else "muted"
+    messages.success(request, f"Recipient '{recipient.name}' is now {state_str}.")
+    return redirect("admin_settings")
+
+
+@login_required
+def super_admin_platform_settings(request):
+    """
+    Dedicated platform settings configuration for Platform Super Admin only.
+    Clinic Admins have zero access to this view.
+    """
+    if not _is_platform_superadmin(request.user):
+        messages.error(request, "Access restricted to Platform Super Admin.")
+        return redirect("admin_dashboard" if _is_clinic_admin(request.user) else "client_dashboard")
+
+    platform_settings = PlatformSettings.get_settings()
+
+    if request.method == "POST":
+        form = PlatformSettingsForm(request.POST, instance=platform_settings)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Platform settings updated successfully.")
+            return redirect("super_admin_platform_settings")
+        else:
+            messages.error(request, "Please correct the errors in the platform settings form.")
+    else:
+        form = PlatformSettingsForm(instance=platform_settings)
+
+    clinics_summary = []
+    for h in Hospital.objects.all().order_by("name"):
+        recipients_count = h.notification_recipients.filter(is_active=True).count()
+        cs = getattr(h, "settings", None)
+        clinics_summary.append({
+            "hospital": h,
+            "settings": cs,
+            "recipients_count": recipients_count,
+            "recipients": h.notification_recipients.all(),
+            "effective_emails": h.get_appointment_recipient_emails(),
+        })
+
+    context = {
+        "form": form,
+        "platform_settings": platform_settings,
+        "clinics_summary": clinics_summary,
+    }
+    return render(request, "super_admin/super_admin_platform_settings.html", context)
 
 
 
@@ -6571,6 +6740,9 @@ def super_admin_clinic_detail(request, hospital_id):
             "patient_payments": patient_payments,
             "total_billed": total_billed,
             "audit_logs": audit_logs,
+            "notification_recipients": hospital.notification_recipients.all(),
+            "effective_recipients": hospital.get_appointment_recipient_emails(),
+            "clinic_settings": getattr(hospital, "settings", None),
         },
     )
 
