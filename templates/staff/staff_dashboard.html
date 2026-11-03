@@ -121,6 +121,99 @@
   </div>
 </div>
 
+<!-- ════ ASSIGNED CLINICAL SCHEDULE ════ -->
+<div class="staff-card" style="margin-bottom: 24px;">
+  <div class="staff-card-header">
+    <h3><i class="fas fa-calendar-check" style="color: var(--staff-primary);"></i> My Assigned Clinical Schedule</h3>
+    <a href="{% url 'add_session_note' %}" class="topbar-action-link" style="font-size: 0.82rem; color: var(--staff-dark); background: #f8fafc; border: 1px solid var(--staff-border);">
+      <i class="fas fa-plus-circle"></i> Add Session Note
+    </a>
+  </div>
+
+  {% if today_appointments or upcoming_appointments %}
+  <div class="staff-table-container">
+    <table class="staff-table">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Service / Treatment</th>
+          <th>Date &amp; Time</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for appt in today_appointments %}
+        <tr style="background: rgba(245, 197, 24, 0.05);">
+          <td>
+            <strong style="color: var(--staff-dark); display: block; font-size: 0.92rem;">
+              {{ appt.name }}
+            </strong>
+            <small style="color: var(--staff-text-sub);">{{ appt.phone|default:appt.email }}</small>
+          </td>
+          <td>
+            <span style="font-weight: 600;">{{ appt.clinic_service.name|default:appt.get_service_display|default:appt.service }}</span>
+          </td>
+          <td>
+            <div style="font-size: 0.84rem; font-weight: 700; color: #b89008;">
+              <i class="fas fa-calendar-day" style="margin-right: 4px;"></i> Today at {{ appt.time }}
+            </div>
+          </td>
+          <td>
+            <span class="badge-status {% if appt.status == 'confirmed' %}badge-info{% elif appt.status == 'completed' %}badge-success{% else %}badge-warning{% endif %}">
+              {{ appt.status|title }}
+            </span>
+          </td>
+          <td>
+            <a href="{% url 'add_session_note' %}" class="topbar-action-link" style="background: rgba(245, 197, 24, 0.15); color: var(--staff-dark); font-size: 0.78rem; padding: 4px 10px; border: none;" title="Document Treatment">
+              <i class="fas fa-notes-medical"></i> Note
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+        {% for appt in upcoming_appointments %}
+          {% if appt not in today_appointments %}
+          <tr>
+            <td>
+              <strong style="color: var(--staff-dark); display: block; font-size: 0.92rem;">
+                {{ appt.name }}
+              </strong>
+              <small style="color: var(--staff-text-sub);">{{ appt.phone|default:appt.email }}</small>
+            </td>
+            <td>
+              <span>{{ appt.clinic_service.name|default:appt.get_service_display|default:appt.service }}</span>
+            </td>
+            <td>
+              <div style="font-size: 0.84rem;">
+                <i class="far fa-calendar-alt" style="color: var(--staff-text-sub); margin-right: 4px;"></i>
+                {{ appt.date }} at {{ appt.time }}
+              </div>
+            </td>
+            <td>
+              <span class="badge-status {% if appt.status == 'confirmed' %}badge-info{% elif appt.status == 'completed' %}badge-success{% else %}badge-warning{% endif %}">
+                {{ appt.status|title }}
+              </span>
+            </td>
+            <td>
+              <a href="{% url 'add_session_note' %}" class="topbar-action-link" style="background: #f8fafc; color: var(--staff-dark); font-size: 0.78rem; padding: 4px 10px; border: 1px solid var(--staff-border);" title="Document Treatment">
+                <i class="fas fa-notes-medical"></i> Note
+              </a>
+            </td>
+          </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="staff-empty-state" style="padding: 24px 16px;">
+    <div class="empty-icon"><i class="fas fa-calendar-check" style="color: #28a745;"></i></div>
+    <h4>No Scheduled Appointments</h4>
+    <p>You have no clinical appointments assigned for today or upcoming days.</p>
+  </div>
+  {% endif %}
+</div>
+
 <!-- ════ ASSIGNED TASKS AGENDA ════ -->
 <div class="staff-card">
   <div class="staff-card-header">

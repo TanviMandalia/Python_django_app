@@ -119,4 +119,33 @@
     {% endif %}
   </div>
 </div>
+
+{% if my_public_requests %}
+<div class="client-card" style="margin-top: 20px; border-left: 4px solid var(--client-primary);">
+  <div class="client-card-header">
+    <div class="client-card-title">
+      <i class="fas fa-globe"></i> Online Public Booking Inquiries
+    </div>
+    <span class="client-badge client-badge-warning">{{ my_public_requests|length }} Submitted</span>
+  </div>
+  <div class="client-card-body" style="padding: 14px 20px;">
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      {% for req in my_public_requests %}
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #f9fafb; border: 1px solid var(--client-border); border-radius: 10px; flex-wrap: wrap; gap: 8px;">
+        <div>
+          <strong style="color: var(--client-dark); font-size: 0.9rem;">{{ req.reference_id }}</strong>
+          <span style="color: var(--client-text-muted); font-size: 0.82rem; margin-left: 8px;">{{ req.preferred_date|date:"d M Y" }} at {{ req.preferred_time }}</span>
+          {% if req.service_or_reason %}<small style="display: block; color: var(--client-text-muted);">{{ req.service_or_reason|truncatechars:60 }}</small>{% endif %}
+        </div>
+        <div>
+          <span class="client-badge {% if req.status == 'confirmed' %}client-badge-success{% elif req.status == 'cancelled' %}client-badge-danger{% else %}client-badge-warning{% endif %}">
+            {{ req.status|title }}
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

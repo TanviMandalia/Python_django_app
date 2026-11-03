@@ -2430,14 +2430,27 @@ def export_clinic_payments_pdf(request):
 def client_dashboard(request):
     if request.user.is_superuser or _is_clinic_admin(request.user):
         return redirect("admin_dashboard")
-    appointments = Appointment.objects.filter(patient=request.user)
-    upcoming = appointments.filter(status__in=["pending", "confirmed"])
-    completed = appointments.filter(status="completed")
-    recent_notifs = Notification.objects.filter(recipient=request.user)[:5]
+    from .models import PublicAppointmentRequest
+    appointments = (
+        Appointment.objects.filter(patient=request.user)
+        .select_related("assigned_staff", "clinic_service", "hospital")
+        .order_by("-date", "-time", "-id")
+    )
+    upcoming = appointments.filter(status__in=["pending", "confirmed"]).order_by("date", "time")
+    completed = appointments.filter(status="completed").order_by("-date", "-time")
+    recent_notifs = Notification.objects.filter(recipient=request.user).order_by("-created_at")[:5]
     has_reviewed = Review.objects.filter(patient=request.user).exists()
     approved_reviews = Review.objects.filter(is_approved=True).order_by("-created_at")[:6]
-    my_payments = PaymentRecord.objects.filter(patient=request.user).order_by("-created_at")[:5]
-    upcoming_appointments = upcoming.order_by("date")
+    my_payments = (
+        PaymentRecord.objects.filter(patient=request.user)
+        .select_related("hospital", "appointment")
+        .order_by("-created_at")[:5]
+    )
+    my_public_requests = (
+        PublicAppointmentRequest.objects.filter(email=request.user.email)
+        .order_by("-created_at")[:5]
+    )
+    upcoming_appointments = upcoming
     return render(
         request,
         "client/client_dashboard.html",
@@ -2452,6 +2465,7 @@ def client_dashboard(request):
             "has_reviewed": has_reviewed,
             "approved_reviews": approved_reviews,
             "my_payments": my_payments,
+            "my_public_requests": my_public_requests,
             "upcoming_appointments": upcoming_appointments,
         },
     )
@@ -2467,23 +2481,50 @@ def admin_dashboard(request):
         return redirect("client_dashboard")
     from django.db.models import Sum
     from decimal import Decimal
+    from .models import PublicAppointmentRequest
     hospital = resolve_hospital(request.user)
     if not request.user.is_superuser and hospital:
-        all_appointments = Appointment.objects.filter(hospital=hospital)
+        all_appointments = (
+            Appointment.objects.filter(hospital=hospital)
+            .select_related("patient", "assigned_staff", "hospital", "clinic_service")
+            .order_by("-date", "-time", "-id")
+        )
         total_staff = StaffProfile.objects.filter(hospital=hospital).count()
         total_users = User.objects.filter(
             is_superuser=False, is_staff=False, appointments__hospital=hospital
         ).distinct().count()
-        recent_payments = PaymentRecord.objects.filter(hospital=hospital).order_by("-created_at")[:6]
+        recent_payments = (
+            PaymentRecord.objects.filter(hospital=hospital)
+            .select_related("patient", "appointment")
+            .order_by("-created_at")[:6]
+        )
         total_paid = PaymentRecord.objects.filter(hospital=hospital, status="paid").aggregate(t=Sum("amount"))["t"] or 0
         pending_payments_count = PaymentRecord.objects.filter(hospital=hospital, status="pending").count()
+        public_pending_count = PublicAppointmentRequest.objects.filter(hospital=hospital, status="pending").count()
+        recent_public_requests = (
+            PublicAppointmentRequest.objects.filter(hospital=hospital, status="pending")
+            .order_by("-created_at")[:5]
+        )
     else:
-        all_appointments = Appointment.objects.all()
+        all_appointments = (
+            Appointment.objects.all()
+            .select_related("patient", "assigned_staff", "hospital", "clinic_service")
+            .order_by("-date", "-time", "-id")
+        )
         total_staff = StaffProfile.objects.count()
         total_users = User.objects.filter(is_superuser=False, is_staff=False).count()
-        recent_payments = PaymentRecord.objects.order_by("-created_at")[:6]
+        recent_payments = (
+            PaymentRecord.objects.all()
+            .select_related("patient", "appointment", "hospital")
+            .order_by("-created_at")[:6]
+        )
         total_paid = PaymentRecord.objects.filter(status="paid").aggregate(t=Sum("amount"))["t"] or 0
         pending_payments_count = PaymentRecord.objects.filter(status="pending").count()
+        public_pending_count = PublicAppointmentRequest.objects.filter(status="pending").count()
+        recent_public_requests = (
+            PublicAppointmentRequest.objects.filter(status="pending")
+            .order_by("-created_at")[:5]
+        )
 
     pending = all_appointments.filter(status="pending").count()
     confirmed = all_appointments.filter(status="confirmed").count()
@@ -2518,6 +2559,8 @@ def admin_dashboard(request):
             "recent_payments": recent_payments,
             "total_paid": total_paid,
             "pending_payments_count": pending_payments_count,
+            "public_pending_count": public_pending_count,
+            "recent_public_requests": recent_public_requests,
         },
     )
 
@@ -2613,7 +2656,7 @@ def book_appointment(request):
 
         messages.success(
             request,
-            f"✅ Appointment booked for {appt.date} at {appt.time}! A confirmation email will be sent to your registered address."
+            f"✅ Appointment booked for {appt.date} at {appt.time}! Confirmation email sent to your registered address."
         )
         return redirect("my_appointments")
     return render(request, "client/book_appointment.html")
@@ -2621,8 +2664,24 @@ def book_appointment(request):
 
 @login_required
 def my_appointments(request):
-    appointments = Appointment.objects.filter(patient=request.user)
-    return render(request, "client/my_appointments.html", {"appointments": appointments})
+    from .models import PublicAppointmentRequest
+    appointments = (
+        Appointment.objects.filter(patient=request.user)
+        .select_related("assigned_staff", "hospital", "clinic_service")
+        .order_by("-date", "-time", "-id")
+    )
+    my_public_requests = (
+        PublicAppointmentRequest.objects.filter(email=request.user.email)
+        .order_by("-created_at")
+    )
+    return render(
+        request,
+        "client/my_appointments.html",
+        {
+            "appointments": appointments,
+            "my_public_requests": my_public_requests,
+        },
+    )
 
 
 @login_required
@@ -3761,6 +3820,24 @@ def staff_dashboard(request):
     my_tasks = DailyTask.objects.filter(assigned_to=request.user).order_by(
         "-created_at"
     )[:5]
+    today_appointments = (
+        Appointment.objects.filter(assigned_staff=request.user, date=today)
+        .select_related("patient", "clinic_service", "hospital")
+        .order_by("time")
+    )
+    upcoming_appointments = (
+        Appointment.objects.filter(assigned_staff=request.user, date__gte=today)
+        .exclude(status="cancelled")
+        .select_related("patient", "clinic_service", "hospital")
+        .order_by("date", "time")[:6]
+    )
+    today_appointments_count = today_appointments.count()
+    upcoming_count = Appointment.objects.filter(
+        assigned_staff=request.user, date__gte=today, status__in=["pending", "confirmed"]
+    ).count()
+    completed_sessions_count = Appointment.objects.filter(
+        assigned_staff=request.user, status="completed"
+    ).count()
     return render(
         request,
         "staff/staff_dashboard.html",
@@ -3770,6 +3847,11 @@ def staff_dashboard(request):
             "pending_leaves": pending_leaves,
             "my_tasks": my_tasks,
             "today": today,
+            "today_appointments": today_appointments,
+            "today_appointments_count": today_appointments_count,
+            "upcoming_appointments": upcoming_appointments,
+            "upcoming_count": upcoming_count,
+            "completed_sessions_count": completed_sessions_count,
         },
     )
 
@@ -6330,7 +6412,14 @@ def super_admin_dashboard(request):
 
     # Alert center calculations
     clinics_near_limit = []
-    for h in Hospital.objects.filter(is_active=True).select_related("subscription__plan"):
+    monitored_hospitals = (
+        Hospital.objects.filter(
+            is_active=True,
+            subscription__status__in=["active", "trial"],
+        )
+        .select_related("subscription__plan")[:20]
+    )
+    for h in monitored_hospitals:
         for fcode in ("patients", "appointments", "staff_management"):
             u = get_feature_usage(h, fcode)
             if u.get("limit", 0) > 0 and u.get("percent", 0) >= 80:

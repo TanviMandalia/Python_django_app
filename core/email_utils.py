@@ -493,7 +493,7 @@ def send_clinic_email(
         has_real_smtp = bool(
             account.pk
             and getattr(account, "provider", "") in ("smtp", "gmail", "outlook")
-            and account.has_password()
+            and account.has_password
             and account.is_active
             and not is_console_mode
         )
