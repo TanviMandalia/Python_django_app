@@ -2611,10 +2611,10 @@ def book_appointment(request):
         except Exception as exc:
             logger.error(f"Admin in-app notification failed for appt {appt.id}: {exc.__class__.__name__} - {exc}")
 
-        if email_sent:
-            messages.success(request, f"✅ Appointment booked for {appt.date} at {appt.time}! Confirmation email sent.")
-        else:
-            messages.success(request, f"✅ Appointment booked for {appt.date} at {appt.time}! (Note: Confirmation email delivery was delayed or unavailable, but your appointment is secured.)")
+        messages.success(
+            request,
+            f"✅ Appointment booked for {appt.date} at {appt.time}! A confirmation email will be sent to your registered address."
+        )
         return redirect("my_appointments")
     return render(request, "client/book_appointment.html")
 

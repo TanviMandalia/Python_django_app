@@ -633,7 +633,7 @@ def _parse_gmail_payload_body(payload: Dict[str, Any]) -> Tuple[str, str, List[D
     attachments: List[Dict[str, Any]] = []
 
     def _walk(part: Dict[str, Any]):
-        nonlocal body_text, body_html, attachments
+        nonlocal body_text, body_html
         mime_type = part.get("mimeType", "")
         filename = part.get("filename", "")
         body = part.get("body", {})
