@@ -357,6 +357,80 @@
   {% endif %}
 </div>
 
+<!-- ════ INCOMING GMAIL MESSAGES & CUSTOMER REPLIES (INBOUNDEMAIL) ════ -->
+<div class="admin-card" style="margin-top: 28px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+    <div>
+      <h3 style="font-size: 1.15rem; color: var(--admin-dark); margin: 0 0 6px 0; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-inbox" style="color: #0284c7;"></i> Synchronized Incoming Messages &amp; Customer Replies (Gmail &rarr; PostgreSQL)
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--admin-text-sub); margin: 0;">
+        Real messages and customer replies automatically synchronized from <strong>physio.rehab.guj@gmail.com</strong> into PostgreSQL via Gmail API and Pub/Sub push.
+      </p>
+    </div>
+    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; padding: 6px 12px; border-radius: 6px;">
+      {{ recent_inbound|length }} Inbound Records
+    </span>
+  </div>
+
+  {% if recent_inbound %}
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--admin-border); text-align: left; background: #f8fafc;">
+            <th style="padding: 10px 12px; color: var(--admin-text-sub); font-weight: 600;">Received At</th>
+            <th style="padding: 10px 12px; color: var(--admin-text-sub); font-weight: 600;">From (Customer/Sender)</th>
+            <th style="padding: 10px 12px; color: var(--admin-text-sub); font-weight: 600;">Subject</th>
+            <th style="padding: 10px 12px; color: var(--admin-text-sub); font-weight: 600;">Status</th>
+            <th style="padding: 10px 12px; color: var(--admin-text-sub); font-weight: 600;">Message Snippet / Body</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for in_msg in recent_inbound %}
+            <tr style="border-bottom: 1px solid var(--admin-border);">
+              <td style="padding: 10px 12px; white-space: nowrap; color: var(--admin-text-sub);">
+                {{ in_msg.received_at|date:"M d, H:i:s" }}
+              </td>
+              <td style="padding: 10px 12px; font-weight: 600; color: #0f172a;">
+                {{ in_msg.sender }}
+              </td>
+              <td style="padding: 10px 12px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <strong>{{ in_msg.subject|default:"(No Subject)" }}</strong>
+                {% if in_msg.in_reply_to %}
+                  <div style="font-size: 0.72rem; color: #64748b;">Reply &bull; Thread ID: {{ in_msg.thread_id|truncatechars:18 }}</div>
+                {% endif %}
+              </td>
+              <td style="padding: 10px 12px;">
+                {% if in_msg.status == "processed" %}
+                  <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 0.76rem; padding: 3px 8px; border-radius: 4px;">
+                    <i class="fas fa-check-circle"></i> Processed
+                  </span>
+                {% elif in_msg.status == "duplicate" %}
+                  <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.76rem; padding: 3px 8px; border-radius: 4px;">
+                    Duplicate Ignored
+                  </span>
+                {% else %}
+                  <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.76rem; padding: 3px 8px; border-radius: 4px;">
+                    {{ in_msg.status }}
+                  </span>
+                {% endif %}
+              </td>
+              <td style="padding: 10px 12px; font-size: 0.80rem; color: #334155; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ in_msg.body_text|default:in_msg.body_html|striptags|truncatechars:90|default:"—" }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 32px 16px; color: var(--admin-text-sub); background: #f8fafc; border-radius: 8px;">
+      <i class="fas fa-inbox" style="font-size: 2rem; color: #cbd5e1; margin-bottom: 8px; display: block;"></i>
+      <p style="margin: 0; font-size: 0.9rem;">No incoming Gmail messages or customer replies synchronized yet. When customers reply to booking confirmations or send emails to <strong>physio.rehab.guj@gmail.com</strong>, they will be automatically synced into PostgreSQL and displayed here.</p>
+    </div>
+  {% endif %}
+</div>
+
 <script>
   // Dynamic host/port helper when selecting known provider templates
   const providerSelect = document.getElementById('providerSelect');

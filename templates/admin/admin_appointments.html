@@ -141,6 +141,13 @@
           </td>
           <td>
             <span style="font-size: 0.8rem; color: #334155;">{{ req.service_or_reason|default:"—"|truncatechars:45 }}</span>
+            {% if req.latest_customer_reply %}
+              <div style="margin-top: 6px; padding: 4px 8px; background: #ecfdf5; border-left: 3px solid #059669; border-radius: 4px; font-size: 0.74rem; color: #065f46;">
+                <strong><i class="fas fa-reply"></i> Customer Reply:</strong>
+                <span title="{{ req.latest_customer_reply.body_text|default:req.latest_customer_reply.subject }}">{{ req.latest_customer_reply.body_text|default:req.latest_customer_reply.subject|truncatechars:45 }}</span>
+                <div style="font-size: 0.68rem; color: #64748b;">{{ req.latest_customer_reply.received_at|date:"d M, H:i" }}</div>
+              </div>
+            {% endif %}
           </td>
           <td>
             {% if req.status == 'confirmed' %}

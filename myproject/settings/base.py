@@ -247,6 +247,21 @@ INBOUND_EMAIL_WEBHOOK_SECRET = os.getenv("INBOUND_EMAIL_WEBHOOK_SECRET", "")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 
 # =========================
+# GMAIL API OAUTH 2.0 INTEGRATION (Shared Mailbox: physio.rehab.guj@gmail.com)
+# =========================
+GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "")
+GOOGLE_OAUTH_REDIRECT_URI = os.getenv(
+    "GOOGLE_OAUTH_REDIRECT_URI",
+    "http://127.0.0.1:8000/admin-settings/gmail/callback/",
+)
+GMAIL_SHARED_MAILBOX = os.getenv("GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com")
+GOOGLE_PUBSUB_TOPIC = os.getenv("GOOGLE_PUBSUB_TOPIC", "")
+GOOGLE_PUBSUB_SUBSCRIPTION = os.getenv("GOOGLE_PUBSUB_SUBSCRIPTION", "")
+GOOGLE_PUBSUB_VERIFICATION_TOKEN = os.getenv("GOOGLE_PUBSUB_VERIFICATION_TOKEN", "")
+FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", os.getenv("ENCRYPTION_KEY", ""))
+
+# =========================
 # PLATFORM EMAIL IDENTITY (TechCraft)
 # =========================
 

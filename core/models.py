@@ -68,13 +68,12 @@ class Hospital(models.Model):
             is_active=True, notify_on_appointment=True
         ).values_list("email", flat=True)
         emails = [e.strip().lower() for e in active_recipients if e and e.strip()]
-        if not emails and self.email:
+        if not emails and self.email and "example.com" not in self.email and "test@" not in self.email:
             emails.append(self.email.strip().lower())
         from django.conf import settings
-        if not emails:
-            fallback = getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com")
-            if fallback:
-                emails.append(fallback.strip().lower())
+        fallback = getattr(settings, "GMAIL_SHARED_MAILBOX", getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com"))
+        if fallback and fallback.lower() not in emails:
+            emails.append(fallback.strip().lower())
         seen = set()
         deduped = []
         for em in emails:
@@ -651,6 +650,15 @@ class PublicAppointmentRequest(models.Model):
         url, _ = build_whatsapp_click_to_chat_url(self)
         return url
 
+    @property
+    def latest_customer_reply(self):
+        from .models import InboundEmail
+        from django.db.models import Q
+        return InboundEmail.objects.filter(
+            Q(subject__icontains=self.reference_id) |
+            (Q(sender__iexact=self.email) & ~Q(status="duplicate"))
+        ).order_by("-received_at").first()
+
 
 
 class StaffProfile(models.Model):
@@ -1040,12 +1048,12 @@ class ClinicSettings(models.Model):
         if not emails:
             if self.primary_doctor_email and self.primary_doctor_email.strip():
                 emails.append(self.primary_doctor_email.strip().lower())
-            elif self.email and self.email.strip():
+            elif self.email and self.email.strip() and "test@" not in self.email and "example.com" not in self.email:
                 emails.append(self.email.strip().lower())
-            elif self.hospital and self.hospital.email and self.hospital.email.strip():
+            elif self.hospital and self.hospital.email and self.hospital.email.strip() and "example.com" not in self.hospital.email:
                 emails.append(self.hospital.email.strip().lower())
             else:
-                fallback = getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com")
+                fallback = getattr(settings, "GMAIL_SHARED_MAILBOX", getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com"))
                 if fallback:
                     emails.append(fallback.strip().lower())
 
@@ -1751,6 +1759,7 @@ class EmailAccount(models.Model):
     PROVIDER_CHOICES = [
         ("smtp", "Custom SMTP Server"),
         ("gmail", "Google Workspace / Gmail SMTP"),
+        ("gmail_api", "Official Gmail API (OAuth 2.0)"),
         ("office365", "Microsoft 365 / Outlook"),
         ("api", "Transactional Email API"),
     ]
@@ -1946,6 +1955,134 @@ class InboundEmail(models.Model):
 
     def __str__(self):
         return f"[{self.status}] {self.sender} -> {self.recipient}: {self.subject[:30]}"
+
+
+class GmailOAuthCredential(models.Model):
+    """
+    Stores server-side OAuth 2.0 credentials for the shared clinic Gmail mailbox
+    (physio.rehab.guj@gmail.com).
+
+    Security & Privacy:
+    - Refresh tokens and access tokens are encrypted at rest with Fernet (AES-128-CBC + HMAC).
+    - Zero plaintext tokens or client secrets stored in the database.
+    - Tracks token expiry, historyId for Pub/Sub and delta sync, and sanitized error states.
+    """
+    email = models.EmailField(
+        unique=True,
+        default="physio.rehab.guj@gmail.com",
+        help_text="Shared Gmail mailbox email address",
+    )
+    hospital = models.ForeignKey(
+        Hospital,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="gmail_credentials",
+        help_text="Associated clinic (optional if platform-wide shared mailbox)",
+    )
+    encrypted_refresh_token = models.TextField(
+        help_text="Fernet encrypted OAuth 2.0 refresh token",
+    )
+    encrypted_access_token = models.TextField(
+        blank=True,
+        help_text="Fernet encrypted OAuth 2.0 access token",
+    )
+    token_expiry = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Access token expiration timestamp",
+    )
+    scopes = models.JSONField(
+        default=list,
+        help_text="Granted OAuth 2.0 scopes",
+    )
+    history_id = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="Last synchronized Gmail history ID for Pub/Sub and delta sync",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether this OAuth integration is active and healthy",
+    )
+    authorized_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when initial authorization was completed",
+    )
+    last_sync_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp of last incoming/outgoing synchronization",
+    )
+    last_error = models.TextField(
+        blank=True,
+        help_text="Sanitized technical error details if authorization failed or was revoked",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        verbose_name = "Gmail OAuth Credential"
+        verbose_name_plural = "Gmail OAuth Credentials"
+
+    def __str__(self):
+        status = "Authorized" if self.is_authorized else "Pending/Invalid"
+        return f"Gmail OAuth ({self.email}) - {status}"
+
+    def set_refresh_token(self, token: str):
+        from .crypto import encrypt_credential
+        self.encrypted_refresh_token = encrypt_credential((token or "").strip())
+
+    def get_refresh_token(self) -> str:
+        from .crypto import decrypt_credential
+        return decrypt_credential(self.encrypted_refresh_token) or ""
+
+    def set_access_token(self, token: str):
+        from .crypto import encrypt_credential
+        self.encrypted_access_token = encrypt_credential((token or "").strip())
+
+    def get_access_token(self) -> str:
+        from .crypto import decrypt_credential
+        return decrypt_credential(self.encrypted_access_token) or ""
+
+    @property
+    def is_authorized(self) -> bool:
+        return bool(self.encrypted_refresh_token and self.is_active)
+
+    @is_authorized.setter
+    def is_authorized(self, value: bool):
+        # Allow kwarg initialization; actual authorization is derived from refresh token & is_active
+        pass
+
+    @property
+    def is_token_expired(self) -> bool:
+        if not self.token_expiry:
+            return True
+        return timezone.now() >= (self.token_expiry - timezone.timedelta(seconds=60))
+
+    @property
+    def email_address(self) -> str:
+        return self.email
+
+    @property
+    def refresh_token_encrypted(self) -> str:
+        return self.encrypted_refresh_token
+
+    @property
+    def access_token_encrypted(self) -> str:
+        return self.encrypted_access_token
+
+    @classmethod
+    def get_shared_credential(cls, mailbox=None):
+        from django.conf import settings
+        target = (mailbox or getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com")).strip().lower()
+        return cls.objects.filter(email__iexact=target).first()
+
+    def mask_email(self) -> str:
+        from .email_utils import mask_email_for_logging
+        return mask_email_for_logging(self.email)
 
 
 # ═════════════════════════════════════════════════════════════════════════════

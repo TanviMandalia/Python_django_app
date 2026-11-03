@@ -6,6 +6,7 @@ from .models import (
     ClinicSettings,
     ClinicNotificationRecipient,
     PlatformSettings,
+    GmailOAuthCredential,
 )
 
 @admin.register(Blog)
@@ -116,5 +117,20 @@ class PlatformSettingsAdmin(admin.ModelAdmin):
         "maintenance_mode",
         "updated_at",
     )
+
+
+@admin.register(GmailOAuthCredential)
+class GmailOAuthCredentialAdmin(admin.ModelAdmin):
+    list_display = (
+        "email",
+        "hospital",
+        "is_active",
+        "authorized_at",
+        "last_sync_at",
+        "token_expiry",
+    )
+    list_filter = ("is_active", "hospital")
+    search_fields = ("email", "hospital__name")
+    readonly_fields = ("created_at", "updated_at", "authorized_at", "last_sync_at")
 
     

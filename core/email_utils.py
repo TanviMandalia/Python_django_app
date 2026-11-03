@@ -452,6 +452,94 @@ def send_clinic_email(
         if effective_reply_to:
             headers["Reply-To"] = sanitize_header_value(effective_reply_to)
 
+        from .gmail_service import (
+            is_gmail_api_configured_and_active,
+            send_gmail_message,
+            get_shared_mailbox_address,
+            GmailServiceError,
+            GmailAuthError,
+        )
+        use_gmail_api = is_gmail_api_configured_and_active()
+
+        if use_gmail_api:
+            try:
+                send_gmail_message(
+                    subject=clean_subject,
+                    body_text=message_text,
+                    to_email=recipient,
+                    html_content=html_message,
+                    from_email=get_shared_mailbox_address(),
+                    from_name=clean_display_name,
+                    headers=headers,
+                    attachments=attachments,
+                    hospital=hospital or account.hospital,
+                    email_type=email_type,
+                    idempotency_key=None,
+                )
+                safe_log_subject = clean_subject.encode("ascii", errors="backslashreplace").decode("ascii")
+                logger.info(f"Email sent successfully via Gmail API to {mask_email_for_logging(recipient)}: '{safe_log_subject}'")
+                continue
+            except Exception as g_err:
+                logger.error(f"Gmail API delivery attempt failed: {g_err}")
+                # CRITICAL: send_gmail_message already logged EmailLog with status='failed' and safe error details.
+                # Do NOT silently fall back to console backend and overwrite the failure with a fake 'sent' status.
+                success_all = False
+                continue
+
+        # If Gmail API is not active: check whether we have an active test runner (locmem) or real external SMTP account
+        backend_name = getattr(settings, "EMAIL_BACKEND", "")
+        is_test_runner = "locmem" in backend_name
+        is_console_mode = "console" in backend_name or getattr(settings, "DEV_EMAIL_CONSOLE", False)
+        has_real_smtp = bool(
+            account.pk
+            and getattr(account, "provider", "") in ("smtp", "gmail", "outlook")
+            and account.has_password()
+            and account.is_active
+            and not is_console_mode
+        )
+
+        if not is_test_runner and not has_real_smtp:
+            # We have neither an active Gmail OAuth authorization nor an authenticated external SMTP account.
+            auth_msg = (
+                f"No active Gmail OAuth authorization found for {get_shared_mailbox_address()}. "
+                "The mailbox owner must authorize the application once via Admin Settings."
+            )
+            logger.warning(f"Email delivery skipped for {mask_email_for_logging(recipient)}: {auth_msg}")
+
+            if is_console_mode:
+                try:
+                    email_msg = EmailMultiAlternatives(
+                        subject=f"[{clean_display_name}] {clean_subject}",
+                        body=message_text,
+                        from_email=from_email,
+                        to=[recipient],
+                        headers=headers,
+                        reply_to=reply_to_list,
+                        connection=connection,
+                    )
+                    email_msg.send(fail_silently=True)
+                except Exception:
+                    pass
+
+            from .models import EmailLog
+            EmailLog.objects.create(
+                account=account if getattr(account, "pk", None) else None,
+                direction="outgoing",
+                sender_email=get_shared_mailbox_address(),
+                hospital=hospital or account.hospital,
+                email_type=email_type,
+                recipient_email=recipient,
+                subject=clean_subject,
+                status="failed",
+                error_category="GmailAuthMissing",
+                error_details=auth_msg,
+                message_id=msg_id,
+                thread_id=clean_thread_id,
+                sent_at=timezone.now(),
+            )
+            success_all = False
+            continue
+
         try:
             email_msg = EmailMultiAlternatives(
                 subject=f"[{clean_display_name}] {clean_subject}",
@@ -832,6 +920,11 @@ def send_public_appointment_request_notification(request_obj):
         super_admin_email = getattr(settings, "PLATFORM_SUPERADMIN_EMAIL", "techcraft1215@gmail.com").strip().lower()
         recipient_emails = [e for e in recipient_emails if e.lower() != super_admin_email]
 
+        # Always include the shared clinic mailbox (physio.rehab.guj@gmail.com) for clinic notification
+        shared_mailbox = getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()
+        if shared_mailbox and shared_mailbox not in [e.lower() for e in recipient_emails]:
+            recipient_emails.append(shared_mailbox)
+
     ref = request_obj.reference_id
     patient_name = request_obj.patient_name
     email = request_obj.email
@@ -966,18 +1059,19 @@ Warm regards,
             organization_name=clinic_title,
         )
 
-        send_clinic_email(
+        patient_sent = bool(send_clinic_email(
             subject=patient_subject,
             message_text=patient_body,
             recipient_list=email,
             hospital=hospital,
             email_type="public_appointment_request_ack",
             html_message=patient_html,
-        )
+        ))
     except Exception as exc:
         logger.debug(f"Patient appointment acknowledgment email failed: {exc}")
+        patient_sent = False
 
-    return doctor_sent
+    return bool(doctor_sent or patient_sent)
 
 
 
@@ -1418,8 +1512,18 @@ def process_inbound_email_payload(payload_dict, raw_headers=None):
     """
     from .models import Hospital, InboundEmail, SupportTicket, SupportReply, Notification, User, EmailLog, Message
 
-    sender = payload_dict.get("sender") or payload_dict.get("from", "")
-    recipient = payload_dict.get("recipient") or payload_dict.get("to", "")
+    sender_raw = payload_dict.get("sender") or payload_dict.get("from", "")
+    recipient_raw = payload_dict.get("recipient") or payload_dict.get("to", "")
+
+    import email.utils
+    _, sender = email.utils.parseaddr(str(sender_raw))
+    if not sender:
+        sender = str(sender_raw).strip()
+
+    _, recipient = email.utils.parseaddr(str(recipient_raw))
+    if not recipient:
+        recipient = str(recipient_raw).strip()
+
     subject = payload_dict.get("subject", "").strip()
     body_text = payload_dict.get("body_text") or payload_dict.get("text", "")
     raw_html = payload_dict.get("body_html") or payload_dict.get("html", "")
@@ -1560,13 +1664,19 @@ def process_inbound_email_payload(payload_dict, raw_headers=None):
             ticket.save(update_fields=["status", "updated_at"])
             logger.info(f"Routed inbound email {clean_msg_id} to SupportTicket #{ticket_id}")
 
+    # Check if this is an internal clinic alert copy sent to itself
+    shared_mailbox = getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()
+    is_self_sent = clean_sender.lower() == shared_mailbox
+
     # Case B: Doctor / Medical Staff Communication
-    # Check if sender is a registered doctor/staff member in the hospital
-    sender_doctor = (
-        User.objects.filter(email__iexact=clean_sender)
-        .filter(Q(staff_profile__isnull=False) | Q(is_staff=True))
-        .first()
-    )
+    # Check if sender is a registered doctor/staff member in the hospital (excluding clinic mailbox itself)
+    sender_doctor = None
+    if not is_self_sent:
+        sender_doctor = (
+            User.objects.filter(email__iexact=clean_sender)
+            .filter(Q(staff_profile__isnull=False) | Q(is_staff=True))
+            .first()
+        )
     is_doctor_reply = sender_doctor is not None
 
     if is_doctor_reply and admin_user:
@@ -1601,7 +1711,7 @@ def process_inbound_email_payload(payload_dict, raw_headers=None):
         .filter(Q(staff_profile__isnull=False) | Q(is_staff=True))
         .first()
     )
-    if recipient_doctor and not is_doctor_reply:
+    if recipient_doctor and not is_doctor_reply and not is_self_sent:
         Notification.objects.create(
             hospital=matched_hospital,
             recipient=recipient_doctor,
@@ -1610,8 +1720,26 @@ def process_inbound_email_payload(payload_dict, raw_headers=None):
         )
         logger.info(f"Routed inbound email notification to doctor {recipient_doctor.username}")
 
-    # Case D: General Inbound Communication (Patient or inquiry to clinic)
-    if admin_user and not is_doctor_reply and not ticket_match and not recipient_doctor:
+    # Case D: Customer Reply to Public Appointment Request
+    par_match = re.search(r"PAR-\d{8}-[A-Za-z0-9]+", clean_subject + " " + (orig_log.subject if orig_log else "") + " " + clean_refs)
+    matched_par = None
+    if not is_self_sent and not is_doctor_reply and not ticket_match:
+        from .models import PublicAppointmentRequest
+        if par_match:
+            matched_par = PublicAppointmentRequest.objects.filter(reference_id=par_match.group(0)).first()
+        if not matched_par:
+            matched_par = PublicAppointmentRequest.objects.filter(email__iexact=clean_sender).order_by("-created_at").first()
+
+    if matched_par and admin_user and not is_self_sent:
+        Notification.objects.create(
+            hospital=matched_hospital or matched_par.hospital,
+            recipient=admin_user,
+            message=f"📩 Customer reply on booking {matched_par.reference_id} ({matched_par.patient_name}): {clean_subject[:40]}",
+            link="/admin-appointments/",
+        )
+        logger.info(f"Routed inbound email {clean_msg_id} as customer reply for PublicAppointmentRequest {matched_par.reference_id}")
+    elif admin_user and not is_doctor_reply and not ticket_match and not recipient_doctor and not is_self_sent:
+        # Case E: General Inbound Communication (Patient or inquiry to clinic)
         Notification.objects.create(
             hospital=matched_hospital,
             recipient=admin_user,

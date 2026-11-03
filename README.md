@@ -231,7 +231,120 @@ celery -A myproject worker -l info
 
 ---
 
-## 5. Roles & Permissions Architecture
+## 5. Gmail API Integration (OAuth 2.0 Web Server Flow)
+
+The application integrates with the official **Google Gmail API** using the **OAuth 2.0 Web Server application flow** to power clinic email notifications and inbound message synchronization.
+
+### 5.1 Architecture & Single Shared Mailbox
+- **Shared Clinic Mailbox:** `physio.rehab.guj@gmail.com`
+- **One-Time Authorization:** The mailbox owner authorizes the application once through Google's consent screen. All dashboards (Super Admin, Clinic Admin, Staff/Doctor, Patient) and public booking forms automatically use this backend integration. Individual dashboard users do **not** connect separate mailboxes.
+- **Strictly Event-Driven (No Manual Buttons):** Automated delivery executes immediately post-commit upon successful business events:
+  - **Public Booking Creation:** Confirmation sent to customer’s email address on the booking, and notification alert sent to `physio.rehab.guj@gmail.com`.
+  - **Appointment Status Updates:** Notifications dispatched only for supported application statuses: `confirmed`, `completed`, and `cancelled`.
+  - **Zero Manual Controls:** Manual "Send Mail" or "Receive Mail" buttons are intentionally prohibited to eliminate human error and prevent double-sends.
+- **Post-Commit Execution & Idempotency:** Emails are dispatched exclusively *after* the database transaction commits. Unique idempotency keys (e.g., `public_booking_{ref}_created`, `appointment_{id}_status_{status}`) are verified against PostgreSQL `EmailLog` records to prevent duplicate deliveries if requests are retried.
+- **Encryption at Rest:** Refresh tokens are encrypted before storage in PostgreSQL using AES-256 (Fernet) via `FIELD_ENCRYPTION_KEY`. Tokens and secrets are strictly retained on the backend and never exposed to client-side code.
+- **Minimal OAuth Scopes:**
+  - `https://www.googleapis.com/auth/gmail.send` (Send messages on behalf of the clinic)
+  - `https://www.googleapis.com/auth/gmail.readonly` (Read and sync inbound replies/inquiries)
+
+---
+
+### 5.2 Google Cloud Console Setup (Manual Steps)
+
+To obtain your OAuth credentials and configure Google Cloud:
+
+#### Step 1: Create or Select a Google Cloud Project
+1. Navigate to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a new project (e.g., `PhysioRehab-Clinic`) or select your existing project.
+
+#### Step 2: Enable the Gmail API
+1. In the Google Cloud Console, navigate to **APIs & Services** > **Library**.
+2. Search for **Gmail API**.
+3. Click **Enable**.
+
+#### Step 3: Configure the OAuth Consent Screen
+1. Go to **APIs & Services** > **OAuth consent screen**.
+2. Choose User Type:
+   - **Internal:** If your organization uses Google Workspace.
+   - **External:** Standard setting.
+3. Fill in required App Information:
+   - **App Name:** `PhysioRehab Clinic`
+   - **User support email:** `physio.rehab.guj@gmail.com`
+   - **Developer contact information:** `physio.rehab.guj@gmail.com`
+4. In **Scopes**, click **Add or Remove Scopes** and select:
+   - `https://www.googleapis.com/auth/gmail.send`
+   - `https://www.googleapis.com/auth/gmail.readonly`
+5. In **Test Users** (if Publishing Status is "Testing"):
+   - Click **Add Users** and add `physio.rehab.guj@gmail.com`.
+   *(Crucial: Only registered test accounts can authorize while the app is in Testing mode).*
+
+#### Step 4: Create OAuth 2.0 Web Client Credentials
+1. Go to **APIs & Services** > **Credentials**.
+2. Click **Create Credentials** > **OAuth client ID**.
+3. Select Application type: **Web application**.
+4. Name: `PhysioRehab Web Client`.
+5. Under **Authorized redirect URIs**, add the exact callback endpoints:
+   - **Development:** `http://127.0.0.1:8000/admin-settings/gmail/callback/`
+   - **Production:** `https://yourdomain.com/admin-settings/gmail/callback/`
+6. Click **Create**.
+7. Copy the generated **Client ID** and **Client Secret**.
+
+---
+
+### 5.3 Inbound Email Synchronization & Pub/Sub Setup
+
+The platform persists incoming replies and inquiries into PostgreSQL (`InboundEmail` and `EmailLog`) and routes them automatically to the clinic consultation inbox.
+
+#### Option A: Real-Time Google Cloud Pub/Sub Push Webhook
+1. Enable the **Cloud Pub/Sub API** in your Google Cloud Project.
+2. In **Pub/Sub** > **Topics**, create a topic:
+   - Name: `projects/YOUR_PROJECT_ID/topics/gmail-inbound-topic`
+3. Grant publish rights to Gmail:
+   - Select the topic > **Permissions** > **Add Principal**.
+   - Principal: `gmail-api-push@system.gserviceaccount.com`
+   - Role: `Pub/Sub Publisher`.
+4. In **Pub/Sub** > **Subscriptions**, create a Push Subscription:
+   - Delivery Type: **Push**.
+   - Push endpoint: `https://yourdomain.com/api/gmail/pubsub/?token=YOUR_VERIFICATION_TOKEN`
+5. Configure `GOOGLE_PUBSUB_TOPIC` and `GOOGLE_PUBSUB_VERIFICATION_TOKEN` in your `.env`. When the mailbox is authorized, the app automatically calls `watch()` on the Gmail mailbox.
+
+#### Option B: Scheduled Sync Management Command (Cron / Celery)
+For local development or environments without public inbound webhook domains, synchronize incoming mail periodically via CLI:
+```bash
+# Sync recent incoming emails (default: up to 25 messages)
+python manage.py sync_gmail
+
+# Sync with custom limit
+python manage.py sync_gmail --max-results=50
+
+# Re-register Pub/Sub mailbox watch
+python manage.py sync_gmail --watch
+```
+
+---
+
+### 5.4 One-Time Authorization Walkthrough
+
+1. Run database migrations to provision the Gmail OAuth credential store:
+   ```bash
+   python manage.py migrate
+   ```
+2. Start the local server or deploy to staging/production:
+   ```bash
+   python manage.py runserver
+   ```
+3. Log in as a **Clinic Admin** or **Super Admin** and navigate to:
+   `http://127.0.0.1:8000/admin-settings/`
+4. In the **Gmail API (OAuth 2.0) Integration** card:
+   - Click **Authorize with Google (physio.rehab.guj@gmail.com)**.
+5. Log into Google with `physio.rehab.guj@gmail.com` and grant permission.
+6. Google redirects to `/admin-settings/gmail/callback/`, where the authorization code is exchanged for an encrypted refresh token and access token, and the mailbox is verified.
+7. The status badge will display **Connected & Active (OAuth 2.0 Authorized)** with green indicators. All subsequent emails are transmitted securely through the Gmail API.
+
+---
+
+## 6. Roles & Permissions Architecture
 
 The system provides four strict, non-overlapping user roles:
 
@@ -244,13 +357,15 @@ The system provides four strict, non-overlapping user roles:
 
 ---
 
-## 6. SaaS Subscription & Feature Entitlement System
+---
+
+## 7. SaaS Subscription & Feature Entitlement System
 
 Feature access is resolved via a 6-stage evaluation hierarchy in `core/entitlements.py`:
 
 $$\text{Final Access} = \text{Role Permission} + \text{Clinic Context} + \text{Subscription Plan} + \text{Clinic Override} + \text{Usage Cap}$$
 
-### 6.1 Evaluation Order
+### 7.1 Evaluation Order
 1. **Global Kill Switch:** If a feature's global status is `disabled`, all clinics are denied access platform-wide.
 2. **Maintenance Mode:** Returns a scheduled maintenance notice.
 3. **Clinic Suspension:** If a clinic is suspended or archived, access to all features is immediately blocked.
@@ -260,18 +375,29 @@ $$\text{Final Access} = \text{Role Permission} + \text{Clinic Context} + \text{S
 
 ---
 
-## 7. Testing & Quality Assurance
+## 8. Testing & Quality Assurance
 
-The repository contains comprehensive test suites covering **320 automated tests** across 24 test modules.
+The repository contains comprehensive test suites covering **331+ automated tests** across 25 test modules.
 
-### 7.1 Running All Tests via Django Test Runner
+### 8.1 Running All Tests via Django Test Runner
 ```bash
 python manage.py test tests
 ```
-*Result: 320 passed in ~141s (100% pass rate, 0 failures, 0 errors).*
 
-### 7.2 Running Focused Feature Test Suites
+### 8.2 Running Focused Feature Test Suites
 ```bash
+# Gmail API OAuth 2.0 integration & Pub/Sub suite
+python manage.py test tests.test_gmail_api_integration
+
+# Multi-recipient clinic email notifications & status tracking
+python manage.py test tests.test_multi_email_notifications
+
+# Doctor inbound/outbound communication E2E suite
+python manage.py test tests.test_doctor_email_e2e
+
+# Public appointment booking & post-commit notifications
+python manage.py test tests.test_public_appointment
+
 # Sidebar navigation and role menu access across all 4 portals
 python manage.py test tests.test_sidebar_navigation
 
@@ -285,13 +411,12 @@ python manage.py test tests.test_email_audit_and_otp_retention
 python manage.py test tests.test_seo_implementation
 ```
 
-### 7.3 Running All Tests via Pytest
+### 8.3 Running All Tests via Pytest
 ```bash
 pytest -q
 ```
-*Result: 320 passed (100% pass rate, 0 failures, 0 errors).*
 
-### 7.4 Running All Tests (PostgreSQL Production Settings)
+### 8.4 Running All Tests (PostgreSQL Production Settings)
 When running tests against production settings, set `SECURE_SSL_REDIRECT=False` so the local test client is not redirected from HTTP to HTTPS:
 ```powershell
 # Windows PowerShell
@@ -302,7 +427,7 @@ $env:SECURE_SSL_REDIRECT="False"; pytest -q --ds=myproject.settings.production
 SECURE_SSL_REDIRECT=False pytest -q --ds=myproject.settings.production
 ```
 
-### 7.5 OTP Retention Cleanup Management Command
+### 8.5 OTP Retention Cleanup Management Command
 Run the scheduled audit cleanup command to delete expired OTP records (24-hour retention):
 ```bash
 # Dry run preview
@@ -312,7 +437,7 @@ python manage.py cleanup_expired_otp_logs --dry-run
 python manage.py cleanup_expired_otp_logs
 ```
 
-### 7.6 Code Quality & AST Compilation
+### 8.6 Code Quality & AST Compilation
 Verify that all Python source files parse without syntax errors:
 ```bash
 python -c "import py_compile, pathlib; [py_compile.compile(str(p), doraise=True) for p in pathlib.Path('.').rglob('*.py') if '.venv' not in p.parts]"
@@ -324,7 +449,7 @@ flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
 ---
 
-## 8. Environment Variables Reference
+## 9. Environment Variables Reference
 
 | Variable | Description | Required | Example / Default |
 |---|---|---|---|
@@ -339,13 +464,21 @@ flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 | `DB_PASSWORD` | PostgreSQL user password | **Yes** | Secret |
 | `DB_HOST` | Database host | **Yes** | `localhost` |
 | `DB_PORT` | Database port | **Yes** | `5433` (or `5432`) |
-| `EMAIL_BACKEND` | Django email backend | No | `django.core.mail.backends.smtp.EmailBackend` |
-| `EMAIL_HOST` | SMTP server address | No | `smtp.gmail.com` |
-| `EMAIL_PORT` | SMTP port | No | `587` |
-| `EMAIL_USE_TLS` | Enable TLS encryption | No | `True` |
-| `EMAIL_HOST_USER` | System sender email address | No | `alerts@yourdomain.com` |
-| `EMAIL_HOST_PASSWORD` | SMTP password / app password | No | Secret |
-| `DEFAULT_FROM_EMAIL` | Display sender header | No | `PhysioRehab Clinic <alerts@yourdomain.com>` |
+| `GOOGLE_OAUTH_CLIENT_ID` | Google OAuth 2.0 Web Client ID | **Yes (for Gmail API)** | `123456...apps.googleusercontent.com` |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | Google OAuth 2.0 Web Client Secret | **Yes (for Gmail API)** | `GOCSPX-...` |
+| `GOOGLE_OAUTH_REDIRECT_URI` | Authorized OAuth 2.0 redirect URI | **Yes (for Gmail API)** | `http://127.0.0.1:8000/admin-settings/gmail/callback/` |
+| `GMAIL_SHARED_MAILBOX` | Clinic shared authorized mailbox | No | `physio.rehab.guj@gmail.com` |
+| `FIELD_ENCRYPTION_KEY` | Fernet 32-byte urlsafe base64 key for encrypting tokens at rest | **Yes (for Gmail API)** | Secret (`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`) |
+| `GOOGLE_PUBSUB_TOPIC` | GCP Pub/Sub Topic for inbound Gmail push notifications | No | `projects/my-gcp-project/topics/gmail-inbound-topic` |
+| `GOOGLE_PUBSUB_SUBSCRIPTION` | GCP Pub/Sub subscription name | No | `projects/my-gcp-project/subscriptions/gmail-inbound-sub` |
+| `GOOGLE_PUBSUB_VERIFICATION_TOKEN` | Secret token verifying Pub/Sub webhook authenticity | No | `random_secure_hex_token` |
+| `EMAIL_BACKEND` | Django email backend fallback | No | `django.core.mail.backends.smtp.EmailBackend` |
+| `EMAIL_HOST` | SMTP server address fallback | No | `smtp.gmail.com` |
+| `EMAIL_PORT` | SMTP port fallback | No | `587` |
+| `EMAIL_USE_TLS` | Enable TLS encryption fallback | No | `True` |
+| `EMAIL_HOST_USER` | System sender email address | No | `physio.rehab.guj@gmail.com` |
+| `EMAIL_HOST_PASSWORD` | SMTP password / app password fallback | No | Secret |
+| `DEFAULT_FROM_EMAIL` | Display sender header | No | `Dr. Dhvani Patalia Physio Rehab <physio.rehab.guj@gmail.com>` |
 | `CELERY_BROKER_URL` | Redis broker URL | No | `redis://localhost:6379/0` |
 | `CLINIC_UPI_ID` | Clinic UPI address for direct payments | No | `physiorehab@upi` |
 | `SECURE_SSL_REDIRECT` | Enforce HTTPS redirect | No | `True` |
@@ -353,21 +486,38 @@ flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
 ---
 
-## 9. Troubleshooting & Operational Guidance
+## 10. Troubleshooting & Operational Guidance
 
-### 9.1 PostgreSQL Connection Refused
+### 10.1 PostgreSQL Connection Refused
 - **Symptom:** `psycopg.OperationalError: connection to server at "localhost", port 5432 failed: Connection refused`.
 - **Solution:** Verify the actual port PostgreSQL is listening on. If PostgreSQL 18 is running alongside another instance, it often listens on port `5433`. Update `DB_PORT=5433` in `.env`.
 
-### 9.2 SSL Redirect in Local Production Testing
+### 10.2 SSL Redirect in Local Production Testing
 - **Symptom:** Tests or local HTTP requests fail with `301 Moved Permanently`.
 - **Solution:** Production settings enable `SECURE_SSL_REDIRECT = True` by default. When running local tests, export `SECURE_SSL_REDIRECT=False`.
 
-### 9.3 Celery Broker Fallback
+### 10.3 Celery Broker Fallback
 - **Symptom:** Redis server is not running locally.
 - **Solution:** Celery automatically falls back to the filesystem broker queue stored in `celery_queue/messages/`. For production deployments, ensure Redis is running and `CELERY_BROKER_URL` is configured.
 
-### 9.4 Internal Documentation Location
+### 10.4 Gmail OAuth: `redirect_uri_mismatch` Error
+- **Symptom:** Google OAuth screen displays `Error 400: redirect_uri_mismatch`.
+- **Solution:** The URI sent in the request does not match the URIs in Google Cloud Console Credentials.
+  - In Google Cloud Console > **APIs & Services** > **Credentials** > Edit your OAuth 2.0 Client ID.
+  - Ensure the **Authorized redirect URIs** list includes the exact URI matching `GOOGLE_OAUTH_REDIRECT_URI` (e.g. `http://127.0.0.1:8000/admin-settings/gmail/callback/` or `https://yourdomain.com/admin-settings/gmail/callback/`). Note that `127.0.0.1` and `localhost` are treated differently by Google. Include trailing slash.
+
+### 10.5 Gmail OAuth: `invalid_grant` / Revoked or Expired Refresh Token
+- **Symptom:** Outgoing messages log `Gmail OAuth refresh token revoked or expired: invalid_grant`.
+- **Solution:** When a user changes their Google Account password or revokes app access in their Google Security settings:
+  - The system automatically marks `is_active = False` on the credential record and records the sanitized error without logging secrets.
+  - To re-authorize, log into `/admin-settings/` as Clinic Admin or Super Admin and click **Re-authorize with Google**. This saves a fresh encrypted refresh token.
+  - While inactive, fallback SMTP accounts handle outbound traffic safely without dropping bookings.
+
+### 10.6 Gmail Pub/Sub Webhook: `403 Forbidden`
+- **Symptom:** Pub/Sub push requests return `403 Forbidden`.
+- **Solution:** Check `GOOGLE_PUBSUB_VERIFICATION_TOKEN`. Ensure your Google Cloud Pub/Sub push subscription endpoint includes `?token=YOUR_VERIFICATION_TOKEN` or passes the `X-Goog-Channel-Token` header.
+
+### 10.7 Internal Documentation Location
 All detailed internal technical audits, migration manifesto, QA validation plans, and subscription guides are securely cataloged inside the `md/` directory:
 - `md/DATABASE_ARCHITECTURE.md` — Authoritative PostgreSQL 18.6 architecture, pgAdmin 4 connection guide, backup/restore runbook, and migration procedures
 - `md/DATABASE_AUDIT_REPORT.md` — Complete PostgreSQL 18.6 & pgAdmin 4 connection, schema, and integrity audit
@@ -381,6 +531,7 @@ All detailed internal technical audits, migration manifesto, QA validation plans
 
 ---
 
-## 10. License & Maintenance
+## 11. License & Maintenance
 
 © 2026 PhysioRehab Management System. All rights reserved. Built for production deployment.
+

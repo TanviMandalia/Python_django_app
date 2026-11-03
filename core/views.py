@@ -462,28 +462,36 @@ def unified_appointment_contact(request):
                         "Thank you for your appointment request. Request received, pending clinic confirmation. Our clinic team will contact you shortly using your provided contact details."
                     )
                 else:
-                    req_obj = form.save(commit=False)
-                    req_obj.hospital = hospital
-                    req_obj.ip_address = client_ip if client_ip != "unknown" else None
-                    req_obj.user_agent = request.META.get("HTTP_USER_AGENT", "")[:255]
-                    req_obj.status = "pending"
-                    req_obj.email_notification_status = "pending"
-                    req_obj.save()
+                    with transaction.atomic():
+                        req_obj = form.save(commit=False)
+                        req_obj.hospital = hospital
+                        req_obj.ip_address = client_ip if client_ip != "unknown" else None
+                        req_obj.user_agent = request.META.get("HTTP_USER_AGENT", "")[:255]
+                        req_obj.status = "pending"
+                        req_obj.email_notification_status = "pending"
+                        req_obj.save()
+                        cache.set(cache_key, sub_count + 1, timeout=3600)
+                        booking_id = req_obj.id
 
-                    cache.set(cache_key, sub_count + 1, timeout=3600)
-
+                    # Trigger automated notification delivery strictly AFTER database transaction commits
                     email_sent = False
                     try:
                         email_sent = send_public_appointment_request_notification(req_obj)
                         req_obj.email_notification_status = "sent" if email_sent else "failed"
                         if not email_sent:
-                            req_obj.notification_error = "Clinic notification email provider returned failure."
-                        req_obj.save(update_fields=["email_notification_status", "notification_error"])
+                            from .models import EmailLog
+                            last_failed = EmailLog.objects.filter(
+                                hospital=hospital,
+                                status="failed",
+                            ).order_by("-created_at").first()
+                            safe_msg = last_failed.error_details if last_failed and last_failed.error_details else "Gmail API OAuth not authorized for physio.rehab.guj@gmail.com. Please complete authorization in Clinic Settings."
+                            req_obj.notification_error = safe_msg[:255]
+                        req_obj.save(update_fields=["email_notification_status", "notification_error", "updated_at"])
                     except Exception as exc:
-                        logger.error(f"Error in send_public_appointment_request_notification: {exc.__class__.__name__} - {exc}")
+                        logger.error(f"Failed to send public appointment request notification for Ref: {req_obj.reference_id}: {exc}")
                         req_obj.email_notification_status = "failed"
-                        req_obj.notification_error = f"{exc.__class__.__name__}: {str(exc)[:200]}"
-                        req_obj.save(update_fields=["email_notification_status", "notification_error"])
+                        req_obj.notification_error = str(exc)[:200]
+                        req_obj.save(update_fields=["email_notification_status", "notification_error", "updated_at"])
 
                     messages.success(
                         request,
@@ -2591,20 +2599,17 @@ def book_appointment(request):
                 "notes": notes,
             })
 
-        # Email patient + alert admin (Executed outside atomic block after successful DB commit)
-        email_sent = False
-        try:
-            email_sent = bool(send_appointment_confirmation(appt))
-        except Exception as exc:
-            logger.error(f"Appointment confirmation email failed for appt {appt.id}: {exc.__class__.__name__} - {exc}")
+        # Email patient + alert admin (Dispatched after successful DB transaction commit with idempotency)
+        from .gmail_service import dispatch_appointment_created_notifications_post_commit
+        appt_id = appt.id
+        transaction.on_commit(lambda: dispatch_appointment_created_notifications_post_commit(appt_id))
 
         try:
             admin = get_admin_user(hospital)
             if admin:
-                send_admin_new_appointment_alert(appt)
                 notify_appointment_booked(appt, admin)
         except Exception as exc:
-            logger.error(f"Admin notification failed for appt {appt.id}: {exc.__class__.__name__} - {exc}")
+            logger.error(f"Admin in-app notification failed for appt {appt.id}: {exc.__class__.__name__} - {exc}")
 
         if email_sent:
             messages.success(request, f"✅ Appointment booked for {appt.date} at {appt.time}! Confirmation email sent.")
@@ -2684,49 +2689,65 @@ def update_public_appointment_request(request, request_id, status):
         messages.error(request, "Invalid status.")
         return redirect("admin_appointments")
 
-    req_obj.status = status
-    req_obj.save(update_fields=["status", "updated_at"])
+    from .gmail_service import (
+        dispatch_appointment_created_notifications_post_commit,
+        dispatch_appointment_status_notifications_post_commit,
+    )
 
-    # If confirmed, ensure an official clinical Appointment record is created or synced
-    if status == "confirmed":
-        existing_appt = Appointment.objects.filter(
-            hospital=req_obj.hospital,
-            date=req_obj.preferred_date,
-            email=req_obj.email,
-        ).first()
+    with transaction.atomic():
+        req_obj.status = status
+        req_obj.save(update_fields=["status", "updated_at"])
 
-        if not existing_appt:
-            service_val = "Physiotherapy"
-            for s_val, s_lbl in Appointment.SERVICE_CHOICES:
-                if req_obj.service_or_reason and s_lbl.lower() in req_obj.service_or_reason.lower():
-                    service_val = s_val
-                    break
-
-            time_val = "10:00 AM"
-            for t_val, _ in Appointment.TIME_CHOICES:
-                if req_obj.preferred_time and t_val.lower() == req_obj.preferred_time.strip().lower():
-                    time_val = t_val
-                    break
-
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            patient_user = User.objects.filter(email__iexact=req_obj.email).first()
-
-            Appointment.objects.create(
+        created_appt = None
+        updated_appt = None
+        # If confirmed, ensure an official clinical Appointment record is created or synced
+        if status == "confirmed":
+            existing_appt = Appointment.objects.filter(
                 hospital=req_obj.hospital,
-                patient=patient_user,
-                name=req_obj.patient_name,
-                email=req_obj.email,
-                phone=req_obj.phone,
-                service=service_val,
                 date=req_obj.preferred_date,
-                time=time_val,
-                notes=f"[Online Booking: {req_obj.reference_id}] {req_obj.service_or_reason or ''}".strip(),
-                status="confirmed",
-            )
-        elif existing_appt.status != "confirmed":
-            existing_appt.status = "confirmed"
-            existing_appt.save(update_fields=["status"])
+                email=req_obj.email,
+            ).first()
+
+            if not existing_appt:
+                service_val = "Physiotherapy"
+                for s_val, s_lbl in Appointment.SERVICE_CHOICES:
+                    if req_obj.service_or_reason and s_lbl.lower() in req_obj.service_or_reason.lower():
+                        service_val = s_val
+                        break
+
+                time_val = "10:00 AM"
+                for t_val, _ in Appointment.TIME_CHOICES:
+                    if req_obj.preferred_time and t_val.lower() == req_obj.preferred_time.strip().lower():
+                        time_val = t_val
+                        break
+
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                patient_user = User.objects.filter(email__iexact=req_obj.email).first()
+
+                created_appt = Appointment.objects.create(
+                    hospital=req_obj.hospital,
+                    patient=patient_user,
+                    name=req_obj.patient_name,
+                    email=req_obj.email,
+                    phone=req_obj.phone,
+                    service=service_val,
+                    date=req_obj.preferred_date,
+                    time=time_val,
+                    notes=f"[Online Booking: {req_obj.reference_id}] {req_obj.service_or_reason or ''}".strip(),
+                    status="confirmed",
+                )
+            elif existing_appt.status != "confirmed":
+                existing_appt.status = "confirmed"
+                existing_appt.save(update_fields=["status"])
+                updated_appt = existing_appt
+
+        if created_appt:
+            appt_id_to_send = created_appt.id
+            transaction.on_commit(lambda: dispatch_appointment_created_notifications_post_commit(appt_id_to_send))
+        elif updated_appt:
+            appt_id_to_send = updated_appt.id
+            transaction.on_commit(lambda: dispatch_appointment_status_notifications_post_commit(appt_id_to_send, "confirmed"))
 
     messages.success(request, f"Public request {req_obj.reference_id} marked as {status.title()}.")
     return redirect("admin_appointments")
@@ -2750,22 +2771,18 @@ def update_appointment(request, appt_id, status):
     appt.status = status
     appt.save()
 
-    # Email + notification
-    email_sent = False
-    try:
-        email_sent = bool(send_appointment_status_update(appt))
-    except Exception as exc:
-        logger.error(f"Appointment status email failed for appt {appt.id}: {exc.__class__.__name__} - {exc}")
+    # Email dispatch executed post-commit with idempotency
+    from .gmail_service import dispatch_appointment_status_notifications_post_commit
+    appt_id = appt.id
+    status_copy = status
+    transaction.on_commit(lambda: dispatch_appointment_status_notifications_post_commit(appt_id, status_copy))
 
     try:
         notify_appointment_status(appt)
     except Exception as exc:
         logger.error(f"Notification status failed for appt {appt.id}: {exc.__class__.__name__} - {exc}")
 
-    if email_sent:
-        messages.success(request, f"✅ Appointment {status}. Notification email sent.")
-    else:
-        messages.success(request, f"✅ Appointment {status}.")
+    messages.success(request, f"✅ Appointment marked as {status.title()}.")
     return redirect("admin_appointments")
 
 
@@ -4368,11 +4385,21 @@ def edit_appointment(request, appt_id):
         else:
             appt.time = new_time
 
+        old_status = appt.status
         appt.service = new_service
         appt.date = new_date
         appt.notes = new_notes
         appt.status = new_status
-        appt.save()
+
+        from .gmail_service import dispatch_appointment_status_notifications_post_commit
+
+        with transaction.atomic():
+            appt.save()
+            if old_status != new_status and new_status in ["confirmed", "completed", "cancelled"]:
+                appt_id_copy = appt.id
+                status_copy = new_status
+                transaction.on_commit(lambda: dispatch_appointment_status_notifications_post_commit(appt_id_copy, status_copy))
+
         messages.success(request, "✅ Appointment updated successfully!")
         return redirect("admin_appointments")
     return render(request, "admin/edit_appointment.html", {"appt": appt})
@@ -5210,12 +5237,16 @@ def admin_settings(request):
     recipient_form = ClinicNotificationRecipientForm()
     effective_recipients = settings_obj.get_appointment_recipient_emails()
 
+    from .models import GmailOAuthCredential
+    gmail_cred = GmailOAuthCredential.get_shared_credential()
+
     context = {
         "settings": settings_obj,
         "hospital": hospital,
         "recipients": recipients,
         "recipient_form": recipient_form,
         "effective_recipients": effective_recipients,
+        "gmail_credential": gmail_cred,
     }
     return render(request, "admin/admin_settings.html", context)
 
@@ -9060,6 +9091,11 @@ def admin_email_settings(request):
         EmailLog.objects.filter(hospital=hospital).order_by("-sent_at")[:15]
         if hospital else EmailLog.objects.none()
     )
+    from .models import InboundEmail
+    recent_inbound = (
+        InboundEmail.objects.filter(Q(hospital=hospital) | Q(hospital__isnull=True)).order_by("-received_at")[:20]
+        if hospital else InboundEmail.objects.all().order_by("-received_at")[:20]
+    )
 
     return render(
         request,
@@ -9069,6 +9105,7 @@ def admin_email_settings(request):
             "account": account,
             "has_password": bool(account and account.encrypted_password),
             "recent_logs": recent_logs,
+            "recent_inbound": recent_inbound,
         },
     )
 
@@ -10161,6 +10198,130 @@ def super_admin_analytics_purge(request):
     )
     messages.success(request, f"Purged {count} expired visitor sessions older than {setting.retention_days} days.")
     return redirect("super_admin_visitor_analytics")
+
+
+# ─── GMAIL API (OAUTH 2.0) SHARED INTEGRATION VIEWS ─────────────
+
+
+@login_required
+def admin_gmail_oauth_start(request):
+    """
+    Initiates Google OAuth 2.0 Web Server flow for shared Gmail mailbox (physio.rehab.guj@gmail.com).
+    Super Admin or Clinic Admin authorization only.
+    """
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+
+    from .gmail_service import get_authorization_url, GmailConfigError
+
+    try:
+        auth_url, state = get_authorization_url(request)
+        request.session["gmail_oauth_state"] = state
+        return redirect(auth_url)
+    except GmailConfigError as e:
+        messages.error(request, f"Gmail OAuth configuration error: {str(e)}")
+        return redirect("admin_settings")
+    except Exception as e:
+        logger.exception("Failed to start Gmail OAuth flow: %s", e)
+        messages.error(request, f"Unable to initiate Google OAuth: {str(e)}")
+        return redirect("admin_settings")
+
+
+@login_required
+def admin_gmail_oauth_callback(request):
+    """
+    Handles Google OAuth 2.0 callback, exchanges authorization code for refresh & access tokens,
+    encrypts tokens at rest, and initializes optional Pub/Sub watch.
+    """
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return redirect("client_dashboard")
+
+    from .gmail_service import exchange_code_for_tokens, setup_gmail_watch
+
+    error = request.GET.get("error")
+    if error:
+        messages.error(request, f"Google OAuth authorization cancelled or denied: {error}")
+        return redirect("admin_settings")
+
+    state = request.GET.get("state")
+    expected_state = request.session.pop("gmail_oauth_state", None)
+    if not state or (expected_state and state != expected_state):
+        messages.error(request, "Invalid OAuth state parameter (possible CSRF or session expiration). Please try again.")
+        return redirect("admin_settings")
+
+    code = request.GET.get("code")
+    if not code:
+        messages.error(request, "No authorization code returned from Google.")
+        return redirect("admin_settings")
+
+    try:
+        cred = exchange_code_for_tokens(request, code)
+        watch_msg = ""
+        # Automatically register Pub/Sub watch if topic configured
+        if getattr(settings, "GOOGLE_PUBSUB_TOPIC", None):
+            watch_res = setup_gmail_watch()
+            if watch_res.get("success"):
+                watch_msg = f" Pub/Sub watch active (historyId: {watch_res.get('history_id')})."
+            else:
+                watch_msg = f" (Pub/Sub watch notice: {watch_res.get('error')})"
+
+        messages.success(
+            request,
+            f"✅ Gmail API integration authorized successfully for {cred.email_address}!{watch_msg}"
+        )
+    except Exception as e:
+        logger.exception("Failed to complete Gmail OAuth callback: %s", e)
+        messages.error(request, f"Failed to complete Google OAuth exchange: {str(e)}")
+
+    return redirect("admin_settings")
+
+
+@csrf_exempt
+@require_POST
+def api_gmail_pubsub_webhook(request):
+    """
+    Google Cloud Pub/Sub Push endpoint for incoming Gmail notifications.
+    Decodes push payload, verifies token if configured, triggers sync_gmail_messages,
+    and returns HTTP 200 immediately to acknowledge receipt.
+    """
+    from .gmail_service import sync_gmail_messages
+
+    verification_token = getattr(settings, "GOOGLE_PUBSUB_VERIFICATION_TOKEN", None)
+    if verification_token:
+        req_token = request.GET.get("token") or request.headers.get("X-Goog-Channel-Token")
+        if req_token != verification_token:
+            logger.warning("PubSub webhook rejected: invalid verification token.")
+            return HttpResponseForbidden("Invalid verification token")
+
+    try:
+        body = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        body = {}
+
+    message = body.get("message", {})
+    data_b64 = message.get("data")
+    if data_b64:
+        try:
+            import base64
+            decoded_bytes = base64.b64decode(data_b64)
+            data_json = json.loads(decoded_bytes.decode("utf-8"))
+            logger.info(
+                "Received Gmail Pub/Sub push notification for %s (historyId: %s)",
+                data_json.get("emailAddress"),
+                data_json.get("historyId"),
+            )
+        except Exception as e:
+            logger.warning("Error parsing Pub/Sub message data: %s", e)
+
+    # Perform synchronization and persist inbound messages into PostgreSQL
+    try:
+        sync_result = sync_gmail_messages(max_results=25)
+        return JsonResponse({"status": "ok", "sync": sync_result})
+    except Exception as e:
+        logger.exception("Error syncing Gmail messages from Pub/Sub webhook: %s", e)
+        # Return 200 with status=error so Google Pub/Sub does not spam push retries for mailbox auth issues
+        return JsonResponse({"status": "error", "detail": str(e)}, status=200)
+
 
 
 

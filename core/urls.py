@@ -531,6 +531,22 @@ urlpatterns = [
     # ── Inbound & Delivery Status Email Webhooks ───────────────
     path("api/email/inbound/", views.api_inbound_email_webhook, name="api_inbound_email_webhook"),
     path("api/email/status-webhook/", views.api_email_status_webhook, name="api_email_status_webhook"),
+    # ── Gmail API (OAuth 2.0) Web Server Authorization & Pub/Sub ──
+    path(
+        "admin-settings/gmail/authorize/",
+        views.admin_gmail_oauth_start,
+        name="admin_gmail_oauth_start",
+    ),
+    path(
+        "admin-settings/gmail/callback/",
+        views.admin_gmail_oauth_callback,
+        name="admin_gmail_oauth_callback",
+    ),
+    path(
+        "api/gmail/pubsub/",
+        views.api_gmail_pubsub_webhook,
+        name="api_gmail_pubsub_webhook",
+    ),
 ]
 
 if settings.DEBUG:
