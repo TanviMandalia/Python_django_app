@@ -24,6 +24,7 @@ from django.utils import timezone
 from googleapiclient.errors import HttpError
 
 from core.models import (
+    EmailAccount,
     Hospital,
     ClinicSettings,
     ClinicNotificationRecipient,
@@ -311,6 +312,19 @@ class GmailApiIntegrationTests(BaseHospitalTestCase):
         )
         cred.set_refresh_token("1//mock_valid_refresh_token")
         cred.save()
+        EmailAccount.objects.create(
+            name="Clinic Gmail API Sender",
+            account_type="CLINIC",
+            scope_type="hospital",
+            hospital=self.hospital,
+            provider="gmail_api",
+            host="smtp.gmail.com",
+            port=587,
+            username="physio.rehab.guj@gmail.com",
+            from_email="physio.rehab.guj@gmail.com",
+            is_active=True,
+            is_default=True,
+        )
 
         req_obj = PublicAppointmentRequest.objects.create(
             hospital=self.hospital,
@@ -342,6 +356,19 @@ class GmailApiIntegrationTests(BaseHospitalTestCase):
         )
         cred.set_refresh_token("1//mock_valid_refresh_token")
         cred.save()
+        EmailAccount.objects.create(
+            name="Clinic Gmail API Sender",
+            account_type="CLINIC",
+            scope_type="hospital",
+            hospital=self.hospital,
+            provider="gmail_api",
+            host="smtp.gmail.com",
+            port=587,
+            username="physio.rehab.guj@gmail.com",
+            from_email="physio.rehab.guj@gmail.com",
+            is_active=True,
+            is_default=True,
+        )
 
         appt = Appointment.objects.create(
             hospital=self.hospital,
@@ -448,23 +475,19 @@ class GmailApiIntegrationTests(BaseHospitalTestCase):
             self.assertEqual(valid_resp.status_code, 200)
             mock_sync.assert_called_once()
 
-    def test_admin_settings_displays_gmail_status_without_manual_send_buttons(self):
-        """Admin settings page displays Gmail status card, shared mailbox, and no manual send/receive buttons."""
+    def test_admin_settings_displays_configured_gmail_inbox_controls(self):
+        """Clinic admin sees its inbox connection controls without platform mailbox access."""
         self.client.force_login(self.admin_user)
         response = self.client.get(reverse("admin_settings"))
         self.assertEqual(response.status_code, 200)
 
         content = response.content.decode("utf-8")
-        # Check Gmail integration card components
-        self.assertIn("Gmail API Integration (OAuth 2.0)", content)
+        # Clinic admins can connect and manually sync the clinic inbox only.
+        self.assertIn("Gmail inbox connections", content)
         self.assertIn("physio.rehab.guj@gmail.com", content)
-        self.assertIn("OAuth 2.0 Status", content)
-        self.assertIn("Refresh token encrypted at rest", content)
-
-        # Requirement 2: Do NOT add manual send or receive buttons
-        self.assertNotIn("Send Test Email", content)
-        self.assertNotIn("Manual Sync", content)
-        self.assertNotIn("Check New Mail", content)
+        self.assertIn("Connect Google inbox", content)
+        self.assertNotIn("techcraft1215@gmail.com", content)
+        self.assertNotIn("Sync now", content)  # Sync appears after mailbox authorization.
 
     @patch("core.gmail_service.build")
     def test_inbound_customer_reply_links_to_public_appointment_request_and_dashboard(self, mock_build):
