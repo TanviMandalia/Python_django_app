@@ -3,7 +3,7 @@ Central Gmail API (OAuth 2.0) Shared Backend Service for PhysioRehab.
 
 Provides:
 1. Official Google Gmail API integration using OAuth 2.0 Web Server flow.
-2. Single shared mailbox governance (physio.rehab.guj@gmail.com) authorized once by clinic owner.
+2. Separate configured mailbox authorization for platform and clinic Gmail inboxes.
 3. Automated post-commit email dispatch for bookings, confirmations, and supported status transitions.
 4. Robust idempotency protection against duplicate emails on retries.
 5. Inbound message synchronization with Gmail API, persisting to PostgreSQL InboundEmail.
@@ -56,6 +56,15 @@ GMAIL_SCOPES = [
     GMAIL_READONLY_SCOPE,
 ]
 SHARED_GMAIL_MAILBOX = "physio.rehab.guj@gmail.com"
+
+
+def get_configured_mailboxes() -> List[str]:
+    """Configured inboxes eligible for Gmail OAuth and synchronization."""
+    configured = getattr(settings, "GMAIL_INBOUND_MAILBOXES", "")
+    mailboxes = [item.strip().lower() for item in str(configured).split(",") if item.strip()]
+    if not mailboxes:
+        mailboxes = [get_shared_mailbox_address()]
+    return list(dict.fromkeys(mailboxes))
 
 
 class GmailServiceError(Exception):
@@ -117,6 +126,7 @@ def get_oauth_client_config(redirect_uri: Optional[str] = None) -> Dict[str, Any
 def get_authorization_url(
     redirect_uri_or_request: Optional[Any] = None,
     state: Optional[str] = None,
+    mailbox: Optional[str] = None,
 ) -> Tuple[str, str]:
     """
     Generate Google OAuth 2.0 authorization URL for the shared clinic mailbox.
@@ -147,6 +157,7 @@ def get_authorization_url(
         access_type="offline",
         include_granted_scopes="true",
         prompt="consent",
+        login_hint=(mailbox or get_shared_mailbox_address()).strip().lower(),
     )
     return auth_url, generated_state
 
@@ -157,6 +168,7 @@ def exchange_code_for_tokens(
     redirect_uri: Optional[str] = None,
     state: Optional[str] = None,
     hospital: Optional[Hospital] = None,
+    expected_email: Optional[str] = None,
 ) -> GmailOAuthCredential:
     """
     Exchange the OAuth authorization code for credentials, inspect the authorized
@@ -194,9 +206,8 @@ def exchange_code_for_tokens(
     try:
         flow.fetch_token(code=actual_code)
     except Exception as exc:
-        clean_err = str(exc)
-        logger.error(f"Failed to fetch Google OAuth token: {clean_err}")
-        raise GmailAuthError(f"OAuth token exchange failed: {clean_err}")
+        logger.error("Google OAuth token exchange failed (%s).", type(exc).__name__)
+        raise GmailAuthError("OAuth token exchange failed. Check the Google OAuth client and redirect URI configuration.") from None
 
     creds = flow.credentials
 
@@ -207,16 +218,19 @@ def exchange_code_for_tokens(
         authorized_email = profile.get("emailAddress", "").strip().lower()
         initial_history_id = str(profile.get("historyId", ""))
     except Exception as exc:
-        logger.warning(f"Could not fetch Gmail profile during exchange: {exc}")
-        authorized_email = get_shared_mailbox_address()
-        initial_history_id = ""
+        logger.warning("Could not verify Gmail account during OAuth exchange: %s", type(exc).__name__)
+        raise GmailAuthError("Could not verify the Google account. No mailbox credentials were saved.") from exc
 
     target_email = authorized_email or get_shared_mailbox_address()
+    if expected_email and target_email.lower() != expected_email.strip().lower():
+        raise GmailAuthError("The authorized Google account does not match the selected mailbox.")
+    if target_email.lower() not in get_configured_mailboxes():
+        raise GmailAuthError("This Google account is not an enabled mailbox for this application.")
 
     # Persist or update credential in PostgreSQL
     credential, _ = GmailOAuthCredential.objects.get_or_create(
         email=target_email,
-        defaults={"hospital": hospital},
+        defaults={"hospital": hospital, "encrypted_refresh_token": ""},
     )
 
     if hospital and not credential.hospital:
@@ -224,6 +238,8 @@ def exchange_code_for_tokens(
 
     if creds.refresh_token:
         credential.set_refresh_token(creds.refresh_token)
+    elif not credential.encrypted_refresh_token:
+        raise GmailAuthError("Google did not return a refresh token. Revoke this app's access in Google Account settings and authorize again.")
 
     if creds.token:
         credential.set_access_token(creds.token)
@@ -244,7 +260,7 @@ def exchange_code_for_tokens(
     credential.last_error = ""
     credential.save()
 
-    logger.info(f"Successfully authorized Gmail OAuth for shared mailbox: {mask_email_for_logging(target_email)}")
+    logger.info(f"Successfully authorized Gmail OAuth for mailbox: {mask_email_for_logging(target_email)}")
     return credential
 
 
@@ -253,7 +269,7 @@ def exchange_code_for_tokens(
 # ═════════════════════════════════════════════════════════════════════════════
 
 def get_gmail_credential_model(mailbox: Optional[str] = None) -> Optional[GmailOAuthCredential]:
-    """Retrieve the active GmailOAuthCredential record for the shared mailbox."""
+    """Retrieve the active GmailOAuthCredential record for the selected mailbox."""
     target_email = (mailbox or get_shared_mailbox_address()).strip().lower()
     return GmailOAuthCredential.objects.filter(email__iexact=target_email, is_active=True).first()
 
@@ -672,7 +688,7 @@ def sync_gmail_messages(
     max_results: int = 50,
 ) -> Dict[str, Any]:
     """
-    Synchronize incoming emails from the shared Gmail mailbox via the Gmail API.
+    Synchronize incoming emails from the selected Gmail mailbox via the Gmail API.
     Persists messages in PostgreSQL InboundEmail via process_inbound_email_payload().
     Guarantees idempotency and duplicate detection via RFC Message-ID.
     """
@@ -745,7 +761,7 @@ def sync_gmail_messages(
 
             msg_rfc_id = _extract_header(headers_list, "Message-ID") or f"gmail_{msg_id}"
             from_raw = _extract_header(headers_list, "From")
-            to_raw = _extract_header(headers_list, "To") or target_email
+            to_raw = target_email
 
             import email.utils
             _, sender = email.utils.parseaddr(from_raw)
@@ -776,7 +792,7 @@ def sync_gmail_messages(
                 "attachments": attachments,
             }
 
-            res = process_inbound_email_payload(payload_dict, raw_headers=headers_dict)
+            res = process_inbound_email_payload(payload_dict, raw_headers=headers_dict, mailbox=target_email)
             if res.get("status") == "duplicate":
                 duplicate_count += 1
             elif res.get("status") == "processed":
@@ -808,7 +824,7 @@ def sync_gmail_messages(
 
 def setup_gmail_watch(topic_name: Optional[str] = None, mailbox: Optional[str] = None) -> Dict[str, Any]:
     """
-    Configure Gmail watch on the shared mailbox to push notifications to Google Cloud Pub/Sub.
+    Configure Gmail watch on the selected mailbox to push notifications to Google Cloud Pub/Sub.
     """
     effective_topic = (topic_name or getattr(settings, "GOOGLE_PUBSUB_TOPIC", "")).strip()
     if not effective_topic:

@@ -5320,7 +5320,15 @@ def admin_settings(request):
     effective_recipients = settings_obj.get_appointment_recipient_emails()
 
     from .models import GmailOAuthCredential
-    gmail_cred = GmailOAuthCredential.get_shared_credential()
+    from .gmail_service import get_configured_mailboxes
+    if request.user.is_superuser:
+        visible_mailboxes = get_configured_mailboxes()
+    else:
+        visible_mailboxes = [getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()]
+    gmail_mailboxes = [
+        {"email": address, "credential": GmailOAuthCredential.get_shared_credential(address)}
+        for address in visible_mailboxes
+    ]
 
     context = {
         "settings": settings_obj,
@@ -5328,7 +5336,7 @@ def admin_settings(request):
         "recipients": recipients,
         "recipient_form": recipient_form,
         "effective_recipients": effective_recipients,
-        "gmail_credential": gmail_cred,
+        "gmail_mailboxes": gmail_mailboxes,
     }
     return render(request, "admin/admin_settings.html", context)
 
@@ -9133,6 +9141,10 @@ def admin_email_settings(request):
             messages.error(request, "Host, Username, and From Email are required fields.")
             return redirect("admin_email_settings")
 
+        if password and (provider == "gmail" or "gmail.com" in host.lower()) and len(password.replace(" ", "")) != 16:
+            messages.error(request, "For Gmail SMTP, enter the 16-character Google App Password for this account.")
+            return redirect("admin_email_settings")
+
         # Mutual exclusivity defense
         if port == 587:
             use_tls = True
@@ -9248,6 +9260,10 @@ def super_admin_email_account_save(request):
 
         if not name or not host or not username or not from_email:
             messages.error(request, "Name, Host, Username, and From Email are required.")
+            return redirect("super_admin_email_accounts")
+
+        if password and (provider == "gmail" or "gmail.com" in host.lower()) and len(password.replace(" ", "")) != 16:
+            messages.error(request, "For Gmail SMTP, enter the 16-character Google App Password for this account.")
             return redirect("super_admin_email_accounts")
 
         # Mutual exclusivity defense
@@ -10301,11 +10317,20 @@ def admin_gmail_oauth_start(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
 
-    from .gmail_service import get_authorization_url, GmailConfigError
+    from .gmail_service import get_authorization_url, GmailConfigError, get_configured_mailboxes
 
     try:
-        auth_url, state = get_authorization_url(request)
-        request.session["gmail_oauth_state"] = state
+        mailbox = request.GET.get("mailbox", "").strip().lower()
+        if not mailbox:
+            mailbox = getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()
+        if mailbox not in get_configured_mailboxes():
+            raise GmailConfigError("This mailbox is not configured for Gmail integration.")
+        if not request.user.is_superuser and mailbox != getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower():
+            return HttpResponseForbidden("You may only authorize the clinic mailbox.")
+        auth_url, state = get_authorization_url(request, mailbox=mailbox)
+        oauth_states = dict(request.session.get("gmail_oauth_states", {}))
+        oauth_states[state] = mailbox
+        request.session["gmail_oauth_states"] = oauth_states
         return redirect(auth_url)
     except GmailConfigError as e:
         messages.error(request, f"Gmail OAuth configuration error: {str(e)}")
@@ -10333,8 +10358,10 @@ def admin_gmail_oauth_callback(request):
         return redirect("admin_settings")
 
     state = request.GET.get("state")
-    expected_state = request.session.pop("gmail_oauth_state", None)
-    if not state or (expected_state and state != expected_state):
+    state_map = request.session.get("gmail_oauth_states", {})
+    expected_mailbox = state_map.pop(state, None) if state else None
+    request.session["gmail_oauth_states"] = state_map
+    if not state or not expected_mailbox:
         messages.error(request, "Invalid OAuth state parameter (possible CSRF or session expiration). Please try again.")
         return redirect("admin_settings")
 
@@ -10344,22 +10371,19 @@ def admin_gmail_oauth_callback(request):
         return redirect("admin_settings")
 
     try:
-        cred = exchange_code_for_tokens(request, code)
+        cred = exchange_code_for_tokens(request, code, expected_email=expected_mailbox)
         watch_msg = ""
         # Automatically register Pub/Sub watch if topic configured
         if getattr(settings, "GOOGLE_PUBSUB_TOPIC", None):
-            watch_res = setup_gmail_watch()
-            if watch_res.get("success"):
-                watch_msg = f" Pub/Sub watch active (historyId: {watch_res.get('history_id')})."
-            else:
-                watch_msg = f" (Pub/Sub watch notice: {watch_res.get('error')})"
+            watch_res = setup_gmail_watch(mailbox=cred.email)
+            watch_msg = f" Pub/Sub watch active (historyId: {watch_res.get('historyId', '')})."
 
         messages.success(
             request,
             f"✅ Gmail API integration authorized successfully for {cred.email_address}!{watch_msg}"
         )
     except Exception as e:
-        logger.exception("Failed to complete Gmail OAuth callback: %s", e)
+        logger.error("Failed to complete Gmail OAuth callback (%s).", type(e).__name__)
         messages.error(request, f"Failed to complete Google OAuth exchange: {str(e)}")
 
     return redirect("admin_settings")
@@ -10382,6 +10406,7 @@ def api_gmail_pubsub_webhook(request):
             logger.warning("PubSub webhook rejected: invalid verification token.")
             return HttpResponseForbidden("Invalid verification token")
 
+    data_json = {}
     try:
         body = json.loads(request.body.decode("utf-8"))
     except Exception:
@@ -10404,12 +10429,80 @@ def api_gmail_pubsub_webhook(request):
 
     # Perform synchronization and persist inbound messages into PostgreSQL
     try:
-        sync_result = sync_gmail_messages(max_results=25)
+        target_mailbox = (data_json.get("emailAddress") or "").strip().lower() if data_b64 else ""
+        from .gmail_service import get_configured_mailboxes
+        if target_mailbox and target_mailbox not in get_configured_mailboxes():
+            return JsonResponse({"status": "ignored", "reason": "unconfigured_mailbox"})
+        sync_result = sync_gmail_messages(mailbox=target_mailbox or None, max_results=25)
         return JsonResponse({"status": "ok", "sync": sync_result})
     except Exception as e:
         logger.exception("Error syncing Gmail messages from Pub/Sub webhook: %s", e)
         # Return 200 with status=error so Google Pub/Sub does not spam push retries for mailbox auth issues
-        return JsonResponse({"status": "error", "detail": str(e)}, status=200)
+        return JsonResponse({"status": "error", "detail": type(e).__name__}, status=200)
+
+
+@login_required
+@require_POST
+def admin_gmail_oauth_disconnect(request, mailbox):
+    """Revoke the application's stored authorization for one configured mailbox."""
+    from .gmail_service import get_configured_mailboxes
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return HttpResponseForbidden("Access Denied")
+    target = (mailbox or "").strip().lower()
+    clinic_mailbox = getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()
+    if target not in get_configured_mailboxes() or (not request.user.is_superuser and target != clinic_mailbox):
+        return HttpResponseForbidden("You may not manage this mailbox.")
+    from .models import GmailOAuthCredential
+    credential = GmailOAuthCredential.objects.filter(email__iexact=target).first()
+    if credential:
+        revoked_remotely = False
+        refresh_token = credential.get_refresh_token()
+        if refresh_token:
+            try:
+                import requests
+                response = requests.post(
+                    "https://oauth2.googleapis.com/revoke",
+                    params={"token": refresh_token},
+                    timeout=8,
+                )
+                revoked_remotely = response.status_code == 200
+            except Exception:
+                # Always disable local use even if Google's revocation endpoint is unavailable.
+                logger.warning("Google OAuth revocation endpoint unavailable for configured mailbox.")
+        credential.is_active = False
+        credential.encrypted_access_token = ""
+        credential.encrypted_refresh_token = ""
+        credential.last_error = "Authorization disconnected by an administrator."
+        credential.save(update_fields=["is_active", "encrypted_access_token", "encrypted_refresh_token", "last_error", "updated_at"])
+        if revoked_remotely:
+            messages.success(request, f"Gmail authorization disconnected for {target} and revoked with Google.")
+        else:
+            messages.warning(request, f"Local Gmail access was disabled for {target}. If needed, revoke it in Google Account → Security → Third-party apps.")
+    else:
+        messages.info(request, f"No stored Gmail authorization exists for {target}.")
+    return redirect("admin_settings")
+
+
+@login_required
+@require_POST
+def admin_gmail_sync_mailbox(request, mailbox):
+    """Run a bounded manual sync for a configured mailbox from the settings screen."""
+    from .gmail_service import get_configured_mailboxes, sync_gmail_messages, GmailAuthError
+    if not (request.user.is_superuser or _is_clinic_admin(request.user)):
+        return HttpResponseForbidden("Access Denied")
+    target = (mailbox or "").strip().lower()
+    clinic_mailbox = getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()
+    if target not in get_configured_mailboxes() or (not request.user.is_superuser and target != clinic_mailbox):
+        return HttpResponseForbidden("You may not manage this mailbox.")
+    try:
+        result = sync_gmail_messages(mailbox=target, max_results=25)
+        messages.success(request, f"Synced {result.get('synced', 0)} new messages from {target}; {result.get('duplicates', 0)} duplicates skipped.")
+    except GmailAuthError:
+        messages.error(request, f"{target} is not authorized. Connect this inbox with Google first.")
+    except Exception as exc:
+        logger.exception("Manual Gmail mailbox sync failed")
+        messages.error(request, f"Could not sync {target} ({type(exc).__name__}). Check server logs for details.")
+    return redirect("admin_settings")
 
 
 

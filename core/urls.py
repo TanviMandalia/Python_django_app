@@ -543,6 +543,16 @@ urlpatterns = [
         name="admin_gmail_oauth_callback",
     ),
     path(
+        "admin-settings/gmail/<path:mailbox>/disconnect/",
+        views.admin_gmail_oauth_disconnect,
+        name="admin_gmail_oauth_disconnect",
+    ),
+    path(
+        "admin-settings/gmail/<path:mailbox>/sync/",
+        views.admin_gmail_sync_mailbox,
+        name="admin_gmail_sync_mailbox",
+    ),
+    path(
         "api/gmail/pubsub/",
         views.api_gmail_pubsub_webhook,
         name="api_gmail_pubsub_webhook",

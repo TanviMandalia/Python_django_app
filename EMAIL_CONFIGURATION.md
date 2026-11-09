@@ -192,12 +192,21 @@ The Platform Super Admin controls platform-wide parameters and tenant isolation.
 | `EMAIL_HOST` | SMTP server hostname | `smtp.gmail.com` |
 | `EMAIL_PORT` | SMTP port | `587` |
 | `EMAIL_USE_TLS` | Transport Layer Security | `True` |
-| `EMAIL_HOST_USER` | Authenticated SMTP username | `physio.rehab.guj@gmail.com` |
-| `EMAIL_HOST_PASSWORD` | App Password (never personal pwd) | *(16-character Google App Password)* |
-| `DEFAULT_FROM_EMAIL` | Default From header | `Dr. Dhvani Patalia Physio Rehab <physio.rehab.guj@gmail.com>` |
+| `EMAIL_HOST_USER` | Optional global SMTP fallback username | Set only if using the global fallback |
+| `EMAIL_HOST_PASSWORD` | Optional global fallback App Password (never personal pwd) | Secret; prefer the encrypted Email Accounts UI |
+| `DEFAULT_FROM_EMAIL` | Global fallback From header | Optional |
+| `GMAIL_INBOUND_MAILBOXES` | Comma-separated inboxes authorized for inbound Gmail sync | `techcraft1215@gmail.com,physio.rehab.guj@gmail.com` |
 
 > [!CAUTION]
 > Never commit real SMTP passwords or Google App Passwords to version control. Store all credentials in the production platform environment variables (Render, Vercel, Supabase, or AWS Secrets Manager).
+
+### Two Gmail Mailboxes: Send and Receive
+
+The application supports separate platform and clinic Gmail SMTP accounts. In **Super Admin → Email Accounts**, configure one platform-scoped account for `techcraft1215@gmail.com` and one clinic-scoped account for `physio.rehab.guj@gmail.com`. Use `smtp.gmail.com`, port `587`, STARTTLS, and the matching Gmail username/from address. Generate a distinct Google App Password for each account after enabling 2-Step Verification, then enter it in that account's SMTP password field. The field is only needed for sending; never enter a normal Google password.
+
+SMTP does not read inboxes. For inbound sync, set `GMAIL_INBOUND_MAILBOXES` to the two comma-separated addresses, configure the Google OAuth client and redirect URI as described in the README, then use **Clinic Settings → Gmail inbox connections** to connect each address. Google OAuth authorizes inbox access; it does not use the SMTP App Password. Click **Sync now** for a one-time sync, or configure Gmail Pub/Sub for automatic push sync and run `python manage.py sync_gmail --watch` once for each authorized mailbox (or with no `--mailbox` to set up all configured mailboxes).
+
+To review the current stored sender and OAuth configuration before a fresh start, run `python manage.py reset_email_configuration`. Add `--apply` only after reviewing the listed records. This removes sender-account records and OAuth grants while preserving sent-email logs and inbound message history. Environment variables are not changed by this command.
 
 ---
 

@@ -459,7 +459,15 @@ def send_clinic_email(
             GmailServiceError,
             GmailAuthError,
         )
-        use_gmail_api = is_gmail_api_configured_and_active()
+        # An OAuth grant only authorizes the matching sender account. Do not let
+        # the clinic mailbox silently take over platform mail, or bypass an
+        # explicitly configured SMTP App Password account.
+        api_mailbox = (getattr(account, "from_email", "") or "").strip().lower()
+        use_gmail_api = bool(
+            getattr(account, "provider", "") == "gmail_api"
+            and api_mailbox
+            and is_gmail_api_configured_and_active(mailbox=api_mailbox)
+        )
 
         if use_gmail_api:
             try:
@@ -468,7 +476,7 @@ def send_clinic_email(
                     body_text=message_text,
                     to_email=recipient,
                     html_content=html_message,
-                    from_email=get_shared_mailbox_address(),
+                    from_email=api_mailbox,
                     from_name=clean_display_name,
                     headers=headers,
                     attachments=attachments,
@@ -1494,7 +1502,7 @@ Thank you for choosing {clinic_title}.
 
 # ── INBOUND EMAIL RECEIVING & PROCESSING ─────────────────────
 
-def process_inbound_email_payload(payload_dict, raw_headers=None):
+def process_inbound_email_payload(payload_dict, raw_headers=None, mailbox=None):
     """
     Process incoming untrusted emails from webhooks or mail receivers.
     Verifies:
@@ -1592,10 +1600,16 @@ def process_inbound_email_payload(payload_dict, raw_headers=None):
     clean_subject = sanitize_header_value(subject)
 
     # 4. Hospital Tenancy Association
-    matched_hospital = (
-        Hospital.objects.filter(email__iexact=clean_recipient).first()
-        or Hospital.objects.filter(is_active=True).first()
-    )
+    matched_hospital = Hospital.objects.filter(email__iexact=clean_recipient).first()
+    if not matched_hospital:
+        from .models import ClinicSettings
+        clinic_settings = ClinicSettings.objects.filter(email__iexact=clean_recipient).select_related("hospital").first()
+        matched_hospital = clinic_settings.hospital if clinic_settings else None
+    # Only route the configured clinic mailbox to the sole/primary clinic when its
+    # public contact address has not been configured on Hospital/ClinicSettings.
+    clinic_mailbox = getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()
+    if not matched_hospital and (not mailbox or str(mailbox).strip().lower() == clinic_mailbox):
+        matched_hospital = Hospital.objects.filter(is_active=True).order_by("id").first()
 
     # 5. Thread Association & Original Email Lookup
     orig_log = None
@@ -1666,7 +1680,12 @@ def process_inbound_email_payload(payload_dict, raw_headers=None):
 
     # Check if this is an internal clinic alert copy sent to itself
     shared_mailbox = getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()
-    is_self_sent = clean_sender.lower() == shared_mailbox
+    configured_mailboxes = {
+        item.strip().lower()
+        for item in str(getattr(settings, "GMAIL_INBOUND_MAILBOXES", shared_mailbox)).split(",")
+        if item.strip()
+    }
+    is_self_sent = clean_sender.lower() in configured_mailboxes
 
     # Case B: Doctor / Medical Staff Communication
     # Check if sender is a registered doctor/staff member in the hospital (excluding clinic mailbox itself)

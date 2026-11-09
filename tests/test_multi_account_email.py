@@ -309,7 +309,7 @@ class TestEmailConfigurationRBAC(BaseHospitalTestCase):
             "port": "587",
             "provider": "gmail",
             "username": "super@google.com",
-            "password": "NewSecretPassword123",
+            "password": "abcdefghijklmnop",
             "from_email": "super@google.com",
             "from_name": "Super System",
             "use_tls": "on",
@@ -319,7 +319,7 @@ class TestEmailConfigurationRBAC(BaseHospitalTestCase):
         self.assertEqual(res_post.status_code, 302)
         account = EmailAccount.objects.filter(name="Super Admin SMTP").first()
         self.assertIsNotNone(account)
-        self.assertEqual(account.get_password(), "NewSecretPassword123")
+        self.assertEqual(account.get_password(), "abcdefghijklmnop")
 
     def test_blank_password_preserves_existing_credentials(self):
         """Updating account with empty password keeps the original password unchanged."""
@@ -410,6 +410,23 @@ class TestEmailConfigurationRBAC(BaseHospitalTestCase):
         account = EmailAccount.objects.filter(name="Google App Password Normalization Test").first()
         self.assertIsNotNone(account)
         self.assertEqual(account.get_password(), "abcdefghijklmnop")
+
+    def test_gmail_smtp_rejects_non_app_password_length(self):
+        self.client.force_login(self.super_admin)
+        save_data = {
+            "name": "Invalid Gmail Password Length",
+            "account_type": "PLATFORM",
+            "scope_type": "platform",
+            "host": "smtp.gmail.com",
+            "port": "587",
+            "provider": "gmail",
+            "username": "techcraft1215@gmail.com",
+            "password": "normal-google-password",
+            "from_email": "techcraft1215@gmail.com",
+            "use_tls": "on",
+        }
+        self.client.post(reverse("super_admin_email_account_save"), save_data)
+        self.assertFalse(EmailAccount.objects.filter(name="Invalid Gmail Password Length").exists())
 
     def test_invalid_port_rejected(self):
         """Invalid port numbers (<=0 or >65535 or non-numeric) are safely rejected."""

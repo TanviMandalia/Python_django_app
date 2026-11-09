@@ -251,6 +251,38 @@
   </div>
 </div>
 
+<div class="admin-card" style="max-width:none;margin:28px auto 0 auto;">
+  <h3 style="margin:0 0 8px;">Gmail inbox connections</h3>
+  <p style="margin:0 0 16px;color:var(--admin-text-sub);">SMTP credentials send mail. Connect each inbox with Google OAuth to let the app read and sync incoming mail.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;">
+    {% for item in gmail_mailboxes %}
+      <div style="border:1px solid var(--admin-border);border-radius:8px;padding:16px;background:#f8fafc;">
+        <strong>{{ item.email }}</strong>
+        <div style="margin:8px 0 12px;">
+          {% if item.credential and item.credential.is_authorized and item.credential.is_active %}
+            <span style="color:#059669;font-weight:700;">Connected</span>
+            {% if item.credential.last_sync_at %}<small> · Last sync {{ item.credential.last_sync_at|date:"M d, Y H:i" }}</small>{% endif %}
+          {% else %}<span style="color:#c2410c;font-weight:700;">Authorization required</span>{% endif %}
+        </div>
+        <a class="btn-action" href="{% url 'admin_gmail_oauth_start' %}?mailbox={{ item.email|urlencode }}" style="display:inline-flex;padding:8px 12px;background:#4285f4;color:white;text-decoration:none;border-radius:6px;">
+          {% if item.credential and item.credential.is_authorized and item.credential.is_active %}Re-authorize{% else %}Connect Google inbox{% endif %}
+        </a>
+        {% if item.credential and item.credential.is_authorized and item.credential.is_active %}
+          <form method="post" action="{% url 'admin_gmail_oauth_disconnect' item.email %}" style="display:inline;margin-left:6px;">
+            {% csrf_token %}<button class="btn-action" type="submit" style="padding:8px 12px;">Disconnect</button>
+          </form>
+          <form method="post" action="{% url 'admin_gmail_sync_mailbox' item.email %}" style="display:inline;margin-left:6px;">
+            {% csrf_token %}<button class="btn-action" type="submit" style="padding:8px 12px;">Sync now</button>
+          </form>
+        {% endif %}
+        {% if item.credential.last_error %}<div style="color:#b91c1c;margin-top:8px;font-size:.82rem;">{{ item.credential.last_error }}</div>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <small style="display:block;margin-top:14px;color:var(--admin-text-sub);">Use Google OAuth for inbox access; do not enter the Google account password here. Gmail App Passwords are only for SMTP sending.</small>
+</div>
+
+{% if false %}
 <!-- ════ GMAIL API (OAUTH 2.0) SHARED INTEGRATION ════ -->
 <div class="admin-card" style="max-width: none; margin: 28px auto 0 auto;">
   <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--admin-border);">
@@ -346,6 +378,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- ════ ADD RECIPIENT MODAL ════ -->
 <div id="addRecipientModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">

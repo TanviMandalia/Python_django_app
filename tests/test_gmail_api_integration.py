@@ -38,6 +38,7 @@ from core.gmail_service import (
     GMAIL_READONLY_SCOPE,
     SHARED_GMAIL_MAILBOX,
     get_authorization_url,
+    get_configured_mailboxes,
     exchange_code_for_tokens,
     get_gmail_credentials,
     build_gmail_client,
@@ -58,6 +59,7 @@ from tests.test_helpers import BaseHospitalTestCase
     GOOGLE_OAUTH_CLIENT_SECRET="mock-client-secret-12345",
     GOOGLE_OAUTH_REDIRECT_URI="http://testserver/admin-settings/gmail/callback/",
     GMAIL_SHARED_MAILBOX="physio.rehab.guj@gmail.com",
+    GMAIL_INBOUND_MAILBOXES="techcraft1215@gmail.com,physio.rehab.guj@gmail.com",
     GOOGLE_PUBSUB_TOPIC="projects/mock-gcp/topics/gmail-notifications",
     GOOGLE_PUBSUB_VERIFICATION_TOKEN="secure-webhook-token-xyz",
     FIELD_ENCRYPTION_KEY="MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
@@ -111,6 +113,15 @@ class GmailApiIntegrationTests(BaseHospitalTestCase):
         # Must NOT request full gmail access or compose
         self.assertNotIn("https://mail.google.com/", auth_url)
 
+        platform_url, _ = get_authorization_url(request, mailbox="techcraft1215@gmail.com")
+        self.assertIn("login_hint=techcraft1215%40gmail.com", platform_url)
+
+    def test_two_configured_inboxes_are_available_for_sync(self):
+        self.assertEqual(
+            get_configured_mailboxes(),
+            ["techcraft1215@gmail.com", "physio.rehab.guj@gmail.com"],
+        )
+
     def test_token_encryption_at_rest_in_postgresql(self):
         """Refresh token must be stored encrypted with Fernet and never stored as plaintext."""
         cred = GmailOAuthCredential.objects.create(
@@ -136,7 +147,8 @@ class GmailApiIntegrationTests(BaseHospitalTestCase):
         self.assertEqual(cred.get_access_token(), raw_access_token)
 
     @patch("core.gmail_service.google_auth_oauthlib.flow.Flow")
-    def test_exchange_code_for_tokens(self, mock_flow_cls):
+    @patch("core.gmail_service.build")
+    def test_exchange_code_for_tokens(self, mock_build, mock_flow_cls):
         """Exchanging auth code stores encrypted tokens and marks credential authorized."""
         mock_flow = MagicMock()
         mock_flow_cls.from_client_config.return_value = mock_flow
@@ -147,6 +159,10 @@ class GmailApiIntegrationTests(BaseHospitalTestCase):
         mock_credentials.expiry = timezone.now() + timedelta(hours=1)
         mock_credentials.scopes = [GMAIL_SEND_SCOPE, GMAIL_READONLY_SCOPE]
         mock_flow.credentials = mock_credentials
+        mock_build.return_value.users.return_value.getProfile.return_value.execute.return_value = {
+            "emailAddress": "physio.rehab.guj@gmail.com",
+            "historyId": "12345",
+        }
 
         request = MagicMock()
         request.build_absolute_uri.return_value = "http://testserver/admin-settings/gmail/callback/"
@@ -157,6 +173,25 @@ class GmailApiIntegrationTests(BaseHospitalTestCase):
         self.assertTrue(cred.is_active)
         self.assertEqual(cred.get_refresh_token(), "1//new_refresh_token")
         self.assertEqual(cred.get_access_token(), "ya29.new_access_token")
+
+    @patch("core.gmail_service.google_auth_oauthlib.flow.Flow")
+    @patch("core.gmail_service.build")
+    def test_oauth_rejects_google_account_other_than_selected_mailbox(self, mock_build, mock_flow_cls):
+        mock_flow = MagicMock()
+        mock_flow_cls.from_client_config.return_value = mock_flow
+        mock_flow.credentials = MagicMock(
+            token="access-token",
+            refresh_token="refresh-token",
+            expiry=None,
+            scopes=[GMAIL_SEND_SCOPE, GMAIL_READONLY_SCOPE],
+        )
+        mock_build.return_value.users.return_value.getProfile.return_value.execute.return_value = {
+            "emailAddress": "techcraft1215@gmail.com",
+            "historyId": "1",
+        }
+        with self.assertRaises(GmailAuthError):
+            exchange_code_for_tokens("test-code", expected_email="physio.rehab.guj@gmail.com")
+        self.assertFalse(GmailOAuthCredential.objects.filter(email="techcraft1215@gmail.com").exists())
 
     def test_revoked_grant_marks_credential_inactive_safely(self):
         """When Google reports invalid_grant, credential is marked inactive and error recorded."""

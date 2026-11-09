@@ -235,11 +235,12 @@ celery -A myproject worker -l info
 
 The application integrates with the official **Google Gmail API** using the **OAuth 2.0 Web Server application flow** to power clinic email notifications and inbound message synchronization.
 
-### 5.1 Architecture & Single Shared Mailbox
-- **Shared Clinic Mailbox:** `physio.rehab.guj@gmail.com`
-- **One-Time Authorization:** The mailbox owner authorizes the application once through Google's consent screen. All dashboards (Super Admin, Clinic Admin, Staff/Doctor, Patient) and public booking forms automatically use this backend integration. Individual dashboard users do **not** connect separate mailboxes.
+### 5.1 Architecture & Configured Mailboxes
+- **Platform mailbox:** `techcraft1215@gmail.com`
+- **Clinic mailbox:** `physio.rehab.guj@gmail.com`
+- Each configured mailbox can be authorized independently through Google's consent screen. The platform owner can connect both; clinic administrators can manage the clinic mailbox. Outbound SMTP App Passwords and inbound Gmail OAuth grants are separate credentials and are stored encrypted.
 - **Strictly Event-Driven (No Manual Buttons):** Automated delivery executes immediately post-commit upon successful business events:
-  - **Public Booking Creation:** Confirmation sent to customer’s email address on the booking, and notification alert sent to `physio.rehab.guj@gmail.com`.
+  - **Public Booking Creation:** Confirmation sent to the customer; clinic notification uses the clinic-scoped sender and recipient configuration.
   - **Appointment Status Updates:** Notifications dispatched only for supported application statuses: `confirmed`, `completed`, and `cancelled`.
   - **Zero Manual Controls:** Manual "Send Mail" or "Receive Mail" buttons are intentionally prohibited to eliminate human error and prevent double-sends.
 - **Post-Commit Execution & Idempotency:** Emails are dispatched exclusively *after* the database transaction commits. Unique idempotency keys (e.g., `public_booking_{ref}_created`, `appointment_{id}_status_{status}`) are verified against PostgreSQL `EmailLog` records to prevent duplicate deliveries if requests are retried.
@@ -307,7 +308,7 @@ The platform persists incoming replies and inquiries into PostgreSQL (`InboundEm
 4. In **Pub/Sub** > **Subscriptions**, create a Push Subscription:
    - Delivery Type: **Push**.
    - Push endpoint: `https://yourdomain.com/api/gmail/pubsub/?token=YOUR_VERIFICATION_TOKEN`
-5. Configure `GOOGLE_PUBSUB_TOPIC` and `GOOGLE_PUBSUB_VERIFICATION_TOKEN` in your `.env`. When the mailbox is authorized, the app automatically calls `watch()` on the Gmail mailbox.
+5. Set `GMAIL_INBOUND_MAILBOXES=techcraft1215@gmail.com,physio.rehab.guj@gmail.com`, plus `GOOGLE_PUBSUB_TOPIC` and `GOOGLE_PUBSUB_VERIFICATION_TOKEN` in your environment. Authorize each mailbox in Clinic Settings. Run `python manage.py sync_gmail --watch` to register/renew watches for all configured mailboxes.
 
 #### Option B: Scheduled Sync Management Command (Cron / Celery)
 For local development or environments without public inbound webhook domains, synchronize incoming mail periodically via CLI:
@@ -337,8 +338,8 @@ python manage.py sync_gmail --watch
 3. Log in as a **Clinic Admin** or **Super Admin** and navigate to:
    `http://127.0.0.1:8000/admin-settings/`
 4. In the **Gmail API (OAuth 2.0) Integration** card:
-   - Click **Authorize with Google (physio.rehab.guj@gmail.com)**.
-5. Log into Google with `physio.rehab.guj@gmail.com` and grant permission.
+   - Click **Connect Google inbox** for each address.
+5. Log into the matching Google account and grant permission for each mailbox.
 6. Google redirects to `/admin-settings/gmail/callback/`, where the authorization code is exchanged for an encrypted refresh token and access token, and the mailbox is verified.
 7. The status badge will display **Connected & Active (OAuth 2.0 Authorized)** with green indicators. All subsequent emails are transmitted securely through the Gmail API.
 
@@ -467,7 +468,8 @@ flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 | `GOOGLE_OAUTH_CLIENT_ID` | Google OAuth 2.0 Web Client ID | **Yes (for Gmail API)** | `123456...apps.googleusercontent.com` |
 | `GOOGLE_OAUTH_CLIENT_SECRET` | Google OAuth 2.0 Web Client Secret | **Yes (for Gmail API)** | `GOCSPX-...` |
 | `GOOGLE_OAUTH_REDIRECT_URI` | Authorized OAuth 2.0 redirect URI | **Yes (for Gmail API)** | `http://127.0.0.1:8000/admin-settings/gmail/callback/` |
-| `GMAIL_SHARED_MAILBOX` | Clinic shared authorized mailbox | No | `physio.rehab.guj@gmail.com` |
+| `GMAIL_SHARED_MAILBOX` | Primary clinic mailbox used for legacy clinic routing | No | `physio.rehab.guj@gmail.com` |
+| `GMAIL_INBOUND_MAILBOXES` | Comma-separated Gmail inboxes available for inbound OAuth sync | No | `techcraft1215@gmail.com,physio.rehab.guj@gmail.com` |
 | `FIELD_ENCRYPTION_KEY` | Fernet 32-byte urlsafe base64 key for encrypting tokens at rest | **Yes (for Gmail API)** | Secret (`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`) |
 | `GOOGLE_PUBSUB_TOPIC` | GCP Pub/Sub Topic for inbound Gmail push notifications | No | `projects/my-gcp-project/topics/gmail-inbound-topic` |
 | `GOOGLE_PUBSUB_SUBSCRIPTION` | GCP Pub/Sub subscription name | No | `projects/my-gcp-project/subscriptions/gmail-inbound-sub` |

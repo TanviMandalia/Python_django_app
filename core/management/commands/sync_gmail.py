@@ -1,74 +1,54 @@
 import logging
+
 from django.core.management.base import BaseCommand, CommandError
-from core.gmail_service import sync_gmail_messages, setup_gmail_watch, GmailAuthError, GmailConfigError
+from core.gmail_service import (
+    GmailAuthError,
+    GmailConfigError,
+    get_configured_mailboxes,
+    setup_gmail_watch,
+    sync_gmail_messages,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Synchronize incoming messages from shared Gmail mailbox (physio.rehab.guj@gmail.com) via Gmail API."
+    help = "Synchronize incoming messages from configured Gmail inboxes via Gmail API."
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--max-results",
-            type=int,
-            default=25,
-            help="Maximum number of messages to fetch in one sync run (default: 25).",
-        )
-        parser.add_argument(
-            "--mailbox",
-            type=str,
-            default=None,
-            help="Specific mailbox address to synchronize (defaults to shared mailbox).",
-        )
-        parser.add_argument(
-            "--watch",
-            action="store_true",
-            help="Call Gmail API watch endpoint to renew or register Google Cloud Pub/Sub push notifications.",
-        )
+        parser.add_argument("--max-results", type=int, default=25)
+        parser.add_argument("--mailbox", type=str, default=None, help="Sync only this configured mailbox.")
+        parser.add_argument("--watch", action="store_true", help="Register or renew Pub/Sub watch for each selected mailbox.")
 
     def handle(self, *args, **options):
         max_results = options.get("max_results") or 25
-        mailbox = options.get("mailbox")
-        do_watch = options.get("watch")
+        requested = options.get("mailbox")
+        mailboxes = [requested.strip().lower()] if requested else get_configured_mailboxes()
+        allowed = set(get_configured_mailboxes())
+        if any(address not in allowed for address in mailboxes):
+            raise CommandError("Requested mailbox is not listed in GMAIL_INBOUND_MAILBOXES.")
 
-        if do_watch:
-            self.stdout.write("Configuring Google Pub/Sub watch for Gmail mailbox...")
+        failures = 0
+        for mailbox in mailboxes:
+            if options.get("watch"):
+                try:
+                    result = setup_gmail_watch(mailbox=mailbox)
+                    self.stdout.write(self.style.SUCCESS(f"Pub/Sub watch ready for {mailbox} (historyId={result.get('historyId', '')})."))
+                except Exception as exc:
+                    failures += 1
+                    self.stderr.write(self.style.ERROR(f"Watch setup failed for {mailbox}: {type(exc).__name__}: {exc}"))
             try:
-                watch_res = setup_gmail_watch(mailbox=mailbox)
-                if watch_res.get("success"):
-                    self.stdout.write(
-                        self.style.SUCCESS(
-                            f"Successfully configured watch: historyId={watch_res.get('history_id')}, "
-                            f"expiration={watch_res.get('expiration')}"
-                        )
-                    )
-                else:
-                    self.stdout.write(
-                        self.style.ERROR(f"Failed to configure watch: {watch_res.get('error')}")
-                    )
-            except Exception as e:
-                raise CommandError(f"Watch configuration error: {e}")
-
-        self.stdout.write(f"Initiating Gmail API synchronization (max_results={max_results})...")
-        try:
-            result = sync_gmail_messages(mailbox=mailbox, max_results=max_results)
-        except GmailConfigError as e:
-            raise CommandError(f"Gmail configuration error: {e}")
-        except GmailAuthError as e:
-            raise CommandError(f"Gmail authentication error (re-authorization required): {e}")
-        except Exception as e:
-            logger.exception("Unexpected error during Gmail synchronization: %s", e)
-            raise CommandError(f"Unexpected sync failure: {e}")
-
-        synced = result.get("synced", 0)
-        duplicates = result.get("duplicates", 0)
-        errors = result.get("errors", 0)
-        history_id = result.get("history_id")
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Sync complete: {synced} new messages ingested, {duplicates} duplicates skipped, "
-                f"{errors} errors. Current historyId: {history_id}."
-            )
-        )
+                result = sync_gmail_messages(mailbox=mailbox, max_results=max_results)
+                self.stdout.write(self.style.SUCCESS(
+                    f"{mailbox}: {result.get('synced', 0)} new, {result.get('duplicates', 0)} duplicates, "
+                    f"{result.get('errors', 0)} errors."
+                ))
+            except (GmailConfigError, GmailAuthError) as exc:
+                failures += 1
+                self.stderr.write(self.style.ERROR(f"{mailbox}: {exc}"))
+            except Exception as exc:
+                failures += 1
+                logger.exception("Unexpected Gmail synchronization failure for %s", mailbox)
+                self.stderr.write(self.style.ERROR(f"{mailbox}: sync failed ({type(exc).__name__})."))
+        if failures:
+            raise CommandError(f"Gmail operation completed with {failures} mailbox failure(s).")

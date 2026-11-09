@@ -256,6 +256,10 @@ GOOGLE_OAUTH_REDIRECT_URI = os.getenv(
     "http://127.0.0.1:8000/admin-settings/gmail/callback/",
 )
 GMAIL_SHARED_MAILBOX = os.getenv("GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com")
+GMAIL_INBOUND_MAILBOXES = os.getenv(
+    "GMAIL_INBOUND_MAILBOXES",
+    "techcraft1215@gmail.com,physio.rehab.guj@gmail.com",
+)
 GOOGLE_PUBSUB_TOPIC = os.getenv("GOOGLE_PUBSUB_TOPIC", "")
 GOOGLE_PUBSUB_SUBSCRIPTION = os.getenv("GOOGLE_PUBSUB_SUBSCRIPTION", "")
 GOOGLE_PUBSUB_VERIFICATION_TOKEN = os.getenv("GOOGLE_PUBSUB_VERIFICATION_TOKEN", "")
