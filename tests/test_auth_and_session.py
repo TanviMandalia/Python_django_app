@@ -71,6 +71,25 @@ class AuthenticationAndSessionTests(BaseHospitalTestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("client_dashboard"))
 
+    def test_all_roles_can_log_in_with_their_registered_email(self):
+        """Registered email addresses resolve to the same role-specific dashboards as usernames."""
+        cases = [
+            ("super@example.com", "SuperSecret123!", "super_admin_dashboard"),
+            ("boss@example.com", "BossPassword123!", "admin_dashboard"),
+            ("alex@example.com", "StaffSecret123!", "staff_dashboard"),
+            ("amy@example.com", "ClientSecret123!", "client_dashboard"),
+        ]
+        for email, password, dashboard in cases:
+            with self.subTest(email=email):
+                response = self.client.post(
+                    reverse("login"),
+                    {"username": email, "password": password},
+                    follow=False,
+                )
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.url, reverse(dashboard))
+                self.client.logout()
+
     def test_authenticated_user_accessing_login_page_redirects(self):
         """TC-AUTH-005: Already authenticated user is immediately redirected to their dashboard."""
         self.client.force_login(self.client_user)

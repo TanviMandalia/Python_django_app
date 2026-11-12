@@ -1208,7 +1208,21 @@ def login_view(request):
                 {"username": username, "remember_me": remember_me, "next": next_url},
             )
 
-        user = authenticate(request, username=username, password=password)
+        login_username = username
+        if "@" in username:
+            matching_usernames = list(
+                User.objects.filter(email__iexact=username)
+                .order_by("pk")
+                .values_list("username", flat=True)[:2]
+            )
+            if len(matching_usernames) == 1:
+                login_username = matching_usernames[0]
+            elif len(matching_usernames) > 1:
+                # Duplicate email addresses are ambiguous; refuse email login and
+                # require the unique username instead.
+                login_username = ""
+
+        user = authenticate(request, username=login_username, password=password)
 
         if user:
             # ✅ Success — clear failed attempts
