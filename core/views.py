@@ -2712,7 +2712,9 @@ def update_public_appointment_request(request, request_id, status):
     """
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
+    from django.contrib.auth import get_user_model
     from .models import PublicAppointmentRequest
+    User = get_user_model()
     req_obj = get_object_or_404(PublicAppointmentRequest, id=request_id)
     hospital = resolve_hospital(request.user)
     if not request.user.is_superuser and hospital and req_obj.hospital_id != hospital.id:
@@ -2755,8 +2757,6 @@ def update_public_appointment_request(request, request_id, status):
                         time_val = t_val
                         break
 
-                from django.contrib.auth import get_user_model
-                User = get_user_model()
                 patient_user = User.objects.filter(email__iexact=req_obj.email).first()
 
                 created_appt = Appointment.objects.create(

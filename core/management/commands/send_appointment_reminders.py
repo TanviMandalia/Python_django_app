@@ -1,67 +1,166 @@
-# ════════════════════════════════════════════════════════════
-# FEATURE 1 — Appointment Reminder Email
-# FILE: core/management/commands/send_appointment_reminders.py
-# ════════════════════════════════════════════════════════════
+"""Send each confirmed patient an email reminder approximately one hour before."""
+
+from datetime import datetime, timedelta
+import logging
 
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from django.utils import timezone
-from django.core.mail import send_mail
-from django.conf import settings
-from datetime import timedelta
+
+from core.email_utils import send_clinic_email
 from core.models import Appointment
 
+
+logger = logging.getLogger(__name__)
+
+
+def _appointment_datetime(appointment):
+    """Parse the legacy appointment time strings in the clinic's local timezone."""
+    parsed_time = None
+    for time_format in ("%H:%M", "%I:%M %p", "%I:%M:%S %p"):
+        try:
+            parsed_time = datetime.strptime(appointment.time.strip(), time_format).time()
+            break
+        except (AttributeError, TypeError, ValueError):
+            continue
+
+    if parsed_time is None:
+        return None
+
+    naive_datetime = datetime.combine(appointment.date, parsed_time)
+    return timezone.make_aware(naive_datetime, timezone.get_current_timezone())
+
+
 class Command(BaseCommand):
-    help = 'Send appointment reminder emails 24 hours before appointment'
+    help = "Send one-time email reminders for confirmed appointments within the next hour."
 
     def handle(self, *args, **kwargs):
-        tomorrow = timezone.localdate() + timedelta(days=1)
+        now = timezone.now()
+        local_today = timezone.localdate(now)
+        tomorrow = local_today + timedelta(days=1)
+        appointments = (
+            Appointment.objects.filter(
+                status="confirmed",
+                date__gte=local_today,
+                date__lte=tomorrow,
+            )
+            .select_related("patient", "hospital")
+            .order_by("date", "time", "id")
+        )
 
-        appointments = Appointment.objects.filter(
-            date=tomorrow,
-            status__in=['confirmed', 'pending'],
-        ).select_related('patient')
+        sent_count = 0
+        skipped_count = 0
+        failed_count = 0
 
-        self.stdout.write(f'Found {appointments.count()} appointments for tomorrow.')
-
-        for appt in appointments:
-            email = appt.email or (appt.patient.email if appt.patient else None)
-            name  = appt.name or (appt.patient.get_full_name() if appt.patient else 'Patient')
-
-            if not email:
-                self.stdout.write(f'  ⚠️ No email for {name} — skipping.')
+        for appointment in appointments:
+            starts_at = _appointment_datetime(appointment)
+            if starts_at is None:
+                logger.warning(
+                    "Skipping appointment reminder for appointment %s: unsupported time value %r",
+                    appointment.pk,
+                    appointment.time,
+                )
+                skipped_count += 1
                 continue
 
-            try:
-                send_mail(
-                    subject='📅 Appointment Reminder — Tomorrow at Dr. Dhvani Patalia Physio Rehab',
-                    message=f"""
-Dear {name},
+            if not now < starts_at <= now + timedelta(hours=1):
+                continue
+            if appointment.reminder_sent_for == starts_at:
+                continue
 
-This is a friendly reminder that you have an appointment scheduled for TOMORROW.
+            recipient = (appointment.email or "").strip() or (
+                (appointment.patient.email or "").strip() if appointment.patient else ""
+            )
+            if not recipient:
+                logger.warning(
+                    "Skipping appointment reminder for appointment %s: patient has no email address",
+                    appointment.pk,
+                )
+                skipped_count += 1
+                continue
 
-  📅 Date     : {appt.date.strftime('%d %B %Y')}
-  🕐 Time     : {appt.get_time_display() if hasattr(appt, 'get_time_display') else appt.time}
-  🏥 Service  : {appt.get_service_display()}
-  📌 Status   : {appt.status.title()}
+            patient_name = appointment.name or (
+                appointment.patient.get_full_name() or appointment.patient.username
+                if appointment.patient
+                else "Patient"
+            )
+            clinic_name = (
+                appointment.hospital.name
+                if appointment.hospital
+                else "Dr. Dhvani Patalia Physio Rehab"
+            )
+            clinic_phone = (
+                appointment.hospital.phone
+                if appointment.hospital and appointment.hospital.phone
+                else "+91 94095 10501"
+            )
+            display_time = appointment.get_time_display()
+            subject = f"Appointment reminder: your visit is in one hour - {clinic_name}"
+            message = f"""Dear {patient_name},
 
-📍 Location:
-Dr. Dhvani Patalia Physio Rehab Clinic
+This is a reminder that your appointment is scheduled to begin in about one hour.
 
-Please arrive 10 minutes early.
-If you need to cancel or reschedule, please contact us as soon as possible.
+Date: {timezone.localtime(starts_at).strftime('%A, %d %B %Y')}
+Time: {display_time}
+Service: {appointment.get_service_display()}
+Clinic: {clinic_name}
 
-For queries, reply to this email or contact us directly.
+Please arrive a few minutes early. If you need to change your appointment, contact the clinic at {clinic_phone}.
 
 Regards,
-Dr. Dhvani Patalia
-Physio Rehab Clinic
-                    """.strip(),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[email],
-                    fail_silently=False,
-                )
-                self.stdout.write(f'  ✅ Reminder sent to {name} ({email})')
-            except Exception as e:
-                self.stdout.write(f'  ❌ Failed for {name}: {e}')
+{clinic_name}
+"""
 
-        self.stdout.write(self.style.SUCCESS('✅ Appointment reminders done.'))
+            # Lock before sending so overlapping/manual runs cannot send duplicates.
+            with transaction.atomic():
+                locked_appointment = (
+                    Appointment.objects.select_for_update()
+                    .filter(pk=appointment.pk)
+                    .first()
+                )
+                if not (
+                    locked_appointment
+                    and locked_appointment.status == "confirmed"
+                    and _appointment_datetime(locked_appointment) == starts_at
+                    and locked_appointment.reminder_sent_for != starts_at
+                ):
+                    skipped_count += 1
+                    continue
+
+                try:
+                    delivered = send_clinic_email(
+                        subject=subject,
+                        message_text=message,
+                        recipient_list=[recipient],
+                        hospital=locked_appointment.hospital,
+                        email_type="appointment_reminder",
+                    )
+                except Exception:
+                    logger.exception(
+                        "Appointment reminder delivery raised an error for appointment %s",
+                        appointment.pk,
+                    )
+                    delivered = False
+
+                if not delivered:
+                    failed_count += 1
+                    self.stderr.write(
+                        self.style.WARNING(
+                            f"Reminder failed for appointment {appointment.pk} ({recipient})."
+                        )
+                    )
+                    continue
+
+                locked_appointment.reminder_sent_for = starts_at
+                locked_appointment.save(update_fields=["reminder_sent_for"])
+                sent_count += 1
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"Reminder sent for appointment {appointment.pk} to {recipient}."
+                    )
+                )
+
+        self.stdout.write(
+            f"Appointment reminder run finished: {sent_count} sent, "
+            f"{failed_count} failed, {skipped_count} skipped."
+        )

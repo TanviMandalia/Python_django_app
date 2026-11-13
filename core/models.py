@@ -501,6 +501,10 @@ class Appointment(models.Model):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
 
+    # Store the appointment datetime for which the reminder was delivered.
+    # A changed appointment date/time naturally becomes eligible for a new reminder.
+    reminder_sent_for = models.DateTimeField(null=True, blank=True, editable=False)
+
     consultation_fee = models.DecimalField(
         max_digits=8,
         decimal_places=2,
