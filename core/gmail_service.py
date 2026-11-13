@@ -602,7 +602,11 @@ def dispatch_appointment_created_notifications_post_commit(appointment_id: int):
     except Appointment.DoesNotExist:
         return False
 
-    from .email_utils import send_appointment_confirmation, send_admin_new_appointment_alert
+    from .email_utils import (
+        send_appointment_confirmation,
+        send_appointment_status_update,
+        send_admin_new_appointment_alert,
+    )
 
     idempotency_key = f"appointment_{appt.id}_created"
     if EmailLog.objects.filter(message_id=idempotency_key, status="sent").exists():
@@ -610,7 +614,10 @@ def dispatch_appointment_created_notifications_post_commit(appointment_id: int):
         return True
 
     try:
-        send_appointment_confirmation(appt)
+        if appt.status == "pending":
+            send_appointment_confirmation(appt)
+        else:
+            send_appointment_status_update(appt)
     except Exception as exc:
         logger.error(f"Post-commit appointment confirmation failed for appt {appt.id}: {exc}")
 

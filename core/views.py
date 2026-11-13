@@ -119,8 +119,14 @@ from .notifications import (
     notify_appointment_booked,
     notify_appointment_status,
     notify_leave_decision,
+    notify_leave_request_created,
     notify_task_assigned,
     notify_salary_paid,
+    notify_payment_activity,
+    notify_session_note_activity,
+    notify_chat_message,
+    notify_with_email,
+    notify,
 )
 from .tenancy import resolve_hospital
 
@@ -474,6 +480,24 @@ def unified_appointment_contact(request):
                         cache.set(cache_key, sub_count + 1, timeout=3600)
                         booking_id = req_obj.id
 
+                    # The email alert/acknowledgment below is paired with dashboard notices.
+                    clinic_admin = get_admin_user(hospital)
+                    if clinic_admin:
+                        notify(
+                            clinic_admin,
+                            f"New public appointment request from {req_obj.patient_name} for {req_obj.preferred_date} at {req_obj.preferred_time}.",
+                            link="/admin-appointments/",
+                            hospital=hospital,
+                        )
+                    linked_patient = User.objects.filter(email__iexact=req_obj.email).first()
+                    if linked_patient:
+                        notify(
+                            linked_patient,
+                            f"Your appointment request {req_obj.reference_id} was received and is awaiting clinic confirmation.",
+                            link="/my-appointments/",
+                            hospital=hospital,
+                        )
+
                     # Trigger automated notification delivery strictly AFTER database transaction commits
                     email_sent = False
                     try:
@@ -605,6 +629,14 @@ Warm regards,
                 marketing_consent=marketing_consent,
                 status="new",
             )
+            clinic_admin = get_admin_user(hospital)
+            if clinic_admin:
+                notify(
+                    clinic_admin,
+                    f"New website inquiry from {full_name}: {subject_choice}.",
+                    link=reverse("admin_dashboard"),
+                    hospital=hospital,
+                )
 
             ok_admin = False
             try:
@@ -1752,12 +1784,7 @@ def payment_create(request):
             notes=notes,
         )
         log_payment_audit(request.user, "payment_created", pay=pay, hospital=target_hospital, notes=notes)
-        Notification.objects.create(
-            hospital=target_hospital,
-            recipient=patient,
-            message=f"✅ Receipt issued: Payment of ₹{pay.amount} ({method.upper()}) recorded by clinic admin.",
-            link="/payments/",
-        )
+        notify_payment_activity(pay, "recorded")
         if is_json:
             return JsonResponse({"success": True, "payment_id": pay.id, "amount": str(pay.amount)}, status=201)
 
@@ -1868,6 +1895,7 @@ def payment_detail(request, payment_id):
         if not body_data:
             body_data = request.POST
 
+        previous_status = pay.status
         # Prevent mass assignment: strictly whitelist allowed fields
         if "amount" in body_data:
             try:
@@ -1888,12 +1916,20 @@ def payment_detail(request, payment_id):
 
         pay.save()
         log_payment_audit(request.user, "payment_updated", pay=pay, hospital=pay.hospital)
+        if pay.patient and pay.status != previous_status:
+            notify_payment_activity(pay, {
+                "paid": "confirmed", "failed": "rejected", "refunded": "refunded",
+                "pending": "submitted",
+            }.get(pay.status, "recorded"))
         return JsonResponse({"success": True, "message": "Payment record updated successfully."})
 
     if request.method == "DELETE":
+        previous_status = pay.status
         pay.status = "refunded"
         pay.save()
         log_payment_audit(request.user, "payment_deleted", pay=pay, hospital=pay.hospital)
+        if pay.patient and previous_status != "refunded":
+            notify_payment_activity(pay, "refunded")
         return JsonResponse({"success": True, "message": "Payment record cancelled/refunded."})
 
     # GET response for Admin and Super Admin
@@ -1953,6 +1989,7 @@ def payment_edit(request, payment_id):
         else:
             body_data = request.POST
 
+        previous_status = pay.status
         # Whitelist updates
         if "amount" in body_data:
             try:
@@ -1973,6 +2010,11 @@ def payment_edit(request, payment_id):
             pay.transaction_id = str(txn_id).strip()
         pay.save()
         log_payment_audit(request.user, "payment_updated", pay=pay, hospital=pay.hospital)
+        if pay.patient and pay.status != previous_status:
+            notify_payment_activity(pay, {
+                "paid": "confirmed", "failed": "rejected", "refunded": "refunded",
+                "pending": "submitted",
+            }.get(pay.status, "recorded"))
 
         if is_json:
             return JsonResponse({"success": True, "message": f"Payment #{pay.id} updated."})
@@ -1993,9 +2035,12 @@ def payment_delete(request, payment_id):
     if role == "admin" and pay.hospital != hospital:
         return HttpResponseForbidden("Forbidden: Cannot delete payment records belonging to another clinic.")
 
+    previous_status = pay.status
     pay.status = "refunded"
     pay.save()
     log_payment_audit(request.user, "payment_cancelled", pay=pay, hospital=pay.hospital)
+    if pay.patient and previous_status != "refunded":
+        notify_payment_activity(pay, "refunded")
     messages.success(request, f"✅ Payment #{pay.id} cancelled / refunded.")
     return redirect("admin_payments")
 
@@ -2167,18 +2212,14 @@ def confirm_payment(request, payment_id):
     if role == "admin" and pay.hospital != hospital:
         return HttpResponseForbidden("Forbidden: Cannot modify payment records belonging to another clinic.")
 
+    previous_status = pay.status
     pay.status = "paid"
     if not pay.transaction_id:
         pay.transaction_id = f"CONF-{timezone.now().strftime('%Y%m%d%H%M%S')}"
     pay.save()
     log_payment_audit(request.user, "payment_confirmed", pay=pay, hospital=pay.hospital)
-    if pay.patient:
-        Notification.objects.create(
-            hospital=pay.hospital,
-            recipient=pay.patient,
-            message=f"✅ Your payment of ₹{pay.amount} has been confirmed by the clinic. Thank you!",
-            link="/payments/",
-        )
+    if pay.patient and previous_status != "paid":
+        notify_payment_activity(pay, "confirmed")
     messages.success(request, f"✅ Payment of ₹{pay.amount} confirmed for {pay.patient.get_full_name() or pay.patient.username if pay.patient else 'patient'}.")
     return redirect("admin_payments")
 
@@ -2196,16 +2237,12 @@ def reject_payment(request, payment_id):
     if role == "admin" and pay.hospital != hospital:
         return HttpResponseForbidden("Forbidden: Cannot modify payment records belonging to another clinic.")
 
+    previous_status = pay.status
     pay.status = "failed"
     pay.save()
     log_payment_audit(request.user, "payment_rejected", pay=pay, hospital=pay.hospital)
-    if pay.patient:
-        Notification.objects.create(
-            hospital=pay.hospital,
-            recipient=pay.patient,
-            message=f"❌ Your payment of ₹{pay.amount} could not be verified. Please contact the clinic or try again.",
-            link="/payments/",
-        )
+    if pay.patient and previous_status != "failed":
+        notify_payment_activity(pay, "rejected")
     messages.warning(request, f"❌ Payment of ₹{pay.amount} rejected for {pay.patient.get_full_name() or pay.patient.username if pay.patient else 'patient'}.")
     return redirect("admin_payments")
 
@@ -2269,6 +2306,7 @@ def record_cash_payment(request):
         transaction_id=f"CASH-{timezone.now().strftime('%Y%m%d%H%M%S')}",
     )
     log_payment_audit(request.user, "payment_cash_recorded", pay=pay, hospital=target_hospital)
+    notify_payment_activity(pay, "recorded")
     messages.success(request, "✅ Cash payment recorded.")
     return redirect("admin_payments")
 
@@ -2332,6 +2370,7 @@ def record_upi_payment(request):
         notes=f"UPI Ref: {txn_id}",
     )
     log_payment_audit(request.user, "payment_upi_recorded", pay=pay, hospital=target_hospital)
+    notify_payment_activity(pay, "submitted")
     messages.success(request, "✅ UPI payment submitted for verification.")
     return redirect("admin_payments")
 
@@ -2676,7 +2715,7 @@ def update_public_appointment_request(request, request_id, status):
     from .models import PublicAppointmentRequest
     req_obj = get_object_or_404(PublicAppointmentRequest, id=request_id)
     hospital = resolve_hospital(request.user)
-    if not request.user.is_superuser and hospital and req_obj.hospital_id and req_obj.hospital_id != hospital.id:
+    if not request.user.is_superuser and hospital and req_obj.hospital_id != hospital.id:
         messages.error(request, "Unauthorized: You cannot modify requests for another clinic.")
         return redirect("admin_appointments")
     valid_statuses = ["pending", "confirmed", "cancelled"]
@@ -2740,9 +2779,37 @@ def update_public_appointment_request(request, request_id, status):
         if created_appt:
             appt_id_to_send = created_appt.id
             transaction.on_commit(lambda: dispatch_appointment_created_notifications_post_commit(appt_id_to_send))
+            try:
+                notify_appointment_booked(created_appt, get_admin_user(req_obj.hospital))
+            except Exception:
+                logger.exception("Could not create dashboard notices for public booking %s", req_obj.reference_id)
         elif updated_appt:
             appt_id_to_send = updated_appt.id
             transaction.on_commit(lambda: dispatch_appointment_status_notifications_post_commit(appt_id_to_send, "confirmed"))
+            notify_appointment_status(updated_appt)
+        elif status == "cancelled":
+            patient_user = User.objects.filter(email__iexact=req_obj.email).first()
+            if patient_user:
+                notify_with_email(
+                    patient_user,
+                    f"Your appointment request {req_obj.reference_id} was cancelled by the clinic. Please contact us if you need help rescheduling.",
+                    "Appointment request update",
+                    link="/my-appointments/",
+                    hospital=req_obj.hospital,
+                    email_type="public_appointment_cancelled",
+                )
+            elif req_obj.email:
+                try:
+                    from .tasks import send_email_task
+                    send_email_task.delay(
+                        "Appointment request update",
+                        f"Your appointment request {req_obj.reference_id} was cancelled by the clinic. Please contact us if you need help rescheduling.",
+                        [req_obj.email],
+                        hospital_id=req_obj.hospital_id,
+                        email_type="public_appointment_cancelled",
+                    )
+                except Exception:
+                    logger.exception("Could not queue cancellation email for request %s", req_obj.reference_id)
 
     messages.success(request, f"Public request {req_obj.reference_id} marked as {status.title()}.")
     return redirect("admin_appointments")
@@ -3693,7 +3760,13 @@ def add_task(request):
         due_date = request.POST.get("due_date") or None
 
         hospital = resolve_hospital(request.user)
-        staff_user = get_object_or_404(User, id=staff_id)
+        if hospital and not request.user.is_superuser:
+            allowed_staff = StaffProfile.objects.filter(
+                Q(hospital=hospital) | Q(hospital__isnull=True)
+            ).select_related("user")
+        else:
+            allowed_staff = StaffProfile.objects.all().select_related("user")
+        staff_user = get_object_or_404(allowed_staff, user_id=staff_id).user
         task = DailyTask.objects.create(
             hospital=hospital,
             assigned_to=staff_user,
@@ -3705,12 +3778,18 @@ def add_task(request):
         )
 
         # Email + notification
-        send_task_assigned_email(task)
+        try:
+            task_email_sent = bool(send_task_assigned_email(task))
+        except Exception:
+            logger.exception("Task assignment email failed for task %s", task.id)
+            task_email_sent = False
         notify_task_assigned(task)
 
-        messages.success(
-            request, f"✅ Task assigned to {staff_user.get_full_name()}! Email sent."
-        )
+        messages.success(request, f"✅ Task assigned to {staff_user.get_full_name()}!")
+        if task_email_sent:
+            messages.info(request, f"Assignment email sent to {staff_user.email}.")
+        elif staff_user.email:
+            messages.warning(request, "Task saved, but the assignment email could not be delivered. Check the clinic email configuration.")
         return redirect("admin_tasks")
 
     hospital = resolve_hospital(request.user)
@@ -4190,13 +4269,19 @@ def staff_leave(request):
     if not _is_staff(request.user):
         return redirect("client_dashboard")
     if request.method == "POST":
-        LeaveApplication.objects.create(
+        hospital = resolve_hospital(request.user)
+        leave = LeaveApplication.objects.create(
+            hospital=hospital,
             staff=request.user,
             leave_type=request.POST.get("leave_type"),
             from_date=request.POST.get("from_date"),
             to_date=request.POST.get("to_date"),
             reason=request.POST.get("reason", ""),
         )
+        try:
+            notify_leave_request_created(leave, get_admin_user(hospital))
+        except Exception:
+            logger.exception("Could not notify clinic admin about leave request %s", leave.id)
         messages.success(request, "✅ Leave application submitted!")
         return redirect("staff_leave")
     my_leaves = LeaveApplication.objects.filter(staff=request.user)
@@ -4240,10 +4325,20 @@ def staff_tasks(request):
 def update_task(request, task_id, status):
     task = get_object_or_404(DailyTask, id=task_id, assigned_to=request.user)
     if status in ["pending", "in_progress", "completed"]:
+        previous_status = task.status
         task.status = status
         if status == "completed":
             task.completed_at = timezone.now()
         task.save()
+        if previous_status != status and task.assigned_by and task.assigned_by_id != request.user.id:
+            notify_with_email(
+                task.assigned_by,
+                f"{request.user.get_full_name() or request.user.username} marked the task '{task.title}' as {status.replace('_', ' ')}.",
+                f"Task update: {task.title}",
+                link="/admin-tasks/",
+                hospital=task.hospital,
+                email_type="task_status_updated",
+            )
         messages.success(request, f"✅ Task marked as {status}.")
     return redirect("staff_tasks")
 
@@ -4260,10 +4355,15 @@ def staff_session_notes(request):
 def add_session_note(request):
     if not _is_staff(request.user):
         return redirect("client_dashboard")
+    hospital = resolve_hospital(request.user)
+    patients = User.objects.filter(is_superuser=False, is_staff=False)
+    if hospital:
+        patients = patients.filter(
+            Q(patient_profile__hospital=hospital) | Q(appointments__hospital=hospital)
+        ).distinct()
     if request.method == "POST":
-        patient = get_object_or_404(User, id=request.POST.get("patient_id"))
-        hospital = resolve_hospital(request.user)
-        SessionNote.objects.create(
+        patient = get_object_or_404(patients, id=request.POST.get("patient_id"))
+        note = SessionNote.objects.create(
             hospital=hospital,
             staff=request.user,
             patient=patient,
@@ -4271,9 +4371,9 @@ def add_session_note(request):
             treatment=request.POST.get("treatment", ""),
             next_session=request.POST.get("next_session", ""),
         )
+        notify_session_note_activity(note, actor=request.user)
         messages.success(request, "✅ Session note added!")
         return redirect("staff_session_notes")
-    patients = User.objects.filter(is_superuser=False, is_staff=False)
     return render(request, "staff/add_session_note.html", {"patients": patients})
 
 
@@ -4303,7 +4403,7 @@ def add_appointment(request):
         time = request.POST.get("time", "").strip()
         notes = request.POST.get("notes", "").strip()
         status = request.POST.get("status", "pending")
-        patient = get_object_or_404(User, id=patient_id)
+        patient = get_object_or_404(patients, id=patient_id)
 
         # Validate appointment slot against clinic shift rules (admin allowed Sunday by appointment)
         is_valid, err_msg, normalized_time = validate_appointment_booking(
@@ -4351,7 +4451,7 @@ def add_appointment(request):
                         },
                     )
 
-                Appointment.objects.create(
+                appt = Appointment.objects.create(
                     hospital=hospital,
                     patient=patient,
                     name=patient.get_full_name() or patient.username,
@@ -4377,6 +4477,18 @@ def add_appointment(request):
                     "notes": notes,
                 },
             )
+
+        # Keep the admin, patient dashboard, and their mailboxes in sync after the record commits.
+        try:
+            clinic_admin = get_admin_user(hospital)
+            if clinic_admin:
+                notify_appointment_booked(appt, clinic_admin)
+        except Exception:
+            logger.exception("Could not create appointment dashboard notifications for appointment %s", appt.id)
+        from .gmail_service import dispatch_appointment_created_notifications_post_commit
+        transaction.on_commit(
+            lambda appointment_id=appt.id: dispatch_appointment_created_notifications_post_commit(appointment_id)
+        )
 
         messages.success(request, f"✅ Appointment added successfully for {date} at {normalized_time}!")
         return redirect("admin_appointments")
@@ -4416,6 +4528,7 @@ def edit_appointment(request, appt_id):
             appt.time = new_time
 
         old_status = appt.status
+        old_schedule = (appt.service, str(appt.date), appt.time)
         appt.service = new_service
         appt.date = new_date
         appt.notes = new_notes
@@ -4429,6 +4542,26 @@ def edit_appointment(request, appt_id):
                 appt_id_copy = appt.id
                 status_copy = new_status
                 transaction.on_commit(lambda: dispatch_appointment_status_notifications_post_commit(appt_id_copy, status_copy))
+
+        if old_status != new_status:
+            try:
+                notify_appointment_status(appt)
+            except Exception:
+                logger.exception("Could not notify patient of appointment status change for appointment %s", appt.id)
+        elif old_schedule != (appt.service, str(appt.date), appt.time) and appt.patient:
+            service_name = appt.get_service_display()
+            update_message = (
+                f"Your {service_name} appointment has been rescheduled to {appt.date} at {appt.time}. "
+                "Sign in to your patient dashboard for details."
+            )
+            notify_with_email(
+                appt.patient,
+                update_message,
+                "Your appointment details changed",
+                link="/my-appointments/",
+                hospital=appt.hospital,
+                email_type="appointment_details_updated",
+            )
 
         messages.success(request, "✅ Appointment updated successfully!")
         return redirect("admin_appointments")
@@ -5052,11 +5185,18 @@ def edit_task_admin(request, task_id):
         task.status = request.POST.get("status", task.status)
         task.due_date = request.POST.get("due_date") or None
         new_staff_id = request.POST.get("staff_id")
+        previous_assignee_id = task.assigned_to_id
         if new_staff_id:
-            task.assigned_to = get_object_or_404(User, id=new_staff_id)
+            task.assigned_to = get_object_or_404(staff_list, user_id=new_staff_id).user
         if not task.hospital and hospital:
             task.hospital = hospital
         task.save()
+        if task.assigned_to_id != previous_assignee_id:
+            try:
+                send_task_assigned_email(task)
+            except Exception:
+                logger.exception("Task reassignment notification failed for task %s", task.id)
+            notify_task_assigned(task)
         messages.success(request, "✅ Task updated!")
         return redirect("admin_tasks")
     return render(request, "admin/edit_task.html", {"task": task, "staff_list": staff_list})
@@ -5119,9 +5259,9 @@ def admin_add_session_note(request):
         patients = User.objects.filter(is_superuser=False, is_staff=False)
         staff_list = StaffProfile.objects.all().select_related("user")
     if request.method == "POST":
-        staff = get_object_or_404(User, id=request.POST.get("staff_id"))
-        patient = get_object_or_404(User, id=request.POST.get("patient_id"))
-        SessionNote.objects.create(
+        staff = get_object_or_404(staff_list, user_id=request.POST.get("staff_id")).user
+        patient = get_object_or_404(patients, id=request.POST.get("patient_id"))
+        note = SessionNote.objects.create(
             hospital=hospital,
             staff=staff,
             patient=patient,
@@ -5129,6 +5269,7 @@ def admin_add_session_note(request):
             treatment=request.POST.get("treatment", ""),
             next_session=request.POST.get("next_session", ""),
         )
+        notify_session_note_activity(note, actor=request.user)
         messages.success(request, "✅ Session note added!")
         return redirect("admin_session_notes")
     return render(
@@ -5166,12 +5307,13 @@ def edit_session_note(request, note_id):
         patients = User.objects.filter(is_superuser=False, is_staff=False)
         staff_list = StaffProfile.objects.all().select_related("user")
     if request.method == "POST":
-        note.staff = get_object_or_404(User, id=request.POST.get("staff_id"))
-        note.patient = get_object_or_404(User, id=request.POST.get("patient_id"))
+        note.staff = get_object_or_404(staff_list, user_id=request.POST.get("staff_id")).user
+        note.patient = get_object_or_404(patients, id=request.POST.get("patient_id"))
         note.diagnosis = request.POST.get("diagnosis", "")
         note.treatment = request.POST.get("treatment", "")
         note.next_session = request.POST.get("next_session", "")
         note.save()
+        notify_session_note_activity(note, actor=request.user, updated=True)
         messages.success(request, "✅ Session note updated!")
         return redirect("admin_session_notes")
     return render(
@@ -8429,14 +8571,31 @@ def admin_promo_add(request):
         email_status = ""
         if recipient_emails:
             try:
-                from .tasks import send_bulk_email_task
-                send_bulk_email_task.delay(
-                    f"{promo.title} | PhysioRehab Clinic",
-                    f"{promo.title}\n\n{promo.message}",
-                    recipient_emails,
-                    hospital_id=hospital.id if hospital else None,
-                )
-                email_status = f" Bulk email queued for {len(recipient_emails)} patient(s)."
+                bulk_subject = f"{promo.title} | PhysioRehab Clinic"
+                bulk_message = f"{promo.title}\n\n{promo.message}"
+                broker_url = str(getattr(settings, "CELERY_BROKER_URL", "") or "")
+                if not broker_url or broker_url.startswith("filesystem://"):
+                    from .email_utils import send_bulk_clinic_email
+                    delivery = send_bulk_clinic_email(
+                        bulk_subject,
+                        bulk_message,
+                        recipient_emails,
+                        hospital=hospital,
+                    )
+                    email_status = (
+                        f" Promo email sent to {delivery['sent']} of {delivery['total']} patient(s)."
+                    )
+                    if delivery["failed"]:
+                        email_status += f" {delivery['failed']} email(s) failed; review Email Logs."
+                else:
+                    from .tasks import send_bulk_email_task
+                    send_bulk_email_task.delay(
+                        bulk_subject,
+                        bulk_message,
+                        recipient_emails,
+                        hospital_id=hospital.id if hospital else None,
+                    )
+                    email_status = f" Bulk email queued for {len(recipient_emails)} patient(s)."
             except Exception:
                 logger.exception("Could not queue promo broadcast %s", promo.id)
                 email_status = " Email delivery could not be queued; check the task worker and email configuration."
@@ -8769,7 +8928,7 @@ def bulk_import(request):
                             skipped_rows += 1
                             continue
 
-                        Appointment.objects.get_or_create(
+                        imported_appt, was_created = Appointment.objects.get_or_create(
                             hospital=hospital,
                             patient=patient_user,
                             date=parsed_date,
@@ -8783,6 +8942,24 @@ def bulk_import(request):
                                 "assigned_staff": staff_user,
                             },
                         )
+                        if was_created:
+                            try:
+                                notify_appointment_booked(imported_appt, get_admin_user(hospital))
+                                from .gmail_service import dispatch_appointment_created_notifications_post_commit
+                                transaction.on_commit(
+                                    lambda appointment_id=imported_appt.id: dispatch_appointment_created_notifications_post_commit(appointment_id)
+                                )
+                                if staff_user:
+                                    notify_with_email(
+                                        staff_user,
+                                        f"A new appointment for {imported_appt.name} was assigned to you for {imported_appt.date} at {imported_appt.time}.",
+                                        "New appointment assigned to you",
+                                        link="/staff-dashboard/",
+                                        hospital=hospital,
+                                        email_type="appointment_assigned_staff",
+                                    )
+                            except Exception:
+                                logger.exception("Imported appointment notifications failed for row %s", row_num)
                         created += 1
 
                 except Exception as exc:
@@ -8905,6 +9082,10 @@ def api_chat_send(request):
                 attachment_type=attachment_type,
                 status=Message.STATUS_SENT,
             )
+            try:
+                notify_chat_message(msg)
+            except Exception:
+                logger.exception("Could not notify chat recipient about message %s", msg.id)
 
             from django.urls import reverse
             attachment_url = reverse("download_chat_attachment", args=[msg.id]) if msg.attachment else None
