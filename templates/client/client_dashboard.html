@@ -297,54 +297,17 @@
       </div>
     </div>
     <div class="client-card-body">
-      {% if not has_reviewed %}
-        <div style="background:var(--client-primary-subtle); border:1px solid rgba(245,197,24,0.3); border-radius:12px; padding:18px; margin-bottom:20px;">
-          <h4 style="color:var(--client-dark); font-size:0.95rem; font-weight:700; margin-bottom:4px; display:flex; align-items:center; gap:8px;">
-            <i class="fas fa-pen" style="color:var(--client-primary-dark);"></i> Share Your Feedback
-          </h4>
-          <p style="color:var(--client-text-muted); font-size:0.82rem; margin-bottom:14px; line-height:1.4;">
-            Your feedback helps us continuously improve our therapies and assists fellow patients.
-          </p>
-          <form method="POST" action="{% url 'submit_review' %}">
-            {% csrf_token %}
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-              <div>
-                <label class="client-label" style="font-size:0.78rem;">Your Name</label>
-                <input type="text" name="reviewer_name" class="client-input" value="{{ request.user.get_full_name|default:request.user.username }}" style="padding:8px 12px; font-size:0.85rem;" required />
-              </div>
-              <div>
-                <label class="client-label" style="font-size:0.78rem;">Condition / Title <small style="color:#9ca3af;">(Optional)</small></label>
-                <input type="text" name="reviewer_title" class="client-input" placeholder="e.g. Knee Rehabilitation Patient" style="padding:8px 12px; font-size:0.85rem;" />
-              </div>
-            </div>
-            <div style="margin-bottom:12px;">
-              <label class="client-label" style="font-size:0.78rem;">Rating</label>
-              <select name="rating" class="client-select" style="padding:8px 12px; font-size:0.85rem;">
-                <option value="5">★★★★★ Excellent (5 Stars)</option>
-                <option value="4">★★★★☆ Very Good (4 Stars)</option>
-                <option value="3">★★★☆☆ Good (3 Stars)</option>
-                <option value="2">★★☆☆☆ Fair (2 Stars)</option>
-                <option value="1">★☆☆☆☆ Poor (1 Star)</option>
-              </select>
-            </div>
-            <div style="margin-bottom:14px;">
-              <label class="client-label" style="font-size:0.78rem;">Your Review <span style="color:var(--client-danger);">*</span></label>
-              <textarea name="message" class="client-textarea" style="min-height:75px; font-size:0.85rem; padding:8px 12px;" required placeholder="Tell us about your recovery journey with Dr. Dhvani Patalia..."></textarea>
-            </div>
-            <button type="submit" class="client-btn client-btn-primary client-btn-sm" style="font-weight:700;">
-              <i class="fas fa-paper-plane"></i> Submit Review
-            </button>
-          </form>
-        </div>
-      {% else %}
-        <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:12px; padding:16px; margin-bottom:20px; display:flex; align-items:center; gap:12px;">
-          <i class="fas fa-check-circle" style="color:#059669; font-size:1.5rem;"></i>
-          <div>
-            <h4 style="color:#065f46; font-size:0.92rem; margin-bottom:2px;">Review Submitted!</h4>
-            <p style="color:#047857; font-size:0.8rem; margin:0;">Thank you for your review. It will appear on the clinic platform once reviewed by admin.</p>
-          </div>
-        </div>
-      {% endif %}
+      <div style="background:var(--client-primary-subtle); border:1px solid rgba(245,197,24,0.3); border-radius:12px; padding:18px; margin-bottom:20px;">
+        <h4 style="color:var(--client-dark); font-size:0.95rem; font-weight:700; margin-bottom:4px; display:flex; align-items:center; gap:8px;">
+          <i class="fas fa-pen" style="color:var(--client-primary-dark);"></i> Share Your Experience on Google
+        </h4>
+        <p style="color:var(--client-text-muted); font-size:0.82rem; margin-bottom:14px; line-height:1.4;">
+          Your feedback helps other patients find our clinic. Google will open in a new tab.
+        </p>
+        <a href="{% url 'review_google_redirect' %}" target="_blank" rel="noopener noreferrer" class="client-btn client-btn-primary client-btn-sm" style="font-weight:700;">
+          <i class="fab fa-google"></i> Write a Google Review
+        </a>
+      </div>
 
       <!-- Approved reviews list -->
       {% if approved_reviews %}

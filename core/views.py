@@ -687,111 +687,11 @@ def track_whatsapp_click(request):
     return JsonResponse({"ok": True, "event": "whatsapp_opened"})
 
 
-# =========================
-# PUBLIC PHYSIO REHAB REVIEW PAGE
-# =========================
-def public_review(request):
-    """
-    Dedicated Public Review Page for Dr. Dhvani Patalia Physio Rehab (/review/).
-    - Accessible without logging in.
-    - Zero private clinic, patient, appointment, or administrative data exposed.
-    - Dual path: Direct in-app review submission form + Verified Google Review CTA.
-    - Never displays Google Maps embeds or search redirects.
-    - Validates spam, rate-limits submissions, and routes entries to clinic moderation.
-    """
-    from .forms import PublicReviewForm
-    from .google_reviews import (
-        get_google_write_review_url,
-        get_public_reviews_summary,
-        DEFAULT_CLINIC_NAME,
-    )
-
-    google_review_url = get_google_write_review_url()
-    has_google_review_url = bool(google_review_url)
-    reviews_summary = get_public_reviews_summary()
-
-    if request.method == "POST":
-        # Session rate-limiting: max 5 submissions in 10 minutes to prevent automated abuse
-        review_count = request.session.get("review_sub_count", 0)
-        review_time = request.session.get("review_sub_time", 0)
-        current_time = timezone.now().timestamp()
-        if review_time and (current_time - review_time < 600) and review_count >= 5:
-            messages.error(
-                request,
-                "You have submitted multiple reviews recently. Please wait a few minutes before submitting another.",
-            )
-            return redirect("public_review")
-
-        form = PublicReviewForm(request.POST)
-        if form.is_valid():
-            hospital = (
-                resolve_hospital(request.user)
-                if (request.user and request.user.is_authenticated)
-                else Hospital.objects.first()
-            )
-            review = form.save(commit=False)
-            review.hospital = hospital
-            if request.user.is_authenticated:
-                review.patient = request.user
-            review.is_approved = False  # Moderation required before public display
-            review.is_verified = True
-            review.added_by_admin = False
-            review.source = "Website Review"
-            review.save()
-
-            # Invalidate reviews cache so stats update accurately once approved
-            cache.delete("google_places_reviews_cache_v2")
-            cache.delete("public_reviews_aggregated_v2")
-
-            # Update session rate-limit
-            if not review_time or (current_time - review_time >= 600):
-                request.session["review_sub_time"] = current_time
-                request.session["review_sub_count"] = 1
-            else:
-                request.session["review_sub_count"] = review_count + 1
-
-            messages.success(
-                request,
-                "Thank you for sharing your experience! Your review has been received with sincere gratitude and will be reviewed by our clinic team before being displayed.",
-            )
-            return redirect("public_review")
-        else:
-            messages.error(
-                request,
-                "Please review the highlighted fields below and provide your feedback.",
-            )
-    else:
-        form = PublicReviewForm()
-
-    # Get approved testimonials with public consent for display (up to 6)
-    approved_testimonials = (
-        Review.objects.filter(is_approved=True, consent_to_publish=True)
-        .select_related("treatment")
-        .order_by("-created_at")[:6]
-    )
-
-    return render(
-        request,
-        "public/review.html",
-        {
-            "form": form,
-            "clinic_name": DEFAULT_CLINIC_NAME,
-            "google_review_url": google_review_url,
-            "has_google_review_url": has_google_review_url,
-            "reviews_summary": reviews_summary,
-            "approved_testimonials": approved_testimonials,
-            "page_title": "Patient Reviews & Feedback | Dr. Dhvani Patalia Physio Rehab",
-            "page_subtitle": "How was your experience with Physio Rehab? Share your story and help fellow patients take the first step toward living pain-free.",
-            "canonical_url": request.build_absolute_uri("/review/"),
-        },
-    )
-
-
 def review_google_redirect(request):
     """
     Direct, secure redirect to the verified Google Review creation URL.
     - Strictly prevents open redirects to arbitrary third-party or phishing domains.
-    - If unconfigured or invalid, safely redirects back to /review/ with an informative message.
+    - Legacy review links stay functional and only redirect when a direct review URL is configured.
     """
     from .google_reviews import get_google_write_review_url, is_safe_google_review_url
 
@@ -800,23 +700,20 @@ def review_google_redirect(request):
     if requested_target:
         if is_safe_google_review_url(requested_target):
             return redirect(requested_target)
-        else:
-            messages.warning(
-                request,
-                "Invalid external destination. Redirected back to the clinic review portal.",
-            )
-            return redirect("public_review")
+        # Ignore invalid targets and continue to the configured clinic destination.
 
     verified_url = get_google_write_review_url()
     if verified_url and is_safe_google_review_url(verified_url):
         return redirect(verified_url)
 
-    # Safe fallback if Google reviews URL is not yet configured in environment
-    messages.info(
-        request,
-        "Our direct Google Review link is currently being connected. In the meantime, you can write and submit your review directly below!",
+    # Do not substitute the Maps listing: it does not open the review composer.
+    return HttpResponse(
+        "The direct Google review link is not configured. Copy the review link "
+        "from Google Business Profile > Read reviews > Get more reviews, then "
+        "set it as GOOGLE_REVIEW_URL.",
+        status=503,
+        content_type="text/plain; charset=utf-8",
     )
-    return redirect("public_review")
 
 
 # =========================
@@ -959,36 +856,6 @@ def admin_blog_delete(request, id):
 # ──────────────────────────────────────────────────────────
 # REVIEWS
 # ──────────────────────────────────────────────────────────
-
-
-@login_required
-def submit_review(request):
-    if request.method == "POST":
-        name = (
-            request.POST.get("reviewer_name", "").strip()
-            or request.user.get_full_name()
-            or request.user.username
-        )
-        title = request.POST.get("reviewer_title", "").strip()
-        rating = int(request.POST.get("rating", 5))
-        message = request.POST.get("message", "").strip()
-        if message:
-            hospital = resolve_hospital(request.user)
-            Review.objects.create(
-                hospital=hospital,
-                patient=request.user,
-                reviewer_name=name,
-                reviewer_title=title,
-                rating=max(1, min(5, rating)),
-                message=message,
-                is_approved=False,
-                added_by_admin=False,
-            )
-            messages.success(
-                request, "Thank you! Your review has been submitted for approval."
-            )
-        return redirect("client_dashboard")
-    return redirect("client_dashboard")
 
 
 @login_required
@@ -2461,7 +2328,6 @@ def client_dashboard(request):
     upcoming = appointments.filter(status__in=["pending", "confirmed"]).order_by("date", "time")
     completed = appointments.filter(status="completed").order_by("-date", "-time")
     recent_notifs = Notification.objects.filter(recipient=request.user).order_by("-created_at")[:5]
-    has_reviewed = Review.objects.filter(patient=request.user).exists()
     approved_reviews = Review.objects.filter(is_approved=True).order_by("-created_at")[:6]
     my_payments = (
         PaymentRecord.objects.filter(patient=request.user)
@@ -2484,7 +2350,6 @@ def client_dashboard(request):
             "upcoming_count": upcoming.count(),
             "completed_count": completed.count(),
             "recent_notifs": recent_notifs,
-            "has_reviewed": has_reviewed,
             "approved_reviews": approved_reviews,
             "my_payments": my_payments,
             "my_public_requests": my_public_requests,
@@ -9471,7 +9336,6 @@ def robots_txt(request):
         "Disallow: /payments/",
         "Disallow: /export/",
         "Disallow: /bulk-import/",
-        "Disallow: /submit-review/",
         "Disallow: /support/",
         "Disallow: /healthz",
         "Disallow: /notifications/",

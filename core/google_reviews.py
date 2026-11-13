@@ -79,27 +79,18 @@ def get_google_config():
 
 def get_google_write_review_url(place_id=None):
     """
-    Return the verified Google review creation URL.
-    Prioritizes GOOGLE_REVIEW_URL if configured and validated, then place_id,
-    and returns an empty string if unconfigured (never returns generic search/maps URLs).
+    Return the clinic's explicitly configured Google review-composer URL.
+
+    A Place ID alone is not sufficient: Google's legacy writereview endpoint may
+    return 404 for valid Place IDs. Configure the official link copied from the
+    Business Profile's "Get more reviews" action.
     """
-    # 1. Check explicit GOOGLE_REVIEW_URL from Django settings or environment
     explicit_url = (
         getattr(settings, "GOOGLE_REVIEW_URL", "").strip()
         or os.getenv("GOOGLE_REVIEW_URL", "").strip()
     )
     if explicit_url and is_safe_google_review_url(explicit_url):
         return explicit_url
-
-    # 2. Check place_id parameter or settings
-    cfg_place_id = (
-        place_id
-        or getattr(settings, "GOOGLE_PLACE_ID", "").strip()
-        or os.getenv("GOOGLE_PLACE_ID", "").strip()
-    )
-    if cfg_place_id:
-        return f"https://search.google.com/local/writereview?placeid={cfg_place_id}"
-
     return ""
 
 

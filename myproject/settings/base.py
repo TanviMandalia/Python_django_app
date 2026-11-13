@@ -387,8 +387,13 @@ LOGGING = {
 
 # --- Google Business Profile & Places API Settings ---
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
-GOOGLE_PLACE_ID = os.getenv("GOOGLE_PLACE_ID", "").strip()
-GOOGLE_REVIEW_URL = os.getenv("GOOGLE_REVIEW_URL", "").strip()
+GOOGLE_PLACE_ID = os.getenv("GOOGLE_PLACE_ID", "").strip() or "ChIJzZqxKSJrVzkRa9f7g6EnqYU"
+GOOGLE_REVIEW_URL = os.getenv("GOOGLE_REVIEW_URL", "").strip() or (
+    "https://www.google.com/maps/place/Dr+Dhvani+Patalia+Physio+Rehab/"
+    "@22.4692219,70.0732545,17z/data=!3m1!5s0x39576a963a1967d7:0x7c000ab9830cdeb1!"
+    "4m8!3m7!1s0x39576b2229b19acd:0x85a9276183fbd76b!8m2!3d22.4692219!4d70.0732545!"
+    "9m1!1b1!16s%2Fg%2F11s1w5v6_q?entry=ttu&g_ep=EgoyMDI2MTExMC4wIKXMDSoASAFQAw%3D%3D"
+)
 GOOGLE_REVIEWS_CACHE_TTL = int(os.getenv("GOOGLE_REVIEWS_CACHE_TTL", 86400))
 
 

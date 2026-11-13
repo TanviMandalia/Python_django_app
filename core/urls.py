@@ -15,8 +15,9 @@ urlpatterns = [
     path("treatments/", RedirectView.as_view(pattern_name="services", permanent=True), name="treatments_alias"),
     path("treatments/<slug:slug>/", RedirectView.as_view(pattern_name="treatment_detail", permanent=True), name="treatment_detail_alias"),
     path("api/reviews/", views.public_reviews_api, name="public_reviews_api"),
-    path("review/", views.public_review, name="public_review"),
-    path("reviews/", RedirectView.as_view(pattern_name="public_review", permanent=True), name="public_reviews_alias"),
+    # Keep legacy review URLs, but send visitors to the clinic's Google profile.
+    path("review/", views.review_google_redirect, name="public_review"),
+    path("reviews/", views.review_google_redirect, name="public_reviews_alias"),
     path("review/google/", views.review_google_redirect, name="review_google_redirect"),
     path("contact/", views.contact, name="contact"),
     path("book-appointment/", views.public_book_appointment, name="public_book_appointment"),
@@ -281,7 +282,6 @@ urlpatterns = [
     path("progress/", views.progress_tracking, name="progress_tracking"),
     path("analytics/", views.reports_analytics, name="reports_analytics"),
     # ── Reviews ───────────────────────────────────────────────
-    path("submit-review/", views.submit_review, name="submit_review"),
     path("admin-reviews/", views.admin_reviews, name="admin_reviews"),
     path("admin-reviews/add/", views.admin_add_review, name="admin_add_review"),
     path(

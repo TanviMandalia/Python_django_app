@@ -377,7 +377,7 @@
 
     // Buttons interactive tactile feedback
     document
-      .querySelectorAll(".btn-gold, .btn-outline-light, .btn-outline-gold, .btn-submit-review")
+      .querySelectorAll(".btn-gold, .btn-outline-light, .btn-outline-gold")
       .forEach(function (btn) {
         btn.classList.add("btn-interactive");
       });

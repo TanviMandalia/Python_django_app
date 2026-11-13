@@ -1036,10 +1036,10 @@
                 </div>
 
                 <div class="rps-actions">
-                    <a href="{% url 'public_review' %}" class="btn-google-action btn-write-rev" id="btnReviewUsHome" title="Write a review for Dr. Dhvani Patalia Physio Rehab">
+                    <a href="{% url 'review_google_redirect' %}" target="_blank" rel="noopener noreferrer" class="btn-google-action btn-write-rev" id="btnReviewUsHome" title="Write a review for Dr. Dhvani Patalia Physio Rehab">
                         <i class="fas fa-star" style="color: #F5C518;"></i> Write a Review
                     </a>
-                    <a href="{% if reviews_data.google_write_review_url %}{% url 'review_google_redirect' %}{% else %}{% url 'public_review' %}{% endif %}" {% if reviews_data.google_write_review_url %}target="_blank" rel="noopener noreferrer"{% endif %} class="btn-google-action btn-view-map" id="btnWriteReviewGoogle" title="Write a Review on Google">
+                    <a href="{% url 'review_google_redirect' %}" target="_blank" rel="noopener noreferrer" class="btn-google-action btn-view-map" id="btnWriteReviewGoogle" title="Write a Review on Google">
                         <i class="fab fa-google"></i> Write a Review on Google
                     </a>
                     <a href="{{ reviews_data.google_maps_url }}" target="_blank" rel="noopener noreferrer" class="btn-google-action btn-view-map" id="btnViewGoogleMaps">
@@ -1104,8 +1104,8 @@
 
                         <div class="rev-footer">
                             <span>Clinical Care Feedback</span>
-                            <a href="{% url 'public_review' %}">
-                                Read More <i class="fas fa-arrow-right"></i>
+                            <a href="{{ reviews_data.google_maps_url|default:'https://maps.google.com/?q=Dr.+Dhvani+Patalia+Physio+Rehab+Jamnagar' }}" target="_blank" rel="noopener noreferrer">
+                                View on Google <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
                     </div>
@@ -1115,8 +1115,8 @@
                         <i class="fas fa-star" style="font-size: 2rem; color: #F5C518; margin-bottom: 12px; display: inline-block;"></i>
                         <h4>No Reviews Published Yet</h4>
                         <p>We value patient feedback. Be the first to share your recovery experience with Dr. Dhvani Patalia Physio Rehab!</p>
-                        <a href="{% url 'public_review' %}" class="btn-gold" style="margin-top: 14px; display: inline-flex;">
-                            <i class="fas fa-pen"></i> Write the First Review
+                        <a href="{% url 'review_google_redirect' %}" target="_blank" rel="noopener noreferrer" class="btn-gold" style="margin-top: 14px; display: inline-flex;">
+                            <i class="fas fa-pen"></i> Write the First Google Review
                         </a>
                     </div>
                 {% endif %}
@@ -1124,8 +1124,8 @@
 
             <!-- Read More Reviews Link -->
             <div class="reviews-more-action">
-                <a href="{% url 'public_review' %}" class="btn-outline-gold" id="btnReadAllReviews">
-                    <i class="fas fa-comments"></i> Read More Reviews &amp; Submit Feedback &rarr;
+                <a href="{{ reviews_data.google_maps_url|default:'https://maps.google.com/?q=Dr.+Dhvani+Patalia+Physio+Rehab+Jamnagar' }}" target="_blank" rel="noopener noreferrer" class="btn-outline-gold" id="btnReadAllReviews">
+                    <i class="fas fa-comments"></i> View Reviews on Google &rarr;
                 </a>
             </div>
         </div>
