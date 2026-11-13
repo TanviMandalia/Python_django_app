@@ -444,7 +444,7 @@
                             <td>{{ appt.time }}</td>
                             <td><span class="badge badge-{{ appt.status }}">{{ appt.status|title }}</span></td>
                             {% if user.is_superuser %}
-                                <td>{{ appt.patient.get_full_name|default:appt.patient.username|default:appt.name }}</td>
+                                <td>{% if appt.patient %}{{ appt.patient.get_full_name|default:appt.patient.username|default:appt.name }}{% else %}{{ appt.name|default:"Guest patient" }}{% endif %}</td>
                             {% endif %}
                         </tr>
                         {% endfor %}

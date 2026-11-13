@@ -263,6 +263,26 @@ class SecurityAuditRemediationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "staff/notifications.html")
 
+    def test_progress_and_analytics_render_guest_appointments(self):
+        Appointment.objects.create(
+            hospital=self.hospital_a,
+            patient=None,
+            name="Guest Booking",
+            email="guest@example.com",
+            phone="9000000099",
+            service="orthopedic",
+            date=timezone.now().date(),
+            time="12:00 PM",
+            status="pending",
+        )
+        self.client.force_login(self.admin_a)
+        progress_response = self.client.get("/progress/")
+        self.assertEqual(progress_response.status_code, 200)
+        self.assertContains(progress_response, "Guest Booking")
+        analytics_response = self.client.get("/analytics/")
+        self.assertEqual(analytics_response.status_code, 200)
+        self.assertContains(analytics_response, "Guest Booking")
+
     def test_send_exercise_reminder_cross_tenant_prevention(self):
         """
         Clinic A admin cannot trigger reminders to Clinic B's patients.

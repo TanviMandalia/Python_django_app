@@ -289,11 +289,16 @@
           <td>
             <div class="patient-cell">
               <div class="patient-avatar">
-                {{ appt.patient.first_name|first|default:appt.patient.username|first|default:appt.name|first|upper }}
+                {% if appt.patient %}{{ appt.patient.first_name|first|default:appt.patient.username|first|default:appt.name|first|upper }}{% else %}{{ appt.name|first|upper }}{% endif %}
               </div>
               <div class="patient-info">
-                <strong>{{ appt.patient.get_full_name|default:appt.patient.username|default:appt.name }}</strong>
-                <small>{{ appt.patient.email|default:"No email" }}</small>
+                {% if appt.patient %}
+                  <strong>{{ appt.patient.get_full_name|default:appt.patient.username|default:appt.name }}</strong>
+                  <small>{{ appt.patient.email|default:appt.email|default:"No email" }}</small>
+                {% else %}
+                  <strong>{{ appt.name|default:"Guest patient" }}</strong>
+                  <small>{{ appt.email|default:"No email" }}</small>
+                {% endif %}
               </div>
             </div>
           </td>
