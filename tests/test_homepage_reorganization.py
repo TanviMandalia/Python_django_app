@@ -2,6 +2,7 @@ import os
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.cache import cache
+from django.conf import settings
 from core.models import Hospital, Review, TreatmentCategory, Treatment
 
 
@@ -118,12 +119,11 @@ class HomepageReorganizationTests(TestCase):
         self.assertContains(res, "Treatment Categories")
         self.assertContains(res, "Spine Alignment")
 
-    def test_reviews_page_retains_submission_form(self):
-        """Review page retains interactive review form and submission logic."""
-        res = self.client.get(reverse("public_review"))
-        self.assertEqual(res.status_code, 200)
-        self.assertContains(res, "Share Your Clinical Experience")
-        self.assertContains(res, "Prefer to Review on Google?")
+    def test_public_review_entry_point_redirects_to_google_maps(self):
+        """The old custom review page now forwards visitors to the clinic's Google Maps reviews."""
+        res = self.client.get(reverse("public_review"), follow=False)
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res["Location"], settings.GOOGLE_REVIEW_URL)
 
     def test_contact_page_retains_full_contact_form_and_hours(self):
         """Contact page retains the message form and working hours schedule."""

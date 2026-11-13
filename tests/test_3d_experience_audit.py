@@ -65,8 +65,9 @@ class SiteWide3DExperienceAuditTest(TestCase):
         self.assertIn("--pointer-y", content)
         self.assertIn("--surface-specular-light", content)
 
-        # Mobile ambient 3D depth
-        self.assertIn("mobile-card-float", content)
+        # Mobile motion is brief and touch interactions do not add constant floating.
+        self.assertIn("--public-motion-distance: 12px", content)
+        self.assertNotIn("mobile-card-float", content)
 
         # Clinical stability safeguards
         self.assertIn(".booking-card form", content)
@@ -117,6 +118,10 @@ class SiteWide3DExperienceAuditTest(TestCase):
         for route_name, kwargs in routes:
             url = reverse(route_name, kwargs=kwargs) if kwargs else reverse(route_name)
             res = self.client.get(url)
+            if route_name == "public_review":
+                self.assertEqual(res.status_code, 302, "Review entry point should redirect to Google Maps")
+                self.assertEqual(res["Location"], settings.GOOGLE_REVIEW_URL)
+                continue
             self.assertEqual(res.status_code, 200, f"Route {route_name} ({url}) returned {res.status_code}")
             # Ensure mobile responsive viewport is present
             self.assertContains(res, '<meta name="viewport"', status_code=200)

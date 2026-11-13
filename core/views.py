@@ -859,6 +859,50 @@ def admin_blog_delete(request, id):
 
 
 @login_required
+def submit_review(request):
+    """Accept private patient-portal feedback for clinic moderation.
+
+    Public Write a Review links use Google Maps; this authenticated endpoint
+    remains for existing patient-portal feedback submissions.
+    """
+    if request.method != "POST":
+        return redirect("client_dashboard")
+
+    name = (
+        request.POST.get("reviewer_name", "").strip()
+        or request.user.get_full_name()
+        or request.user.username
+    )
+    title = request.POST.get("reviewer_title", "").strip()
+    message = request.POST.get("message", "").strip()
+    try:
+        rating = int(request.POST.get("rating", 5))
+    except (TypeError, ValueError):
+        rating = 0
+
+    if not message or not 1 <= rating <= 5:
+        messages.error(request, "Please provide feedback and a rating from 1 to 5.")
+        return redirect("client_dashboard")
+
+    hospital = resolve_hospital(request.user)
+    Review.objects.create(
+        hospital=hospital,
+        patient=request.user,
+        reviewer_name=name[:100],
+        reviewer_title=title[:100],
+        rating=rating,
+        message=message,
+        is_approved=False,
+        added_by_admin=False,
+    )
+    messages.success(
+        request,
+        "Thank you! Your review has been submitted for approval.",
+    )
+    return redirect("client_dashboard")
+
+
+@login_required
 def admin_reviews(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")

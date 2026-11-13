@@ -231,35 +231,7 @@ html.gsap-ready .gsap-stagger-card.is-revealed {
   pointer-events: none;
 }
 
-/* ── 4. RESPONSIVE TOUCH & MOBILE AMBIENT 3D DEPTH ── */
-/* On mobile/tablet screens where mouse hover is absent, cards feature subtle
-   staggered ambient floating perspective so visitors clearly perceive genuine 3D depth */
-@media (hover: none) and (pointer: coarse) {
-  .intro-card:nth-child(1),
-  .service-preview-card:nth-child(1),
-  .treatment-card:nth-child(1) {
-    animation: mobile-card-float 6.5s ease-in-out infinite alternate;
-  }
-  .intro-card:nth-child(2),
-  .service-preview-card:nth-child(2),
-  .treatment-card:nth-child(2) {
-    animation: mobile-card-float 6.5s ease-in-out infinite alternate 1.8s;
-  }
-  .intro-card:nth-child(3),
-  .service-preview-card:nth-child(3),
-  .treatment-card:nth-child(3) {
-    animation: mobile-card-float 6.5s ease-in-out infinite alternate 3.6s;
-  }
-}
-
-@keyframes mobile-card-float {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  100% {
-    transform: translate3d(0, -4px, 6px);
-  }
-}
+/* Touch layouts keep cards still for comfortable reading and scrolling. */
 
 /* ── 5. FLOATING 3D DECORATIVE REHAB ACCENTS ── */
 .float-subtle,
@@ -366,6 +338,123 @@ form,
 }
 
 /* ── 8. ACCESSIBILITY: PREFERS-REDUCED-MOTION ── */
+.public-motion-item {
+  opacity: 0;
+  transform: translate3d(0, var(--public-motion-distance, 18px), 0);
+  transition:
+    opacity var(--public-motion-duration, 560ms) var(--ease-3d-spring) var(--public-motion-delay, 0ms),
+    transform var(--public-motion-duration, 560ms) var(--ease-3d-spring) var(--public-motion-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.public-motion-item.public-motion-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  will-change: auto;
+}
+
+.public-header,
+.public-header .nav-link,
+.public-header .drawer-link {
+  transition: background-color 220ms ease, color 220ms ease, box-shadow 220ms ease, transform 220ms var(--ease-3d-spring);
+}
+
+.btn-interactive:focus-visible,
+.btn-gold:focus-visible,
+.btn-outline-gold:focus-visible,
+.btn-outline-light:focus-visible,
+.btn-submit-booking:focus-visible,
+.btn-submit-contact:focus-visible,
+.btn-action-primary:focus-visible {
+  outline: 3px solid var(--anim-gold);
+  outline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --depth-3d-perspective: none;
+    --public-motion-distance: 12px;
+    --public-motion-duration: 420ms;
+  }
+
+  .perspective-container,
+  .booking-grid,
+  .services-preview-grid,
+  .treatments-grid,
+  .intro-content-grid,
+  .reviews-preview-grid,
+  .values-grid,
+  .why-grid {
+    perspective: none;
+  }
+
+  .card-3d,
+  .intro-card,
+  .service-preview-card,
+  .treatment-card,
+  .why-item,
+  .value-card,
+  .team-card,
+  .cp-card,
+  .result-image-box,
+  .stat-card,
+  .summary-card,
+  .review-card-dark {
+    transform-style: flat;
+    will-change: auto;
+    transition-duration: 220ms;
+  }
+
+  .btn-interactive,
+  .btn-gold,
+  .btn-outline-gold,
+  .btn-submit-booking,
+  .btn-submit-contact,
+  .btn-action-primary {
+    will-change: auto;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .intro-card::after,
+  .service-preview-card::after,
+  .treatment-card::after,
+  .why-item::after,
+  .value-card::after,
+  .team-card::after,
+  .cp-card::after,
+  .review-card-dark::after {
+    display: none;
+  }
+
+  .hover-lift:hover,
+  .hover-lift-3d:hover,
+  .hover-lift-dark:hover,
+  .card-3d:hover,
+  .intro-card:hover,
+  .service-preview-card:hover,
+  .treatment-card:hover,
+  .why-item:hover,
+  .value-card:hover,
+  .team-card:hover,
+  .cp-card:hover,
+  .review-card-dark:hover {
+    transform: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-interactive,
+  .btn-gold,
+  .btn-outline-gold,
+  .btn-submit-booking,
+  .btn-submit-contact,
+  .btn-action-primary {
+    will-change: auto;
+  }
+}
+
+/* ── 9. ACCESSIBILITY: PREFERS-REDUCED-MOTION ── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

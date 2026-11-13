@@ -3,7 +3,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.conf import settings
 from django.core.cache import cache
-from core.models import Hospital, TreatmentCategory, Treatment, Blog, User
+from core.models import Hospital, TreatmentCategory, Treatment, Blog, User, ClinicAdmin
 
 
 class PublicAnimationsTestSuite(TestCase):
@@ -141,16 +141,25 @@ class PublicAnimationsTestSuite(TestCase):
         self.assertContains(res, "animations.js")
         self.assertNotContains(res, "three.min.js")
 
-    def test_review_page_includes_gsap(self):
-        """Public review page includes animations.css and GSAP scripts."""
-        res = self.client.get(reverse("public_review"))
-        self.assertEqual(res.status_code, 200)
+    def test_review_entry_point_redirects_to_google_maps(self):
+        """The public review route is a redirect, so animation assets belong to the destination."""
+        res = self.client.get(reverse("public_review"), follow=False)
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res["Location"], settings.GOOGLE_REVIEW_URL)
 
+    def test_subscription_page_includes_shared_motion_assets(self):
+        clinic_admin = User.objects.create_user(
+            username="motion_clinic_admin",
+            email="motion-admin@example.com",
+            password="TestPassword123!",
+            is_staff=True,
+        )
+        ClinicAdmin.objects.create(user=clinic_admin, hospital=self.hospital)
+        self.client.force_login(clinic_admin)
+        res = self.client.get(reverse("subscription_page"))
+        self.assertEqual(res.status_code, 200)
         self.assertContains(res, "animations.css")
-        self.assertContains(res, "gsap.min.js")
-        self.assertContains(res, "ScrollTrigger.min.js")
         self.assertContains(res, "animations.js")
-        self.assertNotContains(res, "three.min.js")
 
     def test_contact_page_includes_gsap(self):
         """Contact page includes animations.css and GSAP scripts."""

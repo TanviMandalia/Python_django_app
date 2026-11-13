@@ -5,6 +5,7 @@ across Frontend, Backend, PostgreSQL models, and Admin moderation interfaces.
 from datetime import timedelta
 from unittest.mock import patch
 from django.core import mail
+from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -36,56 +37,52 @@ class ReviewsEndToEndIntegrationTests(BaseHospitalTestCase):
         self.admin_reviews_url = reverse("admin_reviews")
 
     def test_public_visitor_can_load_review_page(self):
-        """Public visitor can load /review/ without authentication."""
-        res = self.client.get(self.public_review_url)
-        self.assertEqual(res.status_code, 200)
-        self.assertContains(res, "Patient Reviews")
-        self.assertContains(res, "Dr. Dhvani Patalia")
+        """Public review entry point forwards visitors directly to Google Maps."""
+        res = self.client.get(self.public_review_url, follow=False)
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res["Location"], settings.GOOGLE_REVIEW_URL)
 
     def test_valid_review_submission_creates_pending_record(self):
-        """Valid submission saves permanently to PostgreSQL with is_approved=False."""
+        """Authenticated patient feedback is saved for admin moderation."""
+        self.client.force_login(self.patient_user)
         payload = {
             "reviewer_name": "Rajesh Varma",
             "rating": 5,
             "message": "Outstanding rehabilitation after knee arthroscopy. I regained mobility in 3 weeks!",
-            "consent_to_publish": "on",
-            "website": "",  # honeypot
         }
-        res = self.client.post(self.public_review_url, payload, follow=True)
-        self.assertEqual(res.status_code, 200)
-        self.assertContains(res, "Thank you for sharing your experience")
+        res = self.client.post(reverse("submit_review"), payload, follow=False)
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, reverse("client_dashboard"))
 
         # Verify DB record
         review = Review.objects.filter(reviewer_name="Rajesh Varma").first()
         self.assertIsNotNone(review)
         self.assertEqual(review.rating, 5)
-        self.assertFalse(review.is_approved)  # Must be pending moderation
-        self.assertTrue(review.consent_to_publish)
+        self.assertFalse(review.is_approved)
 
     def test_invalid_ratings_and_missing_feedback_are_rejected(self):
-        """Ratings outside 1-5 or empty feedback are rejected by server-side validation."""
+        """Patient feedback rejects ratings outside 1-5 and empty messages."""
+        self.client.force_login(self.patient_user)
         payload_bad_rating = {
             "reviewer_name": "Test User",
             "rating": 6,  # Invalid rating > 5
             "message": "Great service!",
-            "consent_to_publish": "on",
         }
-        res = self.client.post(self.public_review_url, payload_bad_rating)
-        self.assertEqual(res.status_code, 200)
+        res = self.client.post(reverse("submit_review"), payload_bad_rating)
+        self.assertEqual(res.status_code, 302)
         self.assertFalse(Review.objects.filter(reviewer_name="Test User").exists())
 
         payload_empty_msg = {
             "reviewer_name": "Test User 2",
             "rating": 5,
             "message": "",  # Empty message
-            "consent_to_publish": "on",
         }
-        res2 = self.client.post(self.public_review_url, payload_empty_msg)
-        self.assertEqual(res2.status_code, 200)
+        res2 = self.client.post(reverse("submit_review"), payload_empty_msg)
+        self.assertEqual(res2.status_code, 302)
         self.assertFalse(Review.objects.filter(reviewer_name="Test User 2").exists())
 
-    def test_pending_review_does_not_appear_publicly_until_approved(self):
-        """Pending review appears on admin page but NOT on public review or home pages."""
+    def test_pending_review_stays_private_until_approved(self):
+        """Pending feedback remains private; approved feedback may appear on the homepage."""
         review = Review.objects.create(
             hospital=self.hospital,
             reviewer_name="Ananya Patel",
@@ -95,9 +92,10 @@ class ReviewsEndToEndIntegrationTests(BaseHospitalTestCase):
             consent_to_publish=True,
         )
 
-        # 1. Check public review page
-        res_pub = self.client.get(self.public_review_url)
-        self.assertNotContains(res_pub, "UniqueSecretReviewTextAnanya")
+        # 1. Public review entry point goes to Google and never renders private feedback.
+        res_pub = self.client.get(self.public_review_url, follow=False)
+        self.assertEqual(res_pub.status_code, 302)
+        self.assertEqual(res_pub["Location"], settings.GOOGLE_REVIEW_URL)
 
         # 2. Check public home page
         res_home = self.client.get(reverse("home"))
@@ -118,10 +116,11 @@ class ReviewsEndToEndIntegrationTests(BaseHospitalTestCase):
         review.refresh_from_db()
         self.assertTrue(review.is_approved)
 
-        # 5. Public review page and home page now display the approved review
+        # 5. Public maps link stays external; approved feedback is published on the homepage.
         self.client.logout()
-        res_pub_approved = self.client.get(self.public_review_url)
-        self.assertContains(res_pub_approved, "UniqueSecretReviewTextAnanya")
+        res_pub_approved = self.client.get(self.public_review_url, follow=False)
+        self.assertEqual(res_pub_approved.status_code, 302)
+        self.assertEqual(res_pub_approved["Location"], settings.GOOGLE_REVIEW_URL)
 
         res_home_approved = self.client.get(reverse("home"))
         self.assertContains(res_home_approved, "UniqueSecretReviewTextAnanya")
@@ -235,15 +234,19 @@ class ReviewsEndToEndIntegrationTests(BaseHospitalTestCase):
         """Review Google redirect validates safe domains and rejects open redirects."""
         redirect_url = reverse("review_google_redirect")
 
-        # Malicious open redirect target is rejected
-        res_bad = self.client.get(f"{redirect_url}?target=https://malicious-phishing-site.com", follow=True)
-        self.assertEqual(res_bad.status_code, 200)
-        self.assertContains(res_bad, "Invalid external destination")
+        # A malicious target is ignored and the visitor still reaches the clinic link.
+        res_bad = self.client.get(
+            f"{redirect_url}?target=https://malicious-phishing-site.com",
+            follow=False,
+        )
+        self.assertEqual(res_bad.status_code, 302)
+        self.assertEqual(res_bad["Location"], settings.GOOGLE_REVIEW_URL)
+        self.assertNotIn("malicious-phishing-site", res_bad["Location"])
 
         # Valid Google review destination is accepted
         res_good = self.client.get(f"{redirect_url}?target=https://search.google.com/local/writereview?placeid=ChIJ123")
         self.assertEqual(res_good.status_code, 302)
-        self.assertEqual(res_good.url, "https://search.google.com/local/writereview?placeid=ChIJ123")
+        self.assertEqual(res_good["Location"], "https://search.google.com/local/writereview?placeid=ChIJ123")
 
 
 class AppointmentsEndToEndIntegrationTests(BaseHospitalTestCase):

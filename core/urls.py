@@ -282,6 +282,7 @@ urlpatterns = [
     path("progress/", views.progress_tracking, name="progress_tracking"),
     path("analytics/", views.reports_analytics, name="reports_analytics"),
     # ── Reviews ───────────────────────────────────────────────
+    path("submit-review/", views.submit_review, name="submit_review"),
     path("admin-reviews/", views.admin_reviews, name="admin_reviews"),
     path("admin-reviews/add/", views.admin_add_review, name="admin_add_review"),
     path(

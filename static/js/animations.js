@@ -25,14 +25,6 @@
     );
   }
 
-  function isTouchDevice() {
-    return !!(
-      (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
-      "ontouchstart" in window ||
-      navigator.maxTouchPoints > 0
-    );
-  }
-
   // ── 2. WEBGL SUPPORT DETECTION ──
   function isWebGLAvailable() {
     try {
@@ -269,10 +261,13 @@
   }
 
   // ── 7. GENUINE INTERACTIVE 3D CARD TILT & SPECULAR GLINT ──
-  // Applies physical 3D multi-axis perspective depth and dynamic specular reflection
-  // across desktop pointers and mobile touch devices.
+  // Applies physical 3D depth only where hover and a precise pointer are available.
   function initCard3DTilt() {
-    if (isReducedMotion()) return;
+    if (
+      isReducedMotion() ||
+      !window.matchMedia ||
+      !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    ) return;
 
     var targetCards = document.querySelectorAll(
       ".intro-card, .service-preview-card, .treatment-card, .review-card-dark, .value-card, .why-item, .team-card, .cp-card, .stat-card, .summary-card"
@@ -350,6 +345,65 @@
       card.addEventListener("touchend", resetTilt, { passive: true });
       card.addEventListener("touchcancel", resetTilt, { passive: true });
     });
+  }
+
+  // ── 8. RESPONSIVE PUBLIC-PAGE REVEALS ──
+  // Covers page-specific cards/sections that are not part of the homepage GSAP grids.
+  // Enhancement is opt-in at runtime, so content remains visible without JavaScript.
+  function initResponsivePublicMotion() {
+    if (isReducedMotion()) return;
+
+    var selectors = [
+      ".page-title",
+      ".subscription-header",
+      ".content-card",
+      ".related-card",
+      ".blog-card",
+      ".tip-card",
+      ".article-card",
+      ".plan-card",
+      ".history-card",
+      ".contact-method-card",
+      ".consent-card",
+      ".whatsapp-prompt-card",
+    ];
+    var managedByGsap = ".gsap-fade-up, .gsap-reveal, .gsap-stagger-card";
+    var targets = Array.prototype.slice.call(
+      document.querySelectorAll(selectors.join(","))
+    ).filter(function (element) {
+      return !element.matches(managedByGsap) && !element.closest(managedByGsap);
+    });
+
+    if (!targets.length) return;
+
+    function reveal(element) {
+      element.classList.add("public-motion-visible");
+    }
+
+    if (!("IntersectionObserver" in window)) return;
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          reveal(entry.target);
+          observer.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.08, rootMargin: "0px 0px -4% 0px" }
+    );
+
+    targets.forEach(function (element, index) {
+      element.classList.add("public-motion-item");
+      element.style.setProperty("--public-motion-delay", (index % 4) * 65 + "ms");
+      observer.observe(element);
+    });
+
+    // Defensive reveal in case an observer is interrupted during navigation.
+    window.setTimeout(function () {
+      targets.forEach(reveal);
+      observer.disconnect();
+    }, 2600);
   }
 
   // ── 8. CARD ELEVATION & BUTTON MICRO-INTERACTIONS ──
@@ -715,6 +769,7 @@
 
     initNavbarAnimation();
     initInteractiveEffects();
+    initResponsivePublicMotion();
 
     // Check if hero 3D canvas is present (Homepage)
     if (document.getElementById("threeHeroCanvas")) {
