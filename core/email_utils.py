@@ -25,6 +25,7 @@ import os
 import re
 import uuid
 import logging
+from email.utils import formataddr
 from django.db.models import Q
 from django.core.mail import send_mail, get_connection, EmailMultiAlternatives
 from django.core.validators import validate_email as django_validate_email
@@ -256,7 +257,7 @@ def send_platform_email(
 
     platform_brand = getattr(settings, "PLATFORM_BRAND_NAME", "TechCraft")
     clean_display_name = sanitize_header_value(account.from_name or platform_brand)
-    from_email = f"{clean_display_name} <{account.from_email}>" if clean_display_name else account.from_email
+    from_email = formataddr((clean_display_name, account.from_email)) if clean_display_name else account.from_email
 
     if not html_message:
         escaped_body = escape(message_text).replace("\n", "<br>")
@@ -419,7 +420,7 @@ def send_clinic_email(
     else:
         display_clinic_name = getattr(settings, "CLINIC_NAME", "Dr. Dhvani Patalia — PhysioRehab")
     clean_display_name = sanitize_header_value(display_clinic_name)
-    from_email = f"{clean_display_name} <{account.from_email}>" if clean_display_name else account.from_email
+    from_email = formataddr((clean_display_name, account.from_email)) if clean_display_name else account.from_email
 
     if not html_message:
         escaped_body = escape(message_text).replace("\n", "<br>")

@@ -14,6 +14,7 @@ import logging
 import socket
 import ssl
 import smtplib
+from email.utils import formataddr
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
@@ -300,7 +301,7 @@ def send_email_via_account(
         )
 
     clean_from_name = sanitize_header_value(from_name)
-    from_email = f"{clean_from_name} <{account.from_email}>" if clean_from_name else account.from_email
+    from_email = formataddr((clean_from_name, account.from_email)) if clean_from_name else account.from_email
 
     effective_reply_to = reply_to or account.reply_to or default_reply_to
     reply_to_list = [sanitize_header_value(effective_reply_to)] if effective_reply_to else None
@@ -503,7 +504,7 @@ def test_account_connection(account: EmailAccount, test_recipient: str, force_sm
         x_mailer = "Clinic-Email-Gateway"
 
     clean_sender_title = sanitize_header_value(sender_title)
-    from_header = f"{clean_sender_title} <{account.from_email}>" if clean_sender_title else account.from_email
+    from_header = formataddr((clean_sender_title, account.from_email)) if clean_sender_title else account.from_email
     subject = f"SMTP Configuration Test - {clean_sender_title}"
     msg_id = f"{uuid.uuid4().hex}@{getattr(account, 'host', 'localhost')}"
     now_str = timezone.now().strftime("%Y-%m-%d %H:%M:%S UTC")
