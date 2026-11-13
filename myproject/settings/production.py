@@ -9,20 +9,16 @@ DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1")
 # ------------------------------------------------------------------------------
 allowed_hosts_raw = os.getenv("ALLOWED_HOSTS")
 render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
-vercel_url = os.getenv("VERCEL_URL", "").strip()
 
 if allowed_hosts_raw:
     ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(",") if h.strip()]
 elif render_hostname:
     ALLOWED_HOSTS = [render_hostname, f".{render_hostname}", "localhost", "127.0.0.1", "physio-rehab-app.onrender.com"]
-elif vercel_url:
-    ALLOWED_HOSTS = [vercel_url, f".{vercel_url}", ".vercel.app", "localhost", "127.0.0.1"]
 else:
-    # Default fallback for Render, Vercel deployment & local verification
+    # Default fallback for Render deployment and local verification
     ALLOWED_HOSTS = [
         "physio-rehab-app.onrender.com",
         ".onrender.com",
-        ".vercel.app",
         "localhost",
         "127.0.0.1",
     ]
@@ -36,27 +32,14 @@ else:
     ] + [
         "https://*.onrender.com",
         "https://physio-rehab-app.onrender.com",
-        "https://*.vercel.app",
     ]
-    if vercel_url:
-        extra_origins.append(f"https://{vercel_url}")
     CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS + extra_origins))
-
-# Always ensure .vercel.app is included if running on Vercel
-if os.getenv("VERCEL") or vercel_url:
-    if ".vercel.app" not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(".vercel.app")
-    if "https://*.vercel.app" not in CSRF_TRUSTED_ORIGINS:
-        CSRF_TRUSTED_ORIGINS.append("https://*.vercel.app")
 # ------------------------------------------------------------------------------
 # Canonical Production Domain for SEO & Sitemap
 # ------------------------------------------------------------------------------
 if not CANONICAL_BASE_URL:
-    if vercel_url:
-        CANONICAL_BASE_URL = f"https://{vercel_url}"
-    else:
-        primary_host = next((h for h in ALLOWED_HOSTS if not h.startswith("*") and not h.startswith(".")), "physio-rehab-app.onrender.com")
-        CANONICAL_BASE_URL = f"https://{primary_host}"
+    primary_host = next((h for h in ALLOWED_HOSTS if not h.startswith("*") and not h.startswith(".")), "physio-rehab-app.onrender.com")
+    CANONICAL_BASE_URL = f"https://{primary_host}"
 # ------------------------------------------------------------------------------
 # Security & SSL / HTTPS Headers
 # ------------------------------------------------------------------------------
@@ -69,10 +52,6 @@ SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "True").lower() == "t
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-
-# Serverless (Vercel) lambdas are ephemeral and should not require DB session table lookups for static/public visitors
-if os.getenv("VERCEL"):
-    SESSION_ENGINE = os.getenv("SESSION_ENGINE", "django.contrib.sessions.backends.signed_cookies")
 
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() == "true"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -134,8 +113,7 @@ database_url = os.getenv("DATABASE_URL")
 db_name = os.getenv("DB_NAME")
 
 if database_url:
-    # Serverless (Vercel) cannot maintain pooled TCP connections across lambda freeze cycles
-    conn_max_age = 0 if os.getenv("VERCEL") else int(os.getenv("DB_CONN_MAX_AGE", "600"))
+    conn_max_age = int(os.getenv("DB_CONN_MAX_AGE", "600"))
     db_config = dj_database_url.parse(
         database_url,
         conn_max_age=conn_max_age,
@@ -145,10 +123,9 @@ if database_url:
     # Ensure PgBouncer / Neon / Supabase connection pooler compatibility
     db_config["DISABLE_SERVER_SIDE_CURSORS"] = True
     db_config.setdefault("OPTIONS", {})
-    # Fail fast on unreachable host to prevent hitting Vercel's 10s lambda timeout
     db_config["OPTIONS"].setdefault("connect_timeout", int(os.getenv("DB_CONNECT_TIMEOUT", "5")))
     DATABASES = {"default": db_config}
-elif db_name and not os.getenv("VERCEL"):
+elif db_name:
     db_password = os.getenv("DB_PASSWORD")
     if db_password is None:
         raise ImproperlyConfigured("DB_PASSWORD is required when configuring production PostgreSQL via DB_* variables.")
@@ -168,19 +145,13 @@ elif db_name and not os.getenv("VERCEL"):
         }
     }
 else:
-    # On Vercel, the application directory is read-only (/var/task).
-    # Use the system temp directory for writable SQLite database when DATABASE_URL is not yet configured.
-    if os.getenv("VERCEL"):
-        import tempfile
-        sqlite_db_path = str(Path(tempfile.gettempdir()) / "db.sqlite3")
-    else:
-        sqlite_db_path = str(BASE_DIR / "db.sqlite3")
+    sqlite_db_path = str(BASE_DIR / "db.sqlite3")
 
     import logging
     logging.getLogger("django.production").warning(
         "DATABASE_URL was not set in environment variables. "
         f"Falling back to local SQLite database ({sqlite_db_path}). "
-        "To connect your PostgreSQL database: Add DATABASE_URL to your Vercel/Render Environment Variables."
+        "To connect your PostgreSQL database: Add DATABASE_URL to your hosting provider environment variables."
     )
     DATABASES = {
         "default": {

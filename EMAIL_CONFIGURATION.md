@@ -198,7 +198,7 @@ The Platform Super Admin controls platform-wide parameters and tenant isolation.
 | `GMAIL_INBOUND_MAILBOXES` | Comma-separated inboxes authorized for inbound Gmail sync | `techcraft1215@gmail.com,physio.rehab.guj@gmail.com` |
 
 > [!CAUTION]
-> Never commit real SMTP passwords or Google App Passwords to version control. Store all credentials in the production platform environment variables (Render, Vercel, Supabase, or AWS Secrets Manager).
+> Never commit real SMTP passwords or Google App Passwords to version control. Store all credentials in the production platform environment variables (Render, Supabase, or AWS Secrets Manager).
 
 ### Two Gmail Mailboxes: Send and Receive
 

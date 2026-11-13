@@ -42,6 +42,3 @@ include = ["myproject*", "core*"]
 
 [tool.uv]
 package = false
-
-[tool.vercel]
-entrypoint = "myproject.wsgi:application"

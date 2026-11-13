@@ -4,6 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.contrib.auth import logout
+from django.conf import settings
 from django.views.decorators.cache import add_never_cache_headers
 
 from .models import Profile
@@ -44,7 +45,14 @@ class SessionTimeoutMiddleware:
             # Do not force a premature 30-minute idle logout on remembered sessions.
             is_remembered = request.session.get("remember_me", False)
 
-            if not is_remembered:
+            if is_remembered:
+                # Keep the browser cookie persistent for the configured duration
+                # on authenticated requests, even if another view touches session
+                # expiry settings.
+                request.session.set_expiry(
+                    int(getattr(settings, "REMEMBER_ME_EXPIRY", 1209600))
+                )
+            else:
                 last_activity = request.session.get("last_activity")
 
                 if last_activity:

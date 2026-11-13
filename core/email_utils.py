@@ -1301,7 +1301,7 @@ Login to your staff dashboard to review and complete this task.
     )
 
 
-def send_staff_welcome_email(user, password):
+def send_staff_welcome_email(user, password, hospital=None):
     if not user or not user.email:
         return False
 
@@ -1325,9 +1325,14 @@ Please log in and update your password immediately upon first access.
 </div>
 <p style="color:#b91c1c; font-size:13px;">For security compliance, you must change this password immediately after your initial sign in.</p>"""
 
-    html = render_html_wrapper(subject, html_content)
+    html = render_html_wrapper(subject, html_content, hospital=hospital)
     return send_clinic_email(
-        subject, body_text, user.email, email_type="staff_welcome", html_message=html
+        subject,
+        body_text,
+        user.email,
+        hospital=hospital,
+        email_type="staff_welcome",
+        html_message=html,
     )
 
 
@@ -1404,22 +1409,47 @@ To prevent operational interruption, please renew your plan.
     )
 
 
-def send_welcome_email(user, hospital=None):
+def send_welcome_email(user, hospital=None, login_url="", password_setup_url=""):
     """Send welcoming notification email to newly registered patients or users."""
     if not user or not user.email:
         return False
     clinic_title = hospital.name if hospital else CLINIC_NAME
     subject = f"Welcome to {clinic_title}!"
+    access_lines = []
+    html_access = []
+    if login_url:
+        access_lines.append(f"Sign in: {login_url}")
+        html_access.append(
+            f'<p><strong>Sign in:</strong> '
+            f'<a href="{escape(login_url)}">Open the patient login page</a></p>'
+        )
+    if password_setup_url:
+        access_lines.append(
+            "To set your password securely, request a one-time code here: "
+            f"{password_setup_url}"
+        )
+        html_access.append(
+            f'<p>Use <a href="{escape(password_setup_url)}">Forgot password</a> '
+            "to verify your email and set your password securely.</p>"
+        )
+    access_text = "\n".join(access_lines)
     body_text = f"""Dear {user.get_full_name() or user.username},
 
-Welcome to {clinic_title}. Your hospital account has been created and verified.
+Welcome to {clinic_title}. Your patient account has been created.
+
+Username: {user.username}
+{access_text}
 
 Best regards,
 {clinic_title}
 """
     html_content = f"""<p>Dear <strong>{escape(user.get_full_name() or user.username)}</strong>,</p>
 <p>Welcome to <strong>{escape(clinic_title)}</strong>. Your patient account has been created successfully.</p>
-<p>You can now log in, schedule appointments, review session records, and manage your treatments securely.</p>"""
+<div class="box">
+  <p><strong>Username:</strong> <code>{escape(user.username)}</code></p>
+  {''.join(html_access)}
+</div>
+<p>You can then schedule appointments and manage your care securely.</p>"""
     html = render_html_wrapper(
         subject,
         html_content,

@@ -118,7 +118,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "myproject.wsgi.application"
-# ASGI_APPLICATION is commented so zero-config builders (Vercel) default to standard WSGI
+# Set ASGI_APPLICATION when deploying with an ASGI server.
 # ASGI_APPLICATION = "myproject.asgi.application"
 
 

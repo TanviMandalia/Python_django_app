@@ -110,6 +110,7 @@ from .email_utils import (
     send_salary_paid_email,
     send_task_assigned_email,
     send_staff_welcome_email,
+    send_welcome_email,
     send_public_appointment_request_notification,
     validate_recipient_email,
     sanitize_header_value,
@@ -1197,8 +1198,8 @@ def login_view(request):
 
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
-        remember_raw = request.POST.get("remember_me")
-        remember_me = remember_raw in ("on", "true", "1", "True", True)
+        remember_raw = request.POST.get("remember_me", "")
+        remember_me = str(remember_raw).strip().lower() in {"on", "true", "1", "yes"}
 
         # Double-check lockout (middleware also checks)
         if attempts >= 5:
@@ -1236,13 +1237,16 @@ def login_view(request):
             # Connect Remember Me checkbox to Django session expiry:
             if remember_me:
                 # 14 days persistent session duration
-                expiry = getattr(settings, "REMEMBER_ME_EXPIRY", 1209600)
-                request.session.set_expiry(expiry)
+                request.session.set_expiry(
+                    int(getattr(settings, "REMEMBER_ME_EXPIRY", 1209600))
+                )
                 request.session["remember_me"] = True
             else:
                 # Browser-session cookie: expires when browser closes
                 request.session.set_expiry(0)
                 request.session["remember_me"] = False
+            # Make the selected expiry and remember flag durable with this login.
+            request.session.modified = True
 
             # Safe redirect: check 'next' parameter if valid and safe
             if next_url and url_has_allowed_host_and_scheme(
@@ -3504,11 +3508,23 @@ def add_staff(request):
                 StaffProfile.objects.create(
                     user=user, hospital=hospital, role=role, phone=phone, salary=salary
                 )
-            send_staff_welcome_email(user, password)
+            try:
+                welcome_sent = send_staff_welcome_email(user, password, hospital=hospital)
+            except Exception:
+                logger.exception("Staff account created, but welcome email delivery failed.")
+                welcome_sent = False
             messages.success(
                 request,
-                f"✅ Staff member {first_name} {last_name} added successfully! Welcome email sent.",
+                f"✅ Staff member {first_name} {last_name} added successfully!",
             )
+            if welcome_sent:
+                messages.info(request, f"Welcome email sent to {email} from the clinic mailbox.")
+            else:
+                messages.warning(
+                    request,
+                    "The staff account was created, but the welcome email could not "
+                    "be sent. Check the clinic email configuration and try again.",
+                )
             return redirect("admin_staff")
 
         except Exception as e:
@@ -4605,6 +4621,31 @@ def add_patient(request):
             patient_profile.save()
 
         messages.success(request, f"✅ Patient {user.get_full_name() or user.username} registered successfully!")
+        if user.email:
+            try:
+                welcome_sent = send_welcome_email(
+                    user,
+                    hospital=hospital,
+                    login_url=request.build_absolute_uri(reverse("login")),
+                    password_setup_url=request.build_absolute_uri(reverse("request_otp")),
+                )
+            except Exception:
+                logger.exception("Patient account created, but welcome email delivery failed.")
+                welcome_sent = False
+            if welcome_sent:
+                messages.info(request, f"Welcome email sent to {user.email} from the clinic mailbox.")
+            else:
+                messages.warning(
+                    request,
+                    "The patient account was created, but the welcome email could not "
+                    "be sent. Check the clinic email configuration and try again.",
+                )
+        else:
+            messages.warning(
+                request,
+                "The patient account was created without an email address, so no "
+                "welcome email could be sent.",
+            )
         return redirect("admin_patients")
     return render(request, "admin/add_patient.html")
 

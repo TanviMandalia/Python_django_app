@@ -7,8 +7,7 @@
 
 The application is built to run on standard modern cloud container and PaaS environments:
 1. **Render.com** (Recommended for Web Service + Worker architecture)
-2. **Vercel** (Serverless WSGI deployment with external Supabase PostgreSQL)
-3. **AWS / Railway / Self-Hosted VPS** (Docker / Gunicorn)
+2. **AWS / Railway / Self-Hosted VPS** (Docker / Gunicorn)
 
 ---
 
@@ -21,7 +20,7 @@ Before initiating deployment, configure these environment variables in your host
 DJANGO_SETTINGS_MODULE=myproject.settings.production
 SECRET_KEY=generate-a-strong-random-50-character-key
 DEBUG=False
-ALLOWED_HOSTS=yourdomain.com,*.onrender.com,*.vercel.app
+ALLOWED_HOSTS=yourdomain.com,physio-rehab-app.onrender.com
 CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://*.onrender.com
 ```
 

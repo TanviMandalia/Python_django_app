@@ -80,9 +80,9 @@ Python_django_app/
 │   │   ├── __init__.py
 │   │   ├── base.py                    # Base configuration, middleware, apps, auth
 │   │   ├── dev.py                     # Local developer runtime (PostgreSQL / SQLite)
-│   │   └── production.py              # Hardened production (Vercel / Render / Supabase)
+│   │   └── production.py              # Hardened production (Render / Supabase)
 │   ├── asgi.py                        # ASGI entrypoint
-│   ├── wsgi.py                        # WSGI entrypoint (Gunicorn / Vercel Serverless)
+│   ├── wsgi.py                        # WSGI entrypoint (Gunicorn / PaaS)
 │   └── urls.py                        # Root URL routing
 │
 ├── templates/                         # Django HTML5 presentation templates
@@ -116,7 +116,7 @@ Python_django_app/
 │   ├── test_multi_email_notifications.py # Platform Admin & multi-email test suite
 │   ├── test_public_appointment.py     # Public booking workflow verification
 │   ├── test_clinic_admin.py           # Clinic Admin CRUD & security verification
-│   └── ...                            # RBAC, Payment, Vercel serverless tests
+│   └── ...                            # RBAC, Payment, deployment tests
 │
 ├── docs/                              # Architecture & operational guides
 ├── scripts/                           # Maintenance & migration shell scripts
