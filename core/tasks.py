@@ -119,7 +119,7 @@ def send_platform_email_task(
     max_retries=2,
     default_retry_delay=60,
 )
-def send_bulk_email_task(self, subject, message, recipient_list, html_message=None):
+def send_bulk_email_task(self, subject, message, recipient_list, html_message=None, hospital_id=None):
     """
     Background task for sending the SAME message to MANY recipients.
 
@@ -130,7 +130,13 @@ def send_bulk_email_task(self, subject, message, recipient_list, html_message=No
     task retries with backoff. Partial per-recipient failures are captured
     in the returned summary and logged, not silently dropped.
     """
-    result = send_bulk_clinic_email(subject, message, recipient_list, html_message=html_message)
+    hospital = None
+    if hospital_id:
+        from .models import Hospital
+        hospital = Hospital.objects.filter(id=hospital_id).first()
+    result = send_bulk_clinic_email(
+        subject, message, recipient_list, html_message=html_message, hospital=hospital
+    )
 
     if result["total"] > 0 and result["sent"] == 0:
         # Nothing at all went through — likely a connection-level issue.

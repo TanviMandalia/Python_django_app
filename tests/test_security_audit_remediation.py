@@ -6,6 +6,7 @@ from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
+from unittest.mock import patch
 from core.models import (
     Hospital,
     ClinicAdmin,
@@ -18,6 +19,7 @@ from core.models import (
     DailyTask,
     LeaveApplication,
     Message,
+    Notification,
 )
 
 User = get_user_model()
@@ -228,21 +230,38 @@ class SecurityAuditRemediationTests(TestCase):
         Ensure clinic promos are scoped to the creator clinic and deleted only by owner.
         """
         self.client.force_login(self.admin_a)
-        add_resp = self.client.post("/admin-promos/add/", data={
-            "title": "Summer Rehab Discount",
-            "message": "20% off all consultations",
-        })
+        with patch("core.tasks.send_bulk_email_task.delay") as queue_email:
+            add_resp = self.client.post("/admin-promos/add/", data={
+                "title": "Summer Rehab Discount",
+                "message": "20% off all consultations",
+            })
         self.assertEqual(add_resp.status_code, 302)
 
         promo = ClinicPromo.objects.filter(title="Summer Rehab Discount").first()
         self.assertIsNotNone(promo)
         self.assertEqual(promo.hospital, self.hospital_a)
+        queue_email.assert_called_once()
+        self.assertEqual(queue_email.call_args.kwargs["hospital_id"], self.hospital_a.id)
+        self.assertEqual(
+            list(Notification.objects.filter(message__startswith="Promotion:").values_list("recipient_id", flat=True)),
+            [self.patient_a.id],
+        )
 
         # Clinic B admin attempts to delete Clinic A promo -> 404
         self.client.force_login(self.admin_b)
         del_resp = self.client.get(f"/admin-promos/delete/{promo.id}/")
         self.assertEqual(del_resp.status_code, 404)
         self.assertTrue(ClinicPromo.objects.filter(id=promo.id).exists())
+
+    def test_staff_notifications_use_the_staff_dashboard(self):
+        staff_user = User.objects.create_user(
+            username="physio_notifications", email="physio@example.com", password="TestPass123!", is_staff=True
+        )
+        StaffProfile.objects.create(user=staff_user, hospital=self.hospital_a, role="physiotherapist")
+        self.client.force_login(staff_user)
+        response = self.client.get("/notifications/")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "staff/notifications.html")
 
     def test_send_exercise_reminder_cross_tenant_prevention(self):
         """

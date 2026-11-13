@@ -1,0 +1,44 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}My Notifications - Staff Portal{% endblock %}
+{% block page_title %}My Notifications{% endblock %}
+{% block page_subtitle %}Clinic updates, appointment activity, and messages for your staff account{% endblock %}
+
+{% block content %}
+<div class="admin-card" style="max-width:900px;margin:0 auto;">
+  <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <h3><i class="fas fa-bell"></i> Notifications</h3>
+    <form method="post" action="{% url 'mark_all_read' %}">{% csrf_token %}
+      <button class="topbar-action-link" type="submit"><i class="fas fa-check-double"></i> Mark all read</button>
+    </form>
+  </div>
+  <div style="padding:18px;display:grid;gap:12px;">
+    {% for notification in notifications %}
+      <article style="padding:16px;border:1px solid {% if notification.is_read %}var(--staff-border){% else %}var(--staff-primary){% endif %};border-radius:10px;background:{% if notification.is_read %}#fff{% else %}#fffdf2{% endif %};display:flex;justify-content:space-between;align-items:flex-start;gap:14px;">
+        <div><p style="margin:0 0 8px;color:var(--staff-text-main);">{{ notification.message }}</p>
+          <small style="color:var(--staff-text-sub);">{{ notification.created_at|timesince }} ago</small></div>
+        {% if notification.link %}<a class="topbar-action-link" href="{{ notification.link }}">Open</a>{% endif %}
+        {% if not notification.is_read %}<button type="button" class="topbar-action-link" onclick="markStaffNotificationRead({{ notification.id }}, this)">Mark read</button>{% endif %}
+      </article>
+    {% empty %}
+      <div style="text-align:center;padding:48px 16px;color:var(--staff-text-sub);"><i class="fas fa-bell-slash" style="font-size:2rem;"></i><p>You’re all caught up.</p></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function markStaffNotificationRead(id, button) {
+  try {
+    const response = await fetch(`/notifications/${id}/read/`, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+    if (!response.ok) throw new Error('Could not update notification');
+    button.closest('article').style.background = '#fff';
+    button.closest('article').style.borderColor = 'var(--staff-border)';
+    button.remove();
+  } catch (error) {
+    window.alert('Could not mark this notification as read. Please refresh and try again.');
+  }
+}
+</script>
+{% endblock %}

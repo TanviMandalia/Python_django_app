@@ -1,0 +1,4 @@
+<nav aria-label="My finance sections" style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 20px;padding:10px;background:#fff;border:1px solid var(--staff-border);border-radius:12px;">
+  <a class="topbar-action-link {% if active == 'payments' %}btn-topbar-primary{% endif %}" href="{% url 'staff_payments' %}"><i class="fas fa-receipt"></i> My Payments</a>
+  <a class="topbar-action-link {% if active == 'salary' %}btn-topbar-primary{% endif %}" href="{% url 'staff_salary' %}"><i class="fas fa-rupee-sign"></i> My Salary</a>
+</nav>

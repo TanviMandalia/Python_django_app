@@ -6,6 +6,7 @@
 {% block page_subtitle %}In-depth operational metrics, appointment stats, patient retention, and staff productivity{% endblock %}
 
 {% block content %}
+{% include "admin/_module_tabs.html" with module="clinical" active="analytics" %}
 <!-- ════ HEADER ════ -->
 <div class="page-header-card">
   <div class="page-header-title">

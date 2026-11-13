@@ -1524,7 +1524,12 @@ def change_password_request(request):
 def notifications_view(request):
     notifs = Notification.objects.filter(recipient=request.user)
     is_admin = request.user.is_superuser or _is_clinic_admin(request.user)
-    tpl = "admin/admin_notifications.html" if is_admin else "client/notifications.html"
+    if is_admin:
+        tpl = "admin/admin_notifications.html"
+    elif _is_staff(request.user):
+        tpl = "staff/notifications.html"
+    else:
+        tpl = "client/notifications.html"
     return render(
         request,
         tpl,
@@ -5452,20 +5457,26 @@ def super_admin_platform_settings(request):
 def progress_tracking(request):
     is_admin = request.user.is_superuser or _is_clinic_admin(request.user)
     if is_admin:
-        # Admin: can view any patient's progress
+        hospital = resolve_hospital(request.user)
         all_patients = User.objects.filter(is_superuser=False, is_staff=False)
+        base_appointments = Appointment.objects.all()
+        base_notes = SessionNote.objects.all()
+        if hospital and not request.user.is_superuser:
+            all_patients = all_patients.filter(
+                Q(patient_profile__hospital=hospital) | Q(appointments__hospital=hospital)
+            ).distinct()
+            base_appointments = base_appointments.filter(hospital=hospital)
+            base_notes = base_notes.filter(hospital=hospital)
         patient_id = request.GET.get("patient_id")
 
         if patient_id:
-            selected_patient = get_object_or_404(User, id=patient_id)
-            appointments = Appointment.objects.filter(patient=selected_patient)
-            session_notes = SessionNote.objects.filter(
-                patient=selected_patient
-            ).select_related("staff")
+            selected_patient = get_object_or_404(all_patients, id=patient_id)
+            appointments = base_appointments.filter(patient=selected_patient)
+            session_notes = base_notes.filter(patient=selected_patient).select_related("staff")
         else:
             selected_patient = None
-            appointments = Appointment.objects.all()
-            session_notes = SessionNote.objects.all().select_related("staff", "patient")
+            appointments = base_appointments
+            session_notes = base_notes.select_related("staff", "patient")
     else:
         # Client: sees only their own data
         all_patients = None
@@ -5579,29 +5590,55 @@ def reports_analytics(request):
 
     # ── Date Filtering ──
     period = request.GET.get("period", "all").strip().lower()
+    if period not in {"all", "today", "7d", "30d", "this_month", "this_year", "custom"}:
+        period = "all"
     date_from_str = request.GET.get("date_from", "").strip()
     date_to_str = request.GET.get("date_to", "").strip()
 
     now = timezone.now()
     today = now.date()
 
+    def filter_tasks_in_period(queryset, start_date, end_date):
+        due_filters = {}
+        created_filters = {}
+        if start_date:
+            due_filters["due_date__gte"] = start_date
+            created_filters["created_at__date__gte"] = start_date
+        if end_date:
+            due_filters["due_date__lte"] = end_date
+            created_filters["created_at__date__lte"] = end_date
+        return queryset.filter(
+            Q(**due_filters) | Q(due_date__isnull=True, **created_filters)
+        )
+
+    def filter_leaves_in_period(queryset, start_date, end_date):
+        applied_filters = {}
+        overlap_filters = Q()
+        if start_date:
+            applied_filters["applied_on__date__gte"] = start_date
+            overlap_filters &= Q(to_date__gte=start_date)
+        if end_date:
+            applied_filters["applied_on__date__lte"] = end_date
+            overlap_filters &= Q(from_date__lte=end_date)
+        return queryset.filter(Q(**applied_filters) | overlap_filters)
+
     if period == "today":
         all_appointments = all_appointments.filter(date=today)
-        tasks_qs = tasks_qs.filter(Q(due_date=today) | Q(created_at__date=today))
+        tasks_qs = filter_tasks_in_period(tasks_qs, today, today)
         notes_qs = notes_qs.filter(date=today)
-        leaves_qs = leaves_qs.filter(Q(from_date__lte=today, to_date__gte=today) | Q(applied_on__date=today))
+        leaves_qs = filter_leaves_in_period(leaves_qs, today, today)
     elif period == "7d":
         since_7d = today - timedelta(days=7)
-        all_appointments = all_appointments.filter(date__gte=since_7d)
-        tasks_qs = tasks_qs.filter(Q(due_date__gte=since_7d) | Q(created_at__date__gte=since_7d))
+        all_appointments = all_appointments.filter(date__range=(since_7d, today))
+        tasks_qs = filter_tasks_in_period(tasks_qs, since_7d, today)
         notes_qs = notes_qs.filter(date__gte=since_7d)
-        leaves_qs = leaves_qs.filter(Q(to_date__gte=since_7d) | Q(applied_on__date__gte=since_7d))
+        leaves_qs = filter_leaves_in_period(leaves_qs, since_7d, today)
     elif period == "30d":
         since_30d = today - timedelta(days=30)
-        all_appointments = all_appointments.filter(date__gte=since_30d)
-        tasks_qs = tasks_qs.filter(Q(due_date__gte=since_30d) | Q(created_at__date__gte=since_30d))
+        all_appointments = all_appointments.filter(date__range=(since_30d, today))
+        tasks_qs = filter_tasks_in_period(tasks_qs, since_30d, today)
         notes_qs = notes_qs.filter(date__gte=since_30d)
-        leaves_qs = leaves_qs.filter(Q(to_date__gte=since_30d) | Q(applied_on__date__gte=since_30d))
+        leaves_qs = filter_leaves_in_period(leaves_qs, since_30d, today)
     elif period == "this_month":
         all_appointments = all_appointments.filter(date__year=today.year, date__month=today.month)
         tasks_qs = tasks_qs.filter(created_at__year=today.year, created_at__month=today.month)
@@ -5613,24 +5650,24 @@ def reports_analytics(request):
         notes_qs = notes_qs.filter(date__year=today.year)
         leaves_qs = leaves_qs.filter(applied_on__year=today.year)
     elif date_from_str or date_to_str:
-        if date_from_str:
-            try:
-                df = datetime.strptime(date_from_str, "%Y-%m-%d").date()
-                all_appointments = all_appointments.filter(date__gte=df)
-                tasks_qs = tasks_qs.filter(Q(due_date__gte=df) | Q(created_at__date__gte=df))
-                notes_qs = notes_qs.filter(date__gte=df)
-                leaves_qs = leaves_qs.filter(applied_on__date__gte=df)
-            except ValueError:
-                pass
-        if date_to_str:
-            try:
-                dt = datetime.strptime(date_to_str, "%Y-%m-%d").date()
-                all_appointments = all_appointments.filter(date__lte=dt)
-                tasks_qs = tasks_qs.filter(Q(due_date__lte=dt) | Q(created_at__date__lte=dt))
-                notes_qs = notes_qs.filter(date__lte=dt)
-                leaves_qs = leaves_qs.filter(applied_on__date__lte=dt)
-            except ValueError:
-                pass
+        try:
+            df = datetime.strptime(date_from_str, "%Y-%m-%d").date() if date_from_str else None
+            dt = datetime.strptime(date_to_str, "%Y-%m-%d").date() if date_to_str else None
+            if df and dt and df > dt:
+                raise ValueError("Start date must not be after end date")
+        except ValueError:
+            df = dt = None
+            date_from_str = date_to_str = ""
+        date_filter = {}
+        if df:
+            date_filter["date__gte"] = df
+        if dt:
+            date_filter["date__lte"] = dt
+        if date_filter:
+            all_appointments = all_appointments.filter(**date_filter)
+            notes_qs = notes_qs.filter(**date_filter)
+            tasks_qs = filter_tasks_in_period(tasks_qs, df, dt)
+            leaves_qs = filter_leaves_in_period(leaves_qs, df, dt)
 
     total_appointments = all_appointments.count()
     completed_appointments = all_appointments.filter(status="completed").count()
@@ -5674,12 +5711,13 @@ def reports_analytics(request):
 
     # Real database calculation of patient retention:
     # Repeat patients (having >1 appointment) / Total patients with appointments
-    patients_with_appts = (
-        patient_qs.annotate(appt_count=Count("appointments", distinct=True))
-        .filter(appt_count__gt=0)
+    patient_appointment_counts = (
+        all_appointments.exclude(patient__isnull=True)
+        .values("patient_id")
+        .annotate(appt_count=Count("id"))
     )
-    total_active_patients = patients_with_appts.count()
-    retained_patients = patients_with_appts.filter(appt_count__gt=1).count()
+    total_active_patients = patient_appointment_counts.count()
+    retained_patients = patient_appointment_counts.filter(appt_count__gt=1).count()
     retention_rate = (
         round(retained_patients / total_active_patients * 100)
         if total_active_patients
@@ -8362,15 +8400,47 @@ def admin_promo_add(request):
         return redirect("client_dashboard")
     hospital = resolve_hospital(request.user)
     if request.method == "POST":
-        ClinicPromo.objects.create(
+        title = request.POST.get("title", "").strip()
+        body = request.POST.get("message", "").strip()
+        if not title or not body:
+            messages.error(request, "Enter both a promotion title and message.")
+            return render(request, "admin/admin_promo_add.html")
+        promo = ClinicPromo.objects.create(
             hospital=hospital,
-            title=request.POST.get("title", "").strip(),
-            message=request.POST.get("message", "").strip(),
+            title=title,
+            message=body,
             start_date=request.POST.get("start_date") or timezone.now().date(),
             end_date=request.POST.get("end_date") or None,
             is_active=True,
         )
-        messages.success(request, "✅ Promo created.")
+        patients = User.objects.filter(is_superuser=False, is_staff=False).exclude(email="").exclude(email__isnull=True)
+        if hospital and not request.user.is_superuser:
+            patients = patients.filter(
+                Q(patient_profile__hospital=hospital) | Q(appointments__hospital=hospital)
+            ).distinct()
+        recipient_ids = list(patients.values_list("id", flat=True))
+        Notification.objects.bulk_create([
+            Notification(hospital=hospital, recipient_id=patient_id,
+                         message=f"Promotion: {promo.title} — {promo.message}",
+                         link=reverse("client_dashboard"))
+            for patient_id in recipient_ids
+        ], ignore_conflicts=True)
+        recipient_emails = list(patients.values_list("email", flat=True).distinct())
+        email_status = ""
+        if recipient_emails:
+            try:
+                from .tasks import send_bulk_email_task
+                send_bulk_email_task.delay(
+                    f"{promo.title} | PhysioRehab Clinic",
+                    f"{promo.title}\n\n{promo.message}",
+                    recipient_emails,
+                    hospital_id=hospital.id if hospital else None,
+                )
+                email_status = f" Bulk email queued for {len(recipient_emails)} patient(s)."
+            except Exception:
+                logger.exception("Could not queue promo broadcast %s", promo.id)
+                email_status = " Email delivery could not be queued; check the task worker and email configuration."
+        messages.success(request, f"Promo published and in-app notifications created for {len(recipient_ids)} patient(s).{email_status}")
         return redirect("admin_promos")
     return render(request, "admin/admin_promo_add.html")
 
