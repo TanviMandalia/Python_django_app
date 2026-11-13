@@ -1837,13 +1837,18 @@ class EmailAccount(models.Model):
         if not force_smtp and "locmem" in backend:
             return get_connection(backend=backend)
 
-        # In environments with Resend configured as EMAIL_BACKEND (e.g. Render Free blocking outbound SMTP ports),
-        # route delivery through Resend HTTPS REST API unless force_smtp is explicitly requested
-        if not force_smtp and ("ResendEmailBackend" in backend or getattr(self, "provider", "") == "api"):
+        # Gmail role accounts must use their own smtp.gmail.com credentials and STARTTLS,
+        # even when the global backend is configured for a different provider.
+        is_gmail_smtp = (
+            getattr(self, "provider", "") == "gmail"
+            or (getattr(self, "host", "") or "").lower() == "smtp.gmail.com"
+        )
+        use_resend = "ResendEmailBackend" in backend or getattr(self, "provider", "") == "api"
+        if not force_smtp and not is_gmail_smtp and use_resend:
             return get_connection(backend="core.email_backend.ResendEmailBackend", fail_silently=fail_silently)
 
         # In development console backend, honor console unless force_smtp is explicitly requested
-        if not force_smtp and "console" in backend:
+        if not force_smtp and "console" in backend and not is_gmail_smtp:
             return get_connection(backend=backend, fail_silently=fail_silently)
 
         # Enforce encryption mutual exclusivity

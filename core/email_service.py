@@ -50,6 +50,25 @@ class EmailPurpose:
     CLINIC_TEST = "CLINIC_TEST"
 
 
+def _apply_role_smtp_password_fallback(account: EmailAccount, role: str) -> EmailAccount:
+    """Apply a matching role's environment secret to an account at runtime."""
+    user_setting = f"{role}_SMTP_USER"
+    password_setting = f"{role}_SMTP_PASSWORD"
+    expected_user = getattr(settings, user_setting, "").strip().lower()
+    if not expected_user or account.username.strip().lower() != expected_user:
+        return account
+
+    password = getattr(settings, password_setting, "")
+    legacy_user = getattr(settings, "EMAIL_HOST_USER", "").strip().lower()
+    if not password and legacy_user == expected_user:
+        password = getattr(settings, "EMAIL_HOST_PASSWORD", "")
+    if password:
+        # An explicit environment secret takes precedence at runtime, but is
+        # never written back to the persisted EmailAccount row.
+        account.set_password(password)
+    return account
+
+
 def resolve_email_account(
     purpose=None,
     hospital=None,
@@ -100,9 +119,14 @@ def resolve_email_account(
             .first()
         )
         if plat_acc:
-            return plat_acc
+            return _apply_role_smtp_password_fallback(plat_acc, "PLATFORM")
 
         # In-memory virtual fallback account for TechCraft platform
+        platform_smtp_user = getattr(settings, "PLATFORM_SMTP_USER", "techcraft1215@gmail.com")
+        platform_password = getattr(settings, "PLATFORM_SMTP_PASSWORD", "")
+        legacy_username = getattr(settings, "EMAIL_HOST_USER", "").strip().lower()
+        if not platform_password and legacy_username == platform_smtp_user.strip().lower():
+            platform_password = getattr(settings, "EMAIL_HOST_PASSWORD", "")
         fallback = EmailAccount(
             name="TechCraft Platform Mailer",
             account_type="PLATFORM",
@@ -112,14 +136,14 @@ def resolve_email_account(
             port=getattr(settings, "PLATFORM_SMTP_PORT", 587),
             use_tls=True,
             use_ssl=False,
-            username=getattr(settings, "PLATFORM_SMTP_USER", "techcraft1215@gmail.com"),
+            username=platform_smtp_user,
             from_email=getattr(settings, "PLATFORM_DEFAULT_FROM_EMAIL", "techcraft1215@gmail.com"),
             from_name="TechCraft",
             reply_to=getattr(settings, "PLATFORM_SUPPORT_EMAIL", "techcraft1215@gmail.com"),
             is_active=True,
             is_default=True,
         )
-        fallback.set_password(getattr(settings, "EMAIL_HOST_PASSWORD", ""))
+        fallback.set_password(platform_password)
         return fallback
 
     # 2. SUPPORT TICKET GLOBAL ROUTING
@@ -157,34 +181,39 @@ def resolve_email_account(
         if purpose in (EmailPurpose.PATIENT_NOTIFICATION, "notification"):
             notif_acc = clinic_accounts.filter(account_type="NOTIFICATION").first()
             if notif_acc:
-                return notif_acc
+                return _apply_role_smtp_password_fallback(notif_acc, "CLINIC")
 
         default_acc = clinic_accounts.filter(is_default=True).first()
         if default_acc:
-            return default_acc
+            return _apply_role_smtp_password_fallback(default_acc, "CLINIC")
 
         first_clinic_acc = clinic_accounts.first()
         if first_clinic_acc:
-            return first_clinic_acc
+            return _apply_role_smtp_password_fallback(first_clinic_acc, "CLINIC")
 
         # Virtual fallback for THIS specific clinic
+        clinic_smtp_user = getattr(settings, "CLINIC_SMTP_USER", "physio.rehab.guj@gmail.com")
+        clinic_password = getattr(settings, "CLINIC_SMTP_PASSWORD", "")
+        legacy_username = getattr(settings, "EMAIL_HOST_USER", "").strip().lower()
+        if not clinic_password and legacy_username == clinic_smtp_user.strip().lower():
+            clinic_password = getattr(settings, "EMAIL_HOST_PASSWORD", "")
         clinic_fallback = EmailAccount(
             name=f"{effective_hospital.name} Primary SMTP",
             account_type="CLINIC",
             scope_type="hospital",
             hospital=effective_hospital,
-            host=getattr(settings, "EMAIL_HOST", "smtp.gmail.com"),
-            port=getattr(settings, "EMAIL_PORT", 587),
-            use_tls=getattr(settings, "EMAIL_USE_TLS", True),
+            host=getattr(settings, "CLINIC_SMTP_HOST", "smtp.gmail.com"),
+            port=getattr(settings, "CLINIC_SMTP_PORT", 587),
+            use_tls=True,
             use_ssl=getattr(settings, "EMAIL_USE_SSL", False),
-            username=getattr(settings, "EMAIL_HOST_USER", effective_hospital.email or "noreply@physiorehab.com"),
-            from_email=effective_hospital.email or getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@physiorehab.com"),
+            username=clinic_smtp_user,
+            from_email=clinic_smtp_user,
             from_name=effective_hospital.name,
             reply_to=effective_hospital.email or "",
             is_active=True,
             is_default=True,
         )
-        clinic_fallback.set_password(getattr(settings, "EMAIL_HOST_PASSWORD", ""))
+        clinic_fallback.set_password(clinic_password)
         return clinic_fallback
 
     # 5. NO HOSPITAL AND NO PLATFORM CONTEXT SPECIFIED

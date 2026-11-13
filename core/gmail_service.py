@@ -67,6 +67,27 @@ def get_configured_mailboxes() -> List[str]:
     return list(dict.fromkeys(mailboxes))
 
 
+def get_mailboxes_for_user(user) -> List[str]:
+    """Return only the Gmail inbox owned by the signed-in administrator role."""
+    if not getattr(user, "is_authenticated", False):
+        return []
+
+    if getattr(user, "is_superuser", False):
+        role_mailbox = getattr(settings, "PLATFORM_SUPERADMIN_EMAIL", "techcraft1215@gmail.com")
+    elif hasattr(user, "clinic_admin_profile"):
+        role_mailbox = get_shared_mailbox_address()
+    else:
+        return []
+
+    role_mailbox = str(role_mailbox or "").strip().lower()
+    return [role_mailbox] if role_mailbox in get_configured_mailboxes() else []
+
+
+def user_can_manage_mailbox(user, mailbox: str) -> bool:
+    """Keep platform and clinic OAuth grants isolated to their owning admin."""
+    return (mailbox or "").strip().lower() in get_mailboxes_for_user(user)
+
+
 class GmailServiceError(Exception):
     """Base exception for Gmail API operations."""
     pass

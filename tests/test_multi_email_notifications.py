@@ -24,6 +24,7 @@ from core.models import (
     PublicAppointmentRequest,
     Appointment,
 )
+from core.email_utils import send_public_appointment_request_notification
 from tests.test_helpers import BaseHospitalTestCase
 
 
@@ -415,6 +416,27 @@ class MultiEmailNotificationArchitectureTests(BaseHospitalTestCase):
         # Muted staff and Super Admin must NOT receive
         self.assertNotIn("muted@physiorehab.com", all_to_emails)
         self.assertNotIn("techcraft1215@gmail.com", all_to_emails)
+
+    def test_patient_acknowledgment_does_not_mask_failed_clinic_booking_alert(self):
+        self.clinic_settings_a.primary_doctor_email = "operations@physiorehab.com"
+        self.clinic_settings_a.save(update_fields=["primary_doctor_email"])
+        request_obj = PublicAppointmentRequest.objects.create(
+            hospital=self.hospital_a,
+            patient_name="Test Patient",
+            email="patient@example.com",
+            phone="9876543210",
+            preferred_date=self._get_future_date(3),
+            preferred_time="10:00 AM",
+            service_or_reason="Initial assessment",
+        )
+
+        with patch("core.email_utils.send_clinic_email", side_effect=[False, True]) as send_email:
+            sent = send_public_appointment_request_notification(request_obj)
+
+        self.assertFalse(sent)
+        clinic_alert_recipients = send_email.call_args_list[0].kwargs["recipient_list"]
+        self.assertIn("physio.rehab.guj@gmail.com", clinic_alert_recipients)
+        self.assertIn("operations@physiorehab.com", clinic_alert_recipients)
 
     def test_appointment_notifications_respect_clinic_disabled_toggle(self):
         """When a clinic admin disables appointment notifications, team alerts are suppressed."""

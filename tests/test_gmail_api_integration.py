@@ -18,6 +18,7 @@ from datetime import timedelta
 from unittest.mock import patch, MagicMock
 from django.conf import settings
 from django.core import mail
+from django.core.management import call_command
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -40,6 +41,8 @@ from core.gmail_service import (
     SHARED_GMAIL_MAILBOX,
     get_authorization_url,
     get_configured_mailboxes,
+    get_mailboxes_for_user,
+    user_can_manage_mailbox,
     exchange_code_for_tokens,
     get_gmail_credentials,
     build_gmail_client,
@@ -52,6 +55,7 @@ from core.gmail_service import (
     GmailAuthError,
     GmailConfigError,
 )
+from core.email_service import EmailContext, resolve_email_account
 from tests.test_helpers import BaseHospitalTestCase
 
 
@@ -464,6 +468,14 @@ class GmailApiIntegrationTests(BaseHospitalTestCase):
         )
         self.assertEqual(bad_resp.status_code, 403)
 
+        with override_settings(GOOGLE_PUBSUB_VERIFICATION_TOKEN=""):
+            unconfigured_resp = self.client.post(
+                reverse("api_gmail_pubsub_webhook"),
+                data=json.dumps(payload),
+                content_type="application/json",
+            )
+        self.assertEqual(unconfigured_resp.status_code, 403)
+
         # 2. Valid token -> 200 OK and triggers sync
         with patch("core.gmail_service.sync_gmail_messages") as mock_sync:
             mock_sync.return_value = {"synced": 0, "duplicates": 0, "errors": 0}
@@ -488,6 +500,230 @@ class GmailApiIntegrationTests(BaseHospitalTestCase):
         self.assertIn("Connect Google inbox", content)
         self.assertNotIn("techcraft1215@gmail.com", content)
         self.assertNotIn("Sync now", content)  # Sync appears after mailbox authorization.
+
+    def test_platform_admin_sees_only_the_platform_inbox(self):
+        self.client.force_login(self.create_super_admin(
+            username="platform_admin_mail",
+            email="techcraft1215@gmail.com",
+        ))
+        response = self.client.get(reverse("admin_settings"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        inbox_panel = content.split("Gmail inbox connections", 1)[1].split(
+            "<!-- Gmail inbox controls are rendered once", 1
+        )[0]
+        self.assertIn("techcraft1215@gmail.com", inbox_panel)
+        self.assertNotIn("physio.rehab.guj@gmail.com", inbox_panel)
+
+    def test_platform_admin_does_not_see_clinic_inbound_message_content(self):
+        InboundEmail.objects.create(
+            message_id="private-clinic-message@example.com",
+            sender="patient@example.com",
+            recipient="physio.rehab.guj@gmail.com",
+            subject="Private clinic appointment details",
+            body_text="Private patient information",
+        )
+        self.client.force_login(self.create_super_admin(
+            username="platform_admin_inbox_privacy",
+            email="techcraft1215@gmail.com",
+        ))
+
+        response = self.client.get(reverse("admin_email_settings"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Private clinic appointment details")
+        self.assertNotContains(response, "Private patient information")
+
+    def test_admins_cannot_manage_the_other_role_mailbox(self):
+        self.client.force_login(self.admin_user)
+        clinic_response = self.client.get(
+            reverse("admin_gmail_oauth_start"),
+            {"mailbox": "techcraft1215@gmail.com"},
+        )
+        self.assertEqual(clinic_response.status_code, 302)
+        self.assertNotIn("accounts.google.com", clinic_response.url)
+
+        platform_user = self.create_super_admin(
+            username="platform_mail_owner",
+            email="techcraft1215@gmail.com",
+        )
+        self.client.force_login(platform_user)
+        platform_response = self.client.get(
+            reverse("admin_gmail_oauth_start"),
+            {"mailbox": "physio.rehab.guj@gmail.com"},
+        )
+        self.assertEqual(platform_response.status_code, 302)
+        self.assertNotIn("accounts.google.com", platform_response.url)
+
+    def test_mailbox_access_is_limited_to_admin_roles(self):
+        platform_admin = self.create_super_admin(
+            username="mailbox_platform_owner",
+            email="techcraft1215@gmail.com",
+        )
+        staff = self.create_staff(
+            self.hospital,
+            username="mailbox_staff_member",
+            email="mailbox-staff@example.com",
+        )
+        patient = self.create_patient(
+            self.hospital,
+            username="mailbox_patient",
+            email="mailbox-patient@example.com",
+        )
+
+        self.assertEqual(
+            get_mailboxes_for_user(platform_admin),
+            ["techcraft1215@gmail.com"],
+        )
+        self.assertEqual(
+            get_mailboxes_for_user(self.admin_user),
+            ["physio.rehab.guj@gmail.com"],
+        )
+        self.assertEqual(get_mailboxes_for_user(staff), [])
+        self.assertEqual(get_mailboxes_for_user(patient), [])
+        self.assertFalse(user_can_manage_mailbox(staff, "physio.rehab.guj@gmail.com"))
+        self.assertFalse(user_can_manage_mailbox(patient, "physio.rehab.guj@gmail.com"))
+
+    def test_role_mailbox_setup_is_idempotent_and_preserves_smtp_secret(self):
+        account = EmailAccount.objects.create(
+            name="Old platform mailer",
+            account_type="PLATFORM",
+            scope_type="platform",
+            provider="gmail",
+            host="old.smtp.example.com",
+            port=25,
+            username="old@example.com",
+            from_email="old@example.com",
+            encrypted_password="",
+            is_default=True,
+        )
+        account.set_password("existing-secret")
+        account.save()
+
+        call_command("configure_role_mailboxes", stdout=MagicMock())
+        call_command("configure_role_mailboxes", stdout=MagicMock())
+
+        account.refresh_from_db()
+        self.assertEqual(account.host, "smtp.gmail.com")
+        self.assertEqual(account.port, 587)
+        self.assertTrue(account.use_tls)
+        self.assertEqual(account.username, "techcraft1215@gmail.com")
+        self.assertEqual(account.get_password(), "existing-secret")
+        self.assertTrue(EmailAccount.objects.filter(
+            scope_type="hospital",
+            hospital=self.hospital,
+            from_email="physio.rehab.guj@gmail.com",
+            is_default=True,
+        ).exists())
+
+    @override_settings(EMAIL_BACKEND="core.email_backend.ResendEmailBackend")
+    @patch("django.core.mail.get_connection")
+    def test_gmail_account_uses_smtp_connection_when_global_backend_is_resend(self, mock_get_connection):
+        account = EmailAccount(
+            provider="gmail",
+            host="smtp.gmail.com",
+            port=587,
+            username="techcraft1215@gmail.com",
+            from_email="techcraft1215@gmail.com",
+            encrypted_password="",
+            use_tls=True,
+        )
+        account.get_connection()
+        self.assertEqual(
+            mock_get_connection.call_args.kwargs["backend"],
+            "django.core.mail.backends.smtp.EmailBackend",
+        )
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend")
+    @patch("django.core.mail.get_connection")
+    def test_gmail_account_uses_smtp_connection_when_global_backend_is_console(self, mock_get_connection):
+        account = EmailAccount(
+            provider="gmail",
+            host="smtp.gmail.com",
+            port=587,
+            username="techcraft1215@gmail.com",
+            from_email="techcraft1215@gmail.com",
+            encrypted_password="",
+            use_tls=True,
+        )
+        account.get_connection()
+        self.assertEqual(
+            mock_get_connection.call_args.kwargs["backend"],
+            "django.core.mail.backends.smtp.EmailBackend",
+        )
+
+    @override_settings(
+        PLATFORM_SMTP_PASSWORD="platform-app-password",
+        CLINIC_SMTP_PASSWORD="clinic-app-password",
+        PLATFORM_SMTP_USER="techcraft1215@gmail.com",
+        CLINIC_SMTP_USER="physio.rehab.guj@gmail.com",
+        EMAIL_HOST_USER="",
+        EMAIL_HOST_PASSWORD="",
+    )
+    def test_role_fallbacks_keep_platform_and_clinic_smtp_credentials_separate(self):
+        platform_account = resolve_email_account(context=EmailContext.PLATFORM)
+        clinic_account = resolve_email_account(
+            hospital=self.hospital,
+            context=EmailContext.CLINIC,
+        )
+        self.assertEqual(platform_account.username, "techcraft1215@gmail.com")
+        self.assertEqual(platform_account.get_password(), "platform-app-password")
+        self.assertEqual(clinic_account.username, "physio.rehab.guj@gmail.com")
+        self.assertEqual(clinic_account.get_password(), "clinic-app-password")
+        self.assertEqual((platform_account.host, platform_account.port), ("smtp.gmail.com", 587))
+        self.assertEqual((clinic_account.host, clinic_account.port), ("smtp.gmail.com", 587))
+
+    @override_settings(
+        PLATFORM_SMTP_PASSWORD="platform-app-password",
+        CLINIC_SMTP_PASSWORD="clinic-app-password",
+        PLATFORM_SMTP_USER="techcraft1215@gmail.com",
+        CLINIC_SMTP_USER="physio.rehab.guj@gmail.com",
+        EMAIL_HOST_USER="",
+        EMAIL_HOST_PASSWORD="",
+    )
+    def test_environment_passwords_override_provisioned_secrets_without_storing_them(self):
+        platform_account = EmailAccount.objects.create(
+            name="Platform Gmail",
+            account_type="PLATFORM",
+            scope_type="platform",
+            provider="gmail",
+            host="smtp.gmail.com",
+            port=587,
+            username="techcraft1215@gmail.com",
+            from_email="techcraft1215@gmail.com",
+            encrypted_password="",
+            is_default=True,
+        )
+        clinic_account = EmailAccount.objects.create(
+            name="Clinic Gmail",
+            account_type="CLINIC",
+            scope_type="hospital",
+            hospital=self.hospital,
+            provider="gmail",
+            host="smtp.gmail.com",
+            port=587,
+            username="physio.rehab.guj@gmail.com",
+            from_email="physio.rehab.guj@gmail.com",
+            encrypted_password="",
+            is_default=True,
+        )
+        platform_account.set_password("old-platform-password")
+        platform_account.save()
+        clinic_account.set_password("old-clinic-password")
+        clinic_account.save()
+
+        resolved_platform = resolve_email_account(context=EmailContext.PLATFORM)
+        resolved_clinic = resolve_email_account(
+            hospital=self.hospital,
+            context=EmailContext.CLINIC,
+        )
+
+        self.assertEqual(resolved_platform.get_password(), "platform-app-password")
+        self.assertEqual(resolved_clinic.get_password(), "clinic-app-password")
+        platform_account.refresh_from_db()
+        clinic_account.refresh_from_db()
+        self.assertEqual(platform_account.get_password(), "old-platform-password")
+        self.assertEqual(clinic_account.get_password(), "old-clinic-password")
 
     @patch("core.gmail_service.build")
     def test_inbound_customer_reply_links_to_public_appointment_request_and_dashboard(self, mock_build):

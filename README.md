@@ -473,7 +473,7 @@ flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 | `FIELD_ENCRYPTION_KEY` | Fernet 32-byte urlsafe base64 key for encrypting tokens at rest | **Yes (for Gmail API)** | Secret (`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`) |
 | `GOOGLE_PUBSUB_TOPIC` | GCP Pub/Sub Topic for inbound Gmail push notifications | No | `projects/my-gcp-project/topics/gmail-inbound-topic` |
 | `GOOGLE_PUBSUB_SUBSCRIPTION` | GCP Pub/Sub subscription name | No | `projects/my-gcp-project/subscriptions/gmail-inbound-sub` |
-| `GOOGLE_PUBSUB_VERIFICATION_TOKEN` | Secret token verifying Pub/Sub webhook authenticity | No | `random_secure_hex_token` |
+| `GOOGLE_PUBSUB_VERIFICATION_TOKEN` | Secret token verifying Pub/Sub webhook authenticity | **Required when Pub/Sub is enabled** | `random_secure_hex_token` |
 | `EMAIL_BACKEND` | Django email backend fallback | No | `django.core.mail.backends.smtp.EmailBackend` |
 | `EMAIL_HOST` | SMTP server address fallback | No | `smtp.gmail.com` |
 | `EMAIL_PORT` | SMTP port fallback | No | `587` |

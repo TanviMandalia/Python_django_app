@@ -455,9 +455,6 @@ def send_clinic_email(
         from .gmail_service import (
             is_gmail_api_configured_and_active,
             send_gmail_message,
-            get_shared_mailbox_address,
-            GmailServiceError,
-            GmailAuthError,
         )
         # An OAuth grant only authorizes the matching sender account. Do not let
         # the clinic mailbox silently take over platform mail, or bypass an
@@ -496,11 +493,17 @@ def send_clinic_email(
 
         # If Gmail API is not active: check whether we have an active test runner (locmem) or real external SMTP account
         backend_name = getattr(settings, "EMAIL_BACKEND", "")
+        is_gmail_smtp = (
+            getattr(account, "provider", "") == "gmail"
+            or (getattr(account, "host", "") or "").lower() == "smtp.gmail.com"
+        )
         is_test_runner = "locmem" in backend_name
-        is_console_mode = "console" in backend_name or getattr(settings, "DEV_EMAIL_CONSOLE", False)
+        is_console_mode = (
+            getattr(settings, "DEV_EMAIL_CONSOLE", False)
+            or ("console" in backend_name and not is_gmail_smtp)
+        )
         has_real_smtp = bool(
-            account.pk
-            and getattr(account, "provider", "") in ("smtp", "gmail", "outlook")
+            getattr(account, "provider", "") in ("smtp", "gmail", "outlook")
             and account.has_password
             and account.is_active
             and not is_console_mode
@@ -509,8 +512,8 @@ def send_clinic_email(
         if not is_test_runner and not has_real_smtp:
             # We have neither an active Gmail OAuth authorization nor an authenticated external SMTP account.
             auth_msg = (
-                f"No active Gmail OAuth authorization found for {get_shared_mailbox_address()}. "
-                "The mailbox owner must authorize the application once via Admin Settings."
+                f"No SMTP App Password is configured for sender {account.from_email}. "
+                "Save this mailbox's Google App Password in Email Accounts."
             )
             logger.warning(f"Email delivery skipped for {mask_email_for_logging(recipient)}: {auth_msg}")
 
@@ -533,7 +536,7 @@ def send_clinic_email(
             EmailLog.objects.create(
                 account=account if getattr(account, "pk", None) else None,
                 direction="outgoing",
-                sender_email=get_shared_mailbox_address(),
+                sender_email=account.from_email,
                 hospital=hospital or account.hospital,
                 email_type=email_type,
                 recipient_email=recipient,
@@ -857,6 +860,13 @@ def send_admin_new_appointment_alert(appointment):
     # Explicitly guard against sending clinic appointment notifications to the platform super admin
     super_admin_email = getattr(settings, "PLATFORM_SUPERADMIN_EMAIL", "techcraft1215@gmail.com").strip().lower()
     recipient_emails = [e for e in recipient_emails if e.lower() != super_admin_email]
+    clinic_mailbox = getattr(
+        settings,
+        "GMAIL_SHARED_MAILBOX",
+        getattr(settings, "CLINIC_NOTIFICATION_EMAIL", "physio.rehab.guj@gmail.com"),
+    ).strip().lower()
+    if clinic_mailbox and clinic_mailbox not in [e.lower() for e in recipient_emails]:
+        recipient_emails.append(clinic_mailbox)
 
     if not recipient_emails:
         logger.info(f"No active notification recipients configured for appointment {appointment.id}")
@@ -1079,7 +1089,9 @@ Warm regards,
         logger.debug(f"Patient appointment acknowledgment email failed: {exc}")
         patient_sent = False
 
-    return bool(doctor_sent or patient_sent)
+    # This result records whether the clinic received the booking alert. The
+    # patient's acknowledgment is a separate delivery and must not mask failure.
+    return bool(doctor_sent)
 
 
 

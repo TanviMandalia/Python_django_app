@@ -484,7 +484,11 @@ def unified_appointment_contact(request):
                                 hospital=hospital,
                                 status="failed",
                             ).order_by("-created_at").first()
-                            safe_msg = last_failed.error_details if last_failed and last_failed.error_details else "Gmail API OAuth not authorized for physio.rehab.guj@gmail.com. Please complete authorization in Clinic Settings."
+                            safe_msg = (
+                                last_failed.error_details
+                                if last_failed and last_failed.error_details
+                                else "Clinic booking email could not be sent. Check the clinic Gmail SMTP App Password."
+                            )
                             req_obj.notification_error = safe_msg[:255]
                         req_obj.save(update_fields=["email_notification_status", "notification_error", "updated_at"])
                     except Exception as exc:
@@ -5333,14 +5337,17 @@ def admin_settings(request):
     recipient_form = ClinicNotificationRecipientForm()
     effective_recipients = settings_obj.get_appointment_recipient_emails()
 
-    from .models import GmailOAuthCredential
-    from .gmail_service import get_configured_mailboxes
-    if request.user.is_superuser:
-        visible_mailboxes = get_configured_mailboxes()
-    else:
-        visible_mailboxes = [getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()]
+    from .models import GmailOAuthCredential, InboundEmail
+    from .gmail_service import get_mailboxes_for_user
+    visible_mailboxes = get_mailboxes_for_user(request.user)
     gmail_mailboxes = [
-        {"email": address, "credential": GmailOAuthCredential.get_shared_credential(address)}
+        {
+            "email": address,
+            "credential": GmailOAuthCredential.get_shared_credential(address),
+            "recent_messages": InboundEmail.objects.filter(
+                recipient__iexact=address
+            ).order_by("-received_at")[:10],
+        }
         for address in visible_mailboxes
     ]
 
@@ -9207,9 +9214,15 @@ def admin_email_settings(request):
         if hospital else EmailLog.objects.none()
     )
     from .models import InboundEmail
+    clinic_mailbox = getattr(
+        settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com"
+    ).strip().lower()
     recent_inbound = (
-        InboundEmail.objects.filter(Q(hospital=hospital) | Q(hospital__isnull=True)).order_by("-received_at")[:20]
-        if hospital else InboundEmail.objects.all().order_by("-received_at")[:20]
+        InboundEmail.objects.none()
+        if request.user.is_superuser
+        else InboundEmail.objects.filter(
+            recipient__iexact=clinic_mailbox
+        ).order_by("-received_at")[:20]
     )
 
     return render(
@@ -9521,7 +9534,7 @@ def healthz(request):
         resp["Access-Control-Allow-Origin"] = "*"
         return resp
     except Exception as exc:
-        logger.error("Health check database probe failed: %s", exc)
+        logger.error("Health check database probe failed (%s).", type(exc).__name__)
         resp = JsonResponse({"status": "unhealthy"}, status=503)
         resp["Cache-Control"] = "no-cache, no-store, must-revalidate"
         resp["Access-Control-Allow-Origin"] = "*"
@@ -10331,16 +10344,14 @@ def admin_gmail_oauth_start(request):
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return redirect("client_dashboard")
 
-    from .gmail_service import get_authorization_url, GmailConfigError, get_configured_mailboxes
+    from .gmail_service import get_authorization_url, GmailConfigError, user_can_manage_mailbox
 
     try:
         mailbox = request.GET.get("mailbox", "").strip().lower()
         if not mailbox:
             mailbox = getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()
-        if mailbox not in get_configured_mailboxes():
+        if not user_can_manage_mailbox(request.user, mailbox):
             raise GmailConfigError("This mailbox is not configured for Gmail integration.")
-        if not request.user.is_superuser and mailbox != getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower():
-            return HttpResponseForbidden("You may only authorize the clinic mailbox.")
         auth_url, state = get_authorization_url(request, mailbox=mailbox)
         oauth_states = dict(request.session.get("gmail_oauth_states", {}))
         oauth_states[state] = mailbox
@@ -10378,6 +10389,9 @@ def admin_gmail_oauth_callback(request):
     if not state or not expected_mailbox:
         messages.error(request, "Invalid OAuth state parameter (possible CSRF or session expiration). Please try again.")
         return redirect("admin_settings")
+    from .gmail_service import user_can_manage_mailbox
+    if not user_can_manage_mailbox(request.user, expected_mailbox):
+        return HttpResponseForbidden("You may not authorize this mailbox.")
 
     code = request.GET.get("code")
     if not code:
@@ -10414,11 +10428,14 @@ def api_gmail_pubsub_webhook(request):
     from .gmail_service import sync_gmail_messages
 
     verification_token = getattr(settings, "GOOGLE_PUBSUB_VERIFICATION_TOKEN", None)
-    if verification_token:
-        req_token = request.GET.get("token") or request.headers.get("X-Goog-Channel-Token")
-        if req_token != verification_token:
-            logger.warning("PubSub webhook rejected: invalid verification token.")
-            return HttpResponseForbidden("Invalid verification token")
+    if not verification_token:
+        logger.error("PubSub webhook rejected because verification is not configured.")
+        return HttpResponseForbidden("Webhook verification is not configured")
+    req_token = request.GET.get("token") or request.headers.get("X-Goog-Channel-Token")
+    import hmac
+    if not req_token or not hmac.compare_digest(req_token, verification_token):
+        logger.warning("PubSub webhook rejected: invalid verification token.")
+        return HttpResponseForbidden("Invalid verification token")
 
     data_json = {}
     try:
@@ -10459,12 +10476,11 @@ def api_gmail_pubsub_webhook(request):
 @require_POST
 def admin_gmail_oauth_disconnect(request, mailbox):
     """Revoke the application's stored authorization for one configured mailbox."""
-    from .gmail_service import get_configured_mailboxes
+    from .gmail_service import user_can_manage_mailbox
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return HttpResponseForbidden("Access Denied")
     target = (mailbox or "").strip().lower()
-    clinic_mailbox = getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()
-    if target not in get_configured_mailboxes() or (not request.user.is_superuser and target != clinic_mailbox):
+    if not user_can_manage_mailbox(request.user, target):
         return HttpResponseForbidden("You may not manage this mailbox.")
     from .models import GmailOAuthCredential
     credential = GmailOAuthCredential.objects.filter(email__iexact=target).first()
@@ -10501,12 +10517,11 @@ def admin_gmail_oauth_disconnect(request, mailbox):
 @require_POST
 def admin_gmail_sync_mailbox(request, mailbox):
     """Run a bounded manual sync for a configured mailbox from the settings screen."""
-    from .gmail_service import get_configured_mailboxes, sync_gmail_messages, GmailAuthError
+    from .gmail_service import user_can_manage_mailbox, sync_gmail_messages, GmailAuthError
     if not (request.user.is_superuser or _is_clinic_admin(request.user)):
         return HttpResponseForbidden("Access Denied")
     target = (mailbox or "").strip().lower()
-    clinic_mailbox = getattr(settings, "GMAIL_SHARED_MAILBOX", "physio.rehab.guj@gmail.com").strip().lower()
-    if target not in get_configured_mailboxes() or (not request.user.is_superuser and target != clinic_mailbox):
+    if not user_can_manage_mailbox(request.user, target):
         return HttpResponseForbidden("You may not manage this mailbox.")
     try:
         result = sync_gmail_messages(mailbox=target, max_results=25)

@@ -64,7 +64,10 @@ class HealthCheckTests(TestCase):
     def test_healthz_does_not_leak_internals_on_error(self):
         """Ensure no stack trace, error message, or SQL string leaks in the response."""
         secret_leak_attempt = "CRITICAL_INTERNAL_DB_PASSWORD_12345"
-        with patch("django.db.connection.cursor", side_effect=Exception(secret_leak_attempt)):
+        with (
+            patch("django.db.connection.cursor", side_effect=Exception(secret_leak_attempt)),
+            self.assertLogs("core.views", level="ERROR") as captured_logs,
+        ):
             response = self.client.get("/healthz")
             assert response.status_code == 503
             assert response.headers.get("Access-Control-Allow-Origin") == "*"
@@ -72,4 +75,5 @@ class HealthCheckTests(TestCase):
             assert secret_leak_attempt not in raw_body
             assert "Traceback" not in raw_body
             assert "SELECT" not in raw_body
+        assert secret_leak_attempt not in "\n".join(captured_logs.output)
 
