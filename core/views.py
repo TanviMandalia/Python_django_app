@@ -464,10 +464,16 @@ def unified_appointment_contact(request):
 
                 if existing_req:
                     req_obj = existing_req
-                    messages.info(
-                        request,
-                        "Thank you for your appointment request. Request received, pending clinic confirmation. Our clinic team will contact you shortly using your provided contact details."
-                    )
+                    if req_obj.email_notification_status == "failed":
+                        messages.warning(
+                            request,
+                            "Your appointment request is already saved, but email delivery failed. Please contact the clinic directly while we resolve delivery."
+                        )
+                    else:
+                        messages.info(
+                            request,
+                            "Thank you for your appointment request. Request received, pending clinic confirmation. Our clinic team will contact you shortly using your provided contact details."
+                        )
                 else:
                     with transaction.atomic():
                         req_obj = form.save(commit=False)
@@ -522,10 +528,16 @@ def unified_appointment_contact(request):
                         req_obj.notification_error = str(exc)[:200]
                         req_obj.save(update_fields=["email_notification_status", "notification_error", "updated_at"])
 
-                    messages.success(
-                        request,
-                        "Thank you for your appointment request. Request received, pending clinic confirmation. Our clinic team will contact you shortly using your provided contact details."
-                    )
+                    if email_sent:
+                        messages.success(
+                            request,
+                            "Thank you for your appointment request. Request received, pending clinic confirmation. A confirmation email was sent to the address you provided, and the clinic was notified."
+                        )
+                    else:
+                        messages.warning(
+                            request,
+                            "Your appointment request was saved, but we could not confirm email delivery. Please check the email address or contact the clinic directly."
+                        )
 
                 request.session["public_booking_ref"] = req_obj.reference_id
                 redirect_url = reverse(current_view_name)

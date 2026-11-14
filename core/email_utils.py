@@ -1119,9 +1119,9 @@ Warm regards,
         logger.debug(f"Patient appointment acknowledgment email failed: {exc}")
         patient_sent = False
 
-    # This result records whether the clinic received the booking alert. The
-    # patient's acknowledgment is a separate delivery and must not mask failure.
-    return bool(doctor_sent)
+    # Report delivery as successful only when both recipients got their email.
+    # The booking remains saved even when either delivery fails.
+    return bool(doctor_sent and patient_sent)
 
 
 

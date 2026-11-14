@@ -438,6 +438,22 @@ class MultiEmailNotificationArchitectureTests(BaseHospitalTestCase):
         self.assertIn("physio.rehab.guj@gmail.com", clinic_alert_recipients)
         self.assertIn("operations@physiorehab.com", clinic_alert_recipients)
 
+    def test_failed_patient_acknowledgment_marks_booking_email_delivery_failed(self):
+        request_obj = PublicAppointmentRequest.objects.create(
+            hospital=self.hospital_a,
+            patient_name="Test Patient",
+            email="patient@example.com",
+            phone="9876543210",
+            preferred_date=self._get_future_date(3),
+            preferred_time="10:00 AM",
+            service_or_reason="Initial assessment",
+        )
+
+        with patch("core.email_utils.send_clinic_email", side_effect=[True, False]):
+            sent = send_public_appointment_request_notification(request_obj)
+
+        self.assertFalse(sent)
+
     def test_appointment_notifications_respect_clinic_disabled_toggle(self):
         """When a clinic admin disables appointment notifications, team alerts are suppressed."""
         self.clinic_settings_a.appointment_notification_enabled = False
