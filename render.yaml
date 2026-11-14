@@ -62,6 +62,14 @@ services:
         sync: false
       - key: GMAIL_SHARED_MAILBOX
         value: "physio.rehab.guj@gmail.com"
+      - key: GMAIL_INBOUND_MAILBOXES
+        value: "techcraft1215@gmail.com,physio.rehab.guj@gmail.com"
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_OAUTH_REDIRECT_URI
+        sync: false
       - key: CLINIC_NOTIFICATION_EMAIL
         value: "physio.rehab.guj@gmail.com"
       - key: CLINIC_UPI_ID

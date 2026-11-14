@@ -253,7 +253,7 @@
 
 <div class="admin-card" style="max-width:none;margin:28px auto 0 auto;">
   <h3 style="margin:0 0 8px;">Gmail inbox connections</h3>
-  <p style="margin:0 0 16px;color:var(--admin-text-sub);">SMTP credentials send mail. Connect each inbox with Google OAuth to let the app read and sync incoming mail.</p>
+  <p style="margin:0 0 16px;color:var(--admin-text-sub);">Connect this Gmail inbox with Google OAuth to enable both sending and inbox syncing. This is the recommended setup on Render Free, where Gmail SMTP is blocked.</p>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;">
     {% for item in gmail_mailboxes %}
       <div style="border:1px solid var(--admin-border);border-radius:8px;padding:16px;background:#f8fafc;">
@@ -299,7 +299,7 @@
       </div>
     {% endfor %}
   </div>
-  <small style="display:block;margin-top:14px;color:var(--admin-text-sub);">Use Google OAuth for inbox access; do not enter the Google account password here. Gmail App Passwords are only for SMTP sending.</small>
+  <small style="display:block;margin-top:14px;color:var(--admin-text-sub);">Use the matching Google account for each inbox. “Sync now” imports recent messages into this dashboard. Keep App Passwords and OAuth secrets out of GitHub.</small>
 </div>
 
 <!-- Gmail inbox controls are rendered once above for the current administrator role. -->

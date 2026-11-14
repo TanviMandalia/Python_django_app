@@ -271,7 +271,17 @@ def send_platform_email(
     effective_reply_to = reply_to or account.reply_to or getattr(settings, "PLATFORM_SUPPORT_EMAIL", "techcraft1215@gmail.com")
     reply_to_list = [sanitize_header_value(effective_reply_to)] if effective_reply_to else None
 
-    connection = account.get_connection(fail_silently=False)
+    # Render Free blocks outbound SMTP. Prefer the matching mailbox's saved
+    # Gmail OAuth grant whenever available; SMTP remains a fallback for paid
+    # hosts and local development.
+    from .gmail_service import is_gmail_api_configured_and_active, send_gmail_message
+    api_mailbox = (getattr(account, "from_email", "") or "").strip().lower()
+    use_gmail_api = bool(
+        account.is_active
+        and api_mailbox
+        and is_gmail_api_configured_and_active(mailbox=api_mailbox)
+    )
+    connection = None if use_gmail_api else account.get_connection(fail_silently=False)
 
     success_all = True
     for recipient in valid_recipients:
@@ -290,6 +300,26 @@ def send_platform_email(
             headers["Reply-To"] = sanitize_header_value(effective_reply_to)
 
         try:
+            if use_gmail_api:
+                send_gmail_message(
+                    subject=f"[{clean_display_name}] {clean_subject}",
+                    body_text=message_text,
+                    to_email=recipient,
+                    html_content=html_message,
+                    from_email=api_mailbox,
+                    from_name=clean_display_name,
+                    headers=headers,
+                    attachments=attachments,
+                    email_type=email_type,
+                    idempotency_key=None,
+                )
+                logger.info(
+                    "Platform email sent via Gmail API from %s to %s",
+                    mask_email_for_logging(api_mailbox),
+                    mask_email_for_logging(recipient),
+                )
+                continue
+
             email_msg = EmailMultiAlternatives(
                 subject=f"[{clean_display_name}] {clean_subject}",
                 body=message_text,
@@ -342,29 +372,30 @@ def send_platform_email(
             safe_err = re.sub(r'(re_[a-zA-Z0-9_\-]{10,}|Bearer\s+[^\s]+|password[=:\s]+[^\s&]+|[a-z]{4}\s+[a-z]{4}\s+[a-z]{4}\s+[a-z]{4})', '***', raw_err)
             logger.error(f"Platform email failed via '{account.name}' to {mask_email_for_logging(recipient)}: {err_category} - {safe_err}")
 
-            try:
-                from .models import EmailLog
-                _is_otp = bool(email_type and ("otp" in str(email_type).lower() or "verification" in str(email_type).lower()))
-                _expires_at = (timezone.now() + timezone.timedelta(hours=24)) if _is_otp else None
-                EmailLog.objects.create(
-                    account=account if getattr(account, "pk", None) else None,
-                    direction="outgoing",
-                    sender_email=account.from_email,
-                    hospital=None,
-                    email_type=email_type,
-                    recipient_email=recipient,
-                    subject=clean_subject,
-                    status="failed",
-                    is_otp=_is_otp,
-                    expires_at=_expires_at,
-                    error_category=err_category,
-                    error_details=safe_err[:500],
-                    message_id=msg_id,
-                    thread_id=clean_thread_id,
-                    sent_at=timezone.now(),
-                )
-            except Exception:
-                pass
+            if not use_gmail_api:
+                try:
+                    from .models import EmailLog
+                    _is_otp = bool(email_type and ("otp" in str(email_type).lower() or "verification" in str(email_type).lower()))
+                    _expires_at = (timezone.now() + timezone.timedelta(hours=24)) if _is_otp else None
+                    EmailLog.objects.create(
+                        account=account if getattr(account, "pk", None) else None,
+                        direction="outgoing",
+                        sender_email=account.from_email,
+                        hospital=None,
+                        email_type=email_type,
+                        recipient_email=recipient,
+                        subject=clean_subject,
+                        status="failed",
+                        is_otp=_is_otp,
+                        expires_at=_expires_at,
+                        error_category=err_category,
+                        error_details=safe_err[:500],
+                        message_id=msg_id,
+                        thread_id=clean_thread_id,
+                        sent_at=timezone.now(),
+                    )
+                except Exception:
+                    pass
 
     return success_all
 
@@ -435,9 +466,6 @@ def send_clinic_email(
     effective_reply_to = reply_to or account.reply_to
     reply_to_list = [sanitize_header_value(effective_reply_to)] if effective_reply_to else None
 
-    # Obtain dynamic connection configured for this account
-    connection = account.get_connection(fail_silently=False)
-
     success_all = True
     for recipient in valid_recipients:
         msg_id = f"{uuid.uuid4().hex}@{getattr(account, 'host', 'localhost')}"
@@ -457,13 +485,11 @@ def send_clinic_email(
             is_gmail_api_configured_and_active,
             send_gmail_message,
         )
-        # An OAuth grant only authorizes the matching sender account. Do not let
-        # the clinic mailbox silently take over platform mail, or bypass an
-        # explicitly configured SMTP App Password account.
+        # An OAuth grant only authorizes the matching sender account. Use it
+        # automatically on hosts such as Render Free that block SMTP.
         api_mailbox = (getattr(account, "from_email", "") or "").strip().lower()
         use_gmail_api = bool(
-            getattr(account, "provider", "") == "gmail_api"
-            and api_mailbox
+            account.is_active and api_mailbox
             and is_gmail_api_configured_and_active(mailbox=api_mailbox)
         )
 
@@ -485,12 +511,15 @@ def send_clinic_email(
                 safe_log_subject = clean_subject.encode("ascii", errors="backslashreplace").decode("ascii")
                 logger.info(f"Email sent successfully via Gmail API to {mask_email_for_logging(recipient)}: '{safe_log_subject}'")
                 continue
+
             except Exception as g_err:
                 logger.error(f"Gmail API delivery attempt failed: {g_err}")
                 # CRITICAL: send_gmail_message already logged EmailLog with status='failed' and safe error details.
                 # Do NOT silently fall back to console backend and overwrite the failure with a fake 'sent' status.
                 success_all = False
                 continue
+
+        connection = account.get_connection(fail_silently=False)
 
         # If Gmail API is not active: check whether we have an active test runner (locmem) or real external SMTP account
         backend_name = getattr(settings, "EMAIL_BACKEND", "")

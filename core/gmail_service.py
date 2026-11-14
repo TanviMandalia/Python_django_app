@@ -13,6 +13,7 @@ Provides:
 import base64
 import email
 from email.message import EmailMessage
+from email.utils import formataddr
 import json
 import logging
 import re
@@ -437,7 +438,7 @@ def send_gmail_message(
     sender_mailbox = (from_email or get_shared_mailbox_address()).strip().lower()
 
     clinic_name = from_name or (hospital.name if hospital else getattr(settings, "CLINIC_NAME", "Dr. Dhvani Patalia Physio Rehab"))
-    formatted_from = f"{sanitize_header_value(clinic_name)} <{sender_mailbox}>"
+    formatted_from = formataddr((sanitize_header_value(clinic_name), sender_mailbox))
 
     # 3. Build RFC 2822 MIME message
     mime_msg = EmailMessage()
