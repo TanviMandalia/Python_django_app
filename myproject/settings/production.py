@@ -107,7 +107,8 @@ WHITENOISE_MANIFEST_STRICT = False
 # ------------------------------------------------------------------------------
 # Production Database Configuration
 # Supports DATABASE_URL with fallback to individual DB_* parameters.
-# Never silently falls back to SQLite or an unintended database.
+# Production must never silently fall back to SQLite: on ephemeral hosting that
+# creates a new, empty database and makes existing clinic data appear missing.
 # ------------------------------------------------------------------------------
 database_url = os.getenv("DATABASE_URL")
 db_name = os.getenv("DB_NAME")
@@ -145,20 +146,11 @@ elif db_name:
         }
     }
 else:
-    sqlite_db_path = str(BASE_DIR / "db.sqlite3")
-
-    import logging
-    logging.getLogger("django.production").warning(
-        "DATABASE_URL was not set in environment variables. "
-        f"Falling back to local SQLite database ({sqlite_db_path}). "
-        "To connect your PostgreSQL database: Add DATABASE_URL to your hosting provider environment variables."
+    raise ImproperlyConfigured(
+        "Production database is not configured. Set DATABASE_URL to the "
+        "managed PostgreSQL database connection string in the hosting "
+        "service environment. Production will not fall back to SQLite."
     )
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": sqlite_db_path,
-        }
-    }
 
 
 # ------------------------------------------------------------------------------
