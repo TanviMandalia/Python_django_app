@@ -54,11 +54,30 @@ Open <http://127.0.0.1:8000/>. To use PostgreSQL locally instead, configure `DB_
 
 ## Email configuration
 
-The application supports separate platform and clinic mail accounts. SMTP credentials can be configured through environment variables or the authorized email settings in the application. Keep real credentials in a secret manager or hosting environment; never commit `.env`.
+The application supports separate **platform** and **clinic** sender accounts. Configure credentials either in the role-specific email settings in the application (stored encrypted) or as secrets in the hosting environment. Do not commit `.env` or real credentials.
 
-For Gmail SMTP, use the account’s App Password with STARTTLS on port `587`. SMTP is an outbound sending protocol; it does not provide inbox synchronization. Gmail inbox synchronization uses the optional Google OAuth integration. The OAuth client needs the matching callback URL, and each mailbox must authorize the app.
+### Configure Gmail SMTP
 
-Some hosting plans block outbound SMTP. In particular, Render Free services cannot connect to SMTP ports. On such a plan, use an enabled email API or Gmail OAuth for sending, or use a host that permits outbound SMTP. Check `.env.example` for the current environment-variable template and provider notes.
+For each Gmail account that will send mail:
+
+1. Enable Google 2-Step Verification and create an App Password for that account. Use the 16-character App Password, not the account’s normal password.
+2. Choose port `587` with STARTTLS. For Gmail this means `EMAIL_USE_TLS=True` and `EMAIL_USE_SSL=False` when using the global Django SMTP fallback.
+3. Configure the platform and clinic accounts independently with these environment variables (enter values as secrets in the host dashboard):
+
+| Platform sender | Clinic sender |
+| --- | --- |
+| `PLATFORM_SMTP_HOST=smtp.gmail.com` | `CLINIC_SMTP_HOST=smtp.gmail.com` |
+| `PLATFORM_SMTP_PORT=587` | `CLINIC_SMTP_PORT=587` |
+| `PLATFORM_SMTP_USER=your-platform@gmail.com` | `CLINIC_SMTP_USER=your-clinic@gmail.com` |
+| `PLATFORM_SMTP_PASSWORD=<platform App Password>` | `CLINIC_SMTP_PASSWORD=<clinic App Password>` |
+
+Each password must belong to the matching SMTP username. The account’s sender address should match that Gmail account. The role-specific password variables take precedence for their respective sender. `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, and `EMAIL_HOST_PASSWORD` are available for the global Django SMTP backend/fallback; they do not replace configuring two distinct role-specific senders. See [`.env.example`](.env.example) for placeholder examples.
+
+In the app, the platform account is managed under **Super Admin → Email Accounts**, and the clinic account under **Clinic Admin → Email SMTP Settings**. Save the SMTP settings and use that page’s test-email action to verify delivery to an address you can check. When using environment variables, restart or redeploy the service after saving them. Appointment request notifications are sent to the configured clinic recipients; the patient acknowledgment is sent to the visitor’s email when provided. A booking remains saved even if mail delivery fails, so check the application logs and SMTP test result if a message does not arrive.
+
+SMTP sends outbound email; it does not receive or synchronize inbox messages. Inbox synchronization is a separate optional Gmail OAuth integration, described below. OAuth must be configured and each mailbox must authorize access.
+
+**Hosting matters:** the host must allow outbound connections to the SMTP port. Render Free web services block outbound traffic on ports `25`, `465`, and `587`, so Gmail SMTP will not work from that plan. Use an eligible paid Render service, a host that permits SMTP, or configure the app’s supported HTTPS email provider instead. Gmail OAuth/API sending uses HTTPS and is separate from SMTP. See [Render’s Free service restrictions](https://render.com/docs/free).
 
 For Gmail OAuth, configure these variables only when using the integration:
 
