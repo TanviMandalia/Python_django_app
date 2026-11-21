@@ -3,7 +3,6 @@ from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import redirect
 from django.contrib import messages
-from django.contrib.auth import logout
 from django.conf import settings
 from django.views.decorators.cache import add_never_cache_headers
 
@@ -12,9 +11,6 @@ from .models import Profile
 
 MAX_ATTEMPTS = 5
 LOCKOUT_MINS = 15
-SESSION_MINS = 30
-
-
 # ───────────────────────────────
 # 1. LAST SEEN TRACKING
 # ───────────────────────────────
@@ -32,7 +28,7 @@ class UpdateLastSeenMiddleware:
 
 
 # ───────────────────────────────
-# 2. SESSION TIMEOUT
+# 2. SESSION ACTIVITY TRACKING
 # ───────────────────────────────
 class SessionTimeoutMiddleware:
     def __init__(self, get_response):
@@ -40,38 +36,12 @@ class SessionTimeoutMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated:
-            # If the user selected "Remember Me", their session is persistent across
-            # browser restarts and days, governed by the 14-day persistent cookie expiry.
-            # Do not force a premature 30-minute idle logout on remembered sessions.
-            is_remembered = request.session.get("remember_me", False)
-
-            if is_remembered:
-                # Keep the browser cookie persistent for the configured duration
-                # on authenticated requests, even if another view touches session
-                # expiry settings.
-                request.session.set_expiry(
-                    int(getattr(settings, "REMEMBER_ME_EXPIRY", 1209600))
-                )
-            else:
-                last_activity = request.session.get("last_activity")
-
-                if last_activity:
-                    from datetime import datetime
-
-                    last_dt = datetime.fromisoformat(last_activity)
-                    now_dt = timezone.now().replace(tzinfo=None)
-
-                    # Use total_seconds() to accurately compute gaps >= 24 hours
-                    inactive_seconds = (now_dt - last_dt).total_seconds()
-                    inactive_mins = int(inactive_seconds // 60)
-
-                    if inactive_mins >= SESSION_MINS:
-                        logout(request)
-                        messages.warning(
-                            request,
-                            f"⏱️ Logged out after {SESSION_MINS} minutes inactivity."
-                        )
-                        return redirect("login")
+            # Do not end authenticated sessions because of inactivity. Keep the
+            # cookie persistent for the configured rolling lifetime; explicit
+            # logout still clears it through Django's logout() view.
+            request.session.set_expiry(
+                int(getattr(settings, "REMEMBER_ME_EXPIRY", 1209600))
+            )
 
             request.session["last_activity"] = timezone.now().replace(
                 tzinfo=None

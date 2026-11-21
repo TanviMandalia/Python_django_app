@@ -778,7 +778,7 @@
       {% endif %}
 
       <!-- Sign In Form -->
-      <form method="POST" action="{% url 'login' %}" id="loginForm" novalidate>
+      <form method="POST" action="{% url 'login' %}" id="loginForm" autocomplete="on" novalidate>
         {% csrf_token %}
         {% if next %}
           <input type="hidden" name="next" value="{{ next }}" />
@@ -850,7 +850,7 @@
               class="remember-checkbox"
               {% if remember_me %}checked{% endif %}
             />
-            <span>Remember me</span>
+            <span>Keep me signed in</span>
           </label>
           <a href="{% url 'request_otp' %}" class="forgot-link">Forgot password?</a>
         </div>

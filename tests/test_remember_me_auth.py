@@ -72,10 +72,10 @@ class RememberMeAuthenticationTests(BaseHospitalTestCase):
         self.assertFalse(session.get_expire_at_browser_close())
         self.assertEqual(session.get_expiry_age(), 1209600)
 
-    # ── 2. Remember Me Unchecked Tests ───────────────────────────────
+    # ── 2. Persistent Session Tests ──────────────────────────────────
 
-    def test_login_with_remember_me_unchecked_sets_browser_session_expiry(self):
-        """TC-REM-003: Unchecked Remember Me sets browser-session expiry (expires on browser close)."""
+    def test_login_with_remember_me_unchecked_sets_persistent_expiry(self):
+        """TC-REM-003: Unchecked Remember Me still persists across browser restarts."""
         response = self.client.post(
             reverse("login"),
             {
@@ -88,13 +88,14 @@ class RememberMeAuthenticationTests(BaseHospitalTestCase):
 
         session = self.client.session
         self.assertFalse(session.get("remember_me"))
-        self.assertTrue(session.get_expire_at_browser_close())
+        self.assertFalse(session.get_expire_at_browser_close())
+        self.assertEqual(session.get_expiry_age(), 1209600)
 
-        # Cookie should have no max-age/expires so the browser discards it on close
+        # Cookie persists across browser restarts.
         cookie = response.cookies.get("physiorehab_sessionid")
         self.assertIsNotNone(cookie)
-        self.assertFalse(cookie["max-age"])
-        self.assertFalse(cookie["expires"])
+        self.assertEqual(cookie["max-age"], 1209600)
+        self.assertTrue(cookie["expires"])
 
     def test_missing_checkbox_behaves_as_unchecked(self):
         """TC-REM-004: Omission of remember_me parameter defaults strictly to unchecked."""
@@ -106,7 +107,7 @@ class RememberMeAuthenticationTests(BaseHospitalTestCase):
         self.assertEqual(response.status_code, 302)
         session = self.client.session
         self.assertFalse(session.get("remember_me"))
-        self.assertTrue(session.get_expire_at_browser_close())
+        self.assertFalse(session.get_expire_at_browser_close())
 
     def test_explicit_empty_checkbox_behaves_as_unchecked(self):
         """TC-REM-005: Explicit empty string behaves as unchecked."""
@@ -122,7 +123,7 @@ class RememberMeAuthenticationTests(BaseHospitalTestCase):
         self.assertEqual(response.status_code, 302)
         session = self.client.session
         self.assertFalse(session.get("remember_me"))
-        self.assertTrue(session.get_expire_at_browser_close())
+        self.assertFalse(session.get_expire_at_browser_close())
 
     # ── 3. Invalid Credentials & Validation Errors ───────────────────
 
@@ -153,10 +154,10 @@ class RememberMeAuthenticationTests(BaseHospitalTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context["user"].is_authenticated)
 
-    # ── 4. SessionTimeoutMiddleware Integration ──────────────────────
+    # ── 4. Session Middleware Integration ────────────────────────────
 
     def test_session_timeout_middleware_exempts_remembered_user(self):
-        """TC-REM-008: Remembered user is NOT logged out by 30-min idle timeout middleware."""
+        """TC-REM-008: Remembered users remain authenticated after inactivity."""
         # Log in with remember_me="on"
         self.client.post(
             reverse("login"),
@@ -178,8 +179,8 @@ class RememberMeAuthenticationTests(BaseHospitalTestCase):
         # User remains authenticated
         self.assertTrue(response.context["user"].is_authenticated)
 
-    def test_session_timeout_middleware_logs_out_unremembered_user(self):
-        """TC-REM-009: Unremembered user is logged out by 30-min idle timeout middleware."""
+    def test_session_timeout_middleware_keeps_unremembered_user_authenticated(self):
+        """TC-REM-009: Unremembered users are not logged out after inactivity."""
         # Log in without remember_me
         self.client.post(
             reverse("login"),
@@ -194,10 +195,10 @@ class RememberMeAuthenticationTests(BaseHospitalTestCase):
         session["last_activity"] = past_time.isoformat()
         session.save()
 
-        # Access dashboard -> should be redirected to login
+        # Access dashboard -> user remains authenticated.
         response = self.client.get(reverse("client_dashboard"), follow=False)
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("login"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["user"].is_authenticated)
 
     # ── 5. Logout & Invalidation ─────────────────────────────────────
 

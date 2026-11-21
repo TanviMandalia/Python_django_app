@@ -1189,18 +1189,13 @@ def login_view(request):
             cache.delete(cache_key)
             login(request, user)
 
-            # Connect Remember Me checkbox to Django session expiry:
-            if remember_me:
-                # 14 days persistent session duration
-                request.session.set_expiry(
-                    int(getattr(settings, "REMEMBER_ME_EXPIRY", 1209600))
-                )
-                request.session["remember_me"] = True
-            else:
-                # Browser-session cookie: expires when browser closes
-                request.session.set_expiry(0)
-                request.session["remember_me"] = False
-            # Make the selected expiry and remember flag durable with this login.
+            # Both checked and unchecked logins remain signed in across browser
+            # restarts. The session expiry is rolling and inactivity does not
+            # force logout; the Logout action explicitly invalidates the session.
+            request.session.set_expiry(
+                int(getattr(settings, "REMEMBER_ME_EXPIRY", 1209600))
+            )
+            request.session["remember_me"] = bool(remember_me)
             request.session.modified = True
 
             # Safe redirect: check 'next' parameter if valid and safe
